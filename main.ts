@@ -1,10 +1,11 @@
-import {Plugin, Notice} from "obsidian";
+import {Plugin, Notice, PluginSettingTab, Setting} from "obsidian";
 import simpleGit, {CheckRepoActions, SimpleGit} from "simple-git";
 
 export default class ObsidianGit extends Plugin {
     private git: SimpleGit;
+    settings: ObsidianGitSettings;
 
-    onInit() {
+    async onInit() {
         const adapter: any = this.app.vault.adapter;
         const git = simpleGit(adapter.basePath);
         let isValidRepo = git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
@@ -14,7 +15,9 @@ export default class ObsidianGit extends Plugin {
         }
 
         this.git = git;
-        console.log("obsidian-git: git repository is initialized!");
+        this.settings = await this.loadData() || new ObsidianGitSettings()
+
+        this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
         this.addCommand({
             id: 'pull',
@@ -41,9 +44,10 @@ export default class ObsidianGit extends Plugin {
                 new Notice("Pushing changes to remote repository..");
                 await this.git
                     .add('./*')
-                    .commit("vault backup")
+                    .commit(this.settings.commitMessage)
                     .push("origin","master", null, (err: Error) => {
                         let message: string;
+
                         if (!err) {
                             message = "Pushed changes to remote repository.";
                         } else {
@@ -55,5 +59,34 @@ export default class ObsidianGit extends Plugin {
                 );
             }
         })
+    }
+}
+
+
+class ObsidianGitSettings {
+    commitMessage: string = 'vault backup';
+}
+
+
+class ObsidianGitSettingsTab extends PluginSettingTab {
+
+    display(): void {
+        let {containerEl} = this;
+        const plugin: any = (this as any).plugin
+
+        containerEl.empty();
+        containerEl.createEl('h2', {text: "Git Backup settings"});
+
+        new Setting(containerEl)
+            .setName('Commit message')
+            .setDesc('Specify a custom commit message')
+            .addText(text => text.setPlaceholder('vault backup')
+                .setValue(plugin.settings.commitMessage ? plugin.settings.commitMessage : '')
+                .onChange((value) => {
+                    plugin.settings.commitMessage = value;
+                    plugin.saveData(plugin.settings);
+                }
+            )
+        );
     }
 }
