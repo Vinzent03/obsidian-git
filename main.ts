@@ -32,5 +32,14 @@ export default class ObsidianGit extends Plugin {
                 new Notice(message);
             }
         });
+
+        this.addCommand({
+            id: 'push',
+            name: 'Commit all changes and push to remote repository',
+            callback: async () => {
+                const result = await this.git.add('./*').commit("vault backup").push("origin","master", null, () => {new Notice("Pushed!")});
+                console.log("push:", result);
+            }
+        })
     }
 }
