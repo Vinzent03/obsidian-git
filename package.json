@@ -17,6 +17,7 @@
     "@rollup/plugin-typescript": "^6.0.0",
     "@types/node": "^14.14.2",
     "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
+    "prettier": "2.1.2",
     "rollup": "^2.32.1",
     "standard-version": "^9.0.0",
     "tslib": "^2.0.3",
