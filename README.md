@@ -1,7 +1,7 @@
 # Obsidian Git
 Simple plugin that allows you to backup your Obsidian (https://obsidian.md) vault to a remote git repository (e.g. private repo on GitHub).
 
-##### Features
+#### Features
 
 - Hotkey to pull changes (only `master` branch)
 - Hotkey to commit/push changes (with customizable commit message) (only `master` branch)
@@ -9,13 +9,15 @@ Simple plugin that allows you to backup your Obsidian (https://obsidian.md) vaul
 
 Built for Obsidian 0.9.7 with Obsidian Plugin API (alpha). But further support is planned.
 
-### Prerequisites
+### Installation
+
+
+#### Prerequisites
 
 - Obsidian 0.9.7 (Plugin API alpha release) is installed
 - Support for 3rd party plugins is enabled in settings (Obsidian > Settings > Third Party plugin > Safe mode - OFF)
 - `git` is installed on local machine and repository is initialized in the vault root directory (`master` branch)
 
-### Installation
 
 To install this plugin, download `zip` archive from [GitHub releases page](https://github.com/denolehov/obsidian-git/releases).
 Open the archive, and copy `main.js` and `manifest.json` into `<vault>/.obsidian/plugins/obsidian-git` (create plugin directory if needed).
