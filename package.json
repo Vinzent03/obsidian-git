@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-dummy-plugin",
+  "name": "obsidian-git",
   "version": "0.0.2",
-  "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+  "description": "Backup your Obsidian (https://obsidian.md) vault with git",
   "main": "main.js",
   "scripts": {
     "dev": "rollup --config rollup.config.js -w",
