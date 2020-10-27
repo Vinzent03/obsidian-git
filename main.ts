@@ -63,9 +63,7 @@ export default class ObsidianGit extends Plugin {
     return pullResult.files.length;
   }
 
-  async addCommitAndPush(
-    message: string = "Pushed changes to remote repository."
-  ) {
+  async addCommitAndPush(message: string = "Pushed!") {
     await this.git
       .add("./*")
       .commit(this.settings.commitMessage)
