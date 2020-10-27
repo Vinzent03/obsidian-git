@@ -3,5 +3,6 @@
   "name": "Obsidian Git",
   "description": "Backup your vault with git.",
   "isDesktopOnly": false,
-  "js": "main.js"
+  "js": "main.js",
+  "version": "0.0.2"
 }

@@ -1,6 +1,6 @@
 {
   "name": "obsidian-dummy-plugin",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
   "main": "main.js",
   "scripts": {
