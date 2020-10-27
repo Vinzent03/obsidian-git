@@ -13,7 +13,7 @@ Built for Obsidian 0.9.7 with Obsidian Plugin API (alpha). But further support i
 
 - Obsidian 0.9.7 (Plugin API alpha release) is installed
 - Support for 3rd party plugins is enabled in settings (Obsidian > Settings > Third Party plugin > Safe mode - OFF)
-- `git` is installed on local machine and repository exists in your vault directory
+- `git` is installed on local machine and repository is initialized in the vault root directory (`master` branch)
 
 ### Installation
 
