@@ -28,8 +28,8 @@ OBSIDIAN_VAULT_DIR=/path/to/your/obsidian/vault
 mkdir -p $OBSIDIAN_VAULT_DIR/.obsidian/plugins/obsidian-git
 
 # unzip `main.js` and `manifest.json` into a plugin directory
-unzip -p ~/Downloads/obsidian-git-0.0.2.zip obsidian-git-0.0.2/main.js > $OBSIDIAN_VAULT_DIR/.obsidian/plugins/obsidian-git/main.js
-unzip -p ~/Downloads/obsidian-git-0.0.2.zip obsidian-git-0.0.2/manifest.json > $OBSIDIAN_VAULT_DIR/.obsidian/plugins/obsidian-git/manifest.json
+unzip -p ~/Downloads/obsidian-git-0.0.6.zip obsidian-git-0.0.6/main.js > $OBSIDIAN_VAULT_DIR/.obsidian/plugins/obsidian-git/main.js
+unzip -p ~/Downloads/obsidian-git-0.0.6.zip obsidian-git-0.0.6/manifest.json > $OBSIDIAN_VAULT_DIR/.obsidian/plugins/obsidian-git/manifest.json
 ```
 
 Once done, change hotkeys for pulling/pushing changes from/to remote repository and optionally enable autosave.
