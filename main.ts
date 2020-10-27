@@ -20,6 +20,7 @@ export default class ObsidianGit extends Plugin {
             id: 'pull',
             name: 'Pull from remote repository',
             callback: async () => {
+                new Notice("Pulling changes from remote repository..");
                 const pullResult = await this.git.pull("origin");
 
                 let filesAffected = pullResult.files.length;
@@ -35,10 +36,23 @@ export default class ObsidianGit extends Plugin {
 
         this.addCommand({
             id: 'push',
-            name: 'Commit all changes and push to remote repository',
+            name: 'Commit *all* changes and push to remote repository',
             callback: async () => {
-                const result = await this.git.add('./*').commit("vault backup").push("origin","master", null, () => {new Notice("Pushed!")});
-                console.log("push:", result);
+                new Notice("Pushing changes to remote repository..");
+                await this.git
+                    .add('./*')
+                    .commit("vault backup")
+                    .push("origin","master", null, (err: Error) => {
+                        let message: string;
+                        if (!err) {
+                            message = "Pushed changes to remote repository.";
+                        } else {
+                            message = err.message;
+                        }
+
+                        new Notice(message);
+                    }
+                );
             }
         })
     }
