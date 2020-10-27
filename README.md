@@ -3,8 +3,8 @@ Simple plugin that allows you to backup your Obsidian (https://obsidian.md) vaul
 
 ##### Features
 
-- Hotkey to pull changes
-- Hotkey to commit/push changes (with customizable commit message)
+- Hotkey to pull changes (only `master` branch)
+- Hotkey to commit/push changes (with customizable commit message) (only `master` branch)
 - Autocommit every X minutes
 
 Built for Obsidian 0.9.7 with Obsidian Plugin API (alpha). But further support is planned.
