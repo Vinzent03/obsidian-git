@@ -1,8 +1,8 @@
 {
-  "id": "obsidian-git",
-  "name": "Obsidian Git",
-  "description": "Backup your vault with git.",
-  "isDesktopOnly": false,
-  "js": "main.js",
-  "version": "1.0.0"
+    "id": "obsidian-git",
+    "name": "Obsidian Git",
+    "description": "Backup your vault with git.",
+    "isDesktopOnly": false,
+    "js": "main.js",
+    "version": "1.0.0"
 }

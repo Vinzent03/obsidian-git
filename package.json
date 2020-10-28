@@ -1,30 +1,30 @@
 {
-  "name": "obsidian-git",
-  "version": "1.0.0",
-  "description": "Backup your Obsidian (https://obsidian.md) vault with git",
-  "main": "main.js",
-  "scripts": {
-    "dev": "rollup --config rollup.config.js -w",
-    "build": "rollup --config rollup.config.js",
-    "release": "standard-version"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^15.1.0",
-    "@rollup/plugin-node-resolve": "^9.0.0",
-    "@rollup/plugin-typescript": "^6.0.0",
-    "@types/node": "^14.14.2",
-    "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
-    "prettier": "2.1.2",
-    "rollup": "^2.32.1",
-    "standard-version": "^9.0.0",
-    "tslib": "^2.0.3",
-    "typescript": "^4.0.3"
-  },
-  "dependencies": {
-    "simple-git": "^2.21.0",
-    "supports-color": "^7.2.0"
-  }
+    "name": "obsidian-git",
+    "version": "1.0.0",
+    "description": "Backup your Obsidian (https://obsidian.md) vault with git",
+    "main": "main.js",
+    "scripts": {
+        "dev": "rollup --config rollup.config.js -w",
+        "build": "rollup --config rollup.config.js",
+        "release": "standard-version"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "^15.1.0",
+        "@rollup/plugin-node-resolve": "^9.0.0",
+        "@rollup/plugin-typescript": "^6.0.0",
+        "@types/node": "^14.14.2",
+        "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
+        "prettier": "2.1.2",
+        "rollup": "^2.32.1",
+        "standard-version": "^9.0.0",
+        "tslib": "^2.0.3",
+        "typescript": "^4.0.3"
+    },
+    "dependencies": {
+        "simple-git": "^2.21.0",
+        "supports-color": "^7.2.0"
+    }
 }
