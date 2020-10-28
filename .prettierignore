@@ -1,6 +1,0 @@
-# Ignore artifacts:
-build
-coverage
-main.js
-README.md
-CHANGELOG.md

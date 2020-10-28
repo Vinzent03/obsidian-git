@@ -5,6 +5,10 @@
 # npm
 node_modules
 package-lock.json
+main.js
 
 # build
 *.js.map
+
+.prettierignore
+.prettierrc.json
