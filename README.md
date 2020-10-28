@@ -3,14 +3,13 @@ Simple plugin that allows you to backup your Obsidian (https://obsidian.md) vaul
 
 #### Features
 
+- Autocommit every X minutes
 - Hotkey to pull changes (only `master` branch)
 - Hotkey to commit/push changes (with customizable commit message) (only `master` branch)
-- Autocommit every X minutes
 
 Built for Obsidian 0.9.7 with Obsidian Plugin API (alpha). But further support is planned.
 
 ### Installation
-
 
 #### Prerequisites
 
@@ -18,20 +17,14 @@ Built for Obsidian 0.9.7 with Obsidian Plugin API (alpha). But further support i
 - Support for 3rd party plugins is enabled in settings (Obsidian > Settings > Third Party plugin > Safe mode - OFF)
 - `git` is installed on local machine and repository is initialized in the vault root directory (`master` branch)
 
-
 To install this plugin, download `zip` archive from [GitHub releases page](https://github.com/denolehov/obsidian-git/releases).
-Open the archive, and copy `main.js` and `manifest.json` into `<vault>/.obsidian/plugins/obsidian-git` (create plugin directory if needed).
+Extract the archive into `<vault>/.obsidian/plugins`.
 
 Alternatively, using bash:
 ```bash
 OBSIDIAN_VAULT_DIR=/path/to/your/obsidian/vault
-
-# create plugin directory
-mkdir -p $OBSIDIAN_VAULT_DIR/.obsidian/plugins/obsidian-git
-
-# unzip `main.js` and `manifest.json` into a plugin directory
-unzip -p ~/Downloads/obsidian-git-0.0.6.zip obsidian-git-0.0.6/main.js > $OBSIDIAN_VAULT_DIR/.obsidian/plugins/obsidian-git/main.js
-unzip -p ~/Downloads/obsidian-git-0.0.6.zip obsidian-git-0.0.6/manifest.json > $OBSIDIAN_VAULT_DIR/.obsidian/plugins/obsidian-git/manifest.json
+mkdir -p $OBSIDIAN_VAULT_DIR/.obsidian/plugins
+unzip ~/Downloads/obsidian-git_v1.0.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 ```
 
 Once done, change hotkeys for pulling/pushing changes from/to remote repository and optionally enable autosave.
