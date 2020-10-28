@@ -19,6 +19,10 @@ export default class ObsidianGit extends Plugin {
         this.git = git;
         this.settings = (await this.loadData()) || new ObsidianGitSettings();
 
+        if (this.settings.autoPullOnBoot) {
+            setTimeout(async () => await this.pullWithNotice(), 700);
+        }
+
         if (this.settings.autoSaveInterval > 0) {
             this.enableAutosave();
         }
@@ -28,17 +32,7 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "pull",
             name: "Pull from remote repository",
-            callback: async () => {
-                new Notice("Pulling changes from remote repository..");
-                let filesAffected = await this.pullForUpdates();
-                if (filesAffected > 0) {
-                    new Notice(
-                        `Pulled new changes. ${filesAffected} files affected.`
-                    );
-                } else {
-                    new Notice("Everything is up-to-date.");
-                }
-            },
+            callback: async () => this.pullWithNotice(),
         });
 
         this.addCommand({
@@ -58,6 +52,16 @@ export default class ObsidianGit extends Plugin {
     async isRepoClean(): Promise<boolean> {
         let status = await this.git.status();
         return status.isClean();
+    }
+
+    async pullWithNotice(): Promise<void> {
+        new Notice("Pulling changes from remote repository..");
+        let filesAffected = await this.pullForUpdates();
+        if (filesAffected > 0) {
+            new Notice(`Pulled new changes. ${filesAffected} files affected.`);
+        } else {
+            new Notice("Everything is up-to-date.");
+        }
     }
 
     async pullForUpdates(): Promise<number> {
@@ -96,6 +100,7 @@ export default class ObsidianGit extends Plugin {
 class ObsidianGitSettings {
     commitMessage: string = "vault backup";
     autoSaveInterval: number = 0;
+    autoPullOnBoot: boolean = false;
 }
 
 class ObsidianGitSettingsTab extends PluginSettingTab {
@@ -152,6 +157,18 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                         } else {
                             new Notice("Please specify a valid number.");
                         }
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Pull updates on startup")
+            .setDesc("Automatically pull updates when Obsidian starts")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.autoPullOnBoot)
+                    .onChange((value) => {
+                        plugin.settings.autoPullOnBoot = value;
+                        plugin.saveData(plugin.settings);
                     })
             );
     }
