@@ -50,16 +50,12 @@ export default class ObsidianGit extends Plugin {
         if (this.settings.autoPullOnBoot) {
             setTimeout(
                 async () =>
-                    await this.isRepoClean().then(
-                        async (isClean) =>
-                            isClean &&
-                            (await this.pull().then((filesUpdated) => {
-                                this.setState(PluginState.idle);
-                                new Notice(
-                                    `Pulled new changes. ${filesUpdated} files updated.`
-                                );
-                            }))
-                    ),
+                    await this.pull().then((filesUpdated) => {
+                        this.setState(PluginState.idle);
+                        this.maybeNotice(
+                            `Pulled new changes. ${filesUpdated} files updated.`
+                        );
+                    }),
                 700
             );
         }
@@ -75,20 +71,17 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "pull",
             name: "Pull from remote repository",
-            callback: async () =>
-                await this.isRepoClean().then(async (isClean) => {
-                    if (isClean) {
-                        let filesUpdated = await this.pull();
-                        if (filesUpdated > 0) {
-                            new Notice(
-                                `Pulled new changes. ${filesUpdated} files updated.`
-                            );
-                        } else {
-                            new Notice("Everything is up-to-date");
-                        }
-                    }
-                    this.setState(PluginState.idle);
-                }),
+            callback: async () => {
+                let filesUpdated = await this.pull();
+                if (filesUpdated > 0) {
+                    this.maybeNotice(
+                        `Pulled new changes. ${filesUpdated} files updated.`
+                    );
+                } else {
+                    this.maybeNotice("Everything is up-to-date");
+                }
+                this.setState(PluginState.idle);
+            },
         });
 
         this.addCommand({
@@ -97,13 +90,17 @@ export default class ObsidianGit extends Plugin {
             callback: async () =>
                 await this.isRepoClean().then(async (isClean) => {
                     if (isClean) {
-                        new Notice("No updates detected. Nothing to push.");
+                        this.maybeNotice(
+                            "No updates detected. Nothing to push."
+                        );
                     } else {
-                        new Notice("Pushing changes to remote repository..");
+                        this.maybeNotice(
+                            "Pushing changes to remote repository.."
+                        );
                         await this.add()
                             .then(async () => await this.commit())
                             .then(async () => await this.push());
-                        new Notice("Pushed!");
+                        this.maybeNotice("Pushed!");
                     }
                     this.setState(PluginState.idle);
                 }),
@@ -164,7 +161,7 @@ export default class ObsidianGit extends Plugin {
                         await this.add()
                             .then(async () => await this.commit())
                             .then(async () => await this.push());
-                        new Notice("Pushed changes to remote repository");
+                        this.maybeNotice("Pushed changes to remote repository");
                     }
                     this.setState(PluginState.idle);
                 }),
@@ -180,12 +177,21 @@ export default class ObsidianGit extends Plugin {
 
         return false;
     }
+
+    maybeNotice(text: string): void {
+        if (!this.settings.disablePopups) {
+            new Notice(text);
+        } else {
+            console.log(`git obsidian: ${text}`);
+        }
+    }
 }
 
 class ObsidianGitSettings {
     commitMessage: string = "vault backup";
     autoSaveInterval: number = 0;
     autoPullOnBoot: boolean = false;
+    disablePopups: boolean = false;
 }
 
 class ObsidianGitSettingsTab extends PluginSettingTab {
@@ -253,6 +259,20 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.autoPullOnBoot)
                     .onChange((value) => {
                         plugin.settings.autoPullOnBoot = value;
+                        plugin.saveData(plugin.settings);
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Disable notifications")
+            .setDesc(
+                "Disable notifications for git operations to minimize distraction (refer to status bar for updates)"
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.disablePopups)
+                    .onChange((value) => {
+                        plugin.settings.disablePopups = value;
                         plugin.saveData(plugin.settings);
                     })
             );
