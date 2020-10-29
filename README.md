@@ -26,7 +26,7 @@ Alternatively, using bash:
 ```bash
 OBSIDIAN_VAULT_DIR=/path/to/your/obsidian/vault
 mkdir -p $OBSIDIAN_VAULT_DIR/.obsidian/plugins
-unzip ~/Downloads/obsidian-git_v1.0.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugins
+unzip ~/Downloads/obsidian-git_v1.1.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 ```
 
 Once done, change hotkeys for pulling/pushing changes from/to remote repository and optionally enable autosave.
