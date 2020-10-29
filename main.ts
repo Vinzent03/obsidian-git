@@ -1,11 +1,33 @@
 import { Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
 import simpleGit, { CheckRepoActions, SimpleGit } from "simple-git";
 
+enum PluginState {
+    idle,
+    checkRepoClean,
+    pull,
+    add,
+    commit,
+    push,
+}
+
 export default class ObsidianGit extends Plugin {
     public git: SimpleGit;
-    settings: ObsidianGitSettings;
+    public settings: ObsidianGitSettings;
+    public statusBar: StatusBar;
+    public state: PluginState = PluginState.idle;
 
     private intervalID: NodeJS.Timeout;
+    private lastUpdate: number;
+
+    setState(state: PluginState) {
+        this.state = state;
+        this.statusBar.display(this);
+        this.periodicStatusBarUpdate();
+    }
+
+    getState(): PluginState {
+        return this.state;
+    }
 
     async onload() {
         const adapter: any = this.app.vault.adapter;
@@ -16,75 +38,138 @@ export default class ObsidianGit extends Plugin {
             return;
         }
 
+        let statusBarEl = this.addStatusBarItem();
+        this.statusBar = new StatusBar(statusBarEl);
+        this.statusBar.displayIdle();
+
         this.git = git;
         this.settings = (await this.loadData()) || new ObsidianGitSettings();
 
+        this.setState(PluginState.idle);
+
         if (this.settings.autoPullOnBoot) {
-            setTimeout(async () => await this.pullWithNotice(), 700);
+            setTimeout(
+                async () =>
+                    await this.isRepoClean().then(
+                        async (isClean) =>
+                            isClean &&
+                            (await this.pull().then((filesUpdated) => {
+                                this.setState(PluginState.idle);
+                                new Notice(
+                                    `Pulled new changes. ${filesUpdated} files updated.`
+                                );
+                            }))
+                    ),
+                700
+            );
         }
 
         if (this.settings.autoSaveInterval > 0) {
             this.enableAutosave();
         }
 
+        setInterval(() => this.periodicStatusBarUpdate(), 10000);
+
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
         this.addCommand({
             id: "pull",
             name: "Pull from remote repository",
-            callback: async () => this.pullWithNotice(),
+            callback: async () =>
+                await this.isRepoClean().then(async (isClean) => {
+                    if (isClean) {
+                        let filesUpdated = await this.pull();
+                        if (filesUpdated > 0) {
+                            new Notice(
+                                `Pulled new changes. ${filesUpdated} files updated.`
+                            );
+                        } else {
+                            new Notice("Everything is up-to-date");
+                        }
+                    }
+                    this.setState(PluginState.idle);
+                }),
         });
 
         this.addCommand({
             id: "push",
             name: "Commit *all* changes and push to remote repository",
-            callback: async () => {
-                if (await this.isRepoClean()) {
-                    new Notice("No updates detected. Nothing to push.");
-                } else {
-                    new Notice("Pushing changes to remote repository..");
-                    await this.addCommitAndPush();
-                }
-            },
+            callback: async () =>
+                await this.isRepoClean().then(async (isClean) => {
+                    if (isClean) {
+                        new Notice("No updates detected. Nothing to push.");
+                    } else {
+                        new Notice("Pushing changes to remote repository..");
+                        await this.add()
+                            .then(async () => await this.commit())
+                            .then(async () => await this.push());
+                        new Notice("Pushed!");
+                    }
+                    this.setState(PluginState.idle);
+                }),
         });
     }
 
+    // region: main methods
     async isRepoClean(): Promise<boolean> {
+        this.setState(PluginState.checkRepoClean);
         let status = await this.git.status();
         return status.isClean();
     }
 
-    async pullWithNotice(): Promise<void> {
-        new Notice("Pulling changes from remote repository..");
-        let filesAffected = await this.pullForUpdates();
-        if (filesAffected > 0) {
-            new Notice(`Pulled new changes. ${filesAffected} files affected.`);
-        } else {
-            new Notice("Everything is up-to-date.");
-        }
+    async add(): Promise<void> {
+        this.setState(PluginState.add);
+        await this.git.add("./*");
     }
 
-    async pullForUpdates(): Promise<number> {
-        const pullResult = await this.git.pull("origin");
+    async commit(): Promise<void> {
+        this.setState(PluginState.commit);
+        await this.git.commit(this.settings.commitMessage);
+    }
+
+    async push(): Promise<void> {
+        this.setState(PluginState.push);
+        await this.git.push("origin", "master");
+
+        this.lastUpdate = Date.now();
+    }
+
+    async pull(): Promise<number> {
+        this.setState(PluginState.pull);
+        let pullResult = await this.git.pull();
+        this.lastUpdate = Date.now();
         return pullResult.files.length;
     }
 
-    async addCommitAndPush(message: string = "Pushed!") {
-        await this.git
-            .add("./*")
-            .commit(this.settings.commitMessage)
-            .push("origin", "master", null, (err: Error) => {
-                new Notice(err ? err.message : message);
-            });
+    // endregion: main methods
+
+    isIdle(): boolean {
+        return this.getState() === PluginState.idle;
+    }
+
+    periodicStatusBarUpdate(): void {
+        if (this.lastUpdate && this.isIdle()) {
+            this.statusBar.displayFromNow(this.lastUpdate);
+        } else if (!this.lastUpdate && this.isIdle()) {
+            this.statusBar.displayIdle();
+        }
     }
 
     enableAutosave() {
         let minutes = this.settings.autoSaveInterval;
-        this.intervalID = setInterval(async () => {
-            // console.log("repo clean?", await this.isRepoClean());
-            !(await this.isRepoClean()) &&
-                (await this.addCommitAndPush("Autosave: pushed changes!"));
-        }, minutes * 60000);
+        this.intervalID = setInterval(
+            async () =>
+                await this.isRepoClean().then(async (isClean) => {
+                    if (!isClean) {
+                        await this.add()
+                            .then(async () => await this.commit())
+                            .then(async () => await this.push());
+                        new Notice("Pushed changes to remote repository");
+                    }
+                    this.setState(PluginState.idle);
+                }),
+            minutes * 60000
+        );
     }
 
     disableAutosave(): boolean {
@@ -171,5 +256,45 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.saveData(plugin.settings);
                     })
             );
+    }
+}
+
+class StatusBar {
+    private statusBarEl: HTMLElement;
+
+    constructor(statusBarEl: HTMLElement) {
+        this.statusBarEl = statusBarEl;
+    }
+
+    displayFromNow(timestamp: number): void {
+        let moment = (window as any).moment;
+        let fromNow = moment(timestamp).fromNow();
+        this.statusBarEl.setText(`git: last update ${fromNow}..`);
+    }
+
+    displayIdle(): void {
+        this.statusBarEl.setText("git: ready");
+    }
+
+    display(plugin: ObsidianGit) {
+        switch (plugin.getState()) {
+            case PluginState.checkRepoClean:
+                this.statusBarEl.setText("git: checking repo..");
+                break;
+            case PluginState.add:
+                this.statusBarEl.setText("git: adding files to repo..");
+                break;
+            case PluginState.commit:
+                this.statusBarEl.setText("git: committing changes..");
+                break;
+            case PluginState.push:
+                this.statusBarEl.setText("git: pushing changes..");
+                break;
+            case PluginState.pull:
+                this.statusBarEl.setText(
+                    "git: pulling changes from remote repo.."
+                );
+                break;
+        }
     }
 }
