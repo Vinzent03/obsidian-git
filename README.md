@@ -1,9 +1,11 @@
 # Obsidian Git
 Simple plugin that allows you to backup your Obsidian (https://obsidian.md) vault to a remote git repository (e.g. private repo on GitHub).
+Synergises well with [GitJournal](https://github.com/GitJournal/GitJournal).
 
 #### Features
 
 - Autocommit every X minutes
+- Automatically pull changes on Obsidian startup
 - Hotkey to pull changes (only `master` branch)
 - Hotkey to commit/push changes (with customizable commit message) (only `master` branch)
 
