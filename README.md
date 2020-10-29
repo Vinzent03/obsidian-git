@@ -1,6 +1,6 @@
 # Obsidian Git
 Simple plugin that allows you to backup your Obsidian (https://obsidian.md) vault to a remote git repository (e.g. private repo on GitHub).
-Synergises well with [GitJournal](https://github.com/GitJournal/GitJournal).
+Synergises well with [GitJournal](https://github.com/GitJournal/GitJournal) mobile markdown note taking app.
 
 #### Features
 
