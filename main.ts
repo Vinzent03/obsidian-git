@@ -72,7 +72,7 @@ export default class ObsidianGit extends Plugin {
             );
         }
 
-        if (this.settings.backupInterval > 0) {
+        if (this.settings.autoSaveInterval > 0) {
             this.enableAutoBackup();
         }
 
@@ -175,7 +175,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     enableAutoBackup() {
-        let minutes = this.settings.backupInterval;
+        let minutes = this.settings.autoSaveInterval;
         this.intervalID = window.setInterval(
             async () =>
                 await this.isRepoClean().then(async (isClean) => {
@@ -212,7 +212,7 @@ export default class ObsidianGit extends Plugin {
 
 class ObsidianGitSettings {
     commitMessage: string = "vault backup: {{date}}";
-    backupInterval: number = 0;
+    autoSaveInterval: number = 0;
     autoPullOnBoot: boolean = false;
     disablePopups: boolean = false;
     currentBranch: string;
@@ -226,6 +226,38 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
 
         containerEl.empty();
         containerEl.createEl("h2", { text: "Git Backup settings" });
+
+        new Setting(containerEl)
+            .setName("Vault backup interval (minutes)")
+            .setDesc(
+                "Commit and push changes every X minutes. To disable automatic backup, specify negative value or zero (default)"
+            )
+            .addText((text) =>
+                text
+                    .setValue(String(plugin.settings.autoSaveInterval))
+                    .onChange((value) => {
+                        if (!isNaN(Number(value))) {
+                            plugin.settings.autoSaveInterval = Number(value);
+                            plugin.saveData(plugin.settings);
+
+                            if (plugin.settings.autoSaveInterval > 0) {
+                                plugin.disableAutoBackup(); // call clearInterval() before setting up a new one
+                                plugin.enableAutoBackup();
+                                new Notice(
+                                    `Automatic backup enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
+                                );
+                            } else if (
+                                plugin.settings.autoSaveInterval <= 0 &&
+                                plugin.intervalID
+                            ) {
+                                plugin.disableAutoBackup() &&
+                                    new Notice("Automatic backup disabled!");
+                            }
+                        } else {
+                            new Notice("Please specify a valid number.");
+                        }
+                    })
+            );
 
         new Setting(containerEl)
             .setName("Commit message")
@@ -271,38 +303,6 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                     );
                 });
             });
-
-        new Setting(containerEl)
-            .setName("Vault backup interval (minutes)")
-            .setDesc(
-                "Commit and push changes every X minutes. To disable automatic backup, specify negative value or zero (default)"
-            )
-            .addText((text) =>
-                text
-                    .setValue(String(plugin.settings.backupInterval))
-                    .onChange((value) => {
-                        if (!isNaN(Number(value))) {
-                            plugin.settings.backupInterval = Number(value);
-                            plugin.saveData(plugin.settings);
-
-                            if (plugin.settings.backupInterval > 0) {
-                                plugin.disableAutoBackup(); // call clearInterval() before setting up a new one
-                                plugin.enableAutoBackup();
-                                new Notice(
-                                    `Automatic backup enabled! Every ${plugin.settings.backupInterval} minutes.`
-                                );
-                            } else if (
-                                plugin.settings.backupInterval <= 0 &&
-                                plugin.intervalID
-                            ) {
-                                plugin.disableAutoBackup() &&
-                                    new Notice("Automatic backup disabled!");
-                            }
-                        } else {
-                            new Notice("Please specify a valid number.");
-                        }
-                    })
-            );
 
         new Setting(containerEl)
             .setName("Pull updates on startup")
