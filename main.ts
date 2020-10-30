@@ -109,6 +109,10 @@ export default class ObsidianGit extends Plugin {
         });
     }
 
+    async onunload() {
+        await this.saveData(this.settings);
+    }
+
     // region: main methods
     async isRepoClean(): Promise<boolean> {
         this.setState(PluginState.checkRepoClean);
