@@ -72,8 +72,8 @@ export default class ObsidianGit extends Plugin {
             );
         }
 
-        if (this.settings.autoSaveInterval > 0) {
-            this.enableAutosave();
+        if (this.settings.backupInterval > 0) {
+            this.enableAutoBackup();
         }
 
         this.registerInterval(
@@ -174,8 +174,8 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    enableAutosave() {
-        let minutes = this.settings.autoSaveInterval;
+    enableAutoBackup() {
+        let minutes = this.settings.backupInterval;
         this.intervalID = window.setInterval(
             async () =>
                 await this.isRepoClean().then(async (isClean) => {
@@ -192,7 +192,7 @@ export default class ObsidianGit extends Plugin {
         this.registerInterval(this.intervalID);
     }
 
-    disableAutosave(): boolean {
+    disableAutoBackup(): boolean {
         if (this.intervalID) {
             clearInterval(this.intervalID);
             return true;
@@ -212,7 +212,7 @@ export default class ObsidianGit extends Plugin {
 
 class ObsidianGitSettings {
     commitMessage: string = "vault backup: {{date}}";
-    autoSaveInterval: number = 0;
+    backupInterval: number = 0;
     autoPullOnBoot: boolean = false;
     disablePopups: boolean = false;
     currentBranch: string;
@@ -273,30 +273,30 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName("Autosave")
+            .setName("Vault backup interval (minutes)")
             .setDesc(
-                "Commit and push changes every X minutes. To disable autosave, specify negative value or zero (default)"
+                "Commit and push changes every X minutes. To disable automatic backup, specify negative value or zero (default)"
             )
             .addText((text) =>
                 text
-                    .setValue(String(plugin.settings.autoSaveInterval))
+                    .setValue(String(plugin.settings.backupInterval))
                     .onChange((value) => {
                         if (!isNaN(Number(value))) {
-                            plugin.settings.autoSaveInterval = Number(value);
+                            plugin.settings.backupInterval = Number(value);
                             plugin.saveData(plugin.settings);
 
-                            if (plugin.settings.autoSaveInterval > 0) {
-                                plugin.disableAutosave(); // call clearInterval() before setting up a new one
-                                plugin.enableAutosave();
+                            if (plugin.settings.backupInterval > 0) {
+                                plugin.disableAutoBackup(); // call clearInterval() before setting up a new one
+                                plugin.enableAutoBackup();
                                 new Notice(
-                                    `Autosave enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
+                                    `Automatic backup enabled! Every ${plugin.settings.backupInterval} minutes.`
                                 );
                             } else if (
-                                plugin.settings.autoSaveInterval <= 0 &&
+                                plugin.settings.backupInterval <= 0 &&
                                 plugin.intervalID
                             ) {
-                                plugin.disableAutosave() &&
-                                    new Notice("Autosave disabled!");
+                                plugin.disableAutoBackup() &&
+                                    new Notice("Automatic backup disabled!");
                             }
                         } else {
                             new Notice("Please specify a valid number.");
