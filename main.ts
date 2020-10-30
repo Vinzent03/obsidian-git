@@ -139,7 +139,11 @@ export default class ObsidianGit extends Plugin {
 
     async commit(): Promise<void> {
         this.setState(PluginState.commit);
-        await this.git.commit(this.settings.commitMessage);
+        let commitMessage = this.settings.commitMessage.replace(
+            "{{date}}",
+            new Date().toISOString()
+        );
+        await this.git.commit(commitMessage);
     }
 
     async push(): Promise<void> {
@@ -207,7 +211,7 @@ export default class ObsidianGit extends Plugin {
 }
 
 class ObsidianGitSettings {
-    commitMessage: string = "vault backup";
+    commitMessage: string = "vault backup: {{date}}";
     autoSaveInterval: number = 0;
     autoPullOnBoot: boolean = false;
     disablePopups: boolean = false;
