@@ -22,7 +22,7 @@ export default class ObsidianGit extends Plugin {
     setState(state: PluginState) {
         this.state = state;
         this.statusBar.display(this);
-        this.periodicStatusBarUpdate();
+        this.updateStatusBar();
     }
 
     getState(): PluginState {
@@ -65,7 +65,7 @@ export default class ObsidianGit extends Plugin {
         }
 
         this.registerInterval(
-            window.setInterval(() => this.periodicStatusBarUpdate(), 10 * 1000)
+            window.setInterval(() => this.updateStatusBar(), 10 * 1000)
         );
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
@@ -150,7 +150,7 @@ export default class ObsidianGit extends Plugin {
         return this.getState() === PluginState.idle;
     }
 
-    periodicStatusBarUpdate(): void {
+    updateStatusBar(): void {
         if (this.lastUpdate && this.isIdle()) {
             this.statusBar.displayFromNow(this.lastUpdate);
         } else if (!this.lastUpdate && this.isIdle()) {
