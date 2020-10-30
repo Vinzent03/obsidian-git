@@ -15,8 +15,8 @@ export default class ObsidianGit extends Plugin {
     public settings: ObsidianGitSettings;
     public statusBar: StatusBar;
     public state: PluginState = PluginState.idle;
+    public intervalID: number;
 
-    private intervalID: number;
     private lastUpdate: number;
 
     setState(state: PluginState) {
@@ -40,6 +40,19 @@ export default class ObsidianGit extends Plugin {
 
         this.git = git;
         this.settings = (await this.loadData()) || new ObsidianGitSettings();
+
+        // resolve current branch and remote
+        let branchInfo = await git.branch();
+        this.settings.currentBranch = branchInfo.current;
+
+        let remote = await git.remote([]);
+        console.log("remote:", remote);
+        if (typeof remote === "string") {
+            this.settings.remote = remote.trim();
+        } else {
+            new Notice("Failed to detect remote.");
+            return;
+        }
 
         let statusBarEl = this.addStatusBarItem();
         this.statusBar = new StatusBar(statusBarEl);
@@ -131,7 +144,7 @@ export default class ObsidianGit extends Plugin {
 
     async push(): Promise<void> {
         this.setState(PluginState.push);
-        await this.git.push("origin", "master");
+        await this.git.push(this.settings.remote, this.settings.currentBranch);
 
         this.lastUpdate = Date.now();
     }
@@ -198,12 +211,14 @@ class ObsidianGitSettings {
     autoSaveInterval: number = 0;
     autoPullOnBoot: boolean = false;
     disablePopups: boolean = false;
+    currentBranch: string;
+    remote: string;
 }
 
 class ObsidianGitSettingsTab extends PluginSettingTab {
     display(): void {
         let { containerEl } = this;
-        const plugin: any = (this as any).plugin;
+        const plugin: ObsidianGit = (this as any).plugin;
 
         containerEl.empty();
         containerEl.createEl("h2", { text: "Git Backup settings" });
@@ -224,6 +239,34 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.saveData(plugin.settings);
                     })
             );
+
+        new Setting(containerEl)
+            .setName("Current branch")
+            .setDesc("Switch to a different branch")
+            .addDropdown(async (dropdown) => {
+                let branchInfo = await plugin.git.branchLocal();
+                console.log("branchInfo", branchInfo);
+                for (const branch of branchInfo.all) {
+                    dropdown.addOption(branch, branch);
+                }
+                dropdown.setValue(branchInfo.current);
+                dropdown.onChange(async (option) => {
+                    await plugin.git.checkout(
+                        option,
+                        [],
+                        async (err: Error) => {
+                            if (err) {
+                                new Notice(err.message);
+                                dropdown.setValue(branchInfo.current);
+                            } else {
+                                new Notice(`Checked out to ${option}`);
+                                plugin.settings.currentBranch = option;
+                                await plugin.saveData(plugin.settings);
+                            }
+                        }
+                    );
+                });
+            });
 
         new Setting(containerEl)
             .setName("Autosave")
