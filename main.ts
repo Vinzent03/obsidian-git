@@ -46,7 +46,6 @@ export default class ObsidianGit extends Plugin {
         this.settings.currentBranch = branchInfo.current;
 
         let remote = await git.remote([]);
-        console.log("remote:", remote);
         if (typeof remote === "string") {
             this.settings.remote = remote.trim();
         } else {
@@ -205,6 +204,7 @@ export default class ObsidianGit extends Plugin {
         if (!this.settings.disablePopups) {
             new Notice(text);
         } else {
+            // todo: replace this with a message in a status bar
             console.log(`git obsidian: ${text}`);
         }
     }
@@ -281,7 +281,6 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
             .setDesc("Switch to a different branch")
             .addDropdown(async (dropdown) => {
                 let branchInfo = await plugin.git.branchLocal();
-                console.log("branchInfo", branchInfo);
                 for (const branch of branchInfo.all) {
                     dropdown.addOption(branch, branch);
                 }
