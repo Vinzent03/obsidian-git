@@ -38,13 +38,12 @@ export default class ObsidianGit extends Plugin {
             return;
         }
 
-        let statusBarEl = this.addStatusBarItem();
-        this.statusBar = new StatusBar(statusBarEl);
-        this.statusBar.displayIdle();
-
         this.git = git;
         this.settings = (await this.loadData()) || new ObsidianGitSettings();
 
+        let statusBarEl = this.addStatusBarItem();
+        this.statusBar = new StatusBar(statusBarEl);
+        this.statusBar.displayIdle();
         this.setState(PluginState.idle);
 
         if (this.settings.autoPullOnBoot) {
