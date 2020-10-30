@@ -16,7 +16,7 @@ export default class ObsidianGit extends Plugin {
     public statusBar: StatusBar;
     public state: PluginState = PluginState.idle;
 
-    private intervalID: NodeJS.Timeout;
+    private intervalID: number;
     private lastUpdate: number;
 
     setState(state: PluginState) {
@@ -64,7 +64,9 @@ export default class ObsidianGit extends Plugin {
             this.enableAutosave();
         }
 
-        setInterval(() => this.periodicStatusBarUpdate(), 10000);
+        this.registerInterval(
+            window.setInterval(() => this.periodicStatusBarUpdate(), 10 * 1000)
+        );
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
@@ -154,7 +156,7 @@ export default class ObsidianGit extends Plugin {
 
     enableAutosave() {
         let minutes = this.settings.autoSaveInterval;
-        this.intervalID = setInterval(
+        this.intervalID = window.setInterval(
             async () =>
                 await this.isRepoClean().then(async (isClean) => {
                     if (!isClean) {
@@ -167,6 +169,7 @@ export default class ObsidianGit extends Plugin {
                 }),
             minutes * 60000
         );
+        this.registerInterval(this.intervalID);
     }
 
     disableAutosave(): boolean {
