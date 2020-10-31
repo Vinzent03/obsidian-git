@@ -13,6 +13,11 @@ With this plugin enabled, you are able to configure the following:
 - Pull changes from remote repository on Obsidian startup
 - Assign hotkeys for pulling/pushing changes to a remote repository
 
+**Note:** it is recommended to exclude obsidian workspace cache files from the repository 
+(or even whole `.obsidian` directory) due to potential noise in the git history.
+
+If you'd like to do that, scroll to the bottom for a short guide.
+
 ## Compatibility
 Custom plugins are only available for Obsidian v0.9.7+.
 
@@ -29,6 +34,18 @@ Alternatively, using bash:
 OBSIDIAN_VAULT_DIR=/path/to/your/obsidian/vault
 mkdir -p $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 unzip ~/Downloads/obsidian-git_v1.1.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugins
+```
+
+##### Excluding Obsidian cache files from repository
+To exclude cache files from the repository, create `.gitignore` file in the root of your vault and add the following lines:
+```
+.obsidian/  # to exclude Obsidian workspace settings (including plugin and hotkey configurations)
+# OR
+.obsidian/workspace  # to exlude workspace cache
+
+# Add below lines to exclude OS settings and caches
+.trash/
+.DS_Store
 ```
 
 If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@evrwhr` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
