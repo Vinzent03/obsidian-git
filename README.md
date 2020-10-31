@@ -1,25 +1,26 @@
 # Obsidian Git
-Simple plugin that allows you to backup your Obsidian (https://obsidian.md) vault to a remote git repository (e.g. private repo on GitHub).
+Simple plugin that allows you to backup your [Obsidian.md](https://obsidian.md) vault to a remote git repository (e.g. private repo on GitHub).
+
+On advantages of backing up your vault with git I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks). You can find a "how-to" on git repository setup there as well, this plugin does not expose an interface to initialize git repository (yet).
+
 Synergises well with [GitJournal](https://github.com/GitJournal/GitJournal) mobile markdown note taking app.
 
-#### Features
+## How to use
+With this plugin enabled, you are able to configure the following:
 
-- Backup vault repo every X minutes
-- Automatically pull changes on Obsidian startup
-- Hotkey to pull changes (only `master` branch)
-- Hotkey to commit/push changes (with customizable commit message) (only `master` branch)
+- Automatic vault backup every X minutes
+- Pull changes from remote repository on Obsidian startup
+- Assign hotkeys for pulling/pushing changes to a remote repository
 
-Built for Obsidian 0.9.7 with Obsidian Plugin API (alpha). But further support is planned.
+## Compatibility
+Custom plugins are only available for Obsidian v0.9.7+.
 
-### Installation
+# Installation
+## From within Obsidian
+If you have Obsidian 0.9.8+, you can install this plugin from "Settings > Third Party Plugins > Obsidian Git".
 
-#### Prerequisites
-
-- Obsidian 0.9.7 (Plugin API alpha release) is installed
-- Support for 3rd party plugins is enabled in settings (Obsidian > Settings > Third Party plugin > Safe mode - OFF)
-- `git` is installed on local machine and repository is initialized in the vault root directory (`master` branch)
-
-To install this plugin, download `zip` archive from [GitHub releases page](https://github.com/denolehov/obsidian-git/releases).
+## Manual installation
+Download zip archive from [GitHub releases page](https://github.com/denolehov/obsidian-git/releases).
 Extract the archive into `<vault>/.obsidian/plugins`.
 
 Alternatively, using bash:
@@ -29,4 +30,8 @@ mkdir -p $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 unzip ~/Downloads/obsidian-git_v1.1.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 ```
 
-Once done, change hotkeys for pulling/pushing changes from/to remote repository and optionally enable autosave.
+If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@evrwhr` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
+
+---
+
+> If you like what I do, you could consider buying me a coffee. It is unnecessary, but appreciated :) https://www.buymeacoffee.com/evrwhr
