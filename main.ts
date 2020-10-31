@@ -1,5 +1,7 @@
 import { Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
 import simpleGit, { CheckRepoActions, SimpleGit } from "simple-git";
+import { prependListener } from "cluster";
+import { platform } from "os";
 
 enum PluginState {
     idle,
@@ -138,9 +140,8 @@ export default class ObsidianGit extends Plugin {
 
     async commit(): Promise<void> {
         this.setState(PluginState.commit);
-        let commitMessage = this.settings.commitMessage.replace(
-            "{{date}}",
-            new Date().toISOString()
+        let commitMessage = this.formatCommitMessage(
+            this.settings.commitMessage
         );
         await this.git.commit(commitMessage);
     }
@@ -200,6 +201,14 @@ export default class ObsidianGit extends Plugin {
         return false;
     }
 
+    formatCommitMessage(template: string): string {
+        let moment = (window as any).moment;
+        return template.replace(
+            "{{date}}",
+            moment().format(this.settings.commitDateFormat)
+        );
+    }
+
     maybeNotice(text: string): void {
         if (!this.settings.disablePopups) {
             new Notice(text);
@@ -212,6 +221,7 @@ export default class ObsidianGit extends Plugin {
 
 class ObsidianGitSettings {
     commitMessage: string = "vault backup: {{date}}";
+    commitDateFormat: string = "YYYY-MM-DD HH:mm:ss";
     autoSaveInterval: number = 0;
     autoPullOnBoot: boolean = false;
     disablePopups: boolean = false;
@@ -274,6 +284,30 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.settings.commitMessage = value;
                         plugin.saveData(plugin.settings);
                     })
+            );
+
+        new Setting(containerEl)
+            .setName("{{date}} placeholder format")
+            .setDesc('Specify custom date format. E.g. "YYYY-MM-DD HH:mm:ss"')
+            .addText((text) =>
+                text
+                    .setPlaceholder(plugin.settings.commitDateFormat)
+                    .setValue(plugin.settings.commitDateFormat)
+                    .onChange(async (value) => {
+                        plugin.settings.commitDateFormat = value;
+                        await plugin.saveData(plugin.settings);
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Preview commit message")
+            .addButton((button) =>
+                button.setButtonText("Preview").onClick(() => {
+                    let commitMessagePreview = plugin.formatCommitMessage(
+                        plugin.settings.commitMessage
+                    );
+                    new Notice(`${commitMessagePreview}`);
+                })
             );
 
         new Setting(containerEl)
