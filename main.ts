@@ -1,7 +1,5 @@
 import { Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
 import simpleGit, { CheckRepoActions, SimpleGit } from "simple-git";
-import { prependListener } from "cluster";
-import { platform } from "os";
 
 enum PluginState {
     idle,
