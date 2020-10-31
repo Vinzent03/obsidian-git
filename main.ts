@@ -138,7 +138,7 @@ export default class ObsidianGit extends Plugin {
 
     async commit(): Promise<void> {
         this.setState(PluginState.commit);
-        let commitMessage = this.formatCommitMessage(
+        let commitMessage = await this.formatCommitMessage(
             this.settings.commitMessage
         );
         await this.git.commit(commitMessage);
@@ -199,7 +199,13 @@ export default class ObsidianGit extends Plugin {
         return false;
     }
 
-    formatCommitMessage(template: string): string {
+    async formatCommitMessage(template: string): Promise<string> {
+        if (template.includes("{{numFiles}}")) {
+            let statusResult = await this.git.status();
+            let numFiles = statusResult.files.length;
+            template = template.replace("{{numFiles}}", String(numFiles));
+        }
+
         let moment = (window as any).moment;
         return template.replace(
             "{{date}}",
@@ -269,7 +275,10 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Commit message")
-            .setDesc("Specify a custom commit message")
+            .setDesc(
+                "Specify custom commit message. Available placeholders: {{date}}" +
+                    " (see below) and {{numFiles}} (number of changed files in the commit)"
+            )
             .addText((text) =>
                 text
                     .setPlaceholder("vault backup")
@@ -300,8 +309,8 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Preview commit message")
             .addButton((button) =>
-                button.setButtonText("Preview").onClick(() => {
-                    let commitMessagePreview = plugin.formatCommitMessage(
+                button.setButtonText("Preview").onClick(async () => {
+                    let commitMessagePreview = await plugin.formatCommitMessage(
                         plugin.settings.commitMessage
                     );
                     new Notice(`${commitMessagePreview}`);
