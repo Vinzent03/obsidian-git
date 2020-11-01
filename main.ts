@@ -133,7 +133,7 @@ export default class ObsidianGit extends Plugin {
 
     async add(): Promise<void> {
         this.setState(PluginState.add);
-        await this.git.add("./*");
+        await this.git.add("./*", (err: Error) => {});
     }
 
     async commit(): Promise<void> {
@@ -164,14 +164,6 @@ export default class ObsidianGit extends Plugin {
         return this.getState() === PluginState.idle;
     }
 
-    updateStatusBar(): void {
-        if (this.lastUpdate && this.isIdle()) {
-            this.statusBar.displayFromNow(this.lastUpdate);
-        } else if (!this.lastUpdate && this.isIdle()) {
-            this.statusBar.displayIdle();
-        }
-    }
-
     enableAutoBackup() {
         let minutes = this.settings.autoSaveInterval;
         this.intervalID = window.setInterval(
@@ -199,6 +191,24 @@ export default class ObsidianGit extends Plugin {
         return false;
     }
 
+    // region: displaying / formatting stuff
+    maybeNotice(text: string): void {
+        if (!this.settings.disablePopups) {
+            new Notice(text);
+        } else {
+            // todo: replace this with a message in a status bar
+            console.log(`git obsidian: ${text}`);
+        }
+    }
+
+    updateStatusBar(): void {
+        if (this.lastUpdate && this.isIdle()) {
+            this.statusBar.displayFromNow(this.lastUpdate);
+        } else if (!this.lastUpdate && this.isIdle()) {
+            this.statusBar.displayIdle();
+        }
+    }
+
     async formatCommitMessage(template: string): Promise<string> {
         if (template.includes("{{numFiles}}")) {
             let statusResult = await this.git.status();
@@ -213,14 +223,7 @@ export default class ObsidianGit extends Plugin {
         );
     }
 
-    maybeNotice(text: string): void {
-        if (!this.settings.disablePopups) {
-            new Notice(text);
-        } else {
-            // todo: replace this with a message in a status bar
-            console.log(`git obsidian: ${text}`);
-        }
-    }
+    // endregion: displaying / formatting stuff
 }
 
 class ObsidianGitSettings {
