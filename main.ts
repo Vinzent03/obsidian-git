@@ -32,7 +32,7 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         let statusBarEl = this.addStatusBarItem();
         this.statusBar = new StatusBar(statusBarEl);
-        this.setState(PluginState.status);
+        this.setState(PluginState.idle);
 
         const adapter: any = this.app.vault.adapter;
         const git = simpleGit(adapter.basePath);
@@ -82,18 +82,7 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "pull",
             name: "Pull from remote repository",
-            callback: async () => {
-                await this.pull().then((filesUpdated) => {
-                    if (filesUpdated > 0) {
-                        this.displayMessage(
-                            `Pulled new changes. ${filesUpdated} files updated`
-                        );
-                    } else {
-                        this.displayMessage("Everything is up-to-date");
-                    }
-                });
-                this.setState(PluginState.idle);
-            },
+            callback: async () => this.pullChangesFromRemote()
         });
 
         this.addCommand({
@@ -103,19 +92,46 @@ export default class ObsidianGit extends Plugin {
                 await this.getFilesChanged().then(async (files) => {
                     if (!files.length) {
                         this.displayMessage("No changes detected");
-                    } else {
-                        await this.add()
-                            .then(async () => await this.commit())
-                            .then(async () => await this.push())
-                            .then(() =>
-                                this.displayMessage(
-                                    `Pushed ${files.length} files`
-                                )
-                            );
+
+                        return;
                     }
-                    this.setState(PluginState.idle);
+
+                    await this.createBackup();
                 }),
         });
+    }
+
+    async pullChangesFromRemote() {
+        await this.pull().then((filesUpdated) => {
+            if (filesUpdated > 0) {
+                this.displayMessage(
+                    `Pulled new changes. ${filesUpdated} files updated`
+                );
+            } else {
+                this.displayMessage("Everything is up-to-date");
+            }
+        });
+
+        this.setState(PluginState.idle);
+    }
+
+    async createBackup() {
+        await this.getFilesChanged().then(async (files) => {
+            if (files.length === 0) {
+                return;
+            }
+
+            await this.add()
+                .then(async () => await this.commit())
+                .then(() => this.displayMessage(`Committed ${files.length} files`));
+
+            if (this.settings.autoPush) {
+                await this.push()
+                    .then(() => this.displayMessage(`Pushed ${files.length} files to remote`));
+            }
+        })
+
+        this.setState(PluginState.idle);
     }
 
     async onunload() {
@@ -178,20 +194,7 @@ export default class ObsidianGit extends Plugin {
     enableAutoBackup() {
         let minutes = this.settings.autoSaveInterval;
         this.intervalID = window.setInterval(
-            async () =>
-                await this.getFilesChanged().then(async (files) => {
-                    if (files.length > 0) {
-                        await this.add()
-                            .then(async () => await this.commit())
-                            .then(async () => await this.push())
-                            .then(() =>
-                                this.displayMessage(
-                                    `Pushed ${files.length} files`
-                                )
-                            );
-                    }
-                    this.setState(PluginState.idle);
-                }),
+            async () => await this.createBackup(),
             minutes * 60000
         );
         this.registerInterval(this.intervalID);
@@ -248,6 +251,7 @@ class ObsidianGitSettings {
     commitDateFormat: string = "YYYY-MM-DD HH:mm:ss";
     autoSaveInterval: number = 0;
     autoPullOnBoot: boolean = false;
+    autoPush: boolean = true;
     disablePopups: boolean = false;
     currentBranch: string;
     remote: string;
@@ -372,6 +376,18 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.autoPullOnBoot)
                     .onChange((value) => {
                         plugin.settings.autoPullOnBoot = value;
+                        plugin.saveData(plugin.settings);
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Push changes")
+            .setDesc("Automatically push changes to the remote repository")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.autoPush)
+                    .onChange((value) => {
+                        plugin.settings.autoPush = value;
                         plugin.saveData(plugin.settings);
                     })
             );
