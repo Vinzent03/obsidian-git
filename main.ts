@@ -231,9 +231,31 @@ export default class ObsidianGit extends Plugin {
 
     async formatCommitMessage(template: string): Promise<string> {
         if (template.includes("{{numFiles}}")) {
-            let statusResult = await this.git.status();
-            let numFiles = statusResult.files.length;
+            let status = await this.git.status();
+            let numFiles = status.files.length;
             template = template.replace("{{numFiles}}", String(numFiles));
+        }
+
+        if (template.includes("{{files}}")) {
+            let status = await this.git.status();
+
+            let changeset: { [key: string]: string[] } = {};
+            status.files.forEach((value: FileStatusResult) => {
+              if (value.index in changeset) {
+                changeset[value.index].push(value.path);
+              } else {
+                changeset[value.index] = [value.path];
+              }
+            });
+
+            let chunks = [];
+            for (let [action, files] of Object.entries(changeset)) {
+              chunks.push(action + ' ' + files.join(" "))
+            }
+
+            let files = chunks.join(", ");
+
+            template = template.replace("{{files}}", files);
         }
 
         let moment = (window as any).moment;
