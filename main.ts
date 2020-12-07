@@ -88,7 +88,7 @@ export default class ObsidianGit extends Plugin {
                 await this.getFilesChanged().then(async (files) => {
                     if (!files.length) {
                         this.displayMessage("No changes detected");
-
+                        this.setState(PluginState.idle);
                         return;
                     }
 
@@ -114,6 +114,7 @@ export default class ObsidianGit extends Plugin {
     async createBackup() {
         await this.getFilesChanged().then(async (files) => {
             if (files.length === 0) {
+                this.setState(PluginState.idle);
                 return;
             }
 
