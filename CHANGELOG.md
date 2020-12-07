@@ -2,14 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [1.4.0](https://github.com/denolehov/obsidian-git/compare/1.3.0...1.4.0) (2020-11-01)
+## [1.4.0](https://github.com/denolehov/obsidian-git/compare/v1.3.0...v1.4.0) (2020-11-01)
 
 
 ### Features
 
 * display messages in status bar (including error ones) ([e1e0fcc](https://github.com/denolehov/obsidian-git/commit/e1e0fcc26d5736637239316d5881a696f78eca30))
 
-## [1.3.0](https://github.com/denolehov/obsidian-git/compare/1.2.0...1.3.0) (2020-10-31)
+## [1.3.0](https://github.com/denolehov/obsidian-git/compare/v1.2.0...v1.3.0) (2020-10-31)
 
 
 ### Features
