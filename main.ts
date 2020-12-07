@@ -32,7 +32,9 @@ export default class ObsidianGit extends Plugin {
         let statusBarEl = this.addStatusBarItem();
         this.statusBar = new StatusBar(statusBarEl, this);
         this.setState(PluginState.idle);
-        this.registerInterval(window.setInterval(() => this.statusBar.display(), 1000));
+        this.registerInterval(
+            window.setInterval(() => this.statusBar.display(), 1000)
+        );
 
         const adapter: any = this.app.vault.adapter;
         const git = simpleGit(adapter.basePath);
@@ -78,7 +80,7 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "pull",
             name: "Pull from remote repository",
-            callback: async () => this.pullChangesFromRemote()
+            callback: async () => this.pullChangesFromRemote(),
         });
 
         this.addCommand({
@@ -120,13 +122,18 @@ export default class ObsidianGit extends Plugin {
 
             await this.add()
                 .then(async () => await this.commit())
-                .then(() => this.displayMessage(`Committed ${files.length} files`));
+                .then(() =>
+                    this.displayMessage(`Committed ${files.length} files`)
+                );
 
             if (this.settings.autoPush) {
-                await this.push()
-                    .then(() => this.displayMessage(`Pushed ${files.length} files to remote`));
+                await this.push().then(() =>
+                    this.displayMessage(
+                        `Pushed ${files.length} files to remote`
+                    )
+                );
             }
-        })
+        });
 
         this.setState(PluginState.idle);
     }
@@ -234,16 +241,16 @@ export default class ObsidianGit extends Plugin {
 
             let changeset: { [key: string]: string[] } = {};
             status.files.forEach((value: FileStatusResult) => {
-              if (value.index in changeset) {
-                changeset[value.index].push(value.path);
-              } else {
-                changeset[value.index] = [value.path];
-              }
+                if (value.index in changeset) {
+                    changeset[value.index].push(value.path);
+                } else {
+                    changeset[value.index] = [value.path];
+                }
             });
 
             let chunks = [];
             for (let [action, files] of Object.entries(changeset)) {
-              chunks.push(action + ' ' + files.join(" "))
+                chunks.push(action + " " + files.join(" "));
             }
 
             let files = chunks.join(", ");
@@ -399,12 +406,10 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Push changes")
             .setDesc("Automatically push changes to the remote repository")
             .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.autoPush)
-                    .onChange((value) => {
-                        plugin.settings.autoPush = value;
-                        plugin.saveData(plugin.settings);
-                    })
+                toggle.setValue(plugin.settings.autoPush).onChange((value) => {
+                    plugin.settings.autoPush = value;
+                    plugin.saveData(plugin.settings);
+                })
             );
 
         new Setting(containerEl)
@@ -442,7 +447,10 @@ class StatusBar {
     }
 
     public displayMessage(message: string, timeout: number) {
-        this.messages.push({message: `git: ${message.slice(0, 100)}`, timeout: timeout});
+        this.messages.push({
+            message: `git: ${message.slice(0, 100)}`,
+            timeout: timeout,
+        });
         this.display();
     }
 
@@ -463,7 +471,6 @@ class StatusBar {
     }
 
     private displayState() {
-
         let state = this.plugin.getState();
 
         switch (state) {
