@@ -12,3 +12,4 @@ main.js
 
 .prettierignore
 .prettierrc.json
+/data.json
