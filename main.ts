@@ -17,12 +17,11 @@ export default class ObsidianGit extends Plugin {
     public statusBar: StatusBar;
     public state: PluginState = PluginState.idle;
     public intervalID: number;
-
-    private lastUpdate: number;
+    public lastUpdate: number;
 
     setState(state: PluginState) {
         this.state = state;
-        this.refreshStatusBar();
+        this.statusBar.display();
     }
 
     getState(): PluginState {
@@ -31,8 +30,9 @@ export default class ObsidianGit extends Plugin {
 
     async onload() {
         let statusBarEl = this.addStatusBarItem();
-        this.statusBar = new StatusBar(statusBarEl);
+        this.statusBar = new StatusBar(statusBarEl, this);
         this.setState(PluginState.idle);
+        this.registerInterval(window.setInterval(() => this.statusBar.display(), 1000));
 
         const adapter: any = this.app.vault.adapter;
         const git = simpleGit(adapter.basePath);
@@ -72,10 +72,6 @@ export default class ObsidianGit extends Plugin {
         if (this.settings.autoSaveInterval > 0) {
             this.enableAutoBackup();
         }
-
-        this.registerInterval(
-            window.setInterval(() => this.refreshStatusBar(), 1000)
-        );
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
@@ -223,10 +219,6 @@ export default class ObsidianGit extends Plugin {
     displayError(message: string, timeout: number = 0): void {
         new Notice(message);
         this.statusBar.displayMessage(message.toLowerCase(), timeout);
-    }
-
-    refreshStatusBar(): void {
-        this.statusBar.displayState(this.getState(), this.lastUpdate);
     }
 
     async formatCommitMessage(template: string): Promise<string> {
@@ -430,33 +422,52 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
     }
 }
 
+interface StatusBarMessage {
+    message: string;
+    timeout: number;
+}
+
 class StatusBar {
+    public messages: StatusBarMessage[] = [];
+    public currentMessage: StatusBarMessage;
+    public lastMessageTimestamp: number;
+
     private statusBarEl: HTMLElement;
-    private isDisplayingMessage: boolean = false;
+    private plugin: ObsidianGit;
 
-    constructor(statusBarEl: HTMLElement) {
+    constructor(statusBarEl: HTMLElement, plugin: ObsidianGit) {
         this.statusBarEl = statusBarEl;
+        this.plugin = plugin;
     }
 
-    displayMessage(message: string, timeout: number) {
-        this.isDisplayingMessage = true;
-        this.statusBarEl.setText(`git: ${message.slice(0, 100)}`);
+    public displayMessage(message: string, timeout: number) {
+        this.messages.push({message: `git: ${message.slice(0, 100)}`, timeout: timeout});
+        this.display();
+    }
 
-        if (timeout && timeout > 0) {
-            window.setTimeout(() => {
-                this.isDisplayingMessage = false;
-            }, timeout);
+    public display() {
+        if (this.messages.length > 0 && !this.currentMessage) {
+            this.currentMessage = this.messages.shift();
+            this.statusBarEl.setText(this.currentMessage.message);
+            this.lastMessageTimestamp = Date.now();
+        } else if (this.currentMessage) {
+            let messageAge = Date.now() - this.lastMessageTimestamp;
+            if (messageAge >= this.currentMessage.timeout) {
+                this.currentMessage = null;
+                this.lastMessageTimestamp = null;
+            }
+        } else {
+            this.displayState();
         }
     }
 
-    displayState(state: PluginState, lastUpdate: number) {
-        if (this.isDisplayingMessage) {
-            return;
-        }
+    private displayState() {
+
+        let state = this.plugin.getState();
 
         switch (state) {
             case PluginState.idle:
-                this.displayFromNow(lastUpdate);
+                this.displayFromNow(this.plugin.lastUpdate);
                 break;
             case PluginState.status:
                 this.statusBarEl.setText("git: checking repo status..");
@@ -476,7 +487,7 @@ class StatusBar {
         }
     }
 
-    displayFromNow(timestamp: number): void {
+    private displayFromNow(timestamp: number): void {
         if (timestamp) {
             let moment = (window as any).moment;
             let fromNow = moment(timestamp).fromNow();
