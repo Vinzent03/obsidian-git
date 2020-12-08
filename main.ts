@@ -126,7 +126,7 @@ export default class ObsidianGit extends Plugin {
                     this.displayMessage(`Committed ${files.length} files`)
                 );
 
-            if (this.settings.autoPush) {
+            if (!this.settings.disablePush) {
                 await this.push().then(() =>
                     this.displayMessage(
                         `Pushed ${files.length} files to remote`
@@ -273,7 +273,7 @@ class ObsidianGitSettings {
     commitDateFormat: string = "YYYY-MM-DD HH:mm:ss";
     autoSaveInterval: number = 0;
     autoPullOnBoot: boolean = false;
-    autoPush: boolean = true;
+    disablePush: boolean = true;
     disablePopups: boolean = false;
     currentBranch: string;
     remote: string;
@@ -403,13 +403,15 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Push changes")
-            .setDesc("Automatically push changes to the remote repository")
+            .setName("Disable push")
+            .setDesc("Do not push changes to the remote repository")
             .addToggle((toggle) =>
-                toggle.setValue(plugin.settings.autoPush).onChange((value) => {
-                    plugin.settings.autoPush = value;
-                    plugin.saveData(plugin.settings);
-                })
+                toggle
+                    .setValue(plugin.settings.disablePush)
+                    .onChange((value) => {
+                        plugin.settings.disablePush = value;
+                        plugin.saveData(plugin.settings);
+                    })
             );
 
         new Setting(containerEl)
