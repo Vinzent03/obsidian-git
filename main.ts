@@ -110,6 +110,7 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
+        this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
 
@@ -135,6 +136,7 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
+        this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
 
