@@ -115,6 +115,17 @@ export default class ObsidianGit extends Plugin {
     }
 
     async createBackup() {
+        if (this.settings.autoPullOnBackup) {
+            await this.pull().then((filesUpdated) => {
+                this.setState(PluginState.idle);
+                let message =
+                    filesUpdated > 0
+                        ? `Pulled new changes. ${filesUpdated} files updated`
+                        : "Everything up-to-date";
+                this.displayMessage(message);
+            });
+        }
+        
         await this.getFilesChanged().then(async (files) => {
             if (files.length === 0) {
                 this.setState(PluginState.idle);
@@ -275,6 +286,7 @@ class ObsidianGitSettings {
     commitDateFormat: string = "YYYY-MM-DD HH:mm:ss";
     autoSaveInterval: number = 0;
     autoPullOnBoot: boolean = false;
+    autoPullOnBackup: boolean = false;
     disablePush: boolean = true;
     disablePopups: boolean = false;
     currentBranch: string;
@@ -400,6 +412,18 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.autoPullOnBoot)
                     .onChange((value) => {
                         plugin.settings.autoPullOnBoot = value;
+                        plugin.saveData(plugin.settings);
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Pull updates on backup")
+            .setDesc("Automatically pull updates before each backup")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.autoPullOnBackup)
+                    .onChange((value) => {
+                        plugin.settings.autoPullOnBackup = value;
                         plugin.saveData(plugin.settings);
                     })
             );
