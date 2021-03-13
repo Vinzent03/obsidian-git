@@ -16,8 +16,6 @@ interface ObsidianGitSettings {
     autoPullOnBoot: boolean;
     disablePush: boolean;
     disablePopups: boolean;
-    currentBranch: string;
-    remote: string;
 }
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
@@ -26,8 +24,6 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     autoPullOnBoot: false,
     disablePush: true,
     disablePopups: false,
-    currentBranch: "",
-    remote: ""
 };
 
 export default class ObsidianGit extends Plugin {
@@ -43,6 +39,9 @@ export default class ObsidianGit extends Plugin {
         this.statusBar.display();
     }
     async onload() {
+        console.log('loading ' + this.manifest.name + " plugin");
+        await this.loadSettings();
+
         let statusBarEl = this.addStatusBarItem();
         this.statusBar = new StatusBar(statusBarEl, this);
         this.setState(PluginState.idle);
@@ -64,19 +63,9 @@ export default class ObsidianGit extends Plugin {
             return;
         }
 
-        await this.loadSettings();
-
-        // resolve current branch and remote
-        const branchInfo = await this.git.branch();
-        console.log(branchInfo);
-
-        this.settings.currentBranch = branchInfo.current;
-
         const remote = await this.git.remote([]);
 
-        if (remote) {
-            this.settings.remote = remote.trim();
-        } else {
+        if (!remote) {
             this.displayMessage("Failed to detect remote.", 0);
             return;
         }
@@ -120,7 +109,7 @@ export default class ObsidianGit extends Plugin {
         });
     }
     async onunload() {
-        await this.saveData(this.settings);
+        console.log('unloading ' + this.manifest.name + " plugin");
     }
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -394,8 +383,6 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                                 dropdown.setValue(branchInfo.current);
                             } else {
                                 new Notice(`Checked out to ${option}`);
-                                plugin.settings.currentBranch = option;
-                                await plugin.saveSettings();
                             }
                         }
                     );
