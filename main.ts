@@ -98,16 +98,7 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "push",
             name: "Commit *all* changes and push to remote repository",
-            callback: async () => {
-                const changedFiles = await this.getFilesChanged();
-
-                if (!changedFiles.length) {
-                    this.displayMessage("No changes detected");
-                    this.setState(PluginState.idle);
-                    return;
-                }
-                await this.createBackup();
-            }
+            callback: () => this.createBackup()
         });
     }
     async onunload() {
@@ -136,23 +127,41 @@ export default class ObsidianGit extends Plugin {
     }
 
     async createBackup() {
-        const changedFiles = await this.getFilesChanged();
+        this.setState(PluginState.status);
+        const status = await this.git.status();
 
-        if (changedFiles.length === 0) {
+        const currentBranch = status.current;
+        const trackingBranch = status.tracking;
+
+        if (!trackingBranch) {
+            this.displayError("Did not push. No tracking branch is set!", 10000);
             this.setState(PluginState.idle);
             return;
         }
 
-        await this.add();
-        await this.commit();
-        this.displayMessage(`Committed ${changedFiles.length} files`);
+        const changedFiles = status.files;
+
+
+        if (changedFiles.length !== 0) {
+            await this.add();
+            await this.commit();
+            this.displayMessage(`Committed ${changedFiles.length} files`);
+        }
+
+        const allChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).files;
+
+        if (allChangedFiles.length === 0) {
+            this.displayMessage("No changes detected");
+            this.setState(PluginState.idle);
+            return;
+        }
 
         if (!this.settings.disablePush) {
             if (this.settings.pullBeforePush) {
                 await this.pull();
             }
             await this.push();
-            this.displayMessage(`Pushed ${changedFiles.length} files to remote`);
+            this.displayMessage(`Pushed ${allChangedFiles.length} files to remote`);
         }
 
         this.lastUpdate = Date.now();
@@ -160,14 +169,7 @@ export default class ObsidianGit extends Plugin {
     }
 
 
-
     // region: main methods
-    async getFilesChanged(): Promise<FileStatusResult[]> {
-        this.setState(PluginState.status);
-        const status = await this.git.status();
-        return status.files;
-    }
-
     async add(): Promise<void> {
         this.setState(PluginState.add);
         await this.git.add(
