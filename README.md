@@ -7,7 +7,17 @@ On advantages of backing up your vault with git I suggest reading this [amazing 
 Synergises well with [GitJournal](https://github.com/GitJournal/GitJournal) mobile markdown note taking app.
 
 ## How to use
-With this plugin enabled, you are able to configure the following:
+
+### Requirements
+- initialized git repository
+- credentials are set up
+- remote repository
+- upstream/tracking branch (run `git push`. Git should prompt you a command)
+- at least one pushed commit
+
+[How to create a local repo and push it to GitHub](https://docs.github.com/en/github/importing-your-projects-to-github/adding-an-existing-project-to-github-using-the-command-line)
+
+### Features
 
 - Automatic vault backup every X minutes
 - Pull changes from remote repository on Obsidian startup
@@ -35,8 +45,18 @@ OBSIDIAN_VAULT_DIR=/path/to/your/obsidian/vault
 mkdir -p $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 unzip ~/Downloads/obsidian-git_v1.1.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 ```
+## Windows installation
+Make sure you have `3rd-party software` access enabled.
 
-##### Excluding Obsidian cache files from repository
+![windows installation](./windows-installation.png)
+
+## Linux installation
+Some users reported issues with Obsidian installed via Snap, because Obsidian runs in a kind of sandbox and can't access git.
+
+Installation via [Flatpak](https://flathub.org/apps/details/md.obsidian.Obsidian) or AppImage works.
+
+# Tips
+## Excluding Obsidian cache files from repository
 To exclude cache files from the repository, create `.gitignore` file in the root of your vault and add the following lines:
 ```
 # to exclude Obsidian workspace settings (including plugin and hotkey configurations)
@@ -48,9 +68,8 @@ To exclude cache files from the repository, create `.gitignore` file in the root
 .trash/
 .DS_Store
 ```
+---
 
 If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@evrwhr` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
-
----
 
 > If you like what I do, you could consider buying me a coffee. It is unnecessary, but appreciated :) https://www.buymeacoffee.com/evrwhr
