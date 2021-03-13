@@ -39,9 +39,10 @@ unzip ~/Downloads/obsidian-git_v1.1.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugi
 ##### Excluding Obsidian cache files from repository
 To exclude cache files from the repository, create `.gitignore` file in the root of your vault and add the following lines:
 ```
-.obsidian/  # to exclude Obsidian workspace settings (including plugin and hotkey configurations)
-# OR
-.obsidian/workspace  # to exlude workspace cache
+# to exclude Obsidian workspace settings (including plugin and hotkey configurations)
+.obsidian/  
+# OR only to exclude workspace cache
+.obsidian/workspace 
 
 # Add below lines to exclude OS settings and caches
 .trash/
