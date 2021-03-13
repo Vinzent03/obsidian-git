@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
     autoSaveInterval: 0,
     autoPullOnBoot: false,
-    disablePush: true,
+    disablePush: false,
     disablePopups: false,
 };
 
@@ -302,7 +302,7 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.saveSettings();
 
                             if (plugin.settings.autoSaveInterval > 0) {
-                                plugin.disableAutoBackup(); // call clearInterval() before setting up a new one
+                                plugin.disableAutoBackup();
                                 plugin.enableAutoBackup();
                                 new Notice(
                                     `Automatic backup enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
