@@ -57,7 +57,7 @@ export default class ObsidianGit extends Plugin {
 
         this.git = simpleGit(path);
 
-        const isValidRepo = this.git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+        const isValidRepo = await this.git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
 
         if (!isValidRepo) {
             this.displayMessage("Valid git repository not found.", 0);
