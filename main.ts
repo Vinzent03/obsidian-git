@@ -15,6 +15,7 @@ interface ObsidianGitSettings {
     autoSaveInterval: number;
     autoPullOnBoot: boolean;
     disablePush: boolean;
+    pullBeforePush: boolean;
     disablePopups: boolean;
 }
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
@@ -23,6 +24,7 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     autoSaveInterval: 0,
     autoPullOnBoot: false,
     disablePush: false,
+    pullBeforePush: true,
     disablePopups: false,
 };
 
@@ -146,6 +148,9 @@ export default class ObsidianGit extends Plugin {
         this.displayMessage(`Committed ${changedFiles.length} files`);
 
         if (!this.settings.disablePush) {
+            if (this.settings.pullBeforePush) {
+                await this.pull();
+            }
             await this.push();
             this.displayMessage(`Pushed ${changedFiles.length} files to remote`);
         }
@@ -181,9 +186,6 @@ export default class ObsidianGit extends Plugin {
     async push(): Promise<void> {
         this.setState(PluginState.push);
         await this.git.push(
-            this.settings.remote,
-            this.settings.currentBranch,
-            null,
             (err: Error | null) => {
                 err && this.displayError(`Push failed ${err.message}`);
             }
@@ -194,10 +196,7 @@ export default class ObsidianGit extends Plugin {
 
     async pull(): Promise<number> {
         this.setState(PluginState.pull);
-        const pullResult = await this.git.pull(
-            null,
-            null,
-            null,
+        const pullResult = await this.git.pull(["--no-rebase"],
             (err: Error | null) =>
                 err && this.displayError(`Pull failed ${err.message}`)
         );
@@ -409,6 +408,18 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.disablePush)
                     .onChange((value) => {
                         plugin.settings.disablePush = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Pull changes before push")
+            .setDesc("Commit -> pull -> push (Only if pushing is enabled)")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.pullBeforePush)
+                    .onChange((value) => {
+                        plugin.settings.pullBeforePush = value;
                         plugin.saveSettings();
                     })
             );
