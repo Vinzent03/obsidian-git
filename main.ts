@@ -65,13 +65,6 @@ export default class ObsidianGit extends Plugin {
             return;
         }
 
-        const remote = await this.git.remote([]);
-
-        if (!remote) {
-            this.displayMessage("Failed to detect remote.", 0);
-            return;
-        }
-
         if (this.settings.autoPullOnBoot) {
             const filesUpdated = await this.pull();
 
@@ -131,37 +124,42 @@ export default class ObsidianGit extends Plugin {
         const status = await this.git.status();
 
         const currentBranch = status.current;
-        const trackingBranch = status.tracking;
-
-        if (!trackingBranch) {
-            this.displayError("Did not push. No tracking branch is set!", 10000);
-            this.setState(PluginState.idle);
-            return;
-        }
 
         const changedFiles = status.files;
-
 
         if (changedFiles.length !== 0) {
             await this.add();
             await this.commit();
             this.displayMessage(`Committed ${changedFiles.length} files`);
-        }
-
-        const allChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).files;
-
-        if (allChangedFiles.length === 0) {
-            this.displayMessage("No changes detected");
-            this.setState(PluginState.idle);
-            return;
+        } else {
+            this.displayMessage("No changes to commit");
         }
 
         if (!this.settings.disablePush) {
-            if (this.settings.pullBeforePush) {
-                await this.pull();
+            const trackingBranch = status.tracking;
+
+            if (!trackingBranch) {
+                this.displayError("Did not push. No upstream branch is set! See README for instructions", 10000);
+                this.setState(PluginState.idle);
+                return;
             }
-            await this.push();
-            this.displayMessage(`Pushed ${allChangedFiles.length} files to remote`);
+
+            const allChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).files;
+
+            // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
+            if (allChangedFiles.length > 0) {
+                if (this.settings.pullBeforePush) {
+                    const pulledFilesLength = await this.pull();
+                    if (pulledFilesLength > 0) {
+                        this.displayMessage(`Pulled ${pulledFilesLength} files from remote`);
+                    }
+                }
+                await this.push();
+                this.displayMessage(`Pushed ${allChangedFiles.length} files to remote`);
+            } else {
+                this.displayMessage("No changes to push");
+                this.setState(PluginState.idle);
+            }
         }
 
         this.lastUpdate = Date.now();
