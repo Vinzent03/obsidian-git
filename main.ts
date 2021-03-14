@@ -1,3 +1,4 @@
+import { spawnSync } from "child_process";
 import { FileSystemAdapter, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
 import simpleGit, { CheckRepoActions, FileStatusResult, SimpleGit } from "simple-git";
 
@@ -35,6 +36,7 @@ export default class ObsidianGit extends Plugin {
     state: PluginState = PluginState.idle;
     intervalID: number;
     lastUpdate: number;
+    gitReady = false;
 
     setState(state: PluginState) {
         this.state = state;
@@ -43,42 +45,6 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
-
-        let statusBarEl = this.addStatusBarItem();
-        this.statusBar = new StatusBar(statusBarEl, this);
-        this.setState(PluginState.idle);
-        this.registerInterval(
-            window.setInterval(() => this.statusBar.display(), 1000)
-        );
-        let path: string;
-        const adapter = this.app.vault.adapter;
-        if (adapter instanceof FileSystemAdapter) {
-            path = adapter.getBasePath();
-        }
-
-        this.git = simpleGit(path);
-
-        const isValidRepo = await this.git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
-
-        if (!isValidRepo) {
-            this.displayMessage("Valid git repository not found.", 0);
-            return;
-        }
-
-        if (this.settings.autoPullOnBoot) {
-            const filesUpdated = await this.pull();
-
-            this.setState(PluginState.idle);
-            const message =
-                filesUpdated > 0
-                    ? `Pulled new changes. ${filesUpdated} files updated`
-                    : "Everything up-to-date";
-            this.displayMessage(message);
-        }
-
-        if (this.settings.autoSaveInterval > 0) {
-            this.enableAutoBackup();
-        }
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
@@ -93,6 +59,15 @@ export default class ObsidianGit extends Plugin {
             name: "Commit *all* changes and push to remote repository",
             callback: () => this.createBackup()
         });
+        this.init();
+        // init statusBar
+        let statusBarEl = this.addStatusBarItem();
+        this.statusBar = new StatusBar(statusBarEl, this);
+        this.setState(PluginState.idle);
+        this.registerInterval(
+            window.setInterval(() => this.statusBar.display(), 1000)
+        );
+
     }
     async onunload() {
         console.log('unloading ' + this.manifest.name + " plugin");
@@ -104,7 +79,46 @@ export default class ObsidianGit extends Plugin {
         await this.saveData(this.settings);
     }
 
-    async pullChangesFromRemote() {
+    async init(): Promise<void> {
+        if (!this.isGitInstalled()) {
+            this.displayError("Cannot run git command");
+            return;
+        }
+        try {
+            const adapter = this.app.vault.adapter as FileSystemAdapter;
+            const path = adapter.getBasePath();
+
+            this.git = simpleGit(path);
+
+            const isValidRepo = await this.git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+
+            if (!isValidRepo) {
+                this.displayError("Valid git repository not found.");
+            } else {
+                this.gitReady = true;
+
+                if (this.settings.autoPullOnBoot) {
+                    this.pullChangesFromRemote();
+                }
+
+                if (this.settings.autoSaveInterval > 0) {
+                    this.enableAutoBackup();
+                }
+            }
+
+        } catch (error) {
+            this.displayError(error);
+            console.error(error);
+        }
+    }
+
+    async pullChangesFromRemote(): Promise<void> {
+
+        if (!this.gitReady) {
+            await this.init();
+        }
+
+        if (!this.gitReady) return;
         await this.pull().then((filesUpdated) => {
             if (filesUpdated > 0) {
                 this.displayMessage(
@@ -119,7 +133,13 @@ export default class ObsidianGit extends Plugin {
         this.setState(PluginState.idle);
     }
 
-    async createBackup() {
+    async createBackup(): Promise<void> {
+
+        if (!this.gitReady) {
+            await this.init();
+        }
+        if (!this.gitReady) return;
+
         this.setState(PluginState.status);
         const status = await this.git.status();
 
@@ -168,6 +188,20 @@ export default class ObsidianGit extends Plugin {
 
 
     // region: main methods
+
+    isGitInstalled(): boolean {
+        // https://github.com/steveukx/git-js/issues/402
+        const command = spawnSync('git', ['--version'], {
+            stdio: 'ignore'
+        });
+
+        if (command.error) {
+            console.error(command.error);
+            return false;
+        }
+        return true;
+    }
+
     async add(): Promise<void> {
         this.setState(PluginState.add);
         await this.git.add(
