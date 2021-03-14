@@ -48,7 +48,9 @@ unzip ~/Downloads/obsidian-git_v1.1.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugi
 ## Windows installation
 Make sure you have `3rd-party software` access enabled.
 
-![windows installation](./windows-installation.png)
+<img
+    src = https://raw.githubusercontent.com/denolehov/obsidian-git/master/windows-installation.png
+    width = 400>
 
 ## Linux installation
 Some users reported issues with Obsidian installed via Snap, because Obsidian runs in a kind of sandbox and can't access git.
