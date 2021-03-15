@@ -1,6 +1,6 @@
 {
     "name": "obsidian-git",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "description": "Backup your Obsidian (https://obsidian.md) vault with git",
     "main": "main.js",
     "scripts": {
@@ -11,6 +11,9 @@
     "keywords": [],
     "author": "",
     "license": "MIT",
+    "standard-version": {
+        "t": ""
+    },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^15.1.0",
         "@rollup/plugin-node-resolve": "^9.0.0",
