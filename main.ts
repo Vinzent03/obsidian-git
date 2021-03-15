@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { FileSystemAdapter, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { FileSystemAdapter, Notice, Plugin, PluginSettingTab, Setting, SuggestModal } from "obsidian";
 import simpleGit, { CheckRepoActions, FileStatusResult, SimpleGit } from "simple-git";
 
 enum PluginState {
@@ -59,7 +59,15 @@ export default class ObsidianGit extends Plugin {
             name: "Commit *all* changes and push to remote repository",
             callback: () => this.createBackup()
         });
+
+        this.addCommand({
+            id: "commit-push-specified-message",
+            name: "Commit and push all changes with specified message",
+            callback: () => new CustomMessageModal(this).open()
+        });
+
         this.init();
+
         // init statusBar
         let statusBarEl = this.addStatusBarItem();
         this.statusBar = new StatusBar(statusBarEl, this);
@@ -133,8 +141,7 @@ export default class ObsidianGit extends Plugin {
         this.setState(PluginState.idle);
     }
 
-    async createBackup(): Promise<void> {
-
+    async createBackup(commitMessage?: string): Promise<void> {
         if (!this.gitReady) {
             await this.init();
         }
@@ -149,7 +156,7 @@ export default class ObsidianGit extends Plugin {
 
         if (changedFiles.length !== 0) {
             await this.add();
-            await this.commit();
+            await this.commit(commitMessage);
             this.lastUpdate = Date.now();
             this.displayMessage(`Committed ${changedFiles.length} files`);
         } else {
@@ -210,9 +217,9 @@ export default class ObsidianGit extends Plugin {
         );
     }
 
-    async commit(): Promise<void> {
+    async commit(message?: string): Promise<void> {
         this.setState(PluginState.commit);
-        const commitMessage = await this.formatCommitMessage(this.settings.commitMessage);
+        const commitMessage = message ?? await this.formatCommitMessage(this.settings.commitMessage);
         await this.git.commit(commitMessage);
     }
 
@@ -547,4 +554,29 @@ class StatusBar {
             this.statusBarEl.setText(`git: ready`);
         }
     }
+}
+class CustomMessageModal extends SuggestModal<string> {
+    plugin: ObsidianGit;
+
+    constructor(plugin: ObsidianGit) {
+        super(plugin.app);
+        this.plugin = plugin;
+        this.setPlaceholder("Type your message and select optional the version with the added date.");
+    }
+
+
+    getSuggestions(query: string): string[] {
+        const date = (window as any).moment().format(this.plugin.settings.commitDateFormat);
+        if (query == "") query = "...";
+        return [query, `${date}: ${query}`, `${query}: ${date}`];
+    }
+
+    renderSuggestion(value: string, el: HTMLElement): void {
+        el.innerText = value;
+    }
+
+    onChooseSuggestion(item: string, _: MouseEvent | KeyboardEvent): void {
+        this.plugin.createBackup(item);
+    }
+
 }
