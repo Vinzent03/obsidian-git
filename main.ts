@@ -150,6 +150,7 @@ export default class ObsidianGit extends Plugin {
         if (changedFiles.length !== 0) {
             await this.add();
             await this.commit();
+            this.lastUpdate = Date.now();
             this.displayMessage(`Committed ${changedFiles.length} files`);
         } else {
             this.displayMessage("No changes to commit");
@@ -175,14 +176,12 @@ export default class ObsidianGit extends Plugin {
                     }
                 }
                 await this.push();
+                this.lastUpdate = Date.now();
                 this.displayMessage(`Pushed ${allChangedFiles.length} files to remote`);
             } else {
                 this.displayMessage("No changes to push");
-                this.setState(PluginState.idle);
             }
         }
-
-        this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
 
