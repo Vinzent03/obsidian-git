@@ -18,6 +18,7 @@ interface ObsidianGitSettings {
     disablePush: boolean;
     pullBeforePush: boolean;
     disablePopups: boolean;
+    listChangedFilesInMessageBody: boolean;
 }
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
@@ -27,6 +28,7 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     disablePush: false,
     pullBeforePush: true,
     disablePopups: false,
+    listChangedFilesInMessageBody: false,
 };
 
 export default class ObsidianGit extends Plugin {
@@ -219,7 +221,10 @@ export default class ObsidianGit extends Plugin {
 
     async commit(message?: string): Promise<void> {
         this.setState(PluginState.commit);
-        const commitMessage = message ?? await this.formatCommitMessage(this.settings.commitMessage);
+        let commitMessage: string | string[] = message ?? await this.formatCommitMessage(this.settings.commitMessage);
+        if (this.settings.listChangedFilesInMessageBody) {
+            commitMessage = [commitMessage, "Affected files:", (await this.git.status()).staged.join("\n")];
+        }
         await this.git.commit(commitMessage);
     }
 
@@ -401,6 +406,17 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                     );
                     new Notice(`${commitMessagePreview}`);
                 })
+            );
+
+        new Setting(containerEl)
+            .setName("List filenames affected by commit in the commit body")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.listChangedFilesInMessageBody)
+                    .onChange((value) => {
+                        plugin.settings.listChangedFilesInMessageBody = value;
+                        plugin.saveSettings();
+                    })
             );
 
         new Setting(containerEl)
