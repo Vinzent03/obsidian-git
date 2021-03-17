@@ -45,6 +45,12 @@ OBSIDIAN_VAULT_DIR=/path/to/your/obsidian/vault
 mkdir -p $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 unzip ~/Downloads/obsidian-git_v1.1.0.zip -d $OBSIDIAN_VAULT_DIR/.obsidian/plugins
 ```
+
+## SSH Authentication
+> This is a typical example of a trade-off between security and convenience. [...] The most appropriate solution depends on the usage scenario and desired level of security.
+
+If you want to use SSH and have a passphrase for your ssh-key, you have to add it to the ssh-agent so that Obsidian can access it. Read more at this [summary](https://unix.stackexchange.com/questions/90853/how-can-i-run-ssh-add-automatically-without-a-password-prompt/90869#90869) to start `ssh-agent` on system startup.
+
 ## Windows installation
 Make sure you have `3rd-party software` access enabled.
 
