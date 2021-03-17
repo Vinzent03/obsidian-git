@@ -1,6 +1,6 @@
 import { spawnSync } from "child_process";
 import { FileSystemAdapter, Notice, Plugin, PluginSettingTab, Setting, SuggestModal } from "obsidian";
-import simpleGit, { CheckRepoActions, FileStatusResult, SimpleGit } from "simple-git";
+import simpleGit, { FileStatusResult, SimpleGit } from "simple-git";
 
 enum PluginState {
     idle,
@@ -100,7 +100,7 @@ export default class ObsidianGit extends Plugin {
 
             this.git = simpleGit(path);
 
-            const isValidRepo = await this.git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+            const isValidRepo = await this.git.checkIsRepo();
 
             if (!isValidRepo) {
                 this.displayError("Valid git repository not found.");
