@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { FileSystemAdapter, Notice, Plugin, PluginSettingTab, Setting, SuggestModal } from "obsidian";
+import { FileSystemAdapter, FuzzySuggestModal, Notice, Plugin, PluginSettingTab, Setting, SuggestModal } from "obsidian";
 import simpleGit, { FileStatusResult, SimpleGit } from "simple-git";
 
 enum PluginState {
@@ -66,6 +66,15 @@ export default class ObsidianGit extends Plugin {
             id: "commit-push-specified-message",
             name: "Commit and push all changes with specified message",
             callback: () => new CustomMessageModal(this).open()
+        });
+
+        this.addCommand({
+            id: "list-changed-files",
+            name: "List changed files",
+            callback: async () => {
+                const status = await this.git.status();
+                new ChangedFilesModal(this, status.files).open();
+            }
         });
 
         this.init();
@@ -595,4 +604,42 @@ class CustomMessageModal extends SuggestModal<string> {
         this.plugin.createBackup(item);
     }
 
+}
+class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
+    plugin: ObsidianGit;
+    changedFiles: FileStatusResult[];
+
+    constructor(plugin: ObsidianGit, changedFiles: FileStatusResult[]) {
+        super(plugin.app);
+        this.plugin = plugin;
+        this.changedFiles = changedFiles;
+        console.log(changedFiles);
+        this.setPlaceholder("Only files in vault can be openend!");
+    }
+
+    getItems(): FileStatusResult[] {
+        return this.changedFiles;
+    }
+
+    getItemText(item: FileStatusResult): string {
+        if (item.index == "?" && item.working_dir == "?") {
+            return `Untracked | ${item.path}`;
+        }
+
+        let working_dir = "";
+        let index = "";
+
+        if (item.working_dir != " ") working_dir = `Working dir: ${item.working_dir} `;
+        if (item.index != " ") index = `Index: ${item.index}`;
+
+        return `${working_dir}${index} | ${item.path}`;
+    }
+
+    onChooseItem(item: FileStatusResult, _: MouseEvent | KeyboardEvent): void {
+        if (this.plugin.app.metadataCache.getFirstLinkpathDest(item.path, "") == null) {
+            new Notice("Can't open file in Obsidian");
+        } else {
+            this.plugin.app.workspace.openLinkText(item.path, "/");
+        }
+    }
 }
