@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { FileSystemAdapter, FuzzySuggestModal, Notice, Plugin, PluginSettingTab, Setting, SuggestModal } from "obsidian";
+import { FileSystemAdapter, FuzzySuggestModal, Notice, Plugin, PluginSettingTab, Setting, SuggestModal, TFile } from "obsidian";
 import simpleGit, { FileStatusResult, SimpleGit } from "simple-git";
 
 enum PluginState {
@@ -39,11 +39,13 @@ export default class ObsidianGit extends Plugin {
     intervalID: number;
     lastUpdate: number;
     gitReady = false;
+    conflictOutputFile = "conflict-files-obsidian-git.md";
 
     setState(state: PluginState) {
         this.state = state;
         this.statusBar.display();
     }
+
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
@@ -59,7 +61,7 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "push",
             name: "Commit *all* changes and push to remote repository",
-            callback: () => this.createBackup()
+            callback: () => this.createBackup(false)
         });
 
         this.addCommand({
@@ -138,44 +140,62 @@ export default class ObsidianGit extends Plugin {
         }
 
         if (!this.gitReady) return;
-        await this.pull().then((filesUpdated) => {
-            if (filesUpdated > 0) {
-                this.displayMessage(
-                    `Pulled new changes. ${filesUpdated} files updated`
-                );
-            } else {
-                this.displayMessage("Everything is up-to-date");
-            }
-        });
+
+        const filesUpdated = await this.pull();
+        if (filesUpdated > 0) {
+            this.displayMessage(`Pulled new changes. ${filesUpdated} files updated`);
+        } else {
+            this.displayMessage("Everything is up-to-date");
+        }
+
+        const status = await this.git.status();
+        if (status.conflicted.length > 0) {
+            this.displayError(`You have ${status.conflicted.length} conflict files`);
+        }
 
         this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
 
-    async createBackup(commitMessage?: string): Promise<void> {
+    async createBackup(fromAutoBackup: boolean, commitMessage?: string): Promise<void> {
         if (!this.gitReady) {
             await this.init();
         }
         if (!this.gitReady) return;
 
         this.setState(PluginState.status);
-        const status = await this.git.status();
+        let status = await this.git.status();
 
-        const currentBranch = status.current;
 
-        const changedFiles = status.files;
+        if (!fromAutoBackup) {
+            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+            await this.app.vault.delete(file);
+        }
+
+        // check for conflict files on auto backup
+        if (fromAutoBackup && status.conflicted.length > 0) {
+            this.setState(PluginState.idle);
+            this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict files. Please resolve them and commit per command.`);
+            this.handleConflict(status.conflicted);
+            return;
+        }
+
+        const changedFiles = (await this.git.status()).files;
 
         if (changedFiles.length !== 0) {
             await this.add();
+            status = await this.git.status();
             await this.commit(commitMessage);
+
             this.lastUpdate = Date.now();
-            this.displayMessage(`Committed ${changedFiles.length} files`);
+            this.displayMessage(`Committed ${status.staged.length} files`);
         } else {
             this.displayMessage("No changes to commit");
         }
 
         if (!this.settings.disablePush) {
             const trackingBranch = status.tracking;
+            const currentBranch = status.current;
 
             if (!trackingBranch) {
                 this.displayError("Did not push. No upstream branch is set! See README for instructions", 10000);
@@ -183,19 +203,28 @@ export default class ObsidianGit extends Plugin {
                 return;
             }
 
-            const allChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).files;
+            const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
 
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
-            if (allChangedFiles.length > 0) {
+            if (remoteChangedFiles > 0) {
                 if (this.settings.pullBeforePush) {
                     const pulledFilesLength = await this.pull();
                     if (pulledFilesLength > 0) {
                         this.displayMessage(`Pulled ${pulledFilesLength} files from remote`);
                     }
                 }
-                await this.push();
-                this.lastUpdate = Date.now();
-                this.displayMessage(`Pushed ${allChangedFiles.length} files to remote`);
+
+                // Refresh because of pull
+                status = await this.git.status();
+
+                if (status.conflicted.length > 0) {
+                    this.displayError(`Cannot push. You have ${status.conflicted.length} conflict files`);
+                } else {
+                    const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
+
+                    await this.push();
+                    this.displayMessage(`Pushed ${remoteChangedFiles} files to remote`);
+                }
             } else {
                 this.displayMessage("No changes to push");
             }
@@ -251,8 +280,15 @@ export default class ObsidianGit extends Plugin {
     async pull(): Promise<number> {
         this.setState(PluginState.pull);
         const pullResult = await this.git.pull(["--no-rebase"],
-            (err: Error | null) =>
-                err && this.displayError(`Pull failed ${err.message}`)
+            async (err: Error | null) => {
+                if (err) {
+                    this.displayError(`Pull failed ${err.message}`);
+                    const status = await this.git.status();
+                    if (status.conflicted.length >= 0) {
+                        this.handleConflict(status.conflicted);
+                    }
+                }
+            }
         );
         this.lastUpdate = Date.now();
         return pullResult.files.length;
@@ -263,7 +299,7 @@ export default class ObsidianGit extends Plugin {
     enableAutoBackup() {
         const minutes = this.settings.autoSaveInterval;
         this.intervalID = window.setInterval(
-            async () => await this.createBackup(),
+            async () => await this.createBackup(true),
             minutes * 60000
         );
         this.registerInterval(this.intervalID);
@@ -276,6 +312,37 @@ export default class ObsidianGit extends Plugin {
         }
 
         return false;
+    }
+
+    async handleConflict(conflicted: string[]): Promise<void> {
+        const lines = [
+            "# Conflict files",
+            "Please resolve them and commit per command (This file will be deleted before the commit).",
+            ...conflicted.map(e => {
+                const file = this.app.vault.getAbstractFileByPath(e);
+                if (file instanceof TFile) {
+                    const link = this.app.metadataCache.fileToLinktext(file, "/");
+                    return `- [[${link}]]`;
+                } else {
+                    return `- Not a file: ${e}`;
+                }
+            })
+        ];
+        this.writeAndOpenFile(lines.join("\n"));
+    }
+
+    async writeAndOpenFile(text: string) {
+        await this.app.vault.adapter.write(this.conflictOutputFile, text);
+
+        let fileIsAlreadyOpened = false;
+        this.app.workspace.iterateAllLeaves(leaf => {
+            if (leaf.getDisplayText() != "" && this.conflictOutputFile.startsWith(leaf.getDisplayText())) {
+                fileIsAlreadyOpened = true;
+            }
+        });
+        if (!fileIsAlreadyOpened) {
+            this.app.workspace.openLinkText(this.conflictOutputFile, "/", true);
+        }
     }
 
     // region: displaying / formatting messages
@@ -601,7 +668,7 @@ class CustomMessageModal extends SuggestModal<string> {
     }
 
     onChooseSuggestion(item: string, _: MouseEvent | KeyboardEvent): void {
-        this.plugin.createBackup(item);
+        this.plugin.createBackup(false, item);
     }
 
 }
