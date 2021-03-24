@@ -79,3 +79,9 @@ To exclude cache files from the repository, create `.gitignore` file in the root
 ---
 
 If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@evrwhr` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
+
+> If you want to support me you can consider [buying me a coffee](https://www.buymeacoffee.com/Vinzent03).
+
+<br>
+
+<a href="https://www.buymeacoffee.com/Vinzent03"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=Vinzent03&button_colour=5F7FFF&font_colour=ffffff&font_family=Inter&outline_colour=000000&coffee_colour=FFDD00"></a>
