@@ -14,6 +14,7 @@ interface ObsidianGitSettings {
     commitMessage: string;
     commitDateFormat: string;
     autoSaveInterval: number;
+    autoPullInterval: number;
     autoPullOnBoot: boolean;
     disablePush: boolean;
     pullBeforePush: boolean;
@@ -24,6 +25,7 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
     autoSaveInterval: 0,
+    autoPullInterval: 0,
     autoPullOnBoot: false,
     disablePush: false,
     pullBeforePush: true,
@@ -36,7 +38,8 @@ export default class ObsidianGit extends Plugin {
     settings: ObsidianGitSettings;
     statusBar: StatusBar;
     state: PluginState = PluginState.idle;
-    intervalID: number;
+    intervalIDBackup: number;
+    intervalIDPull: number;
     lastUpdate: number;
     gitReady = false;
     conflictOutputFile = "conflict-files-obsidian-git.md";
@@ -124,6 +127,9 @@ export default class ObsidianGit extends Plugin {
 
                 if (this.settings.autoSaveInterval > 0) {
                     this.enableAutoBackup();
+                }
+                if (this.settings.autoPullInterval > 0) {
+                    this.enableAutoPull();
                 }
             }
 
@@ -298,19 +304,35 @@ export default class ObsidianGit extends Plugin {
 
     enableAutoBackup() {
         const minutes = this.settings.autoSaveInterval;
-        this.intervalID = window.setInterval(
+        this.intervalIDBackup = window.setInterval(
             async () => await this.createBackup(true),
             minutes * 60000
         );
-        this.registerInterval(this.intervalID);
+        this.registerInterval(this.intervalIDBackup);
+    }
+
+    enableAutoPull() {
+        const minutes = this.settings.autoPullInterval;
+        this.intervalIDPull = window.setInterval(
+            async () => await this.pullChangesFromRemote(),
+            minutes * 60000
+        );
+        this.registerInterval(this.intervalIDPull);
     }
 
     disableAutoBackup(): boolean {
-        if (this.intervalID) {
-            clearInterval(this.intervalID);
+        if (this.intervalIDBackup) {
+            clearInterval(this.intervalIDBackup);
             return true;
         }
+        return false;
+    }
 
+    disableAutoPull(): boolean {
+        if (this.intervalIDPull) {
+            clearInterval(this.intervalIDPull);
+            return true;
+        }
         return false;
     }
 
@@ -429,10 +451,41 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                                 );
                             } else if (
                                 plugin.settings.autoSaveInterval <= 0 &&
-                                plugin.intervalID
+                                plugin.intervalIDBackup
                             ) {
                                 plugin.disableAutoBackup() &&
                                     new Notice("Automatic backup disabled!");
+                            }
+                        } else {
+                            new Notice("Please specify a valid number.");
+                        }
+                    })
+            );
+        new Setting(containerEl)
+            .setName("Auto pull interval (minutes)")
+            .setDesc(
+                "Pull changes every X minutes. To disable automatic pull, specify negative value or zero (default)"
+            )
+            .addText((text) =>
+                text
+                    .setValue(String(plugin.settings.autoPullInterval))
+                    .onChange((value) => {
+                        if (!isNaN(Number(value))) {
+                            plugin.settings.autoPullInterval = Number(value);
+                            plugin.saveSettings();
+
+                            if (plugin.settings.autoPullInterval > 0) {
+                                plugin.disableAutoPull();
+                                plugin.enableAutoPull();
+                                new Notice(
+                                    `Automatic pull enabled! Every ${plugin.settings.autoPullInterval} minutes.`
+                                );
+                            } else if (
+                                plugin.settings.autoPullInterval <= 0 &&
+                                plugin.intervalIDPull
+                            ) {
+                                plugin.disableAutoPull() &&
+                                    new Notice("Automatic pull disabled!");
                             }
                         } else {
                             new Notice("Please specify a valid number.");
@@ -680,7 +733,6 @@ class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
         super(plugin.app);
         this.plugin = plugin;
         this.changedFiles = changedFiles;
-        console.log(changedFiles);
         this.setPlaceholder("Only files in vault can be openend!");
     }
 
