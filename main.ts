@@ -284,7 +284,7 @@ export default class ObsidianGit extends Plugin {
                 if (err) {
                     this.displayError(`Pull failed ${err.message}`);
                     const status = await this.git.status();
-                    if (status.conflicted.length >= 0) {
+                    if (status.conflicted.length > 0) {
                         this.handleConflict(status.conflicted);
                     }
                 }
