@@ -9,6 +9,7 @@ enum PluginState {
     add,
     commit,
     push,
+    conflicted,
 }
 interface ObsidianGitSettings {
     commitMessage: string;
@@ -37,7 +38,7 @@ export default class ObsidianGit extends Plugin {
     git: SimpleGit;
     settings: ObsidianGitSettings;
     statusBar: StatusBar;
-    state: PluginState = PluginState.idle;
+    state: PluginState;
     intervalIDBackup: number;
     intervalIDPull: number;
     lastUpdate: number;
@@ -81,18 +82,16 @@ export default class ObsidianGit extends Plugin {
                 new ChangedFilesModal(this, status.files).open();
             }
         });
-
-        this.init();
-
         // init statusBar
         let statusBarEl = this.addStatusBarItem();
         this.statusBar = new StatusBar(statusBarEl, this);
-        this.setState(PluginState.idle);
         this.registerInterval(
             window.setInterval(() => this.statusBar.display(), 1000)
         );
 
+        this.init();
     }
+
     async onunload() {
         console.log('unloading ' + this.manifest.name + " plugin");
     }
@@ -120,6 +119,7 @@ export default class ObsidianGit extends Plugin {
                 this.displayError("Valid git repository not found.");
             } else {
                 this.gitReady = true;
+                this.setState(PluginState.idle);
 
                 if (this.settings.autoPullOnBoot) {
                     this.pullChangesFromRemote();
@@ -225,6 +225,8 @@ export default class ObsidianGit extends Plugin {
 
                 if (status.conflicted.length > 0) {
                     this.displayError(`Cannot push. You have ${status.conflicted.length} conflict files`);
+                    this.handleConflict(status.conflicted);
+                    return;
                 } else {
                     const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
 
@@ -337,6 +339,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async handleConflict(conflicted: string[]): Promise<void> {
+        this.setState(PluginState.conflicted);
         const lines = [
             "# Conflict files",
             "Please resolve them and commit per command (This file will be deleted before the commit).",
@@ -375,10 +378,11 @@ export default class ObsidianGit extends Plugin {
             new Notice(message);
         }
 
-        console.log(`git obsidian: ${message}`);
+        console.log(`git obsidian message: ${message}`);
     }
     displayError(message: string, timeout: number = 0): void {
         new Notice(message);
+        console.log(`git obsidian error: ${message}`);
         this.statusBar.displayMessage(message.toLowerCase(), timeout);
     }
 
@@ -657,7 +661,7 @@ class StatusBar {
             this.statusBarEl.setText(this.currentMessage.message);
             this.lastMessageTimestamp = Date.now();
         } else if (this.currentMessage) {
-            let messageAge = Date.now() - this.lastMessageTimestamp;
+            const messageAge = Date.now() - this.lastMessageTimestamp;
             if (messageAge >= this.currentMessage.timeout) {
                 this.currentMessage = null;
                 this.lastMessageTimestamp = null;
@@ -686,6 +690,12 @@ class StatusBar {
                 break;
             case PluginState.pull:
                 this.statusBarEl.setText("git: pulling changes..");
+                break;
+            case PluginState.conflicted:
+                this.statusBarEl.setText("git: you have conflict files..");
+                break;
+            default:
+                this.statusBarEl.setText("git: failed on initialization!");
                 break;
         }
     }
