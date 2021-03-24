@@ -80,7 +80,9 @@ To exclude cache files from the repository, create `.gitignore` file in the root
 
 If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@evrwhr` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
 
-> If you want to support me you can consider [buying me a coffee](https://www.buymeacoffee.com/Vinzent03).
+This plugin was initial developed by [denolehov](https://github.com/denolehov). Since March, it's mainly [Vinzent03](https://github.com/Vinzent03) who is developing on this plugin.
+
+> If you want to support me ([Vinzent03](https://github.com/Vinzent03)) you can consider [buying me a coffee](https://www.buymeacoffee.com/Vinzent03).
 
 <br>
 
