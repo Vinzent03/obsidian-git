@@ -9,6 +9,7 @@ enum PluginState {
     add,
     commit,
     push,
+    conflicted,
 }
 interface ObsidianGitSettings {
     commitMessage: string;
@@ -35,7 +36,7 @@ export default class ObsidianGit extends Plugin {
     git: SimpleGit;
     settings: ObsidianGitSettings;
     statusBar: StatusBar;
-    state: PluginState = PluginState.idle;
+    state: PluginState;
     intervalID: number;
     lastUpdate: number;
     gitReady = false;
@@ -78,16 +79,15 @@ export default class ObsidianGit extends Plugin {
                 new ChangedFilesModal(this, status.files).open();
             }
         });
-
-        this.init();
-
         // init statusBar
         let statusBarEl = this.addStatusBarItem();
         this.statusBar = new StatusBar(statusBarEl, this);
-        this.setState(PluginState.idle);
         this.registerInterval(
             window.setInterval(() => this.statusBar.display(), 1000)
         );
+
+        this.init();
+
 
     }
     async onunload() {
@@ -117,6 +117,7 @@ export default class ObsidianGit extends Plugin {
                 this.displayError("Valid git repository not found.");
             } else {
                 this.gitReady = true;
+                this.setState(PluginState.idle);
 
                 if (this.settings.autoPullOnBoot) {
                     this.pullChangesFromRemote();
@@ -329,6 +330,7 @@ export default class ObsidianGit extends Plugin {
             })
         ];
         this.writeAndOpenFile(lines.join("\n"));
+        this.setState(PluginState.conflicted);
     }
 
     async writeAndOpenFile(text: string) {
@@ -633,6 +635,12 @@ class StatusBar {
                 break;
             case PluginState.pull:
                 this.statusBarEl.setText("git: pulling changes..");
+                break;
+            case PluginState.conflicted:
+                this.statusBarEl.setText("git: you have conflict files..");
+                break;
+            default:
+                this.statusBarEl.setText("git: not ready!");
                 break;
         }
     }
