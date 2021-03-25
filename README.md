@@ -58,6 +58,8 @@ Make sure you have `3rd-party software` access enabled.
     src = https://raw.githubusercontent.com/denolehov/obsidian-git/master/windows-installation.png
     width = 400>
 
+**For additional advice on using Obsidian Git for the tech unfamiliar take a look at `foreveryone#6438`'s great [tutorial](https://github.com/gitobsidiantutorial/obsidian-git-tut-windows/blob/main/README.md)**
+
 ## Linux installation
 Some users reported issues with Obsidian installed via Snap, because Obsidian runs in a kind of sandbox and can't access git.
 
