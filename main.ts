@@ -743,7 +743,7 @@ class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
         super(plugin.app);
         this.plugin = plugin;
         this.changedFiles = changedFiles;
-        this.setPlaceholder("Only files in vault can be openend!");
+        this.setPlaceholder("Not supported files will be opened by default app!");
     }
 
     getItems(): FileStatusResult[] {
@@ -766,7 +766,7 @@ class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
 
     onChooseItem(item: FileStatusResult, _: MouseEvent | KeyboardEvent): void {
         if (this.plugin.app.metadataCache.getFirstLinkpathDest(item.path, "") == null) {
-            new Notice("Can't open file in Obsidian");
+            (this.app as any).openWithDefaultApp(item.path);
         } else {
             this.plugin.app.workspace.openLinkText(item.path, "/");
         }
