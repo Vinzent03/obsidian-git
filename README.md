@@ -65,6 +65,15 @@ Some users reported issues with Obsidian installed via Snap, because Obsidian ru
 
 Installation via [Flatpak](https://flathub.org/apps/details/md.obsidian.Obsidian) or AppImage works.
 
+If you installed Obsidian a while ago via Flatpak, and it doesn't work please run the following.
+
+```
+$ flatpak update md.obsidian.Obsidian
+$ flatpak override --reset md.obsidian.Obsidian
+$ flatpak run md.obsidian.Obsidian
+```
+https://github.com/flathub/md.obsidian.Obsidian/issues/5#issuecomment-736974662
+
 # Tips
 ## Excluding Obsidian cache files from repository
 To exclude cache files from the repository, create `.gitignore` file in the root of your vault and add the following lines:
