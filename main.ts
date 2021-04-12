@@ -43,6 +43,7 @@ export default class ObsidianGit extends Plugin {
     intervalIDPull: number;
     lastUpdate: number;
     gitReady = false;
+    promiseQueue: PromiseQueue = new PromiseQueue();
     conflictOutputFile = "conflict-files-obsidian-git.md";
 
     setState(state: PluginState) {
@@ -59,13 +60,13 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "pull",
             name: "Pull from remote repository",
-            callback: () => this.pullChangesFromRemote(),
+            callback: () => this.promiseQueue.addTask(() => this.pullChangesFromRemote()),
         });
 
         this.addCommand({
             id: "push",
             name: "Commit *all* changes and push to remote repository",
-            callback: () => this.createBackup(false)
+            callback: () => this.promiseQueue.addTask(() => this.createBackup(false))
         });
 
         this.addCommand({
@@ -122,7 +123,7 @@ export default class ObsidianGit extends Plugin {
                 this.setState(PluginState.idle);
 
                 if (this.settings.autoPullOnBoot) {
-                    this.pullChangesFromRemote();
+                    this.promiseQueue.addTask(() => this.pullChangesFromRemote());
                 }
 
                 if (this.settings.autoSaveInterval > 0) {
@@ -307,7 +308,7 @@ export default class ObsidianGit extends Plugin {
     enableAutoBackup() {
         const minutes = this.settings.autoSaveInterval;
         this.intervalIDBackup = window.setInterval(
-            async () => await this.createBackup(true),
+            () => this.promiseQueue.addTask(() => this.createBackup(true)),
             minutes * 60000
         );
         this.registerInterval(this.intervalIDBackup);
@@ -316,7 +317,7 @@ export default class ObsidianGit extends Plugin {
     enableAutoPull() {
         const minutes = this.settings.autoPullInterval;
         this.intervalIDPull = window.setInterval(
-            async () => await this.pullChangesFromRemote(),
+            () => this.promiseQueue.addTask(() => this.pullChangesFromRemote()),
             minutes * 60000
         );
         this.registerInterval(this.intervalIDPull);
@@ -731,7 +732,7 @@ class CustomMessageModal extends SuggestModal<string> {
     }
 
     onChooseSuggestion(item: string, _: MouseEvent | KeyboardEvent): void {
-        this.plugin.createBackup(false, item);
+        this.plugin.promiseQueue.addTask(() => this.plugin.createBackup(false, item));
     }
 
 }
@@ -769,6 +770,25 @@ class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
             (this.app as any).openWithDefaultApp(item.path);
         } else {
             this.plugin.app.workspace.openLinkText(item.path, "/");
+        }
+    }
+}
+
+class PromiseQueue {
+    tasks: (() => Promise<any>)[] = [];
+
+    addTask(task: () => Promise<any>) {
+        this.tasks.push(task);
+        if (this.tasks.length === 1) {
+            this.handleTask();
+        }
+    }
+    async handleTask() {
+        if (this.tasks.length > 0) {
+            this.tasks[0]().finally(() => {
+                this.tasks.shift();
+                this.handleTask();
+            });
         }
     }
 }
