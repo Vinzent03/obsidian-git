@@ -1,7 +1,6 @@
 import { spawnSync } from "child_process";
 import { FileSystemAdapter, FuzzySuggestModal, Notice, Plugin, PluginSettingTab, Setting, SuggestModal, TFile } from "obsidian";
 import simpleGit, { FileStatusResult, SimpleGit } from "simple-git";
-
 enum PluginState {
     idle,
     status,
@@ -48,7 +47,7 @@ export default class ObsidianGit extends Plugin {
 
     setState(state: PluginState) {
         this.state = state;
-        this.statusBar.display();
+        // this.statusBar.display();
     }
 
     async onload() {
@@ -86,9 +85,9 @@ export default class ObsidianGit extends Plugin {
         // init statusBar
         let statusBarEl = this.addStatusBarItem();
         this.statusBar = new StatusBar(statusBarEl, this);
-        this.registerInterval(
-            window.setInterval(() => this.statusBar.display(), 1000)
-        );
+        // this.registerInterval(
+        //     window.setInterval(() => this.statusBar.display(), 1000)
+        // );
 
         this.init();
     }
