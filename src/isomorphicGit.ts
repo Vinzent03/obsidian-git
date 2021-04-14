@@ -1,17 +1,20 @@
 import git from 'isomorphic-git';
+import http from "isomorphic-git/http/web";
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
-import { Author, FileStatusResult, Status } from './types';
+import { Author, DiffResult, FileStatusResult, Status } from './types';
 
 export class IsomorphicGit extends GitManager {
     private fs: any;
     private dir: string;
     author: Author;
-    readonly FILE = 0;
-    readonly HEAD = 1;
-    readonly WORKDIR = 2;
-    readonly STAGE = 3;
-    readonly indexes = {
+    proxy: string;
+    repoUrl: string;
+    private readonly FILE = 0;
+    private readonly HEAD = 1;
+    private readonly WORKDIR = 2;
+    private readonly STAGE = 3;
+    private readonly indexes = {
         "000": "",
         "003": "AD",
         "020": "??",
@@ -28,10 +31,12 @@ export class IsomorphicGit extends GitManager {
         "123": "MM"
     };
 
-    constructor(plugin: ObsidianGit, author: Author) {
+    constructor(plugin: ObsidianGit, author: Author, proxy: string, repoUrl: string) {
         super(plugin);
         this.fs = (this.app.vault.adapter as any).fs;
         this.author = author;
+        this.proxy = proxy;
+        this.repoUrl = repoUrl;
         this.dir = decodeURIComponent(this.app.vault.adapter.getResourcePath("").replace("app://local/", ""));
         this.dir = this.dir.substring(0, this.dir.indexOf("?"));
     }
@@ -71,9 +76,87 @@ export class IsomorphicGit extends GitManager {
         });
     }
 
-    getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
+    async pull(): Promise<number> {
+        const commitBefore = (await git.log({
+            fs: this.fs,
+            dir: this.dir,
+            depth: 1
+        }))[0];
+
+        await git.pull({
+            fs: this.fs,
+            dir: this.dir,
+            http: http,
+            author: this.author,
+            corsProxy: this.proxy,
+            url: this.repoUrl,
+            onAuth: () => {
+                const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
+                const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
+                return { username: username, password: password };
+            }
+        });
+
+        const commitAfter = (await git.log({
+            fs: this.fs,
+            dir: this.dir,
+            depth: 1
+        }))[0];
+
+        const diff = await this.diff(commitBefore.oid, commitAfter.oid);
+
+        const changedFiles = diff.filter(file => file.type !== "equal");
+        return changedFiles.length;
+    }
+
+    private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
         const index = (this.indexes as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
 
         return { index: index, path: row[this.FILE] };
+    }
+
+    // https://isomorphic-git.org/docs/en/snippets#git-diff-name-status-commithash1-commithash2
+    private async diff(commitHash1: string, commitHash2: string): Promise<DiffResult[]> {
+        return git.walk({
+            fs: this.fs,
+            dir: this.dir,
+            trees: [git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })],
+            map: async (filepath, [A, B]) => {
+
+                // ignore directories
+                if (filepath === '.') {
+                    return;
+                }
+                if ((await A.type()) === 'tree' || (await B.type()) === 'tree') {
+                    return;
+                }
+
+                // generate ids
+                const Aoid = await A.oid();
+                const Boid = await B.oid();
+
+                // determine modification type
+                let type = 'equal';
+                if (Aoid !== Boid) {
+                    type = 'modify';
+                }
+                if (Aoid === undefined) {
+                    type = 'add';
+                }
+                if (Boid === undefined) {
+                    type = 'remove';
+                }
+                if (Aoid === undefined && Boid === undefined) {
+                    console.log('Something weird happened:');
+                    console.log(A);
+                    console.log(B);
+                }
+
+                return {
+                    path: `/${filepath}`,
+                    type: type,
+                };
+            },
+        });
     }
 }

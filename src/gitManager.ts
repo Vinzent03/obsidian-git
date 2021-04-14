@@ -15,6 +15,8 @@ export abstract class GitManager {
 
     abstract commit(message?: string): Promise<void>;
 
+    abstract pull(): Promise<number>;
+
     async formatCommitMessage(): Promise<string> {
         let template = this.plugin.settings.commitMessage;
 
