@@ -121,6 +121,10 @@ export class IsomorphicGit extends GitManager {
         return changedFiles.length;
     }
 
+    async canPush(): Promise<boolean> {
+        return (await this.diff("master", "origin/master")).length !== 0; //TODO configurable
+    }
+
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
         const index = (this.indexes as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
 
