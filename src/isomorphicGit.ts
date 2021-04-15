@@ -1,4 +1,4 @@
-import git from 'isomorphic-git';
+import git, { ReadCommitResult } from 'isomorphic-git';
 import http from "isomorphic-git/http/web";
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
@@ -77,11 +77,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async pull(): Promise<number> {
-        const commitBefore = (await git.log({
-            fs: this.fs,
-            dir: this.dir,
-            depth: 1
-        }))[0];
+        const commitBefore = await this.getCurrentCommit();
 
         await git.pull({
             fs: this.fs,
@@ -97,13 +93,29 @@ export class IsomorphicGit extends GitManager {
             }
         });
 
-        const commitAfter = (await git.log({
-            fs: this.fs,
-            dir: this.dir,
-            depth: 1
-        }))[0];
+        const commitAfter = await this.getCurrentCommit();
 
         const diff = await this.diff(commitBefore.oid, commitAfter.oid);
+
+        const changedFiles = diff.filter(file => file.type !== "equal");
+        return changedFiles.length;
+    }
+
+    async push(): Promise<number> {
+        const diff = await this.diff("master", "origin/master"); //TODO configurable
+        await git.push({
+            fs: this.fs,
+            dir: this.dir,
+            http: http,
+            corsProxy: this.proxy,
+            url: this.repoUrl,
+            onAuth: () => {
+                const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
+                const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
+                return { username: username, password: password };
+            }
+        });
+
 
         const changedFiles = diff.filter(file => file.type !== "equal");
         return changedFiles.length;
@@ -113,6 +125,14 @@ export class IsomorphicGit extends GitManager {
         const index = (this.indexes as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
 
         return { index: index, path: row[this.FILE] };
+    }
+
+    private async getCurrentCommit(): Promise<ReadCommitResult> {
+        return (await git.log({
+            fs: this.fs,
+            dir: this.dir,
+            depth: 1
+        }))[0];
     }
 
     // https://isomorphic-git.org/docs/en/snippets#git-diff-name-status-commithash1-commithash2
