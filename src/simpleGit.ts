@@ -1,3 +1,4 @@
+import { spawnSync } from "child_process";
 import { FileSystemAdapter } from "obsidian";
 import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
@@ -66,5 +67,28 @@ export class SimpleGit extends GitManager {
         const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
 
         return remoteChangedFiles !== 0;
+    }
+
+    async checkRequirements(): Promise<"valid" | "missing-repo" | "missing-git"> {
+        if (!this.isGitInstalled()) {
+            return "missing-git";
+        } else if (!(await this.git.checkIsRepo())) {
+            return "missing-repo";
+        } else {
+            return "valid";
+        }
+    }
+
+    private isGitInstalled(): boolean {
+        // https://github.com/steveukx/git-js/issues/402
+        const command = spawnSync('git', ['--version'], {
+            stdio: 'ignore'
+        });
+
+        if (command.error) {
+            console.error(command.error);
+            return false;
+        }
+        return true;
     }
 }

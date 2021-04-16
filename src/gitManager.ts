@@ -21,6 +21,8 @@ export abstract class GitManager {
 
     abstract canPush(): Promise<boolean>;
 
+    abstract checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings" | "missing-git">;
+
     async formatCommitMessage(): Promise<string> {
         let template = this.plugin.settings.commitMessage;
 

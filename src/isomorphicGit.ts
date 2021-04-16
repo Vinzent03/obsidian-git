@@ -125,6 +125,23 @@ export class IsomorphicGit extends GitManager {
         return (await this.diff("master", "origin/master")).length !== 0; //TODO configurable
     }
 
+    async checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings"> {
+        //TODO check settings
+        try {
+            await git.log({
+                fs: this.fs,
+                dir: this.dir,
+                depth: 1
+            });
+        } catch (error) {
+            if (error.code === "NotFoundError" && error.data.what === "HEAD") {
+                return "missing-repo";
+            }
+        }
+        return "valid";
+    }
+
+
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
         const index = (this.indexes as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
 
