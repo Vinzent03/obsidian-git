@@ -2,14 +2,11 @@ import git, { ReadCommitResult } from 'isomorphic-git';
 import http from "isomorphic-git/http/web";
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
-import { Author, DiffResult, FileStatusResult, Status } from './types';
+import { DiffResult, FileStatusResult, Status } from './types';
 
 export class IsomorphicGit extends GitManager {
     private fs: any;
     private dir: string;
-    author: Author;
-    proxy: string;
-    repoUrl: string;
     private readonly FILE = 0;
     private readonly HEAD = 1;
     private readonly WORKDIR = 2;
@@ -31,12 +28,9 @@ export class IsomorphicGit extends GitManager {
         "123": "MM"
     };
 
-    constructor(plugin: ObsidianGit, author: Author, proxy: string, repoUrl: string) {
+    constructor(plugin: ObsidianGit) {
         super(plugin);
         this.fs = (this.app.vault.adapter as any).fs;
-        this.author = author;
-        this.proxy = proxy;
-        this.repoUrl = repoUrl;
         this.dir = decodeURIComponent(this.app.vault.adapter.getResourcePath("").replace("app://local/", ""));
         this.dir = this.dir.substring(0, this.dir.indexOf("?"));
     }
@@ -71,7 +65,6 @@ export class IsomorphicGit extends GitManager {
 
         await git.commit({
             ...repo,
-            author: this.author,
             message: formatMessage
         });
     }
@@ -83,9 +76,7 @@ export class IsomorphicGit extends GitManager {
             fs: this.fs,
             dir: this.dir,
             http: http,
-            author: this.author,
-            corsProxy: this.proxy,
-            url: this.repoUrl,
+            corsProxy: this.plugin.settings.proxyURL,
             onAuth: () => {
                 const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
                 const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
@@ -107,8 +98,7 @@ export class IsomorphicGit extends GitManager {
             fs: this.fs,
             dir: this.dir,
             http: http,
-            corsProxy: this.proxy,
-            url: this.repoUrl,
+            corsProxy: this.plugin.settings.proxyURL,
             onAuth: () => {
                 const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
                 const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
@@ -141,6 +131,23 @@ export class IsomorphicGit extends GitManager {
         return "valid";
     }
 
+    setConfig(path: string, value: string): Promise<void> {
+        return git.setConfig({
+            fs: this.fs,
+            dir: this.dir,
+            path: path,
+            value: value
+        });
+    }
+
+    getConfig(path: string): Promise<any> {
+        return git.getConfig({
+            fs: this.fs,
+            dir: this.dir,
+            path: path
+        });
+    }
+
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
         const index = (this.indexes as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
@@ -156,7 +163,7 @@ export class IsomorphicGit extends GitManager {
         }))[0];
     }
 
-    // https://isomorphic-git.org/docs/en/snippets#git-diff-name-status-commithash1-commithash2
+    // fixed from https://isomorphic-git.org/docs/en/snippets#git-diff-name-status-commithash1-commithash2
     private async diff(commitHash1: string, commitHash2: string): Promise<DiffResult[]> {
         return git.walk({
             fs: this.fs,
@@ -168,13 +175,13 @@ export class IsomorphicGit extends GitManager {
                 if (filepath === '.') {
                     return;
                 }
-                if ((await A.type()) === 'tree' || (await B.type()) === 'tree') {
+                if ((await A?.type()) === 'tree' || (await B?.type()) === 'tree') {
                     return;
                 }
 
                 // generate ids
-                const Aoid = await A.oid();
-                const Boid = await B.oid();
+                const Aoid = await A?.oid();
+                const Boid = await B?.oid();
 
                 // determine modification type
                 let type = 'equal';
@@ -182,10 +189,10 @@ export class IsomorphicGit extends GitManager {
                     type = 'modify';
                 }
                 if (Aoid === undefined) {
-                    type = 'add';
+                    type = 'remove';
                 }
                 if (Boid === undefined) {
-                    type = 'remove';
+                    type = 'add';
                 }
                 if (Aoid === undefined && Boid === undefined) {
                     console.log('Something weird happened:');
