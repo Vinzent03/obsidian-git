@@ -51,7 +51,9 @@ export default class ObsidianGit extends Plugin {
 
     setState(state: PluginState) {
         this.state = state;
-        // this.statusBar.display();
+        if (!(this.app as any).isMobile) {
+            this.statusBar.display();
+        }
     }
 
     async onload() {
@@ -86,12 +88,14 @@ export default class ObsidianGit extends Plugin {
                 new ChangedFilesModal(this, status.files).open();
             }
         });
-        // init statusBar
-        let statusBarEl = this.addStatusBarItem();
-        this.statusBar = new StatusBar(statusBarEl, this);
-        // this.registerInterval(
-        //     window.setInterval(() => this.statusBar.display(), 1000)
-        // );
+        if (!(this.app as any).isMobile) {
+            // init statusBar
+            let statusBarEl = this.addStatusBarItem();
+            this.statusBar = new StatusBar(statusBarEl, this);
+            this.registerInterval(
+                window.setInterval(() => this.statusBar.display(), 1000)
+            );
+        }
 
         this.init();
     }
@@ -376,7 +380,9 @@ export default class ObsidianGit extends Plugin {
 
     // region: displaying / formatting messages
     displayMessage(message: string, timeout: number = 4 * 1000): void {
-        this.statusBar.displayMessage(message.toLowerCase(), timeout);
+        if (!(this.app as any).isMobile) {
+            this.statusBar.displayMessage(message.toLowerCase(), timeout);
+        }
 
         if (!this.settings.disablePopups) {
             new Notice(message);
@@ -387,7 +393,9 @@ export default class ObsidianGit extends Plugin {
     displayError(message: string, timeout: number = 0): void {
         new Notice(message);
         console.log(`git obsidian error: ${message}`);
-        this.statusBar.displayMessage(message.toLowerCase(), timeout);
+        if (!(this.app as any).isMobile) {
+            this.statusBar.displayMessage(message.toLowerCase(), timeout);
+        }
     }
 
     async formatCommitMessage(template: string): Promise<string> {
