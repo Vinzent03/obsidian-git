@@ -2,7 +2,7 @@ import git, { ReadCommitResult } from 'isomorphic-git';
 import http from "isomorphic-git/http/web";
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
-import { DiffResult, FileStatusResult, Status } from './types';
+import { DiffResult, FileStatusResult, PluginState, Status } from './types';
 
 export class IsomorphicGit extends GitManager {
     private fs: any;
@@ -36,6 +36,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async status(): Promise<Status> {
+        this.plugin.setState(PluginState.status);
         const status = await git.statusMatrix({
             fs: this.fs,
             dir: this.dir,
@@ -50,7 +51,10 @@ export class IsomorphicGit extends GitManager {
         };
     }
 
-    async commit(message?: string): Promise<void> {
+    async commitAll(message?: string): Promise<number> {
+        this.plugin.setState(PluginState.commit);
+        const commitBefore = await this.getCurrentCommit();
+
         const repo = {
             fs: this.fs,
             dir: this.dir
@@ -67,9 +71,14 @@ export class IsomorphicGit extends GitManager {
             ...repo,
             message: formatMessage
         });
+        const commitAfter = await this.getCurrentCommit();
+        this.plugin.lastUpdate = Date.now();
+        return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
+
     }
 
     async pull(): Promise<number> {
+        this.plugin.setState(PluginState.pull);
         const commitBefore = await this.getCurrentCommit();
 
         await git.pull({
@@ -83,17 +92,16 @@ export class IsomorphicGit extends GitManager {
                 return { username: username, password: password };
             }
         });
+        this.plugin.lastUpdate = Date.now();
 
         const commitAfter = await this.getCurrentCommit();
 
-        const diff = await this.diff(commitBefore.oid, commitAfter.oid);
-
-        const changedFiles = diff.filter(file => file.type !== "equal");
-        return changedFiles.length;
+        return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
     }
 
     async push(): Promise<number> {
-        const diff = await this.diff("master", "origin/master"); //TODO configurable
+        this.plugin.setState(PluginState.push);
+        const changedFiles = await this.getChangedFiles("master", "origin/master"); //TODO configurable
         await git.push({
             fs: this.fs,
             dir: this.dir,
@@ -105,18 +113,15 @@ export class IsomorphicGit extends GitManager {
                 return { username: username, password: password };
             }
         });
-
-
-        const changedFiles = diff.filter(file => file.type !== "equal");
-        return changedFiles.length;
+        this.plugin.lastUpdate = Date.now();
+        return changedFiles;
     }
 
     async canPush(): Promise<boolean> {
-        return (await this.diff("master", "origin/master")).length !== 0; //TODO configurable
+        return await this.getChangedFiles("master", "origin/master") !== 0; //TODO configurable
     }
 
     async checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings"> {
-        //TODO check settings
         try {
             await git.log({
                 fs: this.fs,
@@ -128,6 +133,14 @@ export class IsomorphicGit extends GitManager {
                 return "missing-repo";
             }
         }
+        const user = await git.getConfig({ fs: this.fs, dir: this.dir, path: "user.name" });
+        const email = await git.getConfig({ fs: this.fs, dir: this.dir, path: "user.email" });
+        const remoteURL = await git.getConfig({ fs: this.fs, dir: this.dir, path: "remote.origin.url" });
+
+        if (!user || !email || !remoteURL) {
+            return "wrong-settings";
+        }
+
         return "valid";
     }
 
@@ -161,6 +174,10 @@ export class IsomorphicGit extends GitManager {
             dir: this.dir,
             depth: 1
         }))[0];
+    }
+
+    private async getChangedFiles(commitHash1: string, commitHash2: string): Promise<number> {
+        return (await this.diff(commitHash1, commitHash2)).filter(file => file.type !== "equal").length;
     }
 
     // fixed from https://isomorphic-git.org/docs/en/snippets#git-diff-name-status-commithash1-commithash2

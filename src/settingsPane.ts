@@ -1,5 +1,7 @@
 import { Notice, PluginSettingTab, Setting } from "obsidian";
+import { IsomorphicGit } from "./isomorphicGit";
 import ObsidianGit from "./main";
+import { SimpleGit } from "./simpleGit";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     plugin: ObsidianGit;
@@ -113,9 +115,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Preview commit message")
             .addButton((button) =>
                 button.setButtonText("Preview").onClick(async () => {
-                    let commitMessagePreview = await this.plugin.formatCommitMessage(
-                        this.plugin.settings.commitMessage
-                    );
+                    const commitMessagePreview = await this.plugin.gitManager.formatCommitMessage();
                     new Notice(`${commitMessagePreview}`);
                 })
             );
@@ -135,13 +135,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Current branch")
             .setDesc("Switch to a different branch")
             .addDropdown(async (dropdown) => {
-                const branchInfo = await this.plugin.git.branchLocal();
+                //TODO add branch management
+                const branchInfo = await this.plugin.gitManager.branchLocal();
                 for (const branch of branchInfo.all) {
                     dropdown.addOption(branch, branch);
                 }
                 dropdown.setValue(branchInfo.current);
                 dropdown.onChange(async (option) => {
-                    await this.plugin.git.checkout(
+                    await this.plugin.gitManager.checkout(
                         option,
                         [],
                         async (err: Error) => {
@@ -214,7 +215,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .onChange(value => {
                         this.plugin.settings.standaloneMode = value;
                         this.plugin.saveSettings();
-                        //TODO change GitManager object
+                        if (value) {
+                            this.plugin.gitManager = new IsomorphicGit(this.plugin);
+                        } else {
+                            this.plugin.gitManager = new SimpleGit(this.plugin);
+                        }
+                        this.display();
                     }));
         if (this.plugin.settings.standaloneMode) {
             this.addStandaloneSettings();
@@ -223,6 +229,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
     addStandaloneSettings() {
 
+        if (!(this.plugin.gitManager instanceof IsomorphicGit)) {
+            return;
+        }
+        const isomorphicGit = this.plugin.gitManager as IsomorphicGit;
         const containerEl = this.containerEl;
         containerEl.createEl("h2", { text: "Settings for standalone mode" });
 
@@ -230,24 +240,24 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Name")
             .setDesc("Every commit will have this name as signature")
             .addText(async cb => {
-                cb.setValue(await this.plugin.gitManager.getConfig("user.name"));
-                cb.onChange(value => this.plugin.gitManager.setConfig("user.name", value));
+                cb.setValue(await isomorphicGit.getConfig("user.name"));
+                cb.onChange(value => isomorphicGit.setConfig("user.name", value));
             });
 
         new Setting(containerEl)
             .setName("E-Mail")
             .setDesc("Every commit will have this E-Mail as signature")
             .addText(async cb => {
-                cb.setValue(await this.plugin.gitManager.getConfig("user.email"));
-                cb.onChange(value => this.plugin.gitManager.setConfig("user.email", value));
+                cb.setValue(await isomorphicGit.getConfig("user.email"));
+                cb.onChange(value => isomorphicGit.setConfig("user.email", value));
             });
 
         new Setting(containerEl)
             .setName("Repository URL")
             .setDesc("URL under which the git repository is accessible")
             .addText(async cb => {
-                cb.setValue(await this.plugin.gitManager.getConfig("remote.origin.url"));
-                cb.onChange(value => this.plugin.gitManager.setConfig("remote.origin.url", value));
+                cb.setValue(await isomorphicGit.getConfig("remote.origin.url"));
+                cb.onChange(value => isomorphicGit.setConfig("remote.origin.url", value));
             });
 
         new Setting(containerEl)

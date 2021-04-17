@@ -1,3 +1,17 @@
+export interface ObsidianGitSettings {
+    commitMessage: string;
+    commitDateFormat: string;
+    autoSaveInterval: number;
+    autoPullInterval: number;
+    autoPullOnBoot: boolean;
+    disablePush: boolean;
+    pullBeforePush: boolean;
+    disablePopups: boolean;
+    listChangedFilesInMessageBody: boolean;
+    standaloneMode: boolean;
+    proxyURL: string;
+}
+
 export interface Author {
     name: string;
     email: string;
@@ -13,4 +27,14 @@ export interface FileStatusResult {
 export interface DiffResult {
     path: string;
     type: "equal" | "modify" | "add" | "remove";
+}
+
+export enum PluginState {
+    idle,
+    status,
+    pull,
+    add,
+    commit,
+    push,
+    conflicted,
 }

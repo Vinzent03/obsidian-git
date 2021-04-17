@@ -3,7 +3,7 @@ import { FileSystemAdapter } from "obsidian";
 import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
-import { Status } from "./types";
+import { FileStatusResult, PluginState } from "./types";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -13,22 +13,39 @@ export class SimpleGit extends GitManager {
         const adapter = this.app.vault.adapter as FileSystemAdapter;
         const path = adapter.getBasePath();
 
-        this.git = simpleGit(path);
+        if (this.isGitInstalled()) {
+            this.git = simpleGit(path);
+        }
     }
 
-    async status(): Promise<Status> {
+    async status(): Promise<{
+        changed: FileStatusResult[];
+        staged: string[];
+        conflicted: string[];
+    }> {
+        this.plugin.setState(PluginState.status);
         const status = await this.git.status();
         return {
             changed: status.files,
-            staged: status.staged
+            staged: status.staged,
+            conflicted: status.conflicted,
         };
     }
 
-    async commit(message?: string): Promise<void> {
-        this.git.commit(message ?? await this.formatCommitMessage());
+    async commitAll(message?: string): Promise<number> {
+        this.plugin.setState(PluginState.add);
+        await this.git.add(
+            "./*",
+            (err: Error | null) =>
+                err && this.plugin.displayError(`Cannot add files: ${err.message}`)
+        );
+        this.plugin.setState(PluginState.commit);
+
+        return (await this.git.commit(message ?? await this.formatCommitMessage())).summary.changes;
     }
 
     async pull(): Promise<number> {
+        this.plugin.setState(PluginState.pull);
         const pullResult = await this.git.pull(["--no-rebase"],
             async (err: Error | null) => {
                 if (err) {
@@ -45,6 +62,7 @@ export class SimpleGit extends GitManager {
     }
 
     async push(): Promise<number> {
+        this.plugin.setState(PluginState.push);
         const status = await this.git.status();
         const trackingBranch = status.tracking;
         const currentBranch = status.current;

@@ -13,7 +13,7 @@ export abstract class GitManager {
 
     abstract status(): Promise<Status>;
 
-    abstract commit(message?: string): Promise<void>;
+    abstract commitAll(message?: string): Promise<number>;
 
     abstract pull(): Promise<number>;
 

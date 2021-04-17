@@ -1,28 +1,14 @@
-import { spawnSync } from "child_process";
-import { FileSystemAdapter, FuzzySuggestModal, Notice, Plugin, PluginSettingTab, Setting, SuggestModal, TFile } from "obsidian";
-import simpleGit, { FileStatusResult, SimpleGit } from "simple-git";
-enum PluginState {
-    idle,
-    status,
-    pull,
-    add,
-    commit,
-    push,
-    conflicted,
-}
-interface ObsidianGitSettings {
-    commitMessage: string;
-    commitDateFormat: string;
-    autoSaveInterval: number;
-    autoPullInterval: number;
-    autoPullOnBoot: boolean;
-    disablePush: boolean;
-    pullBeforePush: boolean;
-    disablePopups: boolean;
-    listChangedFilesInMessageBody: boolean;
-    standaloneMode: boolean;
-    proxyURL: string;
-}
+import { Notice, Plugin, TFile } from "obsidian";
+import { GitManager } from "./gitManager";
+import { IsomorphicGit } from "./isomorphicGit";
+import { ChangedFilesModal } from "./modals/changedFilesModal";
+import { CustomMessageModal } from "./modals/customMessageModal";
+import { PromiseQueue } from "./promiseQueue";
+import { ObsidianGitSettingsTab } from "./settingsPane";
+import { SimpleGit } from "./simpleGit";
+import { StatusBar } from "./statusBar";
+import { ObsidianGitSettings, PluginState } from "./types";
+
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
@@ -38,9 +24,9 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
 };
 
 export default class ObsidianGit extends Plugin {
-    git: SimpleGit;
+    gitManager: GitManager;
     settings: ObsidianGitSettings;
-    statusBar: StatusBar;
+    statusBar: StatusBar | undefined;
     state: PluginState;
     intervalIDBackup: number;
     intervalIDPull: number;
@@ -51,9 +37,7 @@ export default class ObsidianGit extends Plugin {
 
     setState(state: PluginState) {
         this.state = state;
-        if (!(this.app as any).isMobile) {
-            this.statusBar.display();
-        }
+        this.statusBar?.display();
     }
 
     async onload() {
@@ -84,8 +68,13 @@ export default class ObsidianGit extends Plugin {
             id: "list-changed-files",
             name: "List changed files",
             callback: async () => {
-                const status = await this.git.status();
-                new ChangedFilesModal(this, status.files).open();
+                if (!this.gitReady) {
+                    await this.init();
+                }
+
+                if (!this.gitReady) return;
+                const status = await this.gitManager.status();
+                new ChangedFilesModal(this, status.changed).open();
             }
         });
         if (!(this.app as any).isMobile) {
@@ -111,24 +100,24 @@ export default class ObsidianGit extends Plugin {
     }
 
     async init(): Promise<void> {
-        if (!this.isGitInstalled()) {
-            this.displayError("Cannot run git command");
-            return;
+        if (this.settings.standaloneMode || (this.app as any).isMobile) {
+            this.gitManager = new IsomorphicGit(this);
+        } else {
+            this.gitManager = new SimpleGit(this);
         }
-        try {
-            const adapter = this.app.vault.adapter as FileSystemAdapter;
-            const path = adapter.getBasePath();
-
-            this.git = simpleGit(path);
-
-            const isValidRepo = await this.git.checkIsRepo();
-
-            if (!isValidRepo) {
-                this.displayError("Valid git repository not found.");
-            } else {
+        const result = await this.gitManager.checkRequirements();
+        switch (result) {
+            case "missing-git":
+                this.displayError("Cannot run git command");
+                break;
+            case "missing-repo":
+                this.displayError("Valid git repository not found");
+                break;
+            case "wrong-settings":
+                this.displayError("Not all of the required standalone mode settings are set");
+            case "valid":
                 this.gitReady = true;
                 this.setState(PluginState.idle);
-
                 if (this.settings.autoPullOnBoot) {
                     this.promiseQueue.addTask(() => this.pullChangesFromRemote());
                 }
@@ -139,11 +128,9 @@ export default class ObsidianGit extends Plugin {
                 if (this.settings.autoPullInterval > 0) {
                     this.enableAutoPull();
                 }
-            }
-
-        } catch (error) {
-            this.displayError(error);
-            console.error(error);
+                break;
+            default:
+                console.log("Something weird happened. The 'checkRequirements' result is " + result);
         }
     }
 
@@ -155,19 +142,19 @@ export default class ObsidianGit extends Plugin {
 
         if (!this.gitReady) return;
 
-        const filesUpdated = await this.pull();
+        const filesUpdated = await this.gitManager.pull();
         if (filesUpdated > 0) {
             this.displayMessage(`Pulled new changes. ${filesUpdated} files updated`);
         } else {
             this.displayMessage("Everything is up-to-date");
         }
 
-        const status = await this.git.status();
-        if (status.conflicted.length > 0) {
-            this.displayError(`You have ${status.conflicted.length} conflict files`);
+        if (this.gitManager instanceof SimpleGit) {
+            const status = await this.gitManager.status();
+            if (status.conflicted.length > 0) {
+                this.displayError(`You have ${status.conflicted.length} conflict files`);
+            }
         }
-
-        this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
 
@@ -177,69 +164,58 @@ export default class ObsidianGit extends Plugin {
         }
         if (!this.gitReady) return;
 
-        this.setState(PluginState.status);
-        let status = await this.git.status();
-
-
         if (!fromAutoBackup) {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
             await this.app.vault.delete(file);
         }
 
-        // check for conflict files on auto backup
-        if (fromAutoBackup && status.conflicted.length > 0) {
-            this.setState(PluginState.idle);
-            this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict files. Please resolve them and commit per command.`);
-            this.handleConflict(status.conflicted);
-            return;
+        if (this.gitManager instanceof SimpleGit) {
+            const status = await this.gitManager.status();
+            // check for conflict files on auto backup
+            if (fromAutoBackup && status.conflicted.length > 0) {
+                this.setState(PluginState.idle);
+                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict files. Please resolve them and commit per command.`);
+                this.handleConflict(status.conflicted);
+                return;
+            }
         }
 
-        const changedFiles = (await this.git.status()).files;
+        const changedFiles = (await this.gitManager.status()).changed;
 
         if (changedFiles.length !== 0) {
-            await this.add();
-            status = await this.git.status();
-            await this.commit(commitMessage);
-
-            this.lastUpdate = Date.now();
-            this.displayMessage(`Committed ${status.staged.length} files`);
+            const commitedFiles = await this.gitManager.commitAll(commitMessage);
+            this.displayMessage(`Committed ${commitedFiles} files`);
         } else {
             this.displayMessage("No changes to commit");
         }
 
         if (!this.settings.disablePush) {
-            const trackingBranch = status.tracking;
-            const currentBranch = status.current;
 
-            if (!trackingBranch) {
-                this.displayError("Did not push. No upstream branch is set! See README for instructions", 10000);
-                this.setState(PluginState.idle);
-                return;
-            }
+            //TODO handle missing tracking branch
+            // if (!trackingBranch) {
+            //     this.displayError("Did not push. No upstream branch is set! See README for instructions", 10000);
+            //     this.setState(PluginState.idle);
+            //     return;
+            // }
 
-            const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
 
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
-            if (remoteChangedFiles > 0) {
+            if (await this.gitManager.canPush()) {
                 if (this.settings.pullBeforePush) {
-                    const pulledFilesLength = await this.pull();
+                    const pulledFilesLength = await this.gitManager.pull();
                     if (pulledFilesLength > 0) {
                         this.displayMessage(`Pulled ${pulledFilesLength} files from remote`);
                     }
                 }
 
-                // Refresh because of pull
-                status = await this.git.status();
-
-                if (status.conflicted.length > 0) {
+                let status: any;
+                if (this.gitManager instanceof SimpleGit && (status = await this.gitManager.status()).conflicted.length > 0) {
                     this.displayError(`Cannot push. You have ${status.conflicted.length} conflict files`);
                     this.handleConflict(status.conflicted);
                     return;
                 } else {
-                    const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
-
-                    await this.push();
-                    this.displayMessage(`Pushed ${remoteChangedFiles} files to remote`);
+                    const pushedFiles = await this.gitManager.push();
+                    this.displayMessage(`Pushed ${pushedFiles} files to remote`);
                 }
             } else {
                 this.displayMessage("No changes to push");
@@ -247,71 +223,6 @@ export default class ObsidianGit extends Plugin {
         }
         this.setState(PluginState.idle);
     }
-
-
-    // region: main methods
-
-    isGitInstalled(): boolean {
-        // https://github.com/steveukx/git-js/issues/402
-        const command = spawnSync('git', ['--version'], {
-            stdio: 'ignore'
-        });
-
-        if (command.error) {
-            console.error(command.error);
-            return false;
-        }
-        return true;
-    }
-
-    async add(): Promise<void> {
-        this.setState(PluginState.add);
-        await this.git.add(
-            "./*",
-            (err: Error | null) =>
-                err && this.displayError(`Cannot add files: ${err.message}`)
-        );
-    }
-
-    async commit(message?: string): Promise<void> {
-        this.setState(PluginState.commit);
-        let commitMessage: string | string[] = message ?? await this.formatCommitMessage(this.settings.commitMessage);
-        if (this.settings.listChangedFilesInMessageBody) {
-            commitMessage = [commitMessage, "Affected files:", (await this.git.status()).staged.join("\n")];
-        }
-        await this.git.commit(commitMessage);
-    }
-
-    async push(): Promise<void> {
-        this.setState(PluginState.push);
-        await this.git.push(
-            (err: Error | null) => {
-                err && this.displayError(`Push failed ${err.message}`);
-            }
-        );
-
-        this.lastUpdate = Date.now();
-    }
-
-    async pull(): Promise<number> {
-        this.setState(PluginState.pull);
-        const pullResult = await this.git.pull(["--no-rebase"],
-            async (err: Error | null) => {
-                if (err) {
-                    this.displayError(`Pull failed ${err.message}`);
-                    const status = await this.git.status();
-                    if (status.conflicted.length > 0) {
-                        this.handleConflict(status.conflicted);
-                    }
-                }
-            }
-        );
-        this.lastUpdate = Date.now();
-        return pullResult.files.length;
-    }
-
-    // endregion: main methods
-
     enableAutoBackup() {
         const minutes = this.settings.autoSaveInterval;
         this.intervalIDBackup = window.setInterval(
@@ -378,7 +289,6 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    // region: displaying / formatting messages
     displayMessage(message: string, timeout: number = 4 * 1000): void {
         if (!(this.app as any).isMobile) {
             this.statusBar.displayMessage(message.toLowerCase(), timeout);
@@ -395,207 +305,6 @@ export default class ObsidianGit extends Plugin {
         console.log(`git obsidian error: ${message}`);
         if (!(this.app as any).isMobile) {
             this.statusBar.displayMessage(message.toLowerCase(), timeout);
-        }
-    }
-
-    async formatCommitMessage(template: string): Promise<string> {
-        if (template.includes("{{numFiles}}")) {
-            let status = await this.git.status();
-            let numFiles = status.files.length;
-            template = template.replace("{{numFiles}}", String(numFiles));
-        }
-
-        if (template.includes("{{files}}")) {
-            let status = await this.git.status();
-
-            let changeset: { [key: string]: string[]; } = {};
-            status.files.forEach((value: FileStatusResult) => {
-                if (value.index in changeset) {
-                    changeset[value.index].push(value.path);
-                } else {
-                    changeset[value.index] = [value.path];
-                }
-            });
-
-            let chunks = [];
-            for (let [action, files] of Object.entries(changeset)) {
-                chunks.push(action + " " + files.join(" "));
-            }
-
-            let files = chunks.join(", ");
-
-            template = template.replace("{{files}}", files);
-        }
-
-        let moment = (window as any).moment;
-        return template.replace(
-            "{{date}}",
-            moment().format(this.settings.commitDateFormat)
-        );
-    }
-
-    // endregion: displaying / formatting stuff
-}
-
-interface StatusBarMessage {
-    message: string;
-    timeout: number;
-}
-
-class StatusBar {
-    public messages: StatusBarMessage[] = [];
-    public currentMessage: StatusBarMessage;
-    public lastMessageTimestamp: number;
-
-    private statusBarEl: HTMLElement;
-    private plugin: ObsidianGit;
-
-    constructor(statusBarEl: HTMLElement, plugin: ObsidianGit) {
-        this.statusBarEl = statusBarEl;
-        this.plugin = plugin;
-    }
-
-    public displayMessage(message: string, timeout: number) {
-        this.messages.push({
-            message: `git: ${message.slice(0, 100)}`,
-            timeout: timeout,
-        });
-        this.display();
-    }
-
-    public display() {
-        if (this.messages.length > 0 && !this.currentMessage) {
-            this.currentMessage = this.messages.shift();
-            this.statusBarEl.setText(this.currentMessage.message);
-            this.lastMessageTimestamp = Date.now();
-        } else if (this.currentMessage) {
-            const messageAge = Date.now() - this.lastMessageTimestamp;
-            if (messageAge >= this.currentMessage.timeout) {
-                this.currentMessage = null;
-                this.lastMessageTimestamp = null;
-            }
-        } else {
-            this.displayState();
-        }
-    }
-
-    private displayState() {
-        switch (this.plugin.state) {
-            case PluginState.idle:
-                this.displayFromNow(this.plugin.lastUpdate);
-                break;
-            case PluginState.status:
-                this.statusBarEl.setText("git: checking repo status..");
-                break;
-            case PluginState.add:
-                this.statusBarEl.setText("git: adding files to repo..");
-                break;
-            case PluginState.commit:
-                this.statusBarEl.setText("git: committing changes..");
-                break;
-            case PluginState.push:
-                this.statusBarEl.setText("git: pushing changes..");
-                break;
-            case PluginState.pull:
-                this.statusBarEl.setText("git: pulling changes..");
-                break;
-            case PluginState.conflicted:
-                this.statusBarEl.setText("git: you have conflict files..");
-                break;
-            default:
-                this.statusBarEl.setText("git: failed on initialization!");
-                break;
-        }
-    }
-
-    private displayFromNow(timestamp: number): void {
-        if (timestamp) {
-            let moment = (window as any).moment;
-            let fromNow = moment(timestamp).fromNow();
-            this.statusBarEl.setText(`git: last update ${fromNow}..`);
-        } else {
-            this.statusBarEl.setText(`git: ready`);
-        }
-    }
-}
-class CustomMessageModal extends SuggestModal<string> {
-    plugin: ObsidianGit;
-
-    constructor(plugin: ObsidianGit) {
-        super(plugin.app);
-        this.plugin = plugin;
-        this.setPlaceholder("Type your message and select optional the version with the added date.");
-    }
-
-
-    getSuggestions(query: string): string[] {
-        const date = (window as any).moment().format(this.plugin.settings.commitDateFormat);
-        if (query == "") query = "...";
-        return [query, `${date}: ${query}`, `${query}: ${date}`];
-    }
-
-    renderSuggestion(value: string, el: HTMLElement): void {
-        el.innerText = value;
-    }
-
-    onChooseSuggestion(item: string, _: MouseEvent | KeyboardEvent): void {
-        this.plugin.promiseQueue.addTask(() => this.plugin.createBackup(false, item));
-    }
-
-}
-class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
-    plugin: ObsidianGit;
-    changedFiles: FileStatusResult[];
-
-    constructor(plugin: ObsidianGit, changedFiles: FileStatusResult[]) {
-        super(plugin.app);
-        this.plugin = plugin;
-        this.changedFiles = changedFiles;
-        this.setPlaceholder("Not supported files will be opened by default app!");
-    }
-
-    getItems(): FileStatusResult[] {
-        return this.changedFiles;
-    }
-
-    getItemText(item: FileStatusResult): string {
-        if (item.index == "?" && item.working_dir == "?") {
-            return `Untracked | ${item.path}`;
-        }
-
-        let working_dir = "";
-        let index = "";
-
-        if (item.working_dir != " ") working_dir = `Working dir: ${item.working_dir} `;
-        if (item.index != " ") index = `Index: ${item.index}`;
-
-        return `${working_dir}${index} | ${item.path}`;
-    }
-
-    onChooseItem(item: FileStatusResult, _: MouseEvent | KeyboardEvent): void {
-        if (this.plugin.app.metadataCache.getFirstLinkpathDest(item.path, "") == null) {
-            (this.app as any).openWithDefaultApp(item.path);
-        } else {
-            this.plugin.app.workspace.openLinkText(item.path, "/");
-        }
-    }
-}
-
-class PromiseQueue {
-    tasks: (() => Promise<any>)[] = [];
-
-    addTask(task: () => Promise<any>) {
-        this.tasks.push(task);
-        if (this.tasks.length === 1) {
-            this.handleTask();
-        }
-    }
-    async handleTask() {
-        if (this.tasks.length > 0) {
-            this.tasks[0]().finally(() => {
-                this.tasks.shift();
-                this.handleTask();
-            });
         }
     }
 }
