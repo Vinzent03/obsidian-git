@@ -3,6 +3,7 @@ import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
 import { ChangedFilesModal } from "./modals/changedFilesModal";
 import { CustomMessageModal } from "./modals/customMessageModal";
+import { InitModal } from "./modals/initModal";
 import { PromiseQueue } from "./promiseQueue";
 import { ObsidianGitSettingsTab } from "./settingsPane";
 import { SimpleGit } from "./simpleGit";
@@ -111,7 +112,7 @@ export default class ObsidianGit extends Plugin {
                 this.displayError("Cannot run git command");
                 break;
             case "missing-repo":
-                this.displayError("Valid git repository not found");
+                new InitModal(this).open();
                 break;
             case "wrong-settings":
                 this.displayError("Not all of the required standalone mode settings are set");

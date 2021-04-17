@@ -185,6 +185,13 @@ export class IsomorphicGit extends GitManager {
         });
     }
 
+    async init(): Promise<void> {
+        return git.init({
+            fs: this.fs,
+            dir: this.dir
+        });
+    }
+
     setConfig(path: string, value: string): Promise<void> {
         return git.setConfig({
             fs: this.fs,

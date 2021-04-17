@@ -40,7 +40,7 @@ export enum PluginState {
 }
 
 export interface BranchInfo {
-    current: string,
-    remote: string,
+    current: string;
+    remote: string;
     branches: string[];
 }

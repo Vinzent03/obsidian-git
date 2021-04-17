@@ -27,6 +27,8 @@ export abstract class GitManager {
 
     abstract checkout(branch: string): Promise<void>;
 
+    abstract init(): Promise<void>;
+
     async formatCommitMessage(): Promise<string> {
         let template = this.plugin.settings.commitMessage;
 

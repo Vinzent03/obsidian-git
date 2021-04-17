@@ -116,6 +116,10 @@ export class SimpleGit extends GitManager {
         });
     }
 
+    async init(): Promise<void> {
+        await this.git.init(false);
+    }
+
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
         const command = spawnSync('git', ['--version'], {
