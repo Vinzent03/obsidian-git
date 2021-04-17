@@ -197,6 +197,30 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Name")
+            .setDesc("Every commit will have this name as signature")
+            .addText(async cb => {
+                cb.setValue(await this.plugin.gitManager.getConfig("user.name"));
+                cb.onChange(value => this.plugin.gitManager.setConfig("user.name", value));
+            });
+
+        new Setting(containerEl)
+            .setName("E-Mail")
+            .setDesc("Every commit will have this E-Mail as signature")
+            .addText(async cb => {
+                cb.setValue(await this.plugin.gitManager.getConfig("user.email"));
+                cb.onChange(value => this.plugin.gitManager.setConfig("user.email", value));
+            });
+
+        new Setting(containerEl)
+            .setName("Repository URL")
+            .setDesc("URL under which the git repository is accessible")
+            .addText(async cb => {
+                cb.setValue(await this.plugin.gitManager.getConfig("remote.origin.url"));
+                cb.onChange(value => this.plugin.gitManager.setConfig("remote.origin.url", value));
+            });
+
+        new Setting(containerEl)
             .setName("Standalone mode (Needed for Obsidian mobile)")
             .setDesc("No system wide git installation is needed. See README for limitations and instructions.")
             .addToggle(cb =>
@@ -217,37 +241,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     }
 
     addStandaloneSettings() {
-
-        if (!(this.plugin.gitManager instanceof IsomorphicGit)) {
-            return;
-        }
-        const isomorphicGit = this.plugin.gitManager as IsomorphicGit;
         const containerEl = this.containerEl;
         containerEl.createEl("h2", { text: "Settings for standalone mode" });
-
-        new Setting(containerEl)
-            .setName("Name")
-            .setDesc("Every commit will have this name as signature")
-            .addText(async cb => {
-                cb.setValue(await isomorphicGit.getConfig("user.name"));
-                cb.onChange(value => isomorphicGit.setConfig("user.name", value));
-            });
-
-        new Setting(containerEl)
-            .setName("E-Mail")
-            .setDesc("Every commit will have this E-Mail as signature")
-            .addText(async cb => {
-                cb.setValue(await isomorphicGit.getConfig("user.email"));
-                cb.onChange(value => isomorphicGit.setConfig("user.email", value));
-            });
-
-        new Setting(containerEl)
-            .setName("Repository URL")
-            .setDesc("URL under which the git repository is accessible")
-            .addText(async cb => {
-                cb.setValue(await isomorphicGit.getConfig("remote.origin.url"));
-                cb.onChange(value => isomorphicGit.setConfig("remote.origin.url", value));
-            });
 
         new Setting(containerEl)
             .setName("Proxy URL")

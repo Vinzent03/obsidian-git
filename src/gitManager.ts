@@ -29,6 +29,10 @@ export abstract class GitManager {
 
     abstract init(): Promise<void>;
 
+    abstract setConfig(path: string, value: any): Promise<void>;
+
+    abstract getConfig(path: string): Promise<any>;
+
     async formatCommitMessage(): Promise<string> {
         let template = this.plugin.settings.commitMessage;
 

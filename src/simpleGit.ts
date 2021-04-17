@@ -109,7 +109,7 @@ export class SimpleGit extends GitManager {
     }
 
     async checkout(branch: string): Promise<void> {
-        this.git.checkout(branch, async (err: Error) => {
+        await this.git.checkout(branch, async (err: Error) => {
             if (err) {
                 new Notice(err.message);
             }
@@ -120,6 +120,14 @@ export class SimpleGit extends GitManager {
         await this.git.init(false);
     }
 
+    async setConfig(path: string, value: any): Promise<void> {
+        await this.git.addConfig(path, value);
+    }
+
+    async getConfig(path: string): Promise<any> {
+        const config = await this.git.listConfig();
+        return config.all[path];
+    }
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
         const command = spawnSync('git', ['--version'], {
