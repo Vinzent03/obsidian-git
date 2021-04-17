@@ -191,12 +191,11 @@ export default class ObsidianGit extends Plugin {
 
         if (!this.settings.disablePush) {
 
-            //TODO handle missing tracking branch
-            // if (!trackingBranch) {
-            //     this.displayError("Did not push. No upstream branch is set! See README for instructions", 10000);
-            //     this.setState(PluginState.idle);
-            //     return;
-            // }
+            if (!(await this.gitManager.branchInfo()).remote) {
+                this.displayError("Did not push. No upstream branch is set! See README for instructions", 10000);
+                this.setState(PluginState.idle);
+                return;
+            }
 
 
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present

@@ -1,9 +1,9 @@
 import { spawnSync } from "child_process";
-import { FileSystemAdapter } from "obsidian";
+import { FileSystemAdapter, Notice } from "obsidian";
 import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
-import { FileStatusResult, PluginState } from "./types";
+import { BranchInfo, FileStatusResult, PluginState } from "./types";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -95,6 +95,25 @@ export class SimpleGit extends GitManager {
         } else {
             return "valid";
         }
+    }
+
+    async branchInfo(): Promise<BranchInfo> {
+        const status = await this.git.status();
+        const branches = await this.git.branchLocal();
+
+        return {
+            current: status.current,
+            remote: status.tracking,
+            branches: branches.all
+        };
+    }
+
+    async checkout(branch: string): Promise<void> {
+        this.git.checkout(branch, async (err: Error) => {
+            if (err) {
+                new Notice(err.message);
+            }
+        });
     }
 
     private isGitInstalled(): boolean {

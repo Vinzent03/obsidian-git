@@ -2,7 +2,7 @@ import git, { ReadCommitResult } from 'isomorphic-git';
 import http from "isomorphic-git/http/web";
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
-import { DiffResult, FileStatusResult, PluginState, Status } from './types';
+import { BranchInfo, DiffResult, FileStatusResult, PluginState, Status } from './types';
 
 export class IsomorphicGit extends GitManager {
     private fs: any;
@@ -101,7 +101,9 @@ export class IsomorphicGit extends GitManager {
 
     async push(): Promise<number> {
         this.plugin.setState(PluginState.push);
-        const changedFiles = await this.getChangedFiles("master", "origin/master"); //TODO configurable
+        const branchInfo = await this.branchInfo();
+        const changedFiles = await this.getChangedFiles(branchInfo.current, branchInfo.remote);
+
         await git.push({
             fs: this.fs,
             dir: this.dir,
@@ -118,7 +120,8 @@ export class IsomorphicGit extends GitManager {
     }
 
     async canPush(): Promise<boolean> {
-        return await this.getChangedFiles("master", "origin/master") !== 0; //TODO configurable
+        const branchInfo = await this.branchInfo();
+        return await this.getChangedFiles(branchInfo.current, branchInfo.remote) !== 0;
     }
 
     async checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings"> {
@@ -142,6 +145,44 @@ export class IsomorphicGit extends GitManager {
         }
 
         return "valid";
+    }
+
+    async branchInfo(): Promise<BranchInfo> {
+        const current = await git.currentBranch({
+            fs: this.fs,
+            dir: this.dir
+        }) || "";
+
+        const branches = await git.listBranches({
+            fs: this.fs,
+            dir: this.dir,
+        });
+
+        const remote = await git.getConfig({
+            fs: this.fs,
+            dir: this.dir,
+            path: `branch.${current}.remote`
+        }) ?? "";
+
+        const branch = (await git.getConfig({
+            fs: this.fs,
+            dir: this.dir,
+            path: `branch.${current}.merge`
+        }))?.split("refs/heads")[1] ?? "";
+
+        return {
+            current: current,
+            remote: remote + branch,
+            branches: branches
+        };
+    }
+
+    async checkout(branch: string): Promise<void> {
+        return git.checkout({
+            fs: this.fs,
+            dir: this.dir,
+            ref: branch,
+        });
     }
 
     setConfig(path: string, value: string): Promise<void> {

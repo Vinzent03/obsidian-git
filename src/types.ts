@@ -38,3 +38,9 @@ export enum PluginState {
     push,
     conflicted,
 }
+
+export interface BranchInfo {
+    current: string,
+    remote: string,
+    branches: string[];
+}

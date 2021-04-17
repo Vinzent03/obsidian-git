@@ -135,25 +135,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Current branch")
             .setDesc("Switch to a different branch")
             .addDropdown(async (dropdown) => {
-                //TODO add branch management
-                const branchInfo = await this.plugin.gitManager.branchLocal();
-                for (const branch of branchInfo.all) {
+                const branchInfo = await this.plugin.gitManager.branchInfo();
+                for (const branch of branchInfo.branches) {
                     dropdown.addOption(branch, branch);
                 }
                 dropdown.setValue(branchInfo.current);
                 dropdown.onChange(async (option) => {
-                    await this.plugin.gitManager.checkout(
-                        option,
-                        [],
-                        async (err: Error) => {
-                            if (err) {
-                                new Notice(err.message);
-                                dropdown.setValue(branchInfo.current);
-                            } else {
-                                new Notice(`Checked out to ${option}`);
-                            }
-                        }
-                    );
+                    await this.plugin.gitManager.checkout(option);
+                    new Notice(`Checked out to ${option}`);
                 });
             });
 

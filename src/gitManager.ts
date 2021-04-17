@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import ObsidianGit from "./main";
-import { FileStatusResult, Status } from "./types";
+import { BranchInfo, FileStatusResult, Status } from "./types";
 
 
 export abstract class GitManager {
@@ -22,6 +22,10 @@ export abstract class GitManager {
     abstract canPush(): Promise<boolean>;
 
     abstract checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings" | "missing-git">;
+
+    abstract branchInfo(): Promise<BranchInfo>;
+
+    abstract checkout(branch: string): Promise<void>;
 
     async formatCommitMessage(): Promise<string> {
         let template = this.plugin.settings.commitMessage;
