@@ -87,14 +87,23 @@ export class SimpleGit extends GitManager {
         return remoteChangedFiles !== 0;
     }
 
-    async checkRequirements(): Promise<"valid" | "missing-repo" | "missing-git"> {
+    async checkRequirements(): Promise<"valid" | "missing-repo" | "missing-git" | "wrong-settings"> {
         if (!this.isGitInstalled()) {
             return "missing-git";
-        } else if (!(await this.git.checkIsRepo())) {
-            return "missing-repo";
-        } else {
-            return "valid";
         }
+        if (!(await this.git.checkIsRepo())) {
+            return "missing-repo";
+        }
+        const config = (await this.git.listConfig()).all;
+        const user = config["user.name"];
+        const email = config["user.email"];
+        const remoteURL = config["remote.origin.url"];
+
+        if (!user || !email || !remoteURL) {
+            return "wrong-settings";
+        }
+
+        return "valid";
     }
 
     async branchInfo(): Promise<BranchInfo> {
@@ -106,7 +115,7 @@ export class SimpleGit extends GitManager {
             remote: status.tracking,
             branches: branches.all
         };
-    }
+    };
 
     async checkout(branch: string): Promise<void> {
         await this.git.checkout(branch, async (err: Error) => {
@@ -114,15 +123,15 @@ export class SimpleGit extends GitManager {
                 new Notice(err.message);
             }
         });
-    }
+    };
 
     async init(): Promise<void> {
         await this.git.init(false);
-    }
+    };
 
     async setConfig(path: string, value: any): Promise<void> {
         await this.git.addConfig(path, value);
-    }
+    };
 
     async getConfig(path: string): Promise<any> {
         const config = await this.git.listConfig();
