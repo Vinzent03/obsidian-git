@@ -192,7 +192,7 @@ export default class ObsidianGit extends Plugin {
 
         if (!this.settings.disablePush) {
 
-            if (!(await this.gitManager.branchInfo()).remote) {
+            if (!(await this.gitManager.branchInfo()).tracking) {
                 this.displayError("Did not push. No upstream branch is set! See README for instructions", 10000);
                 this.setState(PluginState.idle);
                 return;

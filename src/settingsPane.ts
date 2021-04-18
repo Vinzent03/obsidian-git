@@ -146,6 +146,35 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             });
 
+        const remoteBranches = new Setting(containerEl)
+            .setName("Tracking branch")
+            .setDesc("Select tracking branch from remote");
+
+        remoteBranches.addDropdown(async (dropdown) => {
+            const branchInfo = await this.plugin.gitManager.branchInfo(true);
+            for (const branch of branchInfo.remoteBranches) {
+                dropdown.addOption(branch, branch);
+            }
+            dropdown.setValue(branchInfo.tracking);
+            dropdown.onChange(async (option) => {
+                const remote = option.substring(0, option.indexOf("/"));
+                const branch = option.substring(option.indexOf("/"));
+                await this.plugin.gitManager.setConfig(`branch.${branchInfo.current}.remote`, remote);
+                await this.plugin.gitManager.setConfig(`branch.${branchInfo.current}.merge`, "refs/heads" + branch);
+                new Notice(`Set ${option} as tracking branch`);
+            });
+        });
+        remoteBranches.addButton(cb => {
+            cb.setButtonText("Fetch remote");
+            cb.setCta();
+            cb.onClick(async (_) => {
+                await this.plugin.gitManager.fetch();
+                new Notice("Fetched remote branches");
+                this.display();
+            });
+        });
+
+
         new Setting(containerEl)
             .setName("Pull updates on startup")
             .setDesc("Automatically pull updates when Obsidian starts")
@@ -217,7 +246,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setDesc("URL under which the git repository is accessible")
             .addText(async cb => {
                 cb.setValue(await this.plugin.gitManager.getConfig("remote.origin.url"));
-                cb.onChange(value => this.plugin.gitManager.setConfig("remote.origin.url", value));
+                cb.onChange(async value => {
+                    await this.plugin.gitManager.setConfig("remote.origin.url", value);
+                    this.plugin.gitManager.setConfig("remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*");
+                });
             });
 
         new Setting(containerEl)

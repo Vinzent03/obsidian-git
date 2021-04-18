@@ -106,14 +106,19 @@ export class SimpleGit extends GitManager {
         return "valid";
     }
 
-    async branchInfo(): Promise<BranchInfo> {
+    async branchInfo(listRemoteBranches: boolean = false): Promise<BranchInfo> {
         const status = await this.git.status();
         const branches = await this.git.branchLocal();
+        let remoteBranches: string[];
+        if (listRemoteBranches) {
+            remoteBranches = (await this.git.branch(["-r"])).all;
+        }
 
         return {
             current: status.current,
-            remote: status.tracking,
-            branches: branches.all
+            tracking: status.tracking,
+            branches: branches.all,
+            remoteBranches: remoteBranches
         };
     };
 
@@ -136,6 +141,10 @@ export class SimpleGit extends GitManager {
     async getConfig(path: string): Promise<any> {
         const config = await this.git.listConfig();
         return config.all[path];
+    }
+
+    async fetch(): Promise<void> {
+        await this.git.fetch("origin");
     }
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402

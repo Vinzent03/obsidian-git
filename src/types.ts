@@ -41,6 +41,7 @@ export enum PluginState {
 
 export interface BranchInfo {
     current: string;
-    remote: string;
+    tracking: string;
     branches: string[];
+    remoteBranches?: string[];
 }

@@ -23,7 +23,7 @@ export abstract class GitManager {
 
     abstract checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings" | "missing-git">;
 
-    abstract branchInfo(): Promise<BranchInfo>;
+    abstract branchInfo(listRemoteBranches?: boolean): Promise<BranchInfo>;
 
     abstract checkout(branch: string): Promise<void>;
 
@@ -32,6 +32,8 @@ export abstract class GitManager {
     abstract setConfig(path: string, value: any): Promise<void>;
 
     abstract getConfig(path: string): Promise<any>;
+
+    abstract fetch(): Promise<void>;
 
     async formatCommitMessage(): Promise<string> {
         let template = this.plugin.settings.commitMessage;

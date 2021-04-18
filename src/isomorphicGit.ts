@@ -51,7 +51,7 @@ export class IsomorphicGit extends GitManager {
         };
     }
 
-    async commitAll(message?: string): Promise<number> {
+    async commitAll(message?: string): Promise<number | undefined> {
         this.plugin.setState(PluginState.commit);
         const commitBefore = await this.getCurrentCommit();
 
@@ -73,8 +73,13 @@ export class IsomorphicGit extends GitManager {
         });
         const commitAfter = await this.getCurrentCommit();
         this.plugin.lastUpdate = Date.now();
-        return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
 
+        //If the repo has no commits yet, `commitBefore` is undefined
+        if (commitBefore) {
+            return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
+        } else {
+            return undefined;
+        }
     }
 
     async pull(): Promise<number> {
@@ -102,7 +107,7 @@ export class IsomorphicGit extends GitManager {
     async push(): Promise<number> {
         this.plugin.setState(PluginState.push);
         const branchInfo = await this.branchInfo();
-        const changedFiles = await this.getChangedFiles(branchInfo.current, branchInfo.remote);
+        const changedFiles = await this.getChangedFiles(branchInfo.current, branchInfo.tracking);
 
         await git.push({
             fs: this.fs,
@@ -121,7 +126,7 @@ export class IsomorphicGit extends GitManager {
 
     async canPush(): Promise<boolean> {
         const branchInfo = await this.branchInfo();
-        return await this.getChangedFiles(branchInfo.current, branchInfo.remote) !== 0;
+        return await this.getChangedFiles(branchInfo.current, branchInfo.tracking) !== 0;
     }
 
     async checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings"> {
@@ -147,7 +152,7 @@ export class IsomorphicGit extends GitManager {
         return "valid";
     }
 
-    async branchInfo(): Promise<BranchInfo> {
+    async branchInfo(listRemoteBranches: boolean = false): Promise<BranchInfo> {
         const current = await git.currentBranch({
             fs: this.fs,
             dir: this.dir
@@ -162,7 +167,7 @@ export class IsomorphicGit extends GitManager {
             fs: this.fs,
             dir: this.dir,
             path: `branch.${current}.remote`
-        }) ?? "";
+        }) ?? "origin";
 
         const branch = (await git.getConfig({
             fs: this.fs,
@@ -170,10 +175,22 @@ export class IsomorphicGit extends GitManager {
             path: `branch.${current}.merge`
         }))?.split("refs/heads")[1] ?? "";
 
+        let remoteBranches: string[];
+        if (listRemoteBranches) {
+            remoteBranches = await git.listBranches({
+                fs: this.fs,
+                dir: this.dir,
+                remote: remote
+            });
+            remoteBranches.remove("HEAD");
+            remoteBranches = remoteBranches.map(e => `${remote}/${e}`);
+        }
+
         return {
             current: current,
-            remote: remote + branch,
-            branches: branches
+            tracking: remote + branch,
+            branches: branches,
+            remoteBranches: remoteBranches
         };
     }
 
@@ -209,6 +226,19 @@ export class IsomorphicGit extends GitManager {
         });
     }
 
+    async fetch(): Promise<void> {
+        await git.fetch({
+            fs: this.fs,
+            dir: this.dir,
+            http: http,
+            corsProxy: this.plugin.settings.proxyURL,
+            onAuth: () => {
+                const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
+                const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
+                return { username: username, password: password };
+            }
+        });
+    }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
         const index = (this.indexes as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
@@ -216,12 +246,21 @@ export class IsomorphicGit extends GitManager {
         return { index: index, path: row[this.FILE] };
     }
 
-    private async getCurrentCommit(): Promise<ReadCommitResult> {
-        return (await git.log({
-            fs: this.fs,
-            dir: this.dir,
-            depth: 1
-        }))[0];
+    private async getCurrentCommit(): Promise<ReadCommitResult | undefined> {
+        try {
+            return (await git.log({
+                fs: this.fs,
+                dir: this.dir,
+                depth: 1
+            }))[0];
+        } catch (error) {
+            const branch = await this.branchInfo();
+            if (error.code === "NotFoundError" && error.data.what === `refs/heads/${branch.current}`) {
+                return undefined;
+            } else {
+                throw error;
+            }
+        }
     }
 
     private async getChangedFiles(commitHash1: string, commitHash2: string): Promise<number> {
