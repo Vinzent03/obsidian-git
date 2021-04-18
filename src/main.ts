@@ -300,11 +300,11 @@ export default class ObsidianGit extends Plugin {
 
         console.log(`git obsidian message: ${message}`);
     }
-    displayError(message: string, timeout: number = 0): void {
-        new Notice(message);
+    displayError(message: any, timeout: number = 0): void {
+        new Notice(message.toString());
         console.log(`git obsidian error: ${message}`);
         if (!(this.app as any).isMobile) {
-            this.statusBar.displayMessage(message.toLowerCase(), timeout);
+            this.statusBar.displayMessage(message.toString().toLowerCase(), timeout);
         }
     }
 }

@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { FileSystemAdapter, Notice } from "obsidian";
+import { FileSystemAdapter } from "obsidian";
 import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
@@ -35,9 +35,7 @@ export class SimpleGit extends GitManager {
     async commitAll(message?: string): Promise<number> {
         this.plugin.setState(PluginState.add);
         await this.git.add(
-            "./*",
-            (err: Error | null) =>
-                err && this.plugin.displayError(`Cannot add files: ${err.message}`)
+            "./*", (err: any) => this.onError(err)
         );
         this.plugin.setState(PluginState.commit);
 
@@ -68,18 +66,14 @@ export class SimpleGit extends GitManager {
         const currentBranch = status.current;
         const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
 
-        await this.git.push(
-            (err: Error | null) => {
-                err && this.plugin.displayError(`Push failed ${err.message}`);
-            }
-        );
+        await this.git.push((err: any) => this.onError(err));
 
         return remoteChangedFiles;
     }
 
 
     async canPush(): Promise<boolean> {
-        const status = await this.git.status();
+        const status = await this.git.status((err: any) => this.onError(err));
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
         const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
@@ -94,7 +88,7 @@ export class SimpleGit extends GitManager {
         if (!(await this.git.checkIsRepo())) {
             return "missing-repo";
         }
-        const config = (await this.git.listConfig()).all;
+        const config = (await this.git.listConfig((err: any) => this.onError(err))).all;
         const user = config["user.name"];
         const email = config["user.email"];
         const remoteURL = config["remote.origin.url"];
@@ -107,11 +101,11 @@ export class SimpleGit extends GitManager {
     }
 
     async branchInfo(listRemoteBranches: boolean = false): Promise<BranchInfo> {
-        const status = await this.git.status();
-        const branches = await this.git.branchLocal();
+        const status = await this.git.status((err: any) => this.onError(err));
+        const branches = await this.git.branchLocal((err: any) => this.onError(err));
         let remoteBranches: string[];
         if (listRemoteBranches) {
-            remoteBranches = (await this.git.branch(["-r"])).all;
+            remoteBranches = (await this.git.branch(["-r"], (err: any) => this.onError(err))).all;
         }
 
         return {
@@ -123,11 +117,7 @@ export class SimpleGit extends GitManager {
     };
 
     async checkout(branch: string): Promise<void> {
-        await this.git.checkout(branch, async (err: Error) => {
-            if (err) {
-                new Notice(err.message);
-            }
-        });
+        await this.git.checkout(branch, (err: any) => this.onError(err));
     };
 
     async init(): Promise<void> {
@@ -135,16 +125,16 @@ export class SimpleGit extends GitManager {
     };
 
     async setConfig(path: string, value: any): Promise<void> {
-        await this.git.addConfig(path, value);
+        await this.git.addConfig(path, value, (err: any) => this.onError(err));
     };
 
     async getConfig(path: string): Promise<any> {
-        const config = await this.git.listConfig();
+        const config = await this.git.listConfig((err: any) => this.onError(err));
         return config.all[path];
     }
 
     async fetch(): Promise<void> {
-        await this.git.fetch("origin");
+        await this.git.fetch((err: any) => this.onError(err));
     }
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
@@ -157,5 +147,11 @@ export class SimpleGit extends GitManager {
             return false;
         }
         return true;
+    }
+
+    private onError(error: Error | null) {
+        if (error) {
+            this.plugin.displayError(error.message);
+        }
     }
 }

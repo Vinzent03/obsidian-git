@@ -1,5 +1,6 @@
 import git, { ReadCommitResult } from 'isomorphic-git';
 import http from "isomorphic-git/http/web";
+import { Notice } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
 import { BranchInfo, DiffResult, FileStatusResult, PluginState, Status } from './types';
@@ -37,97 +38,117 @@ export class IsomorphicGit extends GitManager {
 
     async status(): Promise<Status> {
         this.plugin.setState(PluginState.status);
-        const status = await git.statusMatrix({
-            fs: this.fs,
-            dir: this.dir,
-        });
+        try {
+            const status = await git.statusMatrix({
+                fs: this.fs,
+                dir: this.dir,
+            });
 
-        const changed: FileStatusResult[] = status.filter(row => row[this.HEAD] !== row[this.WORKDIR]).map(row => this.getFileStatusResult(row));
-        const staged = status.filter(row => row[this.STAGE] === 3 || row[this.STAGE] === 2).map(row => row[this.FILE]);
+            const changed: FileStatusResult[] = status.filter(row => row[this.HEAD] !== row[this.WORKDIR]).map(row => this.getFileStatusResult(row));
+            const staged = status.filter(row => row[this.STAGE] === 3 || row[this.STAGE] === 2).map(row => row[this.FILE]);
 
-        return {
-            changed: changed,
-            staged: staged,
-        };
+            return {
+                changed: changed,
+                staged: staged,
+            };
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
     }
 
     async commitAll(message?: string): Promise<number | undefined> {
         this.plugin.setState(PluginState.commit);
-        const commitBefore = await this.getCurrentCommit();
+        try {
+            const commitBefore = await this.getCurrentCommit();
 
-        const repo = {
-            fs: this.fs,
-            dir: this.dir
-        };
-        const status = await git.statusMatrix(repo);
-        await Promise.all(
-            status.map(([filepath, , worktreeStatus]) =>
-                worktreeStatus ? git.add({ ...repo, filepath }) : git.remove({ ...repo, filepath })
-            )
-        );
-        const formatMessage = message ?? await this.formatCommitMessage();
+            const repo = {
+                fs: this.fs,
+                dir: this.dir
+            };
+            const status = await git.statusMatrix(repo);
+            await Promise.all(
+                status.map(([filepath, , worktreeStatus]) =>
+                    worktreeStatus ? git.add({ ...repo, filepath }) : git.remove({ ...repo, filepath })
+                )
+            );
+            const formatMessage = message ?? await this.formatCommitMessage();
 
-        await git.commit({
-            ...repo,
-            message: formatMessage
-        });
-        const commitAfter = await this.getCurrentCommit();
-        this.plugin.lastUpdate = Date.now();
+            await git.commit({
+                ...repo,
+                message: formatMessage
+            });
+            const commitAfter = await this.getCurrentCommit();
+            this.plugin.lastUpdate = Date.now();
 
-        //If the repo has no commits yet, `commitBefore` is undefined
-        if (commitBefore) {
-            return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
-        } else {
-            return undefined;
+            //If the repo has no commits yet, `commitBefore` is undefined
+            if (commitBefore) {
+                return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
+            } else {
+                return undefined;
+            }
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
         }
     }
 
     async pull(): Promise<number> {
         this.plugin.setState(PluginState.pull);
-        const commitBefore = await this.getCurrentCommit();
+        try {
+            const commitBefore = await this.getCurrentCommit();
 
-        await git.pull({
-            fs: this.fs,
-            dir: this.dir,
-            http: http,
-            corsProxy: this.plugin.settings.proxyURL,
-            onAuth: () => {
-                const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
-                const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
-                return { username: username, password: password };
-            }
-        });
-        this.plugin.lastUpdate = Date.now();
+            await git.pull({
+                fs: this.fs,
+                dir: this.dir,
+                http: http,
+                corsProxy: this.plugin.settings.proxyURL,
+                onAuth: () => {
+                    const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
+                    const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
+                    return { username: username, password: password };
+                }
+            });
+            this.plugin.lastUpdate = Date.now();
 
-        const commitAfter = await this.getCurrentCommit();
+            const commitAfter = await this.getCurrentCommit();
 
-        return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
-    }
+            return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    };
 
     async push(): Promise<number> {
         this.plugin.setState(PluginState.push);
-        const branchInfo = await this.branchInfo();
-        const changedFiles = await this.getChangedFiles(branchInfo.current, branchInfo.tracking);
+        try {
+            const branchInfo = await this.branchInfo();
+            const changedFiles = await this.getChangedFiles(branchInfo.current, branchInfo.tracking);
 
-        await git.push({
-            fs: this.fs,
-            dir: this.dir,
-            http: http,
-            corsProxy: this.plugin.settings.proxyURL,
-            onAuth: () => {
-                const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
-                const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
-                return { username: username, password: password };
-            }
-        });
-        this.plugin.lastUpdate = Date.now();
-        return changedFiles;
-    }
+            await git.push({
+                fs: this.fs,
+                dir: this.dir,
+                http: http,
+                corsProxy: this.plugin.settings.proxyURL,
+                onAuth: () => {
+                    const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
+                    const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
+                    return { username: username, password: password };
+                }
+            });
+            this.plugin.lastUpdate = Date.now();
+            return changedFiles;
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    };
 
     async canPush(): Promise<boolean> {
         const branchInfo = await this.branchInfo();
         return await this.getChangedFiles(branchInfo.current, branchInfo.tracking) !== 0;
-    }
+    };
 
     async checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings"> {
         try {
@@ -150,94 +171,129 @@ export class IsomorphicGit extends GitManager {
         }
 
         return "valid";
-    }
+    };
 
     async branchInfo(listRemoteBranches: boolean = false): Promise<BranchInfo> {
-        const current = await git.currentBranch({
-            fs: this.fs,
-            dir: this.dir
-        }) || "";
 
-        const branches = await git.listBranches({
-            fs: this.fs,
-            dir: this.dir,
-        });
+        try {
+            const current = await git.currentBranch({
+                fs: this.fs,
+                dir: this.dir
+            }) || "";
 
-        const remote = await git.getConfig({
-            fs: this.fs,
-            dir: this.dir,
-            path: `branch.${current}.remote`
-        }) ?? "origin";
-
-        const branch = (await git.getConfig({
-            fs: this.fs,
-            dir: this.dir,
-            path: `branch.${current}.merge`
-        }))?.split("refs/heads")[1] ?? "";
-
-        let remoteBranches: string[];
-        if (listRemoteBranches) {
-            remoteBranches = await git.listBranches({
+            const branches = await git.listBranches({
                 fs: this.fs,
                 dir: this.dir,
-                remote: remote
             });
-            remoteBranches.remove("HEAD");
-            remoteBranches = remoteBranches.map(e => `${remote}/${e}`);
-        }
 
-        return {
-            current: current,
-            tracking: remote + branch,
-            branches: branches,
-            remoteBranches: remoteBranches
-        };
-    }
+            const remote = await git.getConfig({
+                fs: this.fs,
+                dir: this.dir,
+                path: `branch.${current}.remote`
+            }) ?? "origin";
+
+            const branch = (await git.getConfig({
+                fs: this.fs,
+                dir: this.dir,
+                path: `branch.${current}.merge`
+            }))?.split("refs/heads")[1] ?? "";
+
+            let remoteBranches: string[];
+            if (listRemoteBranches) {
+                remoteBranches = await git.listBranches({
+                    fs: this.fs,
+                    dir: this.dir,
+                    remote: remote
+                });
+                remoteBranches.remove("HEAD");
+                remoteBranches = remoteBranches.map(e => `${remote}/${e}`);
+            }
+
+            return {
+                current: current,
+                tracking: remote + branch,
+                branches: branches,
+                remoteBranches: remoteBranches
+            };
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    };
 
     async checkout(branch: string): Promise<void> {
-        return git.checkout({
-            fs: this.fs,
-            dir: this.dir,
-            ref: branch,
-        });
-    }
+        try {
+            return git.checkout({
+                fs: this.fs,
+                dir: this.dir,
+                ref: branch,
+            });
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    };
 
     async init(): Promise<void> {
-        return git.init({
-            fs: this.fs,
-            dir: this.dir
-        });
-    }
+        try {
+            return git.init({
+                fs: this.fs,
+                dir: this.dir
+            });
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    };
 
     setConfig(path: string, value: any): Promise<void> {
-        return git.setConfig({
-            fs: this.fs,
-            dir: this.dir,
-            path: path,
-            value: value
-        });
-    }
+        try {
+            return git.setConfig({
+                fs: this.fs,
+                dir: this.dir,
+                path: path,
+                value: value
+            });
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    };
 
     getConfig(path: string): Promise<any> {
-        return git.getConfig({
-            fs: this.fs,
-            dir: this.dir,
-            path: path
-        });
-    }
+        try {
+            return git.getConfig({
+                fs: this.fs,
+                dir: this.dir,
+                path: path
+            });
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    };
 
     async fetch(): Promise<void> {
-        await git.fetch({
-            fs: this.fs,
-            dir: this.dir,
-            http: http,
-            corsProxy: this.plugin.settings.proxyURL,
-            onAuth: () => {
-                const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
-                const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
-                return { username: username, password: password };
-            }
-        });
+        if (!this.plugin.settings.proxyURL) {
+            new Notice("Please specify a proxy URL");
+            return;
+        };
+        try {
+            await git.fetch({
+                fs: this.fs,
+                dir: this.dir,
+                http: http,
+                corsProxy: this.plugin.settings.proxyURL,
+                onAuth: () => {
+                    const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
+                    const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
+                    return { username: username, password: password };
+                }
+            });
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
     }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
@@ -261,11 +317,11 @@ export class IsomorphicGit extends GitManager {
                 throw error;
             }
         }
-    }
+    };
 
     private async getChangedFiles(commitHash1: string, commitHash2: string): Promise<number> {
         return (await this.diff(commitHash1, commitHash2)).filter(file => file.type !== "equal").length;
-    }
+    };
 
     // fixed from https://isomorphic-git.org/docs/en/snippets#git-diff-name-status-commithash1-commithash2
     private async diff(commitHash1: string, commitHash2: string): Promise<DiffResult[]> {
