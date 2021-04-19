@@ -103,11 +103,7 @@ export class IsomorphicGit extends GitManager {
                 dir: this.dir,
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
-                onAuth: () => {
-                    const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
-                    const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
-                    return { username: username, password: password };
-                }
+                headers: { "Authorization": this.getAuth() },
             });
             this.plugin.lastUpdate = Date.now();
 
@@ -131,11 +127,7 @@ export class IsomorphicGit extends GitManager {
                 dir: this.dir,
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
-                onAuth: () => {
-                    const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
-                    const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
-                    return { username: username, password: password };
-                }
+                headers: { "Authorization": this.getAuth() },
             });
             this.plugin.lastUpdate = Date.now();
             return changedFiles;
@@ -284,11 +276,7 @@ export class IsomorphicGit extends GitManager {
                 dir: this.dir,
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
-                onAuth: () => {
-                    const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
-                    const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
-                    return { username: username, password: password };
-                }
+                headers: { "Authorization": this.getAuth() },
             });
         } catch (error) {
             this.plugin.displayError(error);
@@ -366,5 +354,11 @@ export class IsomorphicGit extends GitManager {
                 };
             },
         });
+    }
+
+    private getAuth() {
+        const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
+        const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
+        return "Basic " + btoa(username + ":" + password);
     }
 }
