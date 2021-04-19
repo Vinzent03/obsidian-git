@@ -103,6 +103,8 @@ export default class ObsidianGit extends Plugin {
     async init(): Promise<void> {
         if (this.settings.standaloneMode || (this.app as any).isMobile) {
             this.gitManager = new IsomorphicGit(this);
+            this.settings.standaloneMode = true;
+            await this.saveSettings();
         } else {
             this.gitManager = new SimpleGit(this);
         }
