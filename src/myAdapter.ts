@@ -1,0 +1,77 @@
+import { DataAdapter, normalizePath, TFile, TFolder, Vault } from "obsidian";
+
+export class MyAdapter {
+    promises: any = {};
+    adapter: DataAdapter;
+    vault: Vault;
+    constructor(vault: Vault) {
+        this.adapter = vault.adapter;
+        this.vault = vault;
+
+        this.promises.readFile = this.readFile.bind(this);
+        this.promises.writeFile = this.writeFile.bind(this);
+        this.promises.readdir = this.readdir.bind(this);
+        this.promises.mkdir = this.mkdir.bind(this);
+        this.promises.rmdir = this.rmdir.bind(this);
+        this.promises.stat = this.stat.bind(this);
+        this.promises.unlink = this.unlink.bind(this);
+        this.promises.lstat = this.lstat.bind(this);
+        this.promises.readlink = this.readlink.bind(this);
+        this.promises.symlink = this.symlink.bind(this);
+    }
+    async readFile(path: string, opts: any) {
+        if (opts.encoding == "utf8") {
+            return this.adapter.read(path);
+        } else {
+            return this.adapter.readBinary(path);
+        }
+    }
+    async writeFile(file: string, data: any) {
+        if (typeof data === "string") {
+            return this.adapter.write(file, data);
+        } else {
+            return this.adapter.writeBinary(file, data);
+        }
+    }
+    async readdir(path: string) {
+        if (path === ".")
+            path = "";
+        return (await this.adapter.list(path)).files.map(e => normalizePath(e.substring(path.length)));
+    }
+    async mkdir(path: string) {
+        return this.adapter.mkdir(path);
+    }
+    async rmdir(path: string, opts: any) {
+        return this.adapter.rmdir(path, opts?.options?.recursive ?? false);
+    }
+    async stat(path: string) {
+        const file = this.vault.getAbstractFileByPath(normalizePath(path));
+        if (file) {
+            let fileStats = {};
+            if (file instanceof TFile) {
+                fileStats = file.stat;
+            }
+            return {
+                isFile: () => file instanceof TFile,
+                isDirectory: () => file instanceof TFolder,
+                isSymbolicLink: () => false,
+                ...fileStats
+            };
+        } else {
+            // used to determine whether a file exists or not
+            throw { "code": "ENOENT" };
+        }
+    }
+    async unlink(path: string) {
+        return this.adapter.remove(path);
+    }
+    async lstat(path: string) {
+        return this.stat(path);
+    }
+    async readlink() {
+        throw new Error("Method not implemented.");
+    }
+    async symlink() {
+        throw new Error("Method not implemented.");
+    }
+}

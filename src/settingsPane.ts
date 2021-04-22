@@ -164,10 +164,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 new Notice(`Set ${option} as tracking branch`);
             });
         });
-        remoteBranches.addButton(cb => {
-            cb.setButtonText("Fetch remote");
-            cb.setCta();
-            cb.onClick(async (_) => {
+        remoteBranches.addExtraButton(cb => {
+            cb.setTooltip("Fetch remote");
+            cb.setIcon("install");
+            cb.onClick(async () => {
+                await this.plugin.gitManager.fetch();
+                new Notice("Fetched remote branches");
+                this.display();
+            });
+        });
+        remoteBranches.addExtraButton(cb => {
+            cb.setTooltip("Add remote branch");
+            cb.setIcon("plus-with-circle");
+            cb.onClick(async () => {
                 await this.plugin.gitManager.fetch();
                 new Notice("Fetched remote branches");
                 this.display();

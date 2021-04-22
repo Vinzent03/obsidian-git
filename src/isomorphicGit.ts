@@ -1,13 +1,16 @@
-import git, { ReadCommitResult } from 'isomorphic-git';
 import http from "isomorphic-git/http/web";
+import git, { ReadCommitResult } from "isomorphic-git/index.umd.min";
 import { Notice } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
+import { MyAdapter } from './myAdapter';
 import { BranchInfo, DiffResult, FileStatusResult, PluginState, Status } from './types';
-
 export class IsomorphicGit extends GitManager {
-    private fs: any;
-    private dir: string;
+    private repo: {
+        fs: MyAdapter,
+        dir: string,
+        gitdir: string;
+    };
     private readonly FILE = 0;
     private readonly HEAD = 1;
     private readonly WORKDIR = 2;
@@ -31,18 +34,18 @@ export class IsomorphicGit extends GitManager {
 
     constructor(plugin: ObsidianGit) {
         super(plugin);
-        this.fs = (this.app.vault.adapter as any).fs;
-        this.dir = decodeURIComponent(this.app.vault.adapter.getResourcePath("").replace("app://local/", ""));
-        this.dir = this.dir.substring(0, this.dir.indexOf("?"));
+
+        this.repo = {
+            fs: new MyAdapter(this.app.vault),
+            dir: "",
+            gitdir: "_git"
+        };
     }
 
     async status(): Promise<Status> {
         this.plugin.setState(PluginState.status);
         try {
-            const status = await git.statusMatrix({
-                fs: this.fs,
-                dir: this.dir,
-            });
+            const status = await git.statusMatrix(this.repo);
 
             const changed: FileStatusResult[] = status.filter(row => row[this.HEAD] !== row[this.WORKDIR]).map(row => this.getFileStatusResult(row));
             const staged = status.filter(row => row[this.STAGE] === 3 || row[this.STAGE] === 2).map(row => row[this.FILE]);
@@ -61,22 +64,17 @@ export class IsomorphicGit extends GitManager {
         this.plugin.setState(PluginState.commit);
         try {
             const commitBefore = await this.getCurrentCommit();
-
-            const repo = {
-                fs: this.fs,
-                dir: this.dir
-            };
-            const status = await git.statusMatrix(repo);
+            const status = await git.statusMatrix(this.repo);
             await Promise.all(
                 status.map(([filepath, , worktreeStatus]) =>
-                    worktreeStatus ? git.add({ ...repo, filepath }) : git.remove({ ...repo, filepath })
+                    worktreeStatus ? git.add({ ...this.repo, filepath }) : git.remove({ ...this.repo, filepath })
                 )
             );
             const formatMessage = message ?? await this.formatCommitMessage();
 
             await git.commit({
-                ...repo,
-                message: formatMessage
+                ...this.repo,
+                message: formatMessage,
             });
             const commitAfter = await this.getCurrentCommit();
             this.plugin.lastUpdate = Date.now();
@@ -99,8 +97,7 @@ export class IsomorphicGit extends GitManager {
             const commitBefore = await this.getCurrentCommit();
 
             await git.pull({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
                 headers: { "Authorization": this.getAuth() },
@@ -123,8 +120,7 @@ export class IsomorphicGit extends GitManager {
             const changedFiles = await this.getChangedFiles(branchInfo.current, branchInfo.tracking);
 
             await git.push({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
                 headers: { "Authorization": this.getAuth() },
@@ -145,18 +141,19 @@ export class IsomorphicGit extends GitManager {
     async checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings"> {
         try {
             await git.log({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 depth: 1
             });
         } catch (error) {
-            if (error.code === "NotFoundError" && error.data.what === "HEAD") {
+            console.log(error);
+
+            if ((error.code === "NotFoundError" && error.data.what === "HEAD")) {
                 return "missing-repo";
             }
         }
-        const user = await git.getConfig({ fs: this.fs, dir: this.dir, path: "user.name" });
-        const email = await git.getConfig({ fs: this.fs, dir: this.dir, path: "user.email" });
-        const remoteURL = await git.getConfig({ fs: this.fs, dir: this.dir, path: "remote.origin.url" });
+        const user = await git.getConfig({ ...this.repo, path: "user.name" });
+        const email = await git.getConfig({ ...this.repo, path: "user.email" });
+        const remoteURL = await git.getConfig({ ...this.repo, path: "remote.origin.url" });
 
         if (!user || !email || !remoteURL) {
             return "wrong-settings";
@@ -168,33 +165,24 @@ export class IsomorphicGit extends GitManager {
     async branchInfo(listRemoteBranches: boolean = false): Promise<BranchInfo> {
 
         try {
-            const current = await git.currentBranch({
-                fs: this.fs,
-                dir: this.dir
-            }) || "";
+            const current = await git.currentBranch(this.repo) || "";
 
-            const branches = await git.listBranches({
-                fs: this.fs,
-                dir: this.dir,
-            });
+            const branches = await git.listBranches(this.repo);
 
             const remote = await git.getConfig({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 path: `branch.${current}.remote`
             }) ?? "origin";
 
             const branch = (await git.getConfig({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 path: `branch.${current}.merge`
             }))?.split("refs/heads")[1] ?? "";
 
             let remoteBranches: string[];
             if (listRemoteBranches) {
                 remoteBranches = await git.listBranches({
-                    fs: this.fs,
-                    dir: this.dir,
+                    ...this.repo,
                     remote: remote
                 });
                 remoteBranches.remove("HEAD");
@@ -216,8 +204,7 @@ export class IsomorphicGit extends GitManager {
     async checkout(branch: string): Promise<void> {
         try {
             return git.checkout({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 ref: branch,
             });
         } catch (error) {
@@ -228,10 +215,7 @@ export class IsomorphicGit extends GitManager {
 
     async init(): Promise<void> {
         try {
-            return git.init({
-                fs: this.fs,
-                dir: this.dir
-            });
+            await git.init(this.repo);
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -241,8 +225,7 @@ export class IsomorphicGit extends GitManager {
     setConfig(path: string, value: any): Promise<void> {
         try {
             return git.setConfig({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 path: path,
                 value: value
             });
@@ -255,8 +238,7 @@ export class IsomorphicGit extends GitManager {
     getConfig(path: string): Promise<any> {
         try {
             return git.getConfig({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 path: path
             });
         } catch (error) {
@@ -271,13 +253,14 @@ export class IsomorphicGit extends GitManager {
             return;
         };
         try {
-            await git.fetch({
-                fs: this.fs,
-                dir: this.dir,
+            const a = await git.fetch({
+                ...this.repo,
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
                 headers: { "Authorization": this.getAuth() },
             });
+            console.log(a);
+
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -293,8 +276,7 @@ export class IsomorphicGit extends GitManager {
     private async getCurrentCommit(): Promise<ReadCommitResult | undefined> {
         try {
             return (await git.log({
-                fs: this.fs,
-                dir: this.dir,
+                ...this.repo,
                 depth: 1
             }))[0];
         } catch (error) {
@@ -314,8 +296,7 @@ export class IsomorphicGit extends GitManager {
     // fixed from https://isomorphic-git.org/docs/en/snippets#git-diff-name-status-commithash1-commithash2
     private async diff(commitHash1: string, commitHash2: string): Promise<DiffResult[]> {
         return git.walk({
-            fs: this.fs,
-            dir: this.dir,
+            ...this.repo,
             trees: [git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })],
             map: async (filepath, [A, B]) => {
 
