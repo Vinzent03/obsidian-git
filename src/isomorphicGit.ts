@@ -267,6 +267,25 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
+    async clone(url: string): Promise<void> {
+        if (!this.plugin.settings.proxyURL) {
+            new Notice("Please specify a proxy URL");
+            return;
+        };
+        try {
+            await git.clone({
+                ...this.repo,
+                http: http,
+                url: url,
+                corsProxy: this.plugin.settings.proxyURL,
+                headers: { "Authorization": this.getAuth() },
+            });
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    }
+
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
         const index = (this.indexes as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
 

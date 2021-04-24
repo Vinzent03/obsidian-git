@@ -15,6 +15,29 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.empty();
         containerEl.createEl("h2", { text: "Git Backup settings" });
 
+        if (!this.plugin.gitReady) {
+            containerEl.createEl("h4", { text: "Please clone or init a new repo to access the rest of the settings" });
+            new Setting(containerEl)
+                .setName("Initialize new git repository")
+                .addButton(cb => {
+                    cb.setCta();
+                    cb.setButtonText("Init");
+                    cb.onClick(async (_) => {
+                        await this.plugin.gitManager.init();
+                        await this.plugin.init();
+                        this.display();
+                    });
+                });
+            if (this.plugin.settings.standaloneMode) {
+                this.addCloneButton();
+            }
+            this.addStandaloneModeToggle();
+            if (this.plugin.settings.standaloneMode) {
+                this.addStandaloneSettings();
+            }
+            return;
+        }
+
         new Setting(containerEl)
             .setName("Vault backup interval (minutes)")
             .setDesc(
@@ -133,7 +156,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Current branch")
-            .setDesc("Switch to a different branch")
+            .setDesc("Switch to a different branch (At least one commit is needed)")
             .addDropdown(async (dropdown) => {
                 const branchInfo = await this.plugin.gitManager.branchInfo();
                 for (const branch of branchInfo.branches) {
@@ -260,9 +283,44 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     this.plugin.gitManager.setConfig("remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*");
                 });
             });
+        this.addStandaloneModeToggle();
+        if (this.plugin.settings.standaloneMode) {
+            this.addStandaloneSettings();
+        }
+    }
 
-        new Setting(containerEl)
-            .setName("Standalone mode (Needed for Obsidian mobile)")
+    // Only show on standalone mode
+    addCloneButton() {
+        let repoUrl: string;
+        const setting = new Setting(this.containerEl);
+        setting
+            .setName("Repository URL")
+            .addText(cb => {
+                cb.onChange(value => repoUrl = value);
+            });
+        setting
+            .setName("Clone a git repository")
+            .setDesc("Only https URL are supported")
+            .addButton(cb => {
+                cb.setCta();
+                cb.setButtonText("Clone");
+                cb.onClick(async (_) => {
+                    if (!repoUrl) {
+                        new Notice("Please specify a URL");
+                    }
+                    if (this.plugin.gitManager instanceof IsomorphicGit) {
+                        await this.plugin.gitManager.clone(repoUrl);
+                        new Notice("Cloned repo");
+                        await this.plugin.init();
+                        this.display();
+                    }
+                });
+            });
+    }
+
+    addStandaloneModeToggle() {
+        new Setting(this.containerEl)
+            .setName("Standalone mode")
             .setDesc("No system wide git installation is needed. See README for limitations and instructions.")
             .addToggle(cb =>
                 cb.setValue(this.plugin.settings.standaloneMode)
@@ -276,9 +334,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         }
                         this.display();
                     }));
-        if (this.plugin.settings.standaloneMode) {
-            this.addStandaloneSettings();
-        }
     }
 
     addStandaloneSettings() {
@@ -317,6 +372,5 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             cb.setButtonText("Set")
                 .setWarning().onClick((_) => window.localStorage.setItem(this.plugin.manifest.id + ":password", password));
         });
-
     }
 }
