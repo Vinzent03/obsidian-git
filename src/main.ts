@@ -33,7 +33,7 @@ export default class ObsidianGit extends Plugin {
     lastUpdate: number;
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
-    conflictOutputFile = "conflict-files-obsidian-git.md";
+    readonly conflictOutputFile = "conflict-files-obsidian-git.md";
 
     setState(state: PluginState) {
         this.state = state;

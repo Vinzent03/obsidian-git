@@ -169,42 +169,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             });
 
-        const remoteBranches = new Setting(containerEl)
+        new Setting(containerEl)
             .setName("Tracking branch")
-            .setDesc("Select tracking branch from remote");
-
-        remoteBranches.addDropdown(async (dropdown) => {
-            const branchInfo = await this.plugin.gitManager.branchInfo(true);
-            for (const branch of branchInfo.remoteBranches) {
-                dropdown.addOption(branch, branch);
-            }
-            dropdown.setValue(branchInfo.tracking);
-            dropdown.onChange(async (option) => {
-                const remote = option.substring(0, option.indexOf("/"));
-                const branch = option.substring(option.indexOf("/"));
-                await this.plugin.gitManager.setConfig(`branch.${branchInfo.current}.remote`, remote);
-                await this.plugin.gitManager.setConfig(`branch.${branchInfo.current}.merge`, "refs/heads" + branch);
-                new Notice(`Set ${option} as tracking branch`);
+            .setDesc("Currently only 'origin' as remote is supported")
+            .addText(async (cb) => {
+                const branchInfo = await this.plugin.gitManager.branchInfo(true);
+                cb.setPlaceholder("origin/master");
+                cb.setValue(branchInfo.tracking);
+                cb.onChange(async (option) => {
+                    const remote = option.substring(0, option.indexOf("/"));
+                    const branch = option.substring(option.indexOf("/"));
+                    await this.plugin.gitManager.setConfig(`branch.${branchInfo.current}.remote`, remote);
+                    await this.plugin.gitManager.setConfig(`branch.${branchInfo.current}.merge`, "refs/heads" + branch);
+                });
             });
-        });
-        remoteBranches.addExtraButton(cb => {
-            cb.setTooltip("Fetch remote");
-            cb.setIcon("install");
-            cb.onClick(async () => {
-                await this.plugin.gitManager.fetch();
-                new Notice("Fetched remote branches");
-                this.display();
-            });
-        });
-        remoteBranches.addExtraButton(cb => {
-            cb.setTooltip("Add remote branch");
-            cb.setIcon("plus-with-circle");
-            cb.onClick(async () => {
-                await this.plugin.gitManager.fetch();
-                new Notice("Fetched remote branches");
-                this.display();
-            });
-        });
 
 
         new Setting(containerEl)

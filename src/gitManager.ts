@@ -4,8 +4,8 @@ import { BranchInfo, FileStatusResult, Status } from "./types";
 
 
 export abstract class GitManager {
-    plugin: ObsidianGit;
-    app: App;
+    readonly plugin: ObsidianGit;
+    readonly app: App;
     constructor(plugin: ObsidianGit) {
         this.plugin = plugin;
         this.app = plugin.app;

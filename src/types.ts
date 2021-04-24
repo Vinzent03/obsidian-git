@@ -43,5 +43,4 @@ export interface BranchInfo {
     current: string;
     tracking: string;
     branches: string[];
-    remoteBranches?: string[];
 }

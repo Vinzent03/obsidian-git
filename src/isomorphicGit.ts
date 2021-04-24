@@ -174,26 +174,17 @@ export class IsomorphicGit extends GitManager {
                 path: `branch.${current}.remote`
             }) ?? "origin";
 
-            const branch = (await git.getConfig({
+            const trackingBranch = (await git.getConfig({
                 ...this.repo,
                 path: `branch.${current}.merge`
-            }))?.split("refs/heads")[1] ?? "";
+            }))?.split("refs/heads")[1];
 
-            let remoteBranches: string[];
-            if (listRemoteBranches) {
-                remoteBranches = await git.listBranches({
-                    ...this.repo,
-                    remote: remote
-                });
-                remoteBranches.remove("HEAD");
-                remoteBranches = remoteBranches.map(e => `${remote}/${e}`);
-            }
 
+            let tracking = trackingBranch ? remote + trackingBranch : undefined;
             return {
                 current: current,
-                tracking: remote + branch,
+                tracking: tracking,
                 branches: branches,
-                remoteBranches: remoteBranches
             };
         } catch (error) {
             this.plugin.displayError(error);
