@@ -23,7 +23,7 @@ export abstract class GitManager {
 
     abstract checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings" | "missing-git">;
 
-    abstract branchInfo(listRemoteBranches?: boolean): Promise<BranchInfo>;
+    abstract branchInfo(): Promise<BranchInfo>;
 
     abstract checkout(branch: string): Promise<void>;
 

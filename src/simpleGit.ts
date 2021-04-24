@@ -100,7 +100,7 @@ export class SimpleGit extends GitManager {
         return "valid";
     }
 
-    async branchInfo(listRemoteBranches: boolean = false): Promise<BranchInfo> {
+    async branchInfo(): Promise<BranchInfo> {
         const status = await this.git.status((err: any) => this.onError(err));
         const branches = await this.git.branchLocal((err: any) => this.onError(err));
 

@@ -31,7 +31,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             if (this.plugin.settings.standaloneMode) {
                 this.addCloneButton();
             }
-            this.addStandaloneModeToggle();
+            if (!(this.app as any).isMobile) {
+                this.addStandaloneModeToggle();
+            }
             if (this.plugin.settings.standaloneMode) {
                 this.addStandaloneSettings();
             }
@@ -173,7 +175,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Tracking branch")
             .setDesc("Currently only 'origin' as remote is supported")
             .addText(async (cb) => {
-                const branchInfo = await this.plugin.gitManager.branchInfo(true);
+                const branchInfo = await this.plugin.gitManager.branchInfo();
                 cb.setPlaceholder("origin/master");
                 cb.setValue(branchInfo.tracking);
                 cb.onChange(async (option) => {
@@ -261,7 +263,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     this.plugin.gitManager.setConfig("remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*");
                 });
             });
-        this.addStandaloneModeToggle();
+        if (!(this.app as any).isMobile) {
+            this.addStandaloneModeToggle();
+        }
         if (this.plugin.settings.standaloneMode) {
             this.addStandaloneSettings();
         }
@@ -303,6 +307,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .addToggle(cb =>
                 cb.setValue(this.plugin.settings.standaloneMode)
                     .onChange(value => {
+                        if ((this.app as any).isMobile) {
+                            new Notice("You cannot turn this off on mobile");
+                            return;
+                        }
                         this.plugin.settings.standaloneMode = value;
                         this.plugin.saveSettings();
                         if (value) {
