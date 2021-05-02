@@ -21,6 +21,7 @@ interface ObsidianGitSettings {
     pullBeforePush: boolean;
     disablePopups: boolean;
     listChangedFilesInMessageBody: boolean;
+    showStatusBar: boolean;
 }
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
@@ -32,6 +33,7 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     pullBeforePush: true,
     disablePopups: false,
     listChangedFilesInMessageBody: false,
+    showStatusBar: true
 };
 
 export default class ObsidianGit extends Plugin {
@@ -48,7 +50,7 @@ export default class ObsidianGit extends Plugin {
 
     setState(state: PluginState) {
         this.state = state;
-        this.statusBar.display();
+        this.statusBar?.display();
     }
 
     async onload() {
@@ -83,12 +85,14 @@ export default class ObsidianGit extends Plugin {
                 new ChangedFilesModal(this, status.files).open();
             }
         });
-        // init statusBar
-        let statusBarEl = this.addStatusBarItem();
-        this.statusBar = new StatusBar(statusBarEl, this);
-        this.registerInterval(
-            window.setInterval(() => this.statusBar.display(), 1000)
-        );
+        if (this.settings.showStatusBar) {
+            // init statusBar
+            let statusBarEl = this.addStatusBarItem();
+            this.statusBar = new StatusBar(statusBarEl, this);
+            this.registerInterval(
+                window.setInterval(() => this.statusBar.display(), 1000)
+            );
+        }
 
         this.init();
     }
@@ -373,7 +377,7 @@ export default class ObsidianGit extends Plugin {
 
     // region: displaying / formatting messages
     displayMessage(message: string, timeout: number = 4 * 1000): void {
-        this.statusBar.displayMessage(message.toLowerCase(), timeout);
+        this.statusBar?.displayMessage(message.toLowerCase(), timeout);
 
         if (!this.settings.disablePopups) {
             new Notice(message);
@@ -384,7 +388,7 @@ export default class ObsidianGit extends Plugin {
     displayError(message: string, timeout: number = 0): void {
         new Notice(message);
         console.log(`git obsidian error: ${message}`);
-        this.statusBar.displayMessage(message.toLowerCase(), timeout);
+        this.statusBar?.displayMessage(message.toLowerCase(), timeout);
     }
 
     async formatCommitMessage(template: string): Promise<string> {
@@ -624,6 +628,18 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.disablePopups)
                     .onChange((value) => {
                         plugin.settings.disablePopups = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Show status bar")
+            .setDesc("Obsidian must be restarted for the changes to take affect")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.showStatusBar)
+                    .onChange((value) => {
+                        plugin.settings.showStatusBar = value;
                         plugin.saveSettings();
                     })
             );
