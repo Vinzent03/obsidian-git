@@ -277,7 +277,7 @@ export default class ObsidianGit extends Plugin {
 
     async push(): Promise<void> {
         this.setState(PluginState.push);
-        await this.git.push(
+        await this.git.env({ ...process.env, "OBSIDIAN_GIT": 1 }).push(
             (err: Error | null) => {
                 err && this.displayError(`Push failed ${err.message}`);
             }
