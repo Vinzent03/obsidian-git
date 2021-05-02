@@ -22,6 +22,8 @@ interface ObsidianGitSettings {
     disablePopups: boolean;
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
+    lastAutoBackUp: string;
+    lastAutoPull: string;
 }
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
@@ -33,7 +35,9 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     pullBeforePush: true,
     disablePopups: false,
     listChangedFilesInMessageBody: false,
-    showStatusBar: true
+    showStatusBar: true,
+    lastAutoBackUp: "",
+    lastAutoPull: ""
 };
 
 export default class ObsidianGit extends Plugin {
@@ -41,8 +45,8 @@ export default class ObsidianGit extends Plugin {
     settings: ObsidianGitSettings;
     statusBar: StatusBar;
     state: PluginState;
-    intervalIDBackup: number;
-    intervalIDPull: number;
+    timeoutIDBackup: number;
+    timeoutIDPull: number;
     lastUpdate: number;
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
@@ -98,6 +102,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async onunload() {
+        window.clearTimeout(this.timeoutIDBackup);
+        window.clearTimeout(this.timeoutIDPull);
         console.log('unloading ' + this.manifest.name + " plugin");
     }
     async loadSettings() {
@@ -131,10 +137,18 @@ export default class ObsidianGit extends Plugin {
                 }
 
                 if (this.settings.autoSaveInterval > 0) {
-                    this.enableAutoBackup();
+                    const now = new Date();
+                    const last = new Date(this.settings.lastAutoBackUp);
+
+                    const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - last.getTime()) / 1000) / 60));
+                    this.startAutoBackup(diff <= 0 ? 0 : diff);
                 }
                 if (this.settings.autoPullInterval > 0) {
-                    this.enableAutoPull();
+                    const now = new Date();
+                    const last = new Date(this.settings.lastAutoPull);
+
+                    const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - last.getTime()) / 1000) / 60));
+                    this.startAutoPull(diff <= 0 ? 0 : diff);
                 }
             }
 
@@ -309,35 +323,41 @@ export default class ObsidianGit extends Plugin {
 
     // endregion: main methods
 
-    enableAutoBackup() {
-        const minutes = this.settings.autoSaveInterval;
-        this.intervalIDBackup = window.setInterval(
-            () => this.promiseQueue.addTask(() => this.createBackup(true)),
-            minutes * 60000
+    startAutoBackup(minutes?: number) {
+        this.timeoutIDBackup = window.setTimeout(
+            () => {
+                this.promiseQueue.addTask(() => this.createBackup(true));
+                this.settings.lastAutoBackUp = new Date().toString();
+                this.saveSettings();
+                this.startAutoBackup();
+            },
+            (minutes ?? this.settings.autoSaveInterval) * 60000
         );
-        this.registerInterval(this.intervalIDBackup);
     }
 
-    enableAutoPull() {
-        const minutes = this.settings.autoPullInterval;
-        this.intervalIDPull = window.setInterval(
-            () => this.promiseQueue.addTask(() => this.pullChangesFromRemote()),
-            minutes * 60000
+    startAutoPull(minutes?: number) {
+        this.timeoutIDPull = window.setTimeout(
+            () => {
+                this.promiseQueue.addTask(() => this.pullChangesFromRemote());
+                this.settings.lastAutoPull = new Date().toString();
+                this.saveSettings();
+                this.startAutoPull();
+            },
+            (minutes ?? this.settings.autoPullInterval) * 60000
         );
-        this.registerInterval(this.intervalIDPull);
     }
 
-    disableAutoBackup(): boolean {
-        if (this.intervalIDBackup) {
-            clearInterval(this.intervalIDBackup);
+    clearAutoBackup(): boolean {
+        if (this.timeoutIDBackup) {
+            window.clearTimeout(this.timeoutIDBackup);
             return true;
         }
         return false;
     }
 
-    disableAutoPull(): boolean {
-        if (this.intervalIDPull) {
-            clearInterval(this.intervalIDPull);
+    clearAutoPull(): boolean {
+        if (this.timeoutIDPull) {
+            window.clearTimeout(this.timeoutIDPull);
             return true;
         }
         return false;
@@ -453,16 +473,16 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.saveSettings();
 
                             if (plugin.settings.autoSaveInterval > 0) {
-                                plugin.disableAutoBackup();
-                                plugin.enableAutoBackup();
+                                plugin.clearAutoBackup();
+                                plugin.startAutoBackup(plugin.settings.autoSaveInterval);
                                 new Notice(
                                     `Automatic backup enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
                                 );
                             } else if (
                                 plugin.settings.autoSaveInterval <= 0 &&
-                                plugin.intervalIDBackup
+                                plugin.timeoutIDBackup
                             ) {
-                                plugin.disableAutoBackup() &&
+                                plugin.clearAutoBackup() &&
                                     new Notice("Automatic backup disabled!");
                             }
                         } else {
@@ -484,16 +504,16 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.saveSettings();
 
                             if (plugin.settings.autoPullInterval > 0) {
-                                plugin.disableAutoPull();
-                                plugin.enableAutoPull();
+                                plugin.clearAutoPull();
+                                plugin.startAutoPull(plugin.settings.autoSaveInterval);
                                 new Notice(
                                     `Automatic pull enabled! Every ${plugin.settings.autoPullInterval} minutes.`
                                 );
                             } else if (
                                 plugin.settings.autoPullInterval <= 0 &&
-                                plugin.intervalIDPull
+                                plugin.timeoutIDPull
                             ) {
-                                plugin.disableAutoPull() &&
+                                plugin.clearAutoPull() &&
                                     new Notice("Automatic pull disabled!");
                             }
                         } else {
