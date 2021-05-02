@@ -36,7 +36,13 @@ export class MyAdapter {
     async readdir(path: string) {
         if (path === ".")
             path = "";
-        return (await this.adapter.list(path)).files.map(e => normalizePath(e.substring(path.length)));
+        const res = await this.adapter.list(path);
+        const all = [...res.files, ...res.folders];
+        let formattedAll = all.map(e => normalizePath(e.substring(path.length)));
+        formattedAll = formattedAll.filter(item => !item.startsWith("."));
+        formattedAll.remove("_git");
+
+        return formattedAll;
     }
     async mkdir(path: string) {
         return this.adapter.mkdir(path);
@@ -49,7 +55,13 @@ export class MyAdapter {
         if (file) {
             let fileStats = {};
             if (file instanceof TFile) {
-                fileStats = file.stat;
+                fileStats = {
+                    ctimeMs: file.stat.ctime,
+                    mtimeMs: file.stat.mtime,
+                    size: file.stat.size
+                };
+            } else {
+                fileStats = undefined;
             }
             return {
                 isFile: () => file instanceof TFile,
