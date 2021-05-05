@@ -20,7 +20,10 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     disablePopups: false,
     listChangedFilesInMessageBody: false,
     standaloneMode: false,
-    proxyURL: ""
+    proxyURL: "",
+    showStatusBar: true,
+    lastAutoBackUp: "",
+    lastAutoPull: ""
 };
 
 export default class ObsidianGit extends Plugin {
@@ -28,8 +31,8 @@ export default class ObsidianGit extends Plugin {
     settings: ObsidianGitSettings;
     statusBar: StatusBar | undefined;
     state: PluginState;
-    intervalIDBackup: number;
-    intervalIDPull: number;
+    timeoutIDBackup: number;
+    timeoutIDPull: number;
     lastUpdate: number;
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
@@ -77,7 +80,7 @@ export default class ObsidianGit extends Plugin {
                 new ChangedFilesModal(this, status.changed).open();
             }
         });
-        if (!(this.app as any).isMobile) {
+        if (this.settings.showStatusBar || !(this.app as any).isMobile) {
             // init statusBar
             let statusBarEl = this.addStatusBarItem();
             this.statusBar = new StatusBar(statusBarEl, this);
@@ -90,6 +93,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async onunload() {
+        window.clearTimeout(this.timeoutIDBackup);
+        window.clearTimeout(this.timeoutIDPull);
         console.log('unloading ' + this.manifest.name + " plugin");
     }
     async loadSettings() {
@@ -125,10 +130,18 @@ export default class ObsidianGit extends Plugin {
                 }
 
                 if (this.settings.autoSaveInterval > 0) {
-                    this.enableAutoBackup();
+                    const now = new Date();
+                    const last = new Date(this.settings.lastAutoBackUp);
+
+                    const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - last.getTime()) / 1000) / 60));
+                    this.startAutoBackup(diff <= 0 ? 0 : diff);
                 }
                 if (this.settings.autoPullInterval > 0) {
-                    this.enableAutoPull();
+                    const now = new Date();
+                    const last = new Date(this.settings.lastAutoPull);
+
+                    const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - last.getTime()) / 1000) / 60));
+                    this.startAutoPull(diff <= 0 ? 0 : diff);
                 }
                 break;
             default:
@@ -224,35 +237,42 @@ export default class ObsidianGit extends Plugin {
         }
         this.setState(PluginState.idle);
     }
-    enableAutoBackup() {
-        const minutes = this.settings.autoSaveInterval;
-        this.intervalIDBackup = window.setInterval(
-            () => this.promiseQueue.addTask(() => this.createBackup(true)),
-            minutes * 60000
+
+    startAutoBackup(minutes?: number) {
+        this.timeoutIDBackup = window.setTimeout(
+            () => {
+                this.promiseQueue.addTask(() => this.createBackup(true));
+                this.settings.lastAutoBackUp = new Date().toString();
+                this.saveSettings();
+                this.startAutoBackup();
+            },
+            (minutes ?? this.settings.autoSaveInterval) * 60000
         );
-        this.registerInterval(this.intervalIDBackup);
     }
 
-    enableAutoPull() {
-        const minutes = this.settings.autoPullInterval;
-        this.intervalIDPull = window.setInterval(
-            () => this.promiseQueue.addTask(() => this.pullChangesFromRemote()),
-            minutes * 60000
+    startAutoPull(minutes?: number) {
+        this.timeoutIDPull = window.setTimeout(
+            () => {
+                this.promiseQueue.addTask(() => this.pullChangesFromRemote());
+                this.settings.lastAutoPull = new Date().toString();
+                this.saveSettings();
+                this.startAutoPull();
+            },
+            (minutes ?? this.settings.autoPullInterval) * 60000
         );
-        this.registerInterval(this.intervalIDPull);
     }
 
-    disableAutoBackup(): boolean {
-        if (this.intervalIDBackup) {
-            clearInterval(this.intervalIDBackup);
+    clearAutoBackup(): boolean {
+        if (this.timeoutIDBackup) {
+            window.clearTimeout(this.timeoutIDBackup);
             return true;
         }
         return false;
     }
 
-    disableAutoPull(): boolean {
-        if (this.intervalIDPull) {
-            clearInterval(this.intervalIDPull);
+    clearAutoPull(): boolean {
+        if (this.timeoutIDPull) {
+            window.clearTimeout(this.timeoutIDPull);
             return true;
         }
         return false;
@@ -291,9 +311,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     displayMessage(message: string, timeout: number = 4 * 1000): void {
-        if (!(this.app as any).isMobile) {
-            this.statusBar.displayMessage(message.toLowerCase(), timeout);
-        }
+        this.statusBar?.displayMessage(message.toLowerCase(), timeout);
 
         if (!this.settings.disablePopups) {
             new Notice(message);
@@ -304,8 +322,6 @@ export default class ObsidianGit extends Plugin {
     displayError(message: any, timeout: number = 0): void {
         new Notice(message.toString());
         console.log(`git obsidian error: ${message}`);
-        if (!(this.app as any).isMobile) {
-            this.statusBar.displayMessage(message.toString().toLowerCase(), timeout);
-        }
+        this.statusBar?.displayMessage(message.toString().toLowerCase(), timeout);
     }
 }

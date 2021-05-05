@@ -54,16 +54,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             this.plugin.saveSettings();
 
                             if (this.plugin.settings.autoSaveInterval > 0) {
-                                this.plugin.disableAutoBackup();
-                                this.plugin.enableAutoBackup();
+                                this.plugin.clearAutoBackup();
+                                this.plugin.startAutoBackup();
                                 new Notice(
                                     `Automatic backup enabled! Every ${this.plugin.settings.autoSaveInterval} minutes.`
                                 );
                             } else if (
                                 this.plugin.settings.autoSaveInterval <= 0 &&
-                                this.plugin.intervalIDBackup
+                                this.plugin.timeoutIDBackup
                             ) {
-                                this.plugin.disableAutoBackup() &&
+                                this.plugin.clearAutoBackup() &&
                                     new Notice("Automatic backup disabled!");
                             }
                         } else {
@@ -85,16 +85,15 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             this.plugin.saveSettings();
 
                             if (this.plugin.settings.autoPullInterval > 0) {
-                                this.plugin.disableAutoPull();
-                                this.plugin.enableAutoPull();
+                                this.plugin.clearAutoPull();
+                                this.plugin.startAutoPull();
                                 new Notice(
                                     `Automatic pull enabled! Every ${this.plugin.settings.autoPullInterval} minutes.`
                                 );
                             } else if (
                                 this.plugin.settings.autoPullInterval <= 0 &&
-                                this.plugin.intervalIDPull
-                            ) {
-                                this.plugin.disableAutoPull() &&
+                                this.plugin.timeoutIDPull) {
+                                this.plugin.clearAutoPull() &&
                                     new Notice("Automatic pull disabled!");
                             }
                         } else {
@@ -263,6 +262,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     this.plugin.gitManager.setConfig("remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*");
                 });
             });
+
+        if (!(this.app as any).isMobile) {
+            new Setting(containerEl)
+                .setName("Show status bar")
+                .setDesc("Obsidian must be restarted for the changes to take affect")
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(this.plugin.settings.showStatusBar)
+                        .onChange((value) => {
+                            this.plugin.settings.showStatusBar = value;
+                            this.plugin.saveSettings();
+                        })
+                );
+        }
         if (!(this.app as any).isMobile) {
             this.addStandaloneModeToggle();
         }

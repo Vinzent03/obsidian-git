@@ -66,7 +66,7 @@ export class SimpleGit extends GitManager {
         const currentBranch = status.current;
         const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
 
-        await this.git.push((err: any) => this.onError(err));
+        await this.git.env({ ...process.env, "OBSIDIAN_GIT": 1 }).push((err: any) => this.onError(err));
 
         return remoteChangedFiles;
     }

@@ -10,6 +10,9 @@ export interface ObsidianGitSettings {
     listChangedFilesInMessageBody: boolean;
     standaloneMode: boolean;
     proxyURL: string;
+    showStatusBar: boolean;
+    lastAutoBackUp: string;
+    lastAutoPull: string;
 }
 
 export interface Author {
