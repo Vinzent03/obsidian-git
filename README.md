@@ -6,6 +6,8 @@ On advantages of backing up your vault with git I suggest reading this [amazing 
 
 ## How to use
 
+For mobile use please refer to the [obsidian-git-mobile](https://github.com/Vinzent03/obsidian-git-mobile) plugin. It's the same plugin, just with some tweaks to fix node APIs imports.
+
 ### Requirements
 - credentials are set up
 - remote repository
@@ -69,17 +71,16 @@ $ flatpak run md.obsidian.Obsidian
 ```
 https://github.com/flathub/md.obsidian.Obsidian/issues/5#issuecomment-736974662
 
-## Mobile
-With version `2.0.0` it is possible to use the plugin on Obsidian mobile.
+## Standalone mode
 
-I am using [isomorphic-git](https://isomorphic-git.org/), which is a reimplementation of git in JavaScript, because you cannot use native git on Android or iOS. This brings some problems with it though.
+I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of git in JavaScript, because you cannot use native git on Android or iOS. This brings some problems with it though.
 - Merging with conflicts is not supported ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/325))
 - SSH authentication is not supported ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231)
 - Instead of using native modules, it uses web APIs, why it's affected by [CORS](https://developer.mozilla.org/de/docs/Web/HTTP/CORS) ([isomorphic-git explanation](https://github.com/isomorphic-git/isomorphic-git#cors-support))
 
 The Obsidian devs implemented a workaround for themselves, but didn't expose it to the API so far. Until they improve and expose it, a CORS [proxy server](https://en.wikipedia.org/wiki/Proxy_server) is needed. 
 
-A proxy provided by [isomorphic-git](https://github.com/isomorphic-git/isomorphic-git#cors-support) itself is https://cors.isomorphic-git.org
+A proxy provided by [isomorphic-git](https://github.com/isomorphic-git/isomorphic-git#cors-support) itself is https://cors.isomorphic-git.org, but please follow their [Terms of Use](https://cors.isomorphic-git.org)
 
 
 # Tips
