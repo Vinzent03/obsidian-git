@@ -9,7 +9,6 @@ export class IsomorphicGit extends GitManager {
     private repo: {
         fs: MyAdapter,
         dir: string,
-        gitdir: string;
     };
     private readonly FILE = 0;
     private readonly HEAD = 1;
@@ -38,7 +37,6 @@ export class IsomorphicGit extends GitManager {
         this.repo = {
             fs: new MyAdapter(this.app.vault),
             dir: "",
-            gitdir: "_git"
         };
     }
 

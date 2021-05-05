@@ -1,4 +1,4 @@
-import { DataAdapter, normalizePath, TFile, TFolder, Vault } from "obsidian";
+import { DataAdapter, normalizePath, Vault } from "obsidian";
 
 export class MyAdapter {
     promises: any = {};
@@ -51,24 +51,18 @@ export class MyAdapter {
         return this.adapter.rmdir(path, opts?.options?.recursive ?? false);
     }
     async stat(path: string) {
-        const file = this.vault.getAbstractFileByPath(normalizePath(path));
-        if (file) {
-            let fileStats = {};
-            if (file instanceof TFile) {
-                fileStats = {
-                    ctimeMs: file.stat.ctime,
-                    mtimeMs: file.stat.mtime,
-                    size: file.stat.size
-                };
-            } else {
-                fileStats = undefined;
-            }
+        const stat = await this.adapter.stat(normalizePath(path));
+        if (stat) {
             return {
-                isFile: () => file instanceof TFile,
-                isDirectory: () => file instanceof TFolder,
+                ctimeMs: stat.ctime,
+                mtimeMs: stat.mtime,
+                size: stat.size,
+                type: stat.type === "folder" ? "directory" : stat.type,
+                isFile: () => stat.type === "file",
+                isDirectory: () => stat.type === "folder",
                 isSymbolicLink: () => false,
-                ...fileStats
             };
+
         } else {
             // used to determine whether a file exists or not
             throw { "code": "ENOENT" };
