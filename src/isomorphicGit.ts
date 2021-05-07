@@ -30,6 +30,7 @@ export class IsomorphicGit extends GitManager {
         "122": "M ",
         "123": "MM"
     };
+    private readonly noticeLength = 999999;
 
     constructor(plugin: ObsidianGit) {
         super(plugin);
@@ -91,6 +92,7 @@ export class IsomorphicGit extends GitManager {
 
     async pull(): Promise<number> {
         this.plugin.setState(PluginState.pull);
+        const progressNotice = new Notice("Initializing clone", this.noticeLength);
         try {
             const commitBefore = await this.getCurrentCommit();
 
@@ -99,36 +101,49 @@ export class IsomorphicGit extends GitManager {
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
                 headers: { "Authorization": this.getAuth() },
+                onProgress: (progress) => {
+                    (progressNotice as any).noticeEl.innerText = `Cloning progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
+                }
             });
             this.plugin.lastUpdate = Date.now();
 
             const commitAfter = await this.getCurrentCommit();
-
+            progressNotice.hide();
             return await this.getChangedFiles(commitBefore.oid, commitAfter.oid);
         } catch (error) {
+            progressNotice.hide();
             this.plugin.displayError(error);
             throw error;
         }
+
     };
 
     async push(): Promise<number> {
         this.plugin.setState(PluginState.push);
+        const progressNotice = new Notice("Initializing clone", this.noticeLength);
         try {
             const branchInfo = await this.branchInfo();
             const changedFiles = await this.getChangedFiles(branchInfo.current, branchInfo.tracking);
+
 
             await git.push({
                 ...this.repo,
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
                 headers: { "Authorization": this.getAuth() },
+                onProgress: (progress) => {
+                    (progressNotice as any).noticeEl.innerText = `Cloning progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
+                }
             });
             this.plugin.lastUpdate = Date.now();
+            progressNotice.hide();
             return changedFiles;
         } catch (error) {
+            progressNotice.hide();
             this.plugin.displayError(error);
             throw error;
         }
+
     };
 
     async canPush(): Promise<boolean> {
@@ -160,8 +175,7 @@ export class IsomorphicGit extends GitManager {
         return "valid";
     };
 
-    async branchInfo(listRemoteBranches: boolean = false): Promise<BranchInfo> {
-
+    async branchInfo(): Promise<BranchInfo> {
         try {
             const current = await git.currentBranch(this.repo) || "";
 
@@ -241,19 +255,24 @@ export class IsomorphicGit extends GitManager {
             new Notice("Please specify a proxy URL");
             return;
         };
+        const progressNotice = new Notice("Initializing clone", this.noticeLength);
+
         try {
-            const a = await git.fetch({
+            await git.fetch({
                 ...this.repo,
                 http: http,
                 corsProxy: this.plugin.settings.proxyURL,
                 headers: { "Authorization": this.getAuth() },
+                onProgress: (progress) => {
+                    (progressNotice as any).noticeEl.innerText = `Cloning progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
+                }
             });
-            console.log(a);
 
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
         }
+        progressNotice.hide();
     }
 
     async clone(url: string): Promise<void> {
@@ -261,6 +280,7 @@ export class IsomorphicGit extends GitManager {
             new Notice("Please specify a proxy URL");
             return;
         };
+        const progressNotice = new Notice("Initializing clone", this.noticeLength);
         try {
             await git.clone({
                 ...this.repo,
@@ -268,11 +288,15 @@ export class IsomorphicGit extends GitManager {
                 url: url,
                 corsProxy: this.plugin.settings.proxyURL,
                 headers: { "Authorization": this.getAuth() },
+                onProgress: (progress) => {
+                    (progressNotice as any).noticeEl.innerText = `Cloning progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
+                }
             });
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
         }
+        progressNotice.hide();
     }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
