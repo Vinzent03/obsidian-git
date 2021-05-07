@@ -1,6 +1,6 @@
 {
     "name": "obsidian-git",
-    "version": "1.9.0",
+    "version": "1.9.1",
     "description": "Backup your Obsidian (https://obsidian.md) vault with git",
     "main": "main.js",
     "scripts": {
