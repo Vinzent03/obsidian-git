@@ -256,6 +256,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Repository URL")
             .setDesc("URL under which the git repository is accessible")
             .addText(async cb => {
+                cb.inputEl.autocapitalize = "off";
+                cb.inputEl.autocomplete = "off";
+                cb.inputEl.spellcheck = false;
                 cb.setValue(await this.plugin.gitManager.getConfig("remote.origin.url"));
                 cb.onChange(async value => {
                     await this.plugin.gitManager.setConfig("remote.origin.url", value);
@@ -291,6 +294,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         setting
             .setName("Repository URL")
             .addText(cb => {
+                cb.inputEl.autocapitalize = "off";
+                cb.inputEl.autocomplete = "off";
+                cb.inputEl.spellcheck = false;
                 cb.onChange(value => repoUrl = value);
             });
         setting
@@ -302,10 +308,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 cb.onClick(async (_) => {
                     if (!repoUrl) {
                         new Notice("Please specify a URL");
+                        return;
                     }
                     if (this.plugin.gitManager instanceof IsomorphicGit) {
                         await this.plugin.gitManager.clone(repoUrl);
-                        new Notice("Cloned repo");
+                        new Notice("Successfully cloned");
                         await this.plugin.init();
                         this.display();
                     }
@@ -344,6 +351,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setDesc("Used Proxy to fix CORS. See README for instructions")
             .addText(async cb => {
                 cb.setValue(this.plugin.settings.proxyURL);
+                cb.inputEl.autocapitalize = "off";
+                cb.inputEl.autocomplete = "off";
+                cb.inputEl.spellcheck = false;
                 cb.onChange(value => {
                     this.plugin.settings.proxyURL = value;
                     this.plugin.saveSettings();
@@ -365,11 +375,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Password/Personal access token")
             .setDesc("Type in your password and press on the button to set it. You won't be able to see it again.")
             .addText(cb => {
+                cb.inputEl.autocapitalize = "off";
+                cb.inputEl.autocomplete = "off";
+                cb.inputEl.spellcheck = false;
                 cb.onChange(value => password = value);
             });
         passwordSetting.addButton(cb => {
             cb.setButtonText("Set")
-                .setWarning().onClick((_) => window.localStorage.setItem(this.plugin.manifest.id + ":password", password));
+                .setWarning().onClick((_) => {
+                    window.localStorage.setItem(this.plugin.manifest.id + ":password", password);
+                    new Notice("Saved token");
+                });
         });
     }
 }
