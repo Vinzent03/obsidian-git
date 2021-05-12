@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.9.2](https://github.com/denolehov/obsidian-git/compare/1.9.1...1.9.2) (2021-05-12)
+
+
+### Bug Fixes
+
+* plugin started wrong when normally enabled ([dc9c4b1](https://github.com/denolehov/obsidian-git/commit/dc9c4b13387067793e315a9aca24c05c75fb6d38))
+* storing of last auto backup/pull caused merge conflicts ([cf6f279](https://github.com/denolehov/obsidian-git/commit/cf6f27900d05eb3ffe74222950cd00270879fd6c)), closes [#74](https://github.com/denolehov/obsidian-git/issues/74)
+
 ### [1.9.1](https://github.com/denolehov/obsidian-git/compare/1.9.0...1.9.1) (2021-05-07)
 
 
