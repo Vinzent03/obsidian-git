@@ -93,7 +93,11 @@ export default class ObsidianGit extends Plugin {
                 window.setInterval(() => this.statusBar.display(), 1000)
             );
         }
-        this.app.workspace.on("layout-ready", () => this.init());
+        if (this.app.workspace.layoutReady) {
+            this.init();
+        } else {
+            this.app.workspace.on("layout-ready", () => this.init());
+        }
     }
 
     async onunload() {
