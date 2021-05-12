@@ -79,9 +79,13 @@ https://github.com/flathub/md.obsidian.Obsidian/issues/5#issuecomment-736974662
 To exclude cache files from the repository, create `.gitignore` file in the root of your vault and add the following lines:
 ```
 # to exclude Obsidian workspace settings (including plugin and hotkey configurations)
-.obsidian/  
+.obsidian/
+
 # OR only to exclude workspace cache
-.obsidian/workspace 
+.obsidian/workspace
+
+# This file is used to keep track of last auto backup/pull
+.obsidian-git-data
 
 # Add below lines to exclude OS settings and caches
 .trash/

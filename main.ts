@@ -22,8 +22,6 @@ interface ObsidianGitSettings {
     disablePopups: boolean;
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
-    lastAutoBackUp: string;
-    lastAutoPull: string;
 }
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
@@ -36,8 +34,6 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     disablePopups: false,
     listChangedFilesInMessageBody: false,
     showStatusBar: true,
-    lastAutoBackUp: "",
-    lastAutoPull: ""
 };
 
 export default class ObsidianGit extends Plugin {
@@ -112,6 +108,35 @@ export default class ObsidianGit extends Plugin {
         await this.saveData(this.settings);
     }
 
+    async saveLastAuto(date: Date, mode: "backup" | "pull") {
+        const fileName = ".obsidian-git-data";
+        let data = "\n";
+        if (await this.app.vault.adapter.exists(fileName)) {
+            data = await this.app.vault.adapter.read(fileName);
+        }
+        const lines = data.split("\n");
+        if (mode === "backup") {
+            lines[0] = date.toString();
+        } else if (mode === "pull") {
+            lines[1] = date.toString();
+        }
+
+        await this.app.vault.adapter.write(fileName, lines.join("\n"));
+    }
+
+    async loadLastAuto(): Promise<{ "backup": Date, "pull": Date; }> {
+        const fileName = ".obsidian-git-data";
+        let data = "\n";
+        if (await this.app.vault.adapter.exists(fileName)) {
+            data = await this.app.vault.adapter.read(fileName);
+        }
+        const lines = data.split("\n");
+        return {
+            "backup": new Date(lines[0]),
+            "pull": new Date(lines[1])
+        };
+    }
+
     async init(): Promise<void> {
         if (!this.isGitInstalled()) {
             this.displayError("Cannot run git command");
@@ -134,19 +159,18 @@ export default class ObsidianGit extends Plugin {
                 if (this.settings.autoPullOnBoot) {
                     this.promiseQueue.addTask(() => this.pullChangesFromRemote());
                 }
+                const lastAutos = await this.loadLastAuto();
 
                 if (this.settings.autoSaveInterval > 0) {
                     const now = new Date();
-                    const last = new Date(this.settings.lastAutoBackUp);
 
-                    const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - last.getTime()) / 1000) / 60));
+                    const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60));
                     this.startAutoBackup(diff <= 0 ? 0 : diff);
                 }
                 if (this.settings.autoPullInterval > 0) {
                     const now = new Date();
-                    const last = new Date(this.settings.lastAutoPull);
 
-                    const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - last.getTime()) / 1000) / 60));
+                    const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60));
                     this.startAutoPull(diff <= 0 ? 0 : diff);
                 }
             }
@@ -326,7 +350,7 @@ export default class ObsidianGit extends Plugin {
         this.timeoutIDBackup = window.setTimeout(
             () => {
                 this.promiseQueue.addTask(() => this.createBackup(true));
-                this.settings.lastAutoBackUp = new Date().toString();
+                this.saveLastAuto(new Date(), "backup");
                 this.saveSettings();
                 this.startAutoBackup();
             },
@@ -338,7 +362,7 @@ export default class ObsidianGit extends Plugin {
         this.timeoutIDPull = window.setTimeout(
             () => {
                 this.promiseQueue.addTask(() => this.pullChangesFromRemote());
-                this.settings.lastAutoPull = new Date().toString();
+                this.saveLastAuto(new Date(), "pull");
                 this.saveSettings();
                 this.startAutoPull();
             },
@@ -504,7 +528,7 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
 
                             if (plugin.settings.autoPullInterval > 0) {
                                 plugin.clearAutoPull();
-                                plugin.startAutoPull(plugin.settings.autoSaveInterval);
+                                plugin.startAutoPull(plugin.settings.autoPullInterval);
                                 new Notice(
                                     `Automatic pull enabled! Every ${plugin.settings.autoPullInterval} minutes.`
                                 );
