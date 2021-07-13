@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.9.3](https://github.com/denolehov/obsidian-git/compare/1.9.2...1.9.3) (2021-07-13)
+
+
+### Bug Fixes
+
+* storing lastAutos in a file caused many problems ([2812d94](https://github.com/denolehov/obsidian-git/commit/2812d948f0c6b0534c507425249c93397f71e973)), closes [#90](https://github.com/denolehov/obsidian-git/issues/90) [#78](https://github.com/denolehov/obsidian-git/issues/78)
+
 ### [1.9.2](https://github.com/denolehov/obsidian-git/compare/1.9.1...1.9.2) (2021-05-12)
 
 
