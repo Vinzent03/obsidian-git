@@ -93,11 +93,8 @@ export default class ObsidianGit extends Plugin {
                 window.setInterval(() => this.statusBar.display(), 1000)
             );
         }
-        if (this.app.workspace.layoutReady) {
-            this.init();
-        } else {
-            this.app.workspace.on("layout-ready", () => this.init());
-        }
+        this.app.workspace.onLayoutReady(() => this.init());
+
     }
 
     async onunload() {
@@ -113,31 +110,17 @@ export default class ObsidianGit extends Plugin {
     }
 
     async saveLastAuto(date: Date, mode: "backup" | "pull") {
-        const fileName = ".obsidian-git-data";
-        let data = "\n";
-        if (await this.app.vault.adapter.exists(fileName)) {
-            data = await this.app.vault.adapter.read(fileName);
-        }
-        const lines = data.split("\n");
         if (mode === "backup") {
-            lines[0] = date.toString();
+            window.localStorage.setItem(this.manifest.id + ":lastAutoBackup", date.toString());
         } else if (mode === "pull") {
-            lines[1] = date.toString();
+            window.localStorage.setItem(this.manifest.id + ":lastAutoPull", date.toString());
         }
-
-        await this.app.vault.adapter.write(fileName, lines.join("\n"));
     }
 
     async loadLastAuto(): Promise<{ "backup": Date, "pull": Date; }> {
-        const fileName = ".obsidian-git-data";
-        let data = "\n";
-        if (await this.app.vault.adapter.exists(fileName)) {
-            data = await this.app.vault.adapter.read(fileName);
-        }
-        const lines = data.split("\n");
         return {
-            "backup": new Date(lines[0]),
-            "pull": new Date(lines[1])
+            "backup": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoBackup") ?? ""),
+            "pull": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPull") ?? "")
         };
     }
 
