@@ -591,7 +591,7 @@ class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Current branch")
             .setDesc("Switch to a different branch")
             .addDropdown(async (dropdown) => {
-                const branchInfo = await plugin.git.branchLocal();
+                const branchInfo = await plugin.git.branch(['--no-color']);
                 for (const branch of branchInfo.all) {
                     dropdown.addOption(branch, branch);
                 }
