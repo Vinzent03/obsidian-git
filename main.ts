@@ -724,22 +724,22 @@ class StatusBar {
                 this.displayFromNow(this.plugin.lastUpdate);
                 break;
             case PluginState.status:
-                this.statusBarEl.setText("git: checking repo status..");
+                this.statusBarEl.setText("git: checking repo status...");
                 break;
             case PluginState.add:
-                this.statusBarEl.setText("git: adding files to repo..");
+                this.statusBarEl.setText("git: adding files to repo...");
                 break;
             case PluginState.commit:
-                this.statusBarEl.setText("git: committing changes..");
+                this.statusBarEl.setText("git: committing changes...");
                 break;
             case PluginState.push:
-                this.statusBarEl.setText("git: pushing changes..");
+                this.statusBarEl.setText("git: pushing changes...");
                 break;
             case PluginState.pull:
-                this.statusBarEl.setText("git: pulling changes..");
+                this.statusBarEl.setText("git: pulling changes...");
                 break;
             case PluginState.conflicted:
-                this.statusBarEl.setText("git: you have conflict files..");
+                this.statusBarEl.setText("git: you have conflict files...");
                 break;
             default:
                 this.statusBarEl.setText("git: failed on initialization!");
@@ -751,7 +751,7 @@ class StatusBar {
         if (timestamp) {
             let moment = (window as any).moment;
             let fromNow = moment(timestamp).fromNow();
-            this.statusBarEl.setText(`git: last update ${fromNow}..`);
+            this.statusBarEl.setText(`git: last update ${fromNow}`);
         } else {
             this.statusBarEl.setText(`git: ready`);
         }
