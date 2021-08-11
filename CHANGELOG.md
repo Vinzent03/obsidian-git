@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.10.0](https://github.com/denolehov/obsidian-git/compare/1.9.3...1.10.0) (2021-08-11)
+
+
+### Features
+
+* add submodules support ([2a4ce6d](https://github.com/denolehov/obsidian-git/commit/2a4ce6d47696cd6667b639c8479b37f61346e9be)), closes [#93](https://github.com/denolehov/obsidian-git/issues/93)
+
+
+### Bug Fixes
+
+* Changed the branchLocal command to branch with no-color ([dbd93cf](https://github.com/denolehov/obsidian-git/commit/dbd93cfe5f127874a514837577b42b34a07bcf3e))
+
 ### [1.9.3](https://github.com/denolehov/obsidian-git/compare/1.9.2...1.9.3) (2021-07-13)
 
 
