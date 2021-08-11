@@ -177,6 +177,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Update submodules")
+            .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.updateSubmodules)
+                    .onChange((value) => {
+                        plugin.settings.updateSubmodules = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Disable notifications")
             .setDesc(
                 "Disable notifications for git operations to minimize distraction (refer to status bar for updates)"

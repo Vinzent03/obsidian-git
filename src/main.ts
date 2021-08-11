@@ -19,6 +19,7 @@ interface ObsidianGitSettings {
     disablePopups: boolean;
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
+    updateSubmodules: boolean;
 }
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     disablePopups: false,
     listChangedFilesInMessageBody: false,
     showStatusBar: true,
+    updateSubmodules: false,
 };
 
 export default class ObsidianGit extends Plugin {
@@ -232,7 +234,7 @@ export default class ObsidianGit extends Plugin {
 
 
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
-            if (this.gitManager.canPush()) {
+            if (await this.gitManager.canPush()) {
                 if (this.settings.pullBeforePush) {
                     const pulledFilesLength = await this.gitManager.pull();
                     if (pulledFilesLength > 0) {

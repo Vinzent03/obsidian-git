@@ -33,6 +33,10 @@ export class SimpleGit extends GitManager {
     }
 
     async commitAll(message?: string): Promise<number> {
+        if (this.plugin.settings.updateSubmodules) {
+            this.plugin.setState(PluginState.commit);
+            await this.git.subModule(["foreach", "--recursive", `git add -A && if [ ! -z "$(git status --porcelain)" ]; then git commit -m "${message ?? await this.formatCommitMessage()}"; fi`], (err: any) => this.onError(err));
+        }
         this.plugin.setState(PluginState.add);
         await this.git.add(
             "./*", (err: any) => this.onError(err)
@@ -44,6 +48,9 @@ export class SimpleGit extends GitManager {
 
     async pull(): Promise<number> {
         this.plugin.setState(PluginState.pull);
+        if (this.plugin.settings.updateSubmodules)
+            await this.git.subModule(["update", "--remote", "--merge", "--recursive"], (err: any) => this.onError(err));
+
         const pullResult = await this.git.pull(["--no-rebase"],
             async (err: Error | null) => {
                 if (err) {
@@ -60,12 +67,17 @@ export class SimpleGit extends GitManager {
     }
 
     async push(): Promise<number> {
-        this.plugin.setState(PluginState.push);
+        this.plugin.setState(PluginState.status);
         const status = await this.git.status();
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
         const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
 
+        this.plugin.setState(PluginState.push);
+        if (this.plugin.settings.updateSubmodules) {
+            await this.git.env({ ...process.env, "OBSIDIAN_GIT": 1 }).subModule(["foreach", "--recursive", `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`], (err: any) => this.onError(err));
+
+        }
         await this.git.env({ ...process.env, "OBSIDIAN_GIT": 1 }).push((err: any) => this.onError(err));
 
         return remoteChangedFiles;
@@ -73,6 +85,10 @@ export class SimpleGit extends GitManager {
 
 
     async canPush(): Promise<boolean> {
+        // allow pushing in submodules even if the root has no changes.
+        if (this.plugin.settings.updateSubmodules === true) {
+            return true;
+        }
         const status = await this.git.status((err: any) => this.onError(err));
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
@@ -131,6 +147,7 @@ export class SimpleGit extends GitManager {
     async fetch(): Promise<void> {
         await this.git.fetch((err: any) => this.onError(err));
     }
+
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
         const command = spawnSync('git', ['--version'], {
