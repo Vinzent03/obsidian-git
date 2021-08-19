@@ -66,13 +66,13 @@ export default class ObsidianGit extends Plugin {
 
         this.addCommand({
             id: "push",
-            name: "Commit *all* changes and push to remote repository",
+            name: "Create backup",
             callback: () => this.promiseQueue.addTask(() => this.createBackup(false))
         });
 
         this.addCommand({
             id: "commit-push-specified-message",
-            name: "Commit and push all changes with specified message",
+            name: "Create backup with specified message",
             callback: () => new CustomMessageModal(this).open()
         });
 
@@ -135,8 +135,6 @@ export default class ObsidianGit extends Plugin {
                 case "missing-repo":
                     new Notice("Can't find a valid git repository. Please create one");
                     break;
-                case "wrong-settings":
-                    this.displayError("Not all of the required configs are set. See README");
                 case "valid":
                     this.gitReady = true;
                     this.setState(PluginState.idle);
