@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.10.1](https://github.com/denolehov/obsidian-git/compare/1.10.0...1.10.1) (2021-08-19)
+
+
+### Bug Fixes
+
+* checkRequirements cant find user.name/email ([1994a44](https://github.com/denolehov/obsidian-git/commit/1994a44c5ecec121965505e2627d26460425e4dd))
+* rename commands to be more consistend ([5e07e80](https://github.com/denolehov/obsidian-git/commit/5e07e80a13640b6ba587185880ba01befbd563ac))
+
 ## [1.10.0](https://github.com/denolehov/obsidian-git/compare/1.9.3...1.10.0) (2021-08-11)
 
 
