@@ -21,7 +21,7 @@ export abstract class GitManager {
 
     abstract canPush(): Promise<boolean>;
 
-    abstract checkRequirements(): Promise<"valid" | "missing-repo" | "wrong-settings" | "missing-git">;
+    abstract checkRequirements(): Promise<"valid" | "missing-repo" | "missing-git">;
 
     abstract branchInfo(): Promise<BranchInfo>;
 

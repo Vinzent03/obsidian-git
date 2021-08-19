@@ -97,22 +97,13 @@ export class SimpleGit extends GitManager {
         return remoteChangedFiles !== 0;
     }
 
-    async checkRequirements(): Promise<"valid" | "missing-repo" | "missing-git" | "wrong-settings"> {
+    async checkRequirements(): Promise<"valid" | "missing-repo" | "missing-git"> {
         if (!this.isGitInstalled()) {
             return "missing-git";
         }
         if (!(await this.git.checkIsRepo())) {
             return "missing-repo";
         }
-        const config = (await this.git.listConfig((err: any) => this.onError(err))).all;
-        const user = config["user.name"];
-        const email = config["user.email"];
-        const remoteURL = config["remote.origin.url"];
-
-        if (!user || !email || !remoteURL) {
-            return "wrong-settings";
-        }
-
         return "valid";
     }
 
