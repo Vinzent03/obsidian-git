@@ -34,3 +34,14 @@ body:
   attributes:
     label: Addition context
     description: Add any other context about the problem here.
+- type: dropdown
+  id: version
+  attributes:
+    label: Operating system
+    description: Which OS are you using?
+    options:
+      - Windows
+      - Linux
+      - macOS
+  validations:
+    required: true
