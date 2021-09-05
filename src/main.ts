@@ -189,6 +189,7 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
+        this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
 
@@ -248,6 +249,7 @@ export default class ObsidianGit extends Plugin {
                     return;
                 } else {
                     const pushedFiles = await this.gitManager.push();
+                    this.lastUpdate = Date.now();
                     this.displayMessage(`Pushed ${pushedFiles} files to remote`);
                 }
             } else {
