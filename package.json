@@ -24,7 +24,7 @@
         "rollup": "^2.32.1",
         "standard-version": "^9.0.0",
         "tslib": "^2.0.3",
-        "typescript": "^4.0.3"
+        "typescript": "4.3.5"
     },
     "dependencies": {
         "simple-git": "^2.21.0",
