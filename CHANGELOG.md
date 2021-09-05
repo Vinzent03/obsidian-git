@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.10.2](https://github.com/denolehov/obsidian-git/compare/1.10.1...1.10.2) (2021-09-05)
+
+
+### Bug Fixes
+
+* plugin status bar now displays time from last update (push or pull) ([b835fc3](https://github.com/denolehov/obsidian-git/commit/b835fc3548884dca4084ec37a296ebebf9c9dab7))
+
 ### [1.10.1](https://github.com/denolehov/obsidian-git/compare/1.10.0...1.10.1) (2021-08-19)
 
 
