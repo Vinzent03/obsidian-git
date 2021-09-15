@@ -84,6 +84,12 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "init-repo",
+            name: "Initialize a new repo",
+            callback: async () => this.createNewRepo()
+        });
+
+        this.addCommand({
             id: "commit-push-specified-message",
             name: "Create backup with specified message",
             callback: () => new CustomMessageModal(this).open()
@@ -148,7 +154,7 @@ export default class ObsidianGit extends Plugin {
                     this.displayError("Cannot run git command");
                     break;
                 case "missing-repo":
-                    new Notice("Can't find a valid git repository. Please create one");
+                    new Notice("Can't find a valid git repository. Please create one via the given command.");
                     break;
                 case "valid":
                     this.gitReady = true;
@@ -182,13 +188,25 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async pullChangesFromRemote(): Promise<void> {
+    async createNewRepo() {
+        await this.gitManager.init();
+        new Notice("Initialized new repo");
+    }
 
+    /**
+     * Retries to call `this.init()` if necessary, otherwise returns directly
+     * @returns true if `this.gitManager` is ready to be used, false if not.
+     */
+    async isAllInitialized(): Promise<boolean> {
         if (!this.gitReady) {
             await this.init();
         }
+        return this.gitReady;
+    }
 
-        if (!this.gitReady) return;
+    async pullChangesFromRemote(): Promise<void> {
+
+        if (!await this.isAllInitialized()) return;
 
         const filesUpdated = await this.gitManager.pull();
         if (filesUpdated > 0) {
@@ -209,10 +227,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async createBackup(fromAutoBackup: boolean, commitMessage?: string): Promise<void> {
-        if (!this.gitReady) {
-            await this.init();
-        }
-        if (!this.gitReady) return;
+        if (!await this.isAllInitialized()) return;
+
 
         if (!fromAutoBackup) {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
@@ -332,7 +348,9 @@ export default class ObsidianGit extends Plugin {
         this.writeAndOpenFile(lines.join("\n"));
     }
 
-    async editRemotes() {
+    async editRemotes(): Promise<string | undefined> {
+        if (!await this.isAllInitialized()) return;
+
         const remotes = await this.gitManager.getRemotes();
 
         const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote");
@@ -341,7 +359,8 @@ export default class ObsidianGit extends Plugin {
         if (remoteName) {
             const urlModal = new GeneralModal(this.app, [], "Enter the remote URL");
             const remoteURL = await urlModal.open();
-            this.gitManager.setRemote(remoteName, remoteURL);
+            await this.gitManager.setRemote(remoteName, remoteURL);
+            return remoteName;
         }
 
     }
@@ -363,6 +382,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async removeRemote() {
+        if (!await this.isAllInitialized()) return;
+
 
         const remotes = await this.gitManager.getRemotes();
 
