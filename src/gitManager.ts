@@ -35,6 +35,17 @@ export abstract class GitManager {
 
     abstract fetch(): Promise<void>;
 
+    abstract setRemote(name: string, url: string): Promise<void>;
+
+    abstract getRemotes(): Promise<string[]>;
+
+    abstract getRemoteBranches(remote: string): Promise<string[]>;
+
+    abstract removeRemote(remoteName: string): Promise<void>;
+
+    abstract updateUpstreamBranch(remoteBranch: string): Promise<void>;
+
+
     async formatCommitMessage(): Promise<string> {
         let template = this.plugin.settings.commitMessage;
 

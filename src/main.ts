@@ -5,6 +5,7 @@ import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
 import { GitManager } from "./gitManager";
+import { GeneralModal } from "./modals/generalModal";
 import { SimpleGit } from "./simpleGit";
 import { PluginState } from "./types";
 
@@ -71,6 +72,18 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "edit-remotes",
+            name: "Edit remotes",
+            callback: async () => this.editRemotes()
+        });
+
+        this.addCommand({
+            id: "remove-remote",
+            name: "Remove remote",
+            callback: async () => this.removeRemote()
+        });
+
+        this.addCommand({
             id: "commit-push-specified-message",
             name: "Create backup with specified message",
             callback: () => new CustomMessageModal(this).open()
@@ -81,6 +94,8 @@ export default class ObsidianGit extends Plugin {
             name: "List changed files",
             callback: async () => {
                 const status = await this.gitManager.status();
+                this.setState(PluginState.idle);
+
                 new ChangedFilesModal(this, status.changed).open();
             }
         });
@@ -317,6 +332,48 @@ export default class ObsidianGit extends Plugin {
         this.writeAndOpenFile(lines.join("\n"));
     }
 
+    async editRemotes() {
+        const remotes = await this.gitManager.getRemotes();
+
+        const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote");
+        const remoteName = await nameModal.open();
+
+        if (remoteName) {
+            const urlModal = new GeneralModal(this.app, [], "Enter the remote URL");
+            const remoteURL = await urlModal.open();
+            this.gitManager.setRemote(remoteName, remoteURL);
+        }
+
+    }
+
+    async getRemoteBranch(): Promise<string | undefined> {
+
+        const remotes = await this.gitManager.getRemotes();
+
+        await this.gitManager.fetch();
+        const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote");
+        const remoteName = await nameModal.open();
+
+        if (remoteName) {
+            const branches = await this.gitManager.getRemoteBranches(remoteName);
+            const branchModal = new GeneralModal(this.app, branches, "Select or create a new remote branch");
+            const branch = await branchModal.open();
+            return branch;
+        }
+    }
+
+    async removeRemote() {
+
+        const remotes = await this.gitManager.getRemotes();
+
+        const nameModal = new GeneralModal(this.app, remotes, "Select a remote");
+        const remoteName = await nameModal.open();
+
+        if (remoteName) {
+            this.gitManager.removeRemote(remoteName);
+        }
+    }
+
     async writeAndOpenFile(text: string) {
         await this.app.vault.adapter.write(this.conflictOutputFile, text);
 
@@ -341,7 +398,9 @@ export default class ObsidianGit extends Plugin {
 
         console.log(`git obsidian message: ${message}`);
     }
-    displayError(message: string, timeout: number = 0): void {
+    displayError(message: any, timeout: number = 0): void {
+        // Some errors might not be of type string
+        message = message.toString();
         new Notice(message);
         console.log(`git obsidian error: ${message}`);
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
