@@ -135,8 +135,44 @@ export class SimpleGit extends GitManager {
         return config.all[path];
     }
 
-    async fetch(): Promise<void> {
-        await this.git.fetch((err: any) => this.onError(err));
+    async fetch(remote?: string): Promise<void> {
+        await this.git.fetch(remote != undefined ? [remote] : [], (err: any) => this.onError(err));
+    }
+
+    async setRemote(name: string, url: string): Promise<void> {
+        if ((await this.getRemotes()).includes(name))
+            await this.git.remote(["set-url", name, url], (err: any) => this.onError(err));
+
+        else {
+            await this.git.remote(["add", name, url], (err: any) => this.onError(err));
+        }
+    }
+
+    async getRemoteBranches(remote: string): Promise<string[]> {
+        const res = await this.git.branch(["-r", "--list", `${remote}*`], (err: any) => this.onError(err));
+        const list = [];
+        for (var item in res.branches) {
+            list.push(res.branches[item].name);
+        }
+        return list;
+    }
+
+    async getRemotes() {
+        const res = await this.git.remote([], (err: any) => this.onError(err));
+        if (res) {
+            return res.trim().split("\n");
+        } else {
+            return [];
+        }
+    }
+
+    async removeRemote(remoteName: string) {
+        await this.git.removeRemote(remoteName);
+    }
+
+    async updateUpstreamBranch(remoteBranch: string) {
+        await this.git.push(["--set-upstream", ...remoteBranch.split("/")], (err: any) => this.onError(err));
+
     }
 
     private isGitInstalled(): boolean {

@@ -257,9 +257,16 @@ export default class ObsidianGit extends Plugin {
 
         if (!this.settings.disablePush) {
             if (!(await this.gitManager.branchInfo()).tracking) {
-                this.displayError("Did not push. No tracking branch is set! Please set one in the settings", 10000);
-                this.setState(PluginState.idle);
-                return;
+                new Notice("No upstream branch is set. Please select one.");
+                const remoteBranch = await this.selectRemoteBranch();
+
+                if (remoteBranch == undefined) {
+                    this.displayError("Did not push. No upstream-branch is set!", 10000);
+                    this.setState(PluginState.idle);
+                    return;
+                } else {
+                    await this.gitManager.updateUpstreamBranch(remoteBranch);
+                }
             }
 
 
@@ -353,7 +360,7 @@ export default class ObsidianGit extends Plugin {
 
         const remotes = await this.gitManager.getRemotes();
 
-        const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote");
+        const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote by typing its name and selecting it");
         const remoteName = await nameModal.open();
 
         if (remoteName) {
@@ -365,19 +372,25 @@ export default class ObsidianGit extends Plugin {
 
     }
 
-    async getRemoteBranch(): Promise<string | undefined> {
+    async selectRemoteBranch(): Promise<string | undefined> {
+        let remotes = await this.gitManager.getRemotes();
+        let selectedRemote: string;
+        if (remotes.length === 0) {
+            selectedRemote = await this.editRemotes();
+            if (selectedRemote == undefined) {
+                remotes = await this.gitManager.getRemotes();
+            }
+        }
 
-        const remotes = await this.gitManager.getRemotes();
-
-        await this.gitManager.fetch();
-        const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote");
-        const remoteName = await nameModal.open();
+        const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote by typing its name and selecting it");
+        const remoteName = selectedRemote ?? await nameModal.open();
 
         if (remoteName) {
+            this.displayMessage("Fetching remote branches");
+            await this.gitManager.fetch(remoteName);
             const branches = await this.gitManager.getRemoteBranches(remoteName);
-            const branchModal = new GeneralModal(this.app, branches, "Select or create a new remote branch");
-            const branch = await branchModal.open();
-            return branch;
+            const branchModal = new GeneralModal(this.app, branches, "Select or create a new remote branch by typing its name and selecting it");
+            return await branchModal.open();
         }
     }
 

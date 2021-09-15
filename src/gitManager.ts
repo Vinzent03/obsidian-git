@@ -33,7 +33,7 @@ export abstract class GitManager {
 
     abstract getConfig(path: string): Promise<any>;
 
-    abstract fetch(): Promise<void>;
+    abstract fetch(remote?: string): Promise<void>;
 
     abstract setRemote(name: string, url: string): Promise<void>;
 
