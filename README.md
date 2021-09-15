@@ -1,8 +1,8 @@
 # Obsidian Git
-Simple plugin that allows you to backup your [Obsidian.md](https://obsidian.md) vault to a remote git repository (e.g. private repo on GitHub).
-This plugin assumes you have existing git repository initialized locally and credentials are setup.
+Simple plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote git repository (e.g. private repo on GitHub).
+This plugin assumes credentials are set up.
 
-On advantages of backing up your vault with git I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks). You can find a "how-to" on git repository setup there as well, this plugin does not expose an interface to initialize git repository (yet).
+On advantages of backing up your vault with git I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks).
 
 **This plugin does not work on mobile at the moment** See [#57](https://github.com/denolehov/obsidian-git/issues/57) for updates.
 
