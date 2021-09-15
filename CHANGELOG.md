@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.11.0](https://github.com/denolehov/obsidian-git/compare/1.10.2...1.11.0) (2021-09-15)
+
+
+### Features
+
+* add remote editing ([f70363b](https://github.com/denolehov/obsidian-git/commit/f70363b522c2e144260411d01e26108f7dedb735))
+* support initalizing a new repo ([0fd2062](https://github.com/denolehov/obsidian-git/commit/0fd20627c3c289a05e0aba179b36badfe11d2414))
+* support selecting upstream branch ([013878e](https://github.com/denolehov/obsidian-git/commit/013878e378bdbc6bab23c94615fba0c2bb72e1dc))
+
 ### [1.10.2](https://github.com/denolehov/obsidian-git/compare/1.10.1...1.10.2) (2021-09-05)
 
 
