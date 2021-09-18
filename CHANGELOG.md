@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.12.0](https://github.com/denolehov/obsidian-git/compare/1.11.0...1.12.0) (2021-09-18)
+
+
+### Features
+
+* support custom git binary path ([7793035](https://github.com/denolehov/obsidian-git/commit/77930351622a86ef3babdb4d60acbc8ff334cc84)), closes [#113](https://github.com/denolehov/obsidian-git/issues/113)
+
 ## [1.11.0](https://github.com/denolehov/obsidian-git/compare/1.10.2...1.11.0) (2021-09-15)
 
 
