@@ -21,6 +21,7 @@ interface ObsidianGitSettings {
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
     updateSubmodules: boolean;
+    gitPath: string;
 }
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS: ObsidianGitSettings = {
     listChangedFilesInMessageBody: false,
     showStatusBar: true,
     updateSubmodules: false,
+    gitPath: ""
 };
 
 export default class ObsidianGit extends Plugin {

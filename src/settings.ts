@@ -213,5 +213,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.saveSettings();
                     })
             );
+
+        new Setting(containerEl)
+            .setName("Custom Git binary path")
+            .addText((cb) => {
+                cb.setValue(plugin.settings.gitPath);
+                cb.setPlaceholder("git");
+                cb.onChange((value) => {
+                    plugin.settings.gitPath = value;
+                    plugin.gitManager.updateGitPath(value || "git");
+                    plugin.saveSettings();
+                });
+            });
     }
 }

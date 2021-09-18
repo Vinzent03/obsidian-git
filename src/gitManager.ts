@@ -45,6 +45,7 @@ export abstract class GitManager {
 
     abstract updateUpstreamBranch(remoteBranch: string): Promise<void>;
 
+    abstract updateGitPath(gitPath: string): void;
 
     async formatCommitMessage(): Promise<string> {
         let template = this.plugin.settings.commitMessage;

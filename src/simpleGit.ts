@@ -14,7 +14,10 @@ export class SimpleGit extends GitManager {
         const path = adapter.getBasePath();
 
         if (this.isGitInstalled()) {
-            this.git = simpleGit(path);
+            this.git = simpleGit({
+                baseDir: path,
+                binary: this.plugin.settings.gitPath || undefined,
+            });
         }
     }
 
@@ -173,6 +176,10 @@ export class SimpleGit extends GitManager {
     async updateUpstreamBranch(remoteBranch: string) {
         await this.git.push(["--set-upstream", ...remoteBranch.split("/")], (err: any) => this.onError(err));
 
+    }
+
+    updateGitPath(gitPath: string) {
+        return this.git.customBinary(gitPath);
     }
 
     private isGitInstalled(): boolean {
