@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.13.0](https://github.com/denolehov/obsidian-git/compare/1.12.0...1.13.0) (2021-09-21)
+
+
+### Features
+
+* support cloning remote repos ([ab5ece7](https://github.com/denolehov/obsidian-git/commit/ab5ece75ceba3af5845770dc029732d5657720a3))
+
 ## [1.12.0](https://github.com/denolehov/obsidian-git/compare/1.11.0...1.12.0) (2021-09-18)
 
 
