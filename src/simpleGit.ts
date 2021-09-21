@@ -1,5 +1,6 @@
 import { spawnSync } from "child_process";
 import { FileSystemAdapter } from "obsidian";
+import * as path from "path";
 import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
@@ -119,19 +120,23 @@ export class SimpleGit extends GitManager {
             tracking: status.tracking,
             branches: branches.all,
         };
-    };
+    }
 
     async checkout(branch: string): Promise<void> {
         await this.git.checkout(branch, (err: any) => this.onError(err));
-    };
+    }
 
     async init(): Promise<void> {
-        await this.git.init(false);
-    };
+        await this.git.init(false, (err: any) => this.onError(err));
+    }
+
+    async clone(url: string, dir: string): Promise<void> {
+        await this.git.clone(url, path.join((this.app.vault.adapter as FileSystemAdapter).getBasePath(), dir), [], (err: any) => this.onError(err));
+    }
 
     async setConfig(path: string, value: any): Promise<void> {
         await this.git.addConfig(path, value, (err: any) => this.onError(err));
-    };
+    }
 
     async getConfig(path: string): Promise<any> {
         const config = await this.git.listConfig((err: any) => this.onError(err));

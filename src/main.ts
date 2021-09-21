@@ -1,4 +1,5 @@
 import { Notice, Plugin, TFile } from "obsidian";
+import * as path from "path";
 import { ChangedFilesModal } from "src/modals/changedFilesModal";
 import { CustomMessageModal } from "src/modals/customMessageModal";
 import { PromiseQueue } from "src/promiseQueue";
@@ -89,6 +90,12 @@ export default class ObsidianGit extends Plugin {
             id: "init-repo",
             name: "Initialize a new repo",
             callback: async () => this.createNewRepo()
+        });
+
+        this.addCommand({
+            id: "clone-repo",
+            name: "Clone an existing remote repo",
+            callback: async () => this.cloneNewRepo()
         });
 
         this.addCommand({
@@ -193,6 +200,20 @@ export default class ObsidianGit extends Plugin {
     async createNewRepo() {
         await this.gitManager.init();
         new Notice("Initialized new repo");
+    }
+
+    async cloneNewRepo() {
+        const modal = new GeneralModal(this.app, [], "Enter remote URL");
+        const url = await modal.open();
+        if (url) {
+            let dir = await new GeneralModal(this.app, [], "Enter directory for clone. It needs to be empty or not existent.").open();
+            if (dir) {
+                dir = path.normalize(dir);
+                new Notice(`Cloning new repo into "${dir}"`);
+                await this.gitManager.clone(url, dir);
+                new Notice("Cloned new repo");
+            }
+        }
     }
 
     /**
