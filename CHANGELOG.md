@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.13.1](https://github.com/denolehov/obsidian-git/compare/1.13.0...1.13.1) (2021-09-30)
+
+
+### Bug Fixes
+
+* changed files path was wrong with whitespaces ([043f02f](https://github.com/denolehov/obsidian-git/commit/043f02f89daea8051612b5f7816564ba7f7657e8)), closes [#119](https://github.com/denolehov/obsidian-git/issues/119)
+
 ## [1.13.0](https://github.com/denolehov/obsidian-git/compare/1.12.0...1.13.0) (2021-09-21)
 
 
