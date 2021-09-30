@@ -30,10 +30,20 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.status);
         const status = await this.git.status();
         return {
-            changed: status.files,
-            staged: status.staged,
-            conflicted: status.conflicted,
+            changed: status.files.map((e) => {
+                e.path = this.fixFilePath(e.path);
+                return e;
+            }),
+            staged: status.staged.map(this.fixFilePath),
+            conflicted: status.conflicted.map(this.fixFilePath),
         };
+    }
+
+    //Remove wrong `"` like "My file.md"
+    fixFilePath(path: string): string {
+        path.startsWith('"') && path.endsWith('"') &&
+            (path = path.substring(1, path.length - 1));
+        return path;
     }
 
     async commitAll(message?: string): Promise<number> {
