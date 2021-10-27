@@ -20,12 +20,12 @@ esbuild.build({
     bundle: true,
     external: ['obsidian'],
     format: 'cjs',
-    minify: prod,
     watch: !prod,
     target: 'es2016',
     logLevel: "info",
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
+    platform: 'node',
     plugins: [sveltePlugin({
         compileOptions: {
             css: true,
