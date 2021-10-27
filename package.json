@@ -4,8 +4,8 @@
     "description": "Backup your Obsidian (https://obsidian.md) vault with git",
     "main": "main.js",
     "scripts": {
-        "dev": "rollup --config rollup.config.js -w",
-        "build": "rollup --config rollup.config.js",
+        "dev": "node esbuild.config.mjs",
+        "build": "node esbuild.config.mjs production",
         "release": "standard-version"
     },
     "keywords": [],
