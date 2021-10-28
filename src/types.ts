@@ -13,6 +13,7 @@ export interface ObsidianGitSettings {
     showStatusBar: boolean;
     lastAutoBackUp: string;
     lastAutoPull: string;
+    updateSubModules: boolean;
 }
 
 export interface Author {

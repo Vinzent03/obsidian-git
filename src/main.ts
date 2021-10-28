@@ -1,14 +1,16 @@
 import { Notice, Plugin, TFile } from "obsidian";
 import * as path from "path";
-import { ChangedFilesModal } from "src/modals/changedFilesModal";
-import { CustomMessageModal } from "src/modals/customMessageModal";
+import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
+import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
 import { GitManager } from "./gitManager";
-import { GeneralModal } from "./modals/generalModal";
+import { GeneralModal } from "./ui/modals/generalModal";
 import { SimpleGit } from "./simpleGit";
 import { PluginState } from "./types";
+import addIcons from "./ui/icons";
+import GitView from "./ui/sidebar/sidebarView";
 
 interface ObsidianGitSettings {
     commitMessage: string;
@@ -59,8 +61,26 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
+        addIcons();
+
+        this.registerView('git-view', (leaf) => {
+            return new GitView(leaf, this);
+        });
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
+
+        this.addCommand({
+            id: 'open-git-view',
+            name: 'Open Source Control View',
+            callback: async () => {
+                if (this.app.workspace.getLeavesOfType('git-view').length === 0) {
+                    await this.app.workspace.getRightLeaf(false).setViewState({
+                        type: 'git-view',
+                    });
+                }
+                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType('git-view').first());
+            },
+        });
 
         this.addCommand({
             id: "pull",
