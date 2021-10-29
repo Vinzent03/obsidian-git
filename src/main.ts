@@ -11,21 +11,7 @@ import { SimpleGit } from "./simpleGit";
 import { ObsidianGitSettings, PluginState } from "./types";
 import addIcons from "./ui/icons";
 import GitView from "./ui/sidebar/sidebarView";
-
-const DEFAULT_SETTINGS: ObsidianGitSettings = {
-    commitMessage: "vault backup: {{date}}",
-    commitDateFormat: "YYYY-MM-DD HH:mm:ss",
-    autoSaveInterval: 0,
-    autoPullInterval: 0,
-    autoPullOnBoot: false,
-    disablePush: false,
-    pullBeforePush: true,
-    disablePopups: false,
-    listChangedFilesInMessageBody: false,
-    showStatusBar: true,
-    updateSubmodules: false,
-    gitPath: ""
-};
+import { DEFAULT_SETTINGS, VIEW_CONFIG } from "./constants";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -49,11 +35,11 @@ export default class ObsidianGit extends Plugin {
         await this.loadSettings();
         addIcons();
 
-        this.registerView('git-view', (leaf) => {
+        this.registerView(VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
         });
 
-        (this.app.workspace as any).registerHoverLinkSource('git-view', {
+        (this.app.workspace as any).registerHoverLinkSource(VIEW_CONFIG.type, {
             display: 'Git View',
             defaultMod: true,
         });
@@ -64,12 +50,12 @@ export default class ObsidianGit extends Plugin {
             id: 'open-git-view',
             name: 'Open Source Control View',
             callback: async () => {
-                if (this.app.workspace.getLeavesOfType('git-view').length === 0) {
+                if (this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).length === 0) {
                     await this.app.workspace.getRightLeaf(false).setViewState({
-                        type: 'git-view',
+                        type: VIEW_CONFIG.type,
                     });
                 }
-                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType('git-view').first());
+                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).first());
             },
         });
 
@@ -138,7 +124,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async onunload() {
-        (this.app.workspace as any).unregisterHoverLinkSource('git-view');
+        (this.app.workspace as any).unregisterHoverLinkSource(VIEW_CONFIG.type);
         window.clearTimeout(this.timeoutIDBackup);
         window.clearTimeout(this.timeoutIDPull);
         console.log('unloading ' + this.manifest.name + " plugin");
