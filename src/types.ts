@@ -8,11 +8,9 @@ export interface ObsidianGitSettings {
     pullBeforePush: boolean;
     disablePopups: boolean;
     listChangedFilesInMessageBody: boolean;
-    standaloneMode: boolean;
-    proxyURL: string;
     showStatusBar: boolean;
-    lastAutoBackUp: string;
-    lastAutoPull: string;
+    updateSubmodules: boolean;
+    gitPath: string;
 }
 
 export interface Author {

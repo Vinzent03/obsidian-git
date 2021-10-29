@@ -8,22 +8,8 @@ import { StatusBar } from "src/statusBar";
 import { GitManager } from "./gitManager";
 import { GeneralModal } from "./modals/generalModal";
 import { SimpleGit } from "./simpleGit";
-import { PluginState } from "./types";
+import { ObsidianGitSettings, PluginState } from "./types";
 
-interface ObsidianGitSettings {
-    commitMessage: string;
-    commitDateFormat: string;
-    autoSaveInterval: number;
-    autoPullInterval: number;
-    autoPullOnBoot: boolean;
-    disablePush: boolean;
-    pullBeforePush: boolean;
-    disablePopups: boolean;
-    listChangedFilesInMessageBody: boolean;
-    showStatusBar: boolean;
-    updateSubmodules: boolean;
-    gitPath: string;
-}
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
