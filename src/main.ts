@@ -8,24 +8,10 @@ import { StatusBar } from "src/statusBar";
 import { GitManager } from "./gitManager";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { SimpleGit } from "./simpleGit";
-import { PluginState } from "./types";
+import { ObsidianGitSettings, PluginState } from "./types";
 import addIcons from "./ui/icons";
 import GitView from "./ui/sidebar/sidebarView";
 
-interface ObsidianGitSettings {
-    commitMessage: string;
-    commitDateFormat: string;
-    autoSaveInterval: number;
-    autoPullInterval: number;
-    autoPullOnBoot: boolean;
-    disablePush: boolean;
-    pullBeforePush: boolean;
-    disablePopups: boolean;
-    listChangedFilesInMessageBody: boolean;
-    showStatusBar: boolean;
-    updateSubmodules: boolean;
-    gitPath: string;
-}
 const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
@@ -65,6 +51,11 @@ export default class ObsidianGit extends Plugin {
 
         this.registerView('git-view', (leaf) => {
             return new GitView(leaf, this);
+        });
+
+        (this.app.workspace as any).registerHoverLinkSource('git-view', {
+            display: 'Git View',
+            defaultMod: true,
         });
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
@@ -147,6 +138,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async onunload() {
+        (this.app.workspace as any).unregisterHoverLinkSource('git-view');
         window.clearTimeout(this.timeoutIDBackup);
         window.clearTimeout(this.timeoutIDPull);
         console.log('unloading ' + this.manifest.name + " plugin");
