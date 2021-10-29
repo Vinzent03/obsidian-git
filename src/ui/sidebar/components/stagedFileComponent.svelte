@@ -4,10 +4,9 @@
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
   import { GitManager } from "src/gitManager";
 
-  import { FileStatusResult } from "src/types";
   import GitView from "../sidebarView";
 
-  export let change: FileStatusResult;
+  export let path: string;
   export let view: GitView;
   export let manager: GitManager;
   let buttons: HTMLElement[] = [];
@@ -19,32 +18,28 @@
   function hover(event: MouseEvent) {
     //Don't show previews of config- or hidden files.
     if (
-      !change.path.startsWith(view.app.vault.configDir) ||
-      !change.path.startsWith(".")
+      !path.startsWith(view.app.vault.configDir) ||
+      !path.startsWith(".")
     ) {
       hoverPreview(
         event,
         view,
-        change.path.split("/").last().replace(".md", "")
+        path.split("/").last().replace(".md", "")
       );
     }
   }
 
   function open(event: MouseEvent) {
     if (
-      !change.path.startsWith(view.app.vault.configDir) ||
-      !change.path.startsWith(".")
+      !path.startsWith(view.app.vault.configDir) ||
+      !path.startsWith(".")
     ) {
       openOrSwitch(view.app, (event.target as HTMLElement).innerText, event);
     }
   }
 
-  function stage() {
-    //Stage File
-  }
-
-  function discard() {
-    //Maybe ask for confirmation before actually reverting the file
+  function unstage() {
+    //unstage File
   }
 </script>
 
@@ -54,26 +49,20 @@
     on:mouseover={hover}
     on:click={open}
     aria-label-position="left"
-    aria-label={change.path.split("/").last() != change.path ? change.path : ""}
+    aria-label={path.split("/").last() != path ? path : ""}
   >
-    {change.path.split("/").last().replace(".md", "")}
+    {path.split("/").last().replace(".md", "")}
   </span>
   <div class="tools">
     <div class="buttons">
       <div
-        data-icon="feather-skip-back"
-        aria-label="Discard"
+        data-icon="feather-minus"
+        aria-label="Unstage"
         bind:this={buttons[0]}
-        on:click={discard}
-      />
-      <div
-        data-icon="feather-plus"
-        aria-label="Stage"
-        bind:this={buttons[1]}
-        on:click={stage}
+        on:click={unstage}
       />
     </div>
-    <span class="type" data-type="M">M</span>
+    <span class="type" data-type="A">A</span>
   </div>
 </main>
 
@@ -111,9 +100,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        &[data-type="M"] {
-          color: orange;
-        }
+        color: greenyellow;
       }
       .buttons {
         display: flex;

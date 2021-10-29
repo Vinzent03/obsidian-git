@@ -1,4 +1,5 @@
 import { HoverParent, HoverPopover, ItemView, WorkspaceLeaf } from "obsidian";
+import { VIEW_CONFIG } from "src/constants";
 import ObsidianGit from "src/main";
 import GitViewComponent from './gitView.svelte';
 
@@ -16,15 +17,15 @@ export default class GitView extends ItemView implements HoverParent{
     }
 
     getViewType(): string {
-        return 'git-view';
+        return VIEW_CONFIG.type;
     }
 
     getDisplayText(): string {
-        return 'Source Control';
+        return VIEW_CONFIG.name;
     }
 
     getIcon(): string {
-        return 'feather-git-pull-request';
+        return VIEW_CONFIG.icon;
     }
 
     onClose(): Promise<void> {

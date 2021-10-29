@@ -6,5 +6,8 @@ export default function addIcons(): void {
     addFeatherIcon('refresh-cw');
     addFeatherIcon('plus-circle');
     addFeatherIcon('upload');
-    addFeatherIcon('download')
+    addFeatherIcon('download');
+    addFeatherIcon('plus');
+    addFeatherIcon('skip-back');
+    addFeatherIcon('minus');
 }
