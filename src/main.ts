@@ -1,29 +1,17 @@
 import { Notice, Plugin, TFile } from "obsidian";
 import * as path from "path";
-import { ChangedFilesModal } from "src/modals/changedFilesModal";
-import { CustomMessageModal } from "src/modals/customMessageModal";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
+import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
+import { CustomMessageModal } from "src/ui/modals/customMessageModal";
+import { DEFAULT_SETTINGS, VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
-import { GeneralModal } from "./modals/generalModal";
 import { SimpleGit } from "./simpleGit";
 import { ObsidianGitSettings, PluginState } from "./types";
-
-const DEFAULT_SETTINGS: ObsidianGitSettings = {
-    commitMessage: "vault backup: {{date}}",
-    commitDateFormat: "YYYY-MM-DD HH:mm:ss",
-    autoSaveInterval: 0,
-    autoPullInterval: 0,
-    autoPullOnBoot: false,
-    disablePush: false,
-    pullBeforePush: true,
-    disablePopups: false,
-    listChangedFilesInMessageBody: false,
-    showStatusBar: true,
-    updateSubmodules: false,
-    gitPath: ""
-};
+import addIcons from "./ui/icons";
+import { GeneralModal } from "./ui/modals/generalModal";
+import GitView from "./ui/sidebar/sidebarView";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -45,8 +33,31 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
+        addIcons();
+
+        this.registerView(VIEW_CONFIG.type, (leaf) => {
+            return new GitView(leaf, this);
+        });
+
+        (this.app.workspace as any).registerHoverLinkSource(VIEW_CONFIG.type, {
+            display: 'Git View',
+            defaultMod: true,
+        });
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
+
+        this.addCommand({
+            id: 'open-git-view',
+            name: 'Open Source Control View',
+            callback: async () => {
+                if (this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).length === 0) {
+                    await this.app.workspace.getRightLeaf(false).setViewState({
+                        type: VIEW_CONFIG.type,
+                    });
+                }
+                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).first());
+            },
+        });
 
         this.addCommand({
             id: "pull",
@@ -113,6 +124,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async onunload() {
+        (this.app.workspace as any).unregisterHoverLinkSource(VIEW_CONFIG.type);
         window.clearTimeout(this.timeoutIDBackup);
         window.clearTimeout(this.timeoutIDPull);
         console.log('unloading ' + this.manifest.name + " plugin");

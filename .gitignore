@@ -6,6 +6,7 @@
 node_modules
 package-lock.json
 main.js
+yarn.lock
 
 # build
 *.js.map
