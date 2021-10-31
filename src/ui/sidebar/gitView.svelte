@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { debounce, setIcon } from "obsidian";
+  import { debounce, EventRef, setIcon } from "obsidian";
   import ObsidianGit from "src/main";
   import { Status } from "src/types";
+  import { onDestroy } from "svelte";
   import { slide } from "svelte/transition";
   import FileComponent from "./components/fileComponent.svelte";
   import StagedFileComponent from "./components/stagedFileComponent.svelte";
@@ -16,6 +17,10 @@
   let stagedOpen = true;
   let loading = true;
   const debRefresh = debounce(() => refresh(), 300000);
+  //Refresh every ten minutes
+  const interval = window.setInterval(refresh, 600000);
+
+  let event: EventRef;
   //This should go in the onMount callback, for some reason it doesn't fire though
   //setImmediate's callback will execute after the current event loop finishes.
   plugin.app.workspace.onLayoutReady(() =>
@@ -23,15 +28,19 @@
       buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon"), 16));
 
       refresh();
-      //Refresh every ten minutes
-      plugin.registerInterval(window.setInterval(refresh, 600000));
-      plugin.registerEvent(
-        plugin.app.metadataCache.on("resolved", () => {
-          debRefresh();
-        })
-      );
+
+      event = plugin.app.metadataCache.on("resolved", () => {
+        debRefresh();
+      });
+
+      plugin.registerInterval(interval);
+      plugin.registerEvent(event);
     })
   );
+  onDestroy(() => {
+    window.clearInterval(interval);
+    plugin.app.metadataCache.offref(event);
+  });
 
   function commit() {
     plugin.gitManager.commit(commitMessage).then(() => {
