@@ -15,6 +15,16 @@ export abstract class GitManager {
 
     abstract commitAll(message?: string): Promise<number>;
 
+    abstract commit(message?: string): Promise<number>;
+
+    abstract stageAll(): Promise<void>;
+
+    abstract stage(filepath: string): Promise<void>;
+
+    abstract unstage(filepath: string): Promise<void>;
+
+    abstract discard(filepath: string): Promise<void>;
+
     abstract pull(): Promise<number>;
 
     abstract push(): Promise<number>;
@@ -49,8 +59,8 @@ export abstract class GitManager {
 
     abstract updateGitPath(gitPath: string): void;
 
-    async formatCommitMessage(): Promise<string> {
-        let template = this.plugin.settings.commitMessage;
+    async formatCommitMessage(message?: string): Promise<string> {
+        let template = message ?? this.plugin.settings.commitMessage;
 
         if (template.includes("{{numFiles}}")) {
             let status = await this.status();

@@ -2,7 +2,6 @@
   import { debounce, setIcon } from "obsidian";
   import ObsidianGit from "src/main";
   import { Status } from "src/types";
-  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import FileComponent from "./components/fileComponent.svelte";
   import StagedFileComponent from "./components/stagedFileComponent.svelte";
@@ -12,7 +11,7 @@
   export let view: GitView;
   let commitMessage = plugin.settings.commitMessage;
   let buttons: HTMLElement[] = [];
-  let status: Promise<Status> | null;
+  let status: Status | null;
   let changesOpen = true;
   let stagedOpen = true;
   let loading = true;
@@ -35,7 +34,15 @@
     })
   );
 
-  function commitAll() {}
+  function commit() {
+    plugin.gitManager.commit(commitMessage).then(() => {
+      if (commitMessage !== plugin.settings.commitMessage) {
+        commitMessage = "";
+      }
+      refresh();
+    });
+  }
+
   function refresh() {
     const promise = plugin.gitManager.status();
     loading = true;
@@ -43,15 +50,30 @@
       //If File is already staged, don't show it as duplicate under changed
       s.changed = s.changed.filter((pre) => !s.staged.contains(pre.path));
       //Dont "remove" the content while the promise is still pending
-      status = promise;
+      status = s;
       loading = false;
     });
   }
   function stageAll() {
-    
+    plugin.gitManager.stageAll().then(() => {
+      refresh();
+    });
   }
-  function push() {}
-  function pull() {}
+  function push() {
+    plugin.remotesAreSet().then((ready) => {
+      if (ready) {
+        plugin.gitManager.push().then((pushedFiles) => {
+          plugin.displayMessage(`Pushed ${pushedFiles} files to remote`);
+          refresh();
+        });
+      }
+    });
+  }
+  function pull() {
+    plugin.pullChangesFromRemote().then(() => {
+      refresh();
+    });
+  }
 </script>
 
 <main>
@@ -64,7 +86,7 @@
           class="nav-action-button"
           aria-label="Commit"
           bind:this={buttons[0]}
-          on:click={commitAll}
+          on:click={commit}
         />
         <div
           id="stage-all"
@@ -119,78 +141,85 @@
   </div>
   <div class="contents">
     {#if status}
-      {#await status then resolvedStatus}
-        <div class="staged">
-          <div
-            class="opener tree-item-self is-clickable"
-            class:open={stagedOpen}
-            on:click={() => (stagedOpen = !stagedOpen)}
-          >
-            <div>
-              <div class="tree-item-icon collapse-icon" style="">
-                <svg
-                  viewBox="0 0 100 100"
-                  class="right-triangle"
-                  width="8"
-                  height="8"
-                  ><path
-                    fill="currentColor"
-                    stroke="currentColor"
-                    d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
-                  /></svg
-                >
-              </div>
-              <span>Staged Changes</span>
+      <div class="staged">
+        <div
+          class="opener tree-item-self is-clickable"
+          class:open={stagedOpen}
+          on:click={() => (stagedOpen = !stagedOpen)}
+        >
+          <div>
+            <div class="tree-item-icon collapse-icon" style="">
+              <svg
+                viewBox="0 0 100 100"
+                class="right-triangle"
+                width="8"
+                height="8"
+                ><path
+                  fill="currentColor"
+                  stroke="currentColor"
+                  d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
+                /></svg
+              >
             </div>
-            <span class="tree-item-flair">{resolvedStatus.staged.length}</span>
+            <span>Staged Changes</span>
           </div>
-          {#if stagedOpen}
-            <div class="file-view" transition:slide|local={{ duration: 150 }}>
-              {#each resolvedStatus.staged as stagedFile}
-                <StagedFileComponent path={stagedFile} {view} manager={plugin.gitManager}/>
-              {/each}
-            </div>
-          {/if}
+          <span class="tree-item-flair">{status.staged.length}</span>
         </div>
-        <div class="changes">
-          <div
-            class="opener tree-item-self is-clickable"
-            class:open={changesOpen}
-            on:click={() => (changesOpen = !changesOpen)}
-          >
-            <div>
-              <div class="tree-item-icon collapse-icon" style="">
-                <svg
-                  viewBox="0 0 100 100"
-                  class="right-triangle"
-                  width="8"
-                  height="8"
-                  ><path
-                    fill="currentColor"
-                    stroke="currentColor"
-                    d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
-                  /></svg
-                >
-              </div>
-              <span>Changes</span>
-            </div>
-            <span class="tree-item-flair">{resolvedStatus.changed.length}</span>
+        {#if stagedOpen}
+          <div class="file-view" transition:slide|local={{ duration: 150 }}>
+            {#each status.staged as stagedFile}
+              <StagedFileComponent
+                path={stagedFile}
+                {view}
+                manager={plugin.gitManager}
+                on:git-refresh={refresh}
+              />
+            {/each}
           </div>
-          {#if changesOpen}
-            <div class="file-view" transition:slide|local={{ duration: 150 }}>
-              {#each resolvedStatus.changed as change}
-                <FileComponent {change} {view} manager={plugin.gitManager} />
-              {/each}
+        {/if}
+      </div>
+      <div class="changes">
+        <div
+          class="opener tree-item-self is-clickable"
+          class:open={changesOpen}
+          on:click={() => (changesOpen = !changesOpen)}
+        >
+          <div>
+            <div class="tree-item-icon collapse-icon" style="">
+              <svg
+                viewBox="0 0 100 100"
+                class="right-triangle"
+                width="8"
+                height="8"
+                ><path
+                  fill="currentColor"
+                  stroke="currentColor"
+                  d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
+                /></svg
+              >
             </div>
-          {/if}
+            <span>Changes</span>
+          </div>
+          <span class="tree-item-flair">{status.changed.length}</span>
         </div>
-      {/await}
+        {#if changesOpen}
+          <div class="file-view" transition:slide|local={{ duration: 150 }}>
+            {#each status.changed as change}
+              <FileComponent
+                {change}
+                {view}
+                manager={plugin.gitManager}
+                on:git-refresh={refresh}
+              />
+            {/each}
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 </main>
 
 <style lang="scss">
-
   .file-view {
     margin-left: 5px;
   }

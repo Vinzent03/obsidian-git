@@ -29,6 +29,7 @@ export class SimpleGit extends GitManager {
     }> {
         this.plugin.setState(PluginState.status);
         const status = await this.git.status();
+        this.plugin.setState(PluginState.idle);
         return {
             changed: status.files.map((e) => {
                 e.path = this.fixFilePath(e.path);
@@ -57,7 +58,46 @@ export class SimpleGit extends GitManager {
         );
         this.plugin.setState(PluginState.commit);
 
-        return (await this.git.commit(message ?? await this.formatCommitMessage())).summary.changes;
+        return (await this.git.commit(await this.formatCommitMessage(message))).summary.changes;
+    }
+
+    async commit(message?: string): Promise<number> {
+        this.plugin.setState(PluginState.commit);
+
+        const res = (await this.git.commit(await this.formatCommitMessage(message))).summary.changes;
+        this.plugin.setState(PluginState.idle);
+        return res;
+
+    }
+
+    async stage(filepath: string): Promise<void> {
+        this.plugin.setState(PluginState.add);
+        await this.git.add(
+            filepath, (err: any) => this.onError(err)
+        );
+        this.plugin.setState(PluginState.idle);
+    }
+
+    async stageAll(): Promise<void> {
+        this.plugin.setState(PluginState.add);
+        await this.git.add(
+            "./*", (err: any) => this.onError(err)
+        );
+        this.plugin.setState(PluginState.idle);
+    }
+
+    async unstage(filepath: string): Promise<void> {
+        this.plugin.setState(PluginState.add);
+        await this.git.reset(
+            ["--", filepath], (err: any) => this.onError(err)
+        );
+    }
+
+    async discard(filepath: string): Promise<void> {
+        this.plugin.setState(PluginState.add);
+        await this.git.checkout(
+            ["--", filepath], (err: any) => this.onError(err)
+        );
     }
 
     async pull(): Promise<number> {

@@ -125,6 +125,7 @@ export default class ObsidianGit extends Plugin {
 
     async onunload() {
         (this.app.workspace as any).unregisterHoverLinkSource(VIEW_CONFIG.type);
+        this.app.workspace.detachLeavesOfType(VIEW_CONFIG.type);
         window.clearTimeout(this.timeoutIDBackup);
         window.clearTimeout(this.timeoutIDPull);
         console.log('unloading ' + this.manifest.name + " plugin");
@@ -277,17 +278,8 @@ export default class ObsidianGit extends Plugin {
         }
 
         if (!this.settings.disablePush) {
-            if (!(await this.gitManager.branchInfo()).tracking) {
-                new Notice("No upstream branch is set. Please select one.");
-                const remoteBranch = await this.selectRemoteBranch();
-
-                if (remoteBranch == undefined) {
-                    this.displayError("Did not push. No upstream-branch is set!", 10000);
-                    this.setState(PluginState.idle);
-                    return;
-                } else {
-                    await this.gitManager.updateUpstreamBranch(remoteBranch);
-                }
+            if (!this.remotesAreSet()) {
+                return;
             }
 
 
@@ -316,6 +308,23 @@ export default class ObsidianGit extends Plugin {
             }
         }
         this.setState(PluginState.idle);
+    }
+
+    async remotesAreSet(): Promise<boolean> {
+        if (!(await this.gitManager.branchInfo()).tracking) {
+            new Notice("No upstream branch is set. Please select one.");
+            const remoteBranch = await this.selectRemoteBranch();
+
+            if (remoteBranch == undefined) {
+                this.displayError("Did not push. No upstream-branch is set!", 10000);
+                this.setState(PluginState.idle);
+                return false;
+            } else {
+                await this.gitManager.updateUpstreamBranch(remoteBranch);
+                return true;
+            }
+        }
+        return true;
     }
 
     startAutoBackup(minutes?: number) {

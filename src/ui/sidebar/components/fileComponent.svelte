@@ -1,10 +1,10 @@
 <script lang="ts">
   import { setIcon } from "obsidian";
-
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
   import { GitManager } from "src/gitManager";
-
   import { FileStatusResult } from "src/types";
+  import { DiscardModal } from "src/ui/modals/discardModal";
+  import { createEventDispatcher } from "svelte";
   import GitView from "../sidebarView";
 
   export let change: FileStatusResult;
@@ -15,6 +15,8 @@
   setImmediate(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
   );
+
+  const dispatch = createEventDispatcher();
 
   function hover(event: MouseEvent) {
     //Don't show previews of config- or hidden files.
@@ -40,11 +42,21 @@
   }
 
   function stage() {
-    //Stage File
+    manager.stage(change.path).then(() => {
+      dispatch("git-refresh");
+    });
   }
 
   function discard() {
-    //Maybe ask for confirmation before actually reverting the file
+    new DiscardModal(view.app, false, change.path)
+      .myOpen()
+      .then((shouldDiscard) => {
+        if (shouldDiscard === true) {
+          manager.discard(change.path).then(() => {
+            dispatch("git-refresh");
+          });
+        }
+      });
   }
 </script>
 

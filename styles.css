@@ -12,3 +12,7 @@
   transform-origin: 50% 50%;
   display: inline-block;
 }
+.center{
+  margin: auto;
+  width: 50%;
+}

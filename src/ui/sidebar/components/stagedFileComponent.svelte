@@ -1,15 +1,15 @@
 <script lang="ts">
   import { setIcon } from "obsidian";
-
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
   import { GitManager } from "src/gitManager";
-
+  import { createEventDispatcher } from "svelte";
   import GitView from "../sidebarView";
 
   export let path: string;
   export let view: GitView;
   export let manager: GitManager;
   let buttons: HTMLElement[] = [];
+  const dispatch = createEventDispatcher();
 
   setImmediate(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
@@ -17,29 +17,21 @@
 
   function hover(event: MouseEvent) {
     //Don't show previews of config- or hidden files.
-    if (
-      !path.startsWith(view.app.vault.configDir) ||
-      !path.startsWith(".")
-    ) {
-      hoverPreview(
-        event,
-        view,
-        path.split("/").last().replace(".md", "")
-      );
+    if (!path.startsWith(view.app.vault.configDir) || !path.startsWith(".")) {
+      hoverPreview(event, view, path.split("/").last().replace(".md", ""));
     }
   }
 
   function open(event: MouseEvent) {
-    if (
-      !path.startsWith(view.app.vault.configDir) ||
-      !path.startsWith(".")
-    ) {
+    if (!path.startsWith(view.app.vault.configDir) || !path.startsWith(".")) {
       openOrSwitch(view.app, (event.target as HTMLElement).innerText, event);
     }
   }
 
   function unstage() {
-    //unstage File
+    manager.unstage(path).then(() => {
+      dispatch("git-refresh");
+    });
   }
 </script>
 
