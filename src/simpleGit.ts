@@ -86,11 +86,21 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.idle);
     }
 
+    async unstageAll(): Promise<void> {
+        this.plugin.setState(PluginState.add);
+        await this.git.reset(
+            ["--", "./*"], (err: any) => this.onError(err)
+        );
+        this.plugin.setState(PluginState.idle);
+    }
+
     async unstage(filepath: string): Promise<void> {
         this.plugin.setState(PluginState.add);
         await this.git.reset(
             ["--", filepath], (err: any) => this.onError(err)
         );
+        this.plugin.setState(PluginState.idle);
+
     }
 
     async discard(filepath: string): Promise<void> {
@@ -98,6 +108,7 @@ export class SimpleGit extends GitManager {
         await this.git.checkout(
             ["--", filepath], (err: any) => this.onError(err)
         );
+        this.plugin.setState(PluginState.idle);
     }
 
     async pull(): Promise<number> {

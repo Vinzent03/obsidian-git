@@ -19,6 +19,8 @@ export abstract class GitManager {
 
     abstract stageAll(): Promise<void>;
 
+    abstract unstageAll(): Promise<void>;
+
     abstract stage(filepath: string): Promise<void>;
 
     abstract unstage(filepath: string): Promise<void>;

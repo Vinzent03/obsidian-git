@@ -59,6 +59,11 @@
       refresh();
     });
   }
+  function unstageAll() {
+    plugin.gitManager.unstageAll().then(() => {
+      refresh();
+    });
+  }
   function push() {
     plugin.remotesAreSet().then((ready) => {
       if (ready) {
@@ -97,11 +102,19 @@
           on:click={stageAll}
         />
         <div
+          id="unstage-all"
+          class="nav-action-button"
+          data-icon="feather-minus-circle"
+          aria-label="Unstage all"
+          bind:this={buttons[2]}
+          on:click={unstageAll}
+        />
+        <div
           id="push"
           class="nav-action-button"
           data-icon="feather-upload"
           aria-label="Push"
-          bind:this={buttons[2]}
+          bind:this={buttons[3]}
           on:click={push}
         />
         <div
@@ -109,7 +122,7 @@
           class="nav-action-button"
           data-icon="feather-download"
           aria-label="Pull"
-          bind:this={buttons[3]}
+          bind:this={buttons[4]}
           on:click={pull}
         />
       </div>
@@ -119,7 +132,7 @@
         class:loading
         data-icon="feather-refresh-cw"
         aria-label="Refresh"
-        bind:this={buttons[4]}
+        bind:this={buttons[5]}
         on:click={refresh}
       />
       <div class="search-input-container">
