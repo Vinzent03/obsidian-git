@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.14.0](https://github.com/denolehov/obsidian-git/compare/1.13.1...1.14.0) (2021-10-31)
+
+
+### Features
+
+* New Git view in the sidebar to stage and commit individual files. Thanks to @phibr0 for making the UI
+
+
 ### [1.13.1](https://github.com/denolehov/obsidian-git/compare/1.13.0...1.13.1) (2021-09-30)
 
 
