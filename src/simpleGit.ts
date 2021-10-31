@@ -32,23 +32,44 @@ export class SimpleGit extends GitManager {
 
         this.plugin.setState(PluginState.idle);
         return {
-            changed: status.files.map((e) => {
-                e.path = this.fixFilePath(e.path);
-                return e;
-            }).filter((e) => e.working_dir !== " "),
-            staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {
-                e.path = this.fixFilePath(e.path);
+            changed: status.files.filter((e) => e.working_dir !== " ").map((e) => {
+                const res = this.formatPath(e.path);
+                e.path = res.path;
+                e.from = res.from;
                 return e;
             }),
-            conflicted: status.conflicted.map(this.fixFilePath),
+            staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {
+                const res = this.formatPath(e.path, e.index === "R");
+                e.path = res.path;
+                e.from = res.from;
+                return e;
+            }),
+            conflicted: status.conflicted.map((e) => this.formatPath(e).path),
         };
     }
 
     //Remove wrong `"` like "My file.md"
-    fixFilePath(path: string): string {
-        path.startsWith('"') && path.endsWith('"') &&
-            (path = path.substring(1, path.length - 1));
-        return path;
+    formatPath(path: string, renamed: boolean = false): { path: string, from?: string; } {
+        function format(path: string): string {
+
+            if (path.startsWith('"') && path.endsWith('"')) {
+                return path.substring(1, path.length - 1);
+            } else {
+                return path;
+            }
+        }
+        if (renamed) {
+            const paths = path.split(" -> ").map((e) => format(e));
+
+            return {
+                from: paths[0],
+                path: paths[1],
+            };
+        } else {
+            return {
+                path: format(path)
+            };
+        }
     }
 
     async commitAll(message?: string): Promise<number> {

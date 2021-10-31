@@ -11,6 +11,7 @@
   export let manager: GitManager;
   let buttons: HTMLElement[] = [];
   const dispatch = createEventDispatcher();
+  $: formattedPath = change.path;
 
   setImmediate(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
@@ -25,7 +26,7 @@
       hoverPreview(
         event,
         view as any,
-        change.path.split("/").last().replace(".md", "")
+        formattedPath.split("/").last().replace(".md", "")
       );
     }
   }
@@ -38,15 +39,11 @@
         change.index === "D"
       )
     ) {
-      openOrSwitch(view.app as any, change.path, event);
+      openOrSwitch(view.app as any, formattedPath, event);
     }
   }
 
   function unstage() {
-    let formattedPath = change.path;
-    if (change.index === "R") {
-      formattedPath = change.path.split(" -> ")[1];
-    }
     manager.unstage(formattedPath).then(() => {
       dispatch("git-refresh");
     });
@@ -62,7 +59,7 @@
     aria-label-position="left"
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
   >
-    {change.path.split("/").last().replace(".md", "")}
+    {formattedPath.split("/").last().replace(".md", "")}
   </span>
   <div class="tools">
     <div class="buttons">

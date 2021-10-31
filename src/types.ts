@@ -23,6 +23,7 @@ export interface Status {
 }
 export interface FileStatusResult {
     path: string;
+    from?: string;
     index: string;
     working_dir: string;
 }
