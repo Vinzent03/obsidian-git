@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { debounce,setIcon } from "obsidian";
+  import { debounce, setIcon } from "obsidian";
   import ObsidianGit from "src/main";
   import { Status } from "src/types";
   import { slide } from "svelte/transition";
@@ -15,7 +15,7 @@
   let changesOpen = true;
   let stagedOpen = true;
   let loading = true;
-
+  const debRefresh = debounce(() => refresh(), 300000);
   //This should go in the onMount callback, for some reason it doesn't fire though
   //setImmediate's callback will execute after the current event loop finishes.
   plugin.app.workspace.onLayoutReady(() =>
@@ -26,10 +26,9 @@
       //Refresh every ten minutes
       plugin.registerInterval(window.setInterval(refresh, 600000));
       plugin.registerEvent(
-        plugin.app.metadataCache.on(
-          "resolved",
-          debounce(() => refresh, 10000)
-        )
+        plugin.app.metadataCache.on("resolved", () => {
+          debRefresh();
+        })
       );
     })
   );
