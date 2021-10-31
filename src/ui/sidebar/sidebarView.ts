@@ -4,7 +4,7 @@ import ObsidianGit from "src/main";
 import GitViewComponent from './gitView.svelte';
 
 
-export default class GitView extends ItemView implements HoverParent{
+export default class GitView extends ItemView implements HoverParent {
 
     plugin: ObsidianGit;
     private _view: GitViewComponent;
@@ -33,7 +33,7 @@ export default class GitView extends ItemView implements HoverParent{
         return super.onClose();
     }
 
-    onOpen(): Promise<void>{
+    onOpen(): Promise<void> {
         this._view = new GitViewComponent({
             target: this.contentEl,
             props: {

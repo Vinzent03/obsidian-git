@@ -19,7 +19,7 @@ export interface Author {
 }
 export interface Status {
     changed: FileStatusResult[];
-    staged: string[];
+    staged: FileStatusResult[];
 }
 export interface FileStatusResult {
     path: string;

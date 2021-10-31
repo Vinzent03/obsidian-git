@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { debounce, setIcon } from "obsidian";
+  import { debounce,setIcon } from "obsidian";
   import ObsidianGit from "src/main";
   import { Status } from "src/types";
   import { slide } from "svelte/transition";
@@ -47,9 +47,6 @@
     const promise = plugin.gitManager.status();
     loading = true;
     promise.then((s) => {
-      //If File is already staged, don't show it as duplicate under changed
-      s.changed = s.changed.filter((pre) => !s.staged.contains(pre.path));
-      //Dont "remove" the content while the promise is still pending
       status = s;
       loading = false;
     });
@@ -181,8 +178,9 @@
         {#if stagedOpen}
           <div class="file-view" transition:slide|local={{ duration: 150 }}>
             {#each status.staged as stagedFile}
+              <!-- svelte-ignore missing-declaration -->
               <StagedFileComponent
-                path={stagedFile}
+                change={stagedFile}
                 {view}
                 manager={plugin.gitManager}
                 on:git-refresh={refresh}

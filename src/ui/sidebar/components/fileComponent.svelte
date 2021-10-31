@@ -26,7 +26,7 @@
     ) {
       hoverPreview(
         event,
-        view,
+        view as any,
         change.path.split("/").last().replace(".md", "")
       );
     }
@@ -34,10 +34,13 @@
 
   function open(event: MouseEvent) {
     if (
-      !change.path.startsWith(view.app.vault.configDir) ||
-      !change.path.startsWith(".")
+      !(
+        change.path.startsWith(view.app.vault.configDir) ||
+        change.path.startsWith(".") ||
+        change.working_dir === "D"
+      )
     ) {
-      openOrSwitch(view.app, (event.target as HTMLElement).innerText, event);
+      openOrSwitch(view.app as any, change.path, event);
     }
   }
 
@@ -48,13 +51,20 @@
   }
 
   function discard() {
-    new DiscardModal(view.app, false, change.path)
+    const deleteFile = change.index == "?";
+    new DiscardModal(view.app, deleteFile, change.path)
       .myOpen()
       .then((shouldDiscard) => {
         if (shouldDiscard === true) {
-          manager.discard(change.path).then(() => {
-            dispatch("git-refresh");
-          });
+          if (deleteFile) {
+            view.app.vault.adapter.remove(change.path).then(() => {
+              dispatch("git-refresh");
+            });
+          } else {
+            manager.discard(change.path).then(() => {
+              dispatch("git-refresh");
+            });
+          }
         }
       });
   }
@@ -65,6 +75,7 @@
     class="path"
     on:mouseover={hover}
     on:click={open}
+    on:focus
     aria-label-position="left"
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
   >
@@ -85,7 +96,8 @@
         on:click={stage}
       />
     </div>
-    <span class="type" data-type="M">M</span>
+    <span class="type" data-type={change.working_dir}>{change.working_dir}</span
+    >
   </div>
 </main>
 
@@ -125,6 +137,9 @@
         justify-content: center;
         &[data-type="M"] {
           color: orange;
+        }
+        &[data-type="D"] {
+          color: red;
         }
       }
       .buttons {

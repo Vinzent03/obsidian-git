@@ -24,18 +24,22 @@ export class SimpleGit extends GitManager {
 
     async status(): Promise<{
         changed: FileStatusResult[];
-        staged: string[];
+        staged: FileStatusResult[];
         conflicted: string[];
     }> {
         this.plugin.setState(PluginState.status);
         const status = await this.git.status();
+
         this.plugin.setState(PluginState.idle);
         return {
             changed: status.files.map((e) => {
                 e.path = this.fixFilePath(e.path);
                 return e;
+            }).filter((e) => e.working_dir !== " "),
+            staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {
+                e.path = this.fixFilePath(e.path);
+                return e;
             }),
-            staged: status.staged.map(this.fixFilePath),
             conflicted: status.conflicted.map(this.fixFilePath),
         };
     }

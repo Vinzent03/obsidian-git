@@ -2,10 +2,11 @@
   import { setIcon } from "obsidian";
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
   import { GitManager } from "src/gitManager";
+  import { FileStatusResult } from "src/types";
   import { createEventDispatcher } from "svelte";
   import GitView from "../sidebarView";
 
-  export let path: string;
+  export let change: FileStatusResult;
   export let view: GitView;
   export let manager: GitManager;
   let buttons: HTMLElement[] = [];
@@ -17,19 +18,36 @@
 
   function hover(event: MouseEvent) {
     //Don't show previews of config- or hidden files.
-    if (!path.startsWith(view.app.vault.configDir) || !path.startsWith(".")) {
-      hoverPreview(event, view, path.split("/").last().replace(".md", ""));
+    if (
+      !change.path.startsWith(view.app.vault.configDir) ||
+      !change.path.startsWith(".")
+    ) {
+      hoverPreview(
+        event,
+        view as any,
+        change.path.split("/").last().replace(".md", "")
+      );
     }
   }
 
   function open(event: MouseEvent) {
-    if (!path.startsWith(view.app.vault.configDir) || !path.startsWith(".")) {
-      openOrSwitch(view.app, (event.target as HTMLElement).innerText, event);
+    if (
+      !(
+        change.path.startsWith(view.app.vault.configDir) ||
+        change.path.startsWith(".") ||
+        change.index === "D"
+      )
+    ) {
+      openOrSwitch(view.app as any, change.path, event);
     }
   }
 
   function unstage() {
-    manager.unstage(path).then(() => {
+    let formattedPath = change.path;
+    if (change.index === "R") {
+      formattedPath = change.path.split(" -> ")[1];
+    }
+    manager.unstage(formattedPath).then(() => {
       dispatch("git-refresh");
     });
   }
@@ -39,11 +57,12 @@
   <span
     class="path"
     on:mouseover={hover}
+    on:focus
     on:click={open}
     aria-label-position="left"
-    aria-label={path.split("/").last() != path ? path : ""}
+    aria-label={change.path.split("/").last() != change.path ? change.path : ""}
   >
-    {path.split("/").last().replace(".md", "")}
+    {change.path.split("/").last().replace(".md", "")}
   </span>
   <div class="tools">
     <div class="buttons">
@@ -54,7 +73,7 @@
         on:click={unstage}
       />
     </div>
-    <span class="type" data-type="A">A</span>
+    <span class="type" data-type={change.index}>{change.index}</span>
   </div>
 </main>
 
@@ -92,7 +111,18 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: greenyellow;
+        &[data-type="M"] {
+          color: orange;
+        }
+        &[data-type="D"] {
+          color: red;
+        }
+        &[data-type="A"] {
+          color: yellowgreen;
+        }
+        &[data-type="R"] {
+          color: violet;
+        }
       }
       .buttons {
         display: flex;
