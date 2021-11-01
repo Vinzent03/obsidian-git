@@ -36,6 +36,7 @@ export class SimpleGit extends GitManager {
                 const res = this.formatPath(e.path);
                 e.path = res.path;
                 e.from = res.from;
+                e.working_dir = e.working_dir === "?" ? "U" : e.working_dir;
                 return e;
             }),
             staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {

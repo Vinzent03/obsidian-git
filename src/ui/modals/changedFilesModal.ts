@@ -18,7 +18,7 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
     }
 
     getItemText(item: FileStatusResult): string {
-        if (item.index == "?" && item.working_dir == "?") {
+        if (item.index == "?" && item.working_dir == "U") {
             return `Untracked | ${item.path}`;
         }
 

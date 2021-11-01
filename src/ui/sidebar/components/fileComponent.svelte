@@ -52,7 +52,7 @@
   }
 
   function discard() {
-    const deleteFile = change.index == "?";
+    const deleteFile = change.working_dir == "U";
     new DiscardModal(view.app, deleteFile, change.path)
       .myOpen()
       .then((shouldDiscard) => {
