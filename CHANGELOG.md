@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.14.2](https://github.com/denolehov/obsidian-git/compare/1.14.1...1.14.2) (2021-11-01)
+
+
+### Bug Fixes
+
+* replace '?' by 'U' for untracked files ([64cf162](https://github.com/denolehov/obsidian-git/commit/64cf1623e50513f0f46141f6860650d0a865238c))
+* wrap tooltip for long paths ([1fc4c1f](https://github.com/denolehov/obsidian-git/commit/1fc4c1fd7afbdbb08d7e3a061dd5d602e6f195a3))
+
 ### [1.14.1](https://github.com/denolehov/obsidian-git/compare/1.14.0...1.14.1) (2021-11-01)
 
 
