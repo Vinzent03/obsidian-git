@@ -63,18 +63,18 @@ export abstract class GitManager {
 
     async formatCommitMessage(message?: string): Promise<string> {
         let template = message ?? this.plugin.settings.commitMessage;
-
+        let status: Status | undefined;
         if (template.includes("{{numFiles}}")) {
-            let status = await this.status();
-            let numFiles = status.changed.length;
+            status = await this.status();
+            let numFiles = status.staged.length;
             template = template.replace("{{numFiles}}", String(numFiles));
         }
 
         if (template.includes("{{files}}")) {
-            let status = await this.status();
+            status = status ?? await this.status();
 
             let changeset: { [key: string]: string[]; } = {};
-            status.changed.forEach((value: FileStatusResult) => {
+            status.staged.forEach((value: FileStatusResult) => {
                 if (value.index in changeset) {
                     changeset[value.index].push(value.path);
                 } else {
@@ -98,7 +98,7 @@ export abstract class GitManager {
             moment().format(this.plugin.settings.commitDateFormat)
         );
         if (this.plugin.settings.listChangedFilesInMessageBody) {
-            template = template + "\n\n" + "Affected files:" + "\n" + (await this.status()).staged.join("\n");
+            template = template + "\n\n" + "Affected files:" + "\n" + (status ?? await this.status()).staged.map((e) => e.path).join("\n");
         }
         return template;
     }
