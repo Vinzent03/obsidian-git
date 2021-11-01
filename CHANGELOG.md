@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.14.1](https://github.com/denolehov/obsidian-git/compare/1.14.0...1.14.1) (2021-11-01)
+
+
+### Bug Fixes
+
+* list files in commit body ([f52a18b](https://github.com/denolehov/obsidian-git/commit/f52a18b3a3b6b05d643541baf2f74c32bb3e88d4)), closes [#131](https://github.com/denolehov/obsidian-git/issues/131)
+
 ## [1.14.0](https://github.com/denolehov/obsidian-git/compare/1.13.1...1.14.0) (2021-10-31)
 
 
