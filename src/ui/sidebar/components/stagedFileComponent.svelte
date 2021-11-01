@@ -12,6 +12,7 @@
   let buttons: HTMLElement[] = [];
   const dispatch = createEventDispatcher();
   $: formattedPath = change.path;
+  $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
   setImmediate(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
@@ -56,7 +57,7 @@
     on:mouseover={hover}
     on:focus
     on:click={open}
-    aria-label-position="left"
+    aria-label-position={side}
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
   >
     {formattedPath.split("/").last().replace(".md", "")}

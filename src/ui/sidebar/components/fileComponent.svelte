@@ -11,6 +11,7 @@
   export let view: GitView;
   export let manager: GitManager;
   let buttons: HTMLElement[] = [];
+  $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
   setImmediate(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
@@ -70,13 +71,14 @@
   }
 </script>
 
+<!-- TODO: Fix arai-label for left sidebar and if it's too long -->
 <main>
   <span
     class="path"
     on:mouseover={hover}
     on:click={open}
     on:focus
-    aria-label-position="left"
+    aria-label-position={side}
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
   >
     {change.path.split("/").last().replace(".md", "")}

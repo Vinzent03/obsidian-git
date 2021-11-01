@@ -16,3 +16,9 @@
   margin: auto;
   width: 50%;
 }
+.tooltip.mod-left {
+  overflow-wrap: break-word;
+}
+.tooltip.mod-right {
+  overflow-wrap: break-word;
+}

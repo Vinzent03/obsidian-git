@@ -43,6 +43,7 @@
   });
 
   function commit() {
+    loading = true;
     plugin.gitManager.commit(commitMessage).then(() => {
       if (commitMessage !== plugin.settings.commitMessage) {
         commitMessage = "";
@@ -60,16 +61,19 @@
     });
   }
   function stageAll() {
+    loading = true;
     plugin.gitManager.stageAll().then(() => {
       refresh();
     });
   }
   function unstageAll() {
+    loading = true;
     plugin.gitManager.unstageAll().then(() => {
       refresh();
     });
   }
   function push() {
+    loading = true;
     plugin.remotesAreSet().then((ready) => {
       if (ready) {
         plugin.gitManager.push().then((pushedFiles) => {
@@ -80,6 +84,7 @@
     });
   }
   function pull() {
+    loading = true;
     plugin.pullChangesFromRemote().then(() => {
       refresh();
     });
@@ -87,77 +92,75 @@
 </script>
 
 <main>
-  <div class="control">
-    <div class="nav-buttons-container">
-      <div class="group">
-        <div
-          id="commit-btn"
-          data-icon="feather-check"
-          class="nav-action-button"
-          aria-label="Commit"
-          bind:this={buttons[0]}
-          on:click={commit}
-        />
-        <div
-          id="stage-all"
-          class="nav-action-button"
-          data-icon="feather-plus-circle"
-          aria-label="Stage all"
-          bind:this={buttons[1]}
-          on:click={stageAll}
-        />
-        <div
-          id="unstage-all"
-          class="nav-action-button"
-          data-icon="feather-minus-circle"
-          aria-label="Unstage all"
-          bind:this={buttons[2]}
-          on:click={unstageAll}
-        />
-        <div
-          id="push"
-          class="nav-action-button"
-          data-icon="feather-upload"
-          aria-label="Push"
-          bind:this={buttons[3]}
-          on:click={push}
-        />
-        <div
-          id="pull"
-          class="nav-action-button"
-          data-icon="feather-download"
-          aria-label="Pull"
-          bind:this={buttons[4]}
-          on:click={pull}
-        />
-      </div>
+  <div class="nav-buttons-container">
+    <div class="group">
       <div
-        id="refresh"
+        id="commit-btn"
+        data-icon="feather-check"
         class="nav-action-button"
-        class:loading
-        data-icon="feather-refresh-cw"
-        aria-label="Refresh"
-        bind:this={buttons[5]}
-        on:click={refresh}
+        aria-label="Commit"
+        bind:this={buttons[0]}
+        on:click={commit}
       />
-      <div class="search-input-container">
-        <input
-          type="text"
-          spellcheck="true"
-          placeholder="Commit Message"
-          bind:value={commitMessage}
+      <div
+        id="stage-all"
+        class="nav-action-button"
+        data-icon="feather-plus-circle"
+        aria-label="Stage all"
+        bind:this={buttons[1]}
+        on:click={stageAll}
+      />
+      <div
+        id="unstage-all"
+        class="nav-action-button"
+        data-icon="feather-minus-circle"
+        aria-label="Unstage all"
+        bind:this={buttons[2]}
+        on:click={unstageAll}
+      />
+      <div
+        id="push"
+        class="nav-action-button"
+        data-icon="feather-upload"
+        aria-label="Push"
+        bind:this={buttons[3]}
+        on:click={push}
+      />
+      <div
+        id="pull"
+        class="nav-action-button"
+        data-icon="feather-download"
+        aria-label="Pull"
+        bind:this={buttons[4]}
+        on:click={pull}
+      />
+    </div>
+    <div
+      id="refresh"
+      class="nav-action-button"
+      class:loading
+      data-icon="feather-refresh-cw"
+      aria-label="Refresh"
+      bind:this={buttons[5]}
+      on:click={refresh}
+    />
+    <div class="search-input-container">
+      <input
+        type="text"
+        spellcheck="true"
+        placeholder="Commit Message"
+        bind:value={commitMessage}
+      />
+      {#if commitMessage}
+        <div
+          class="search-input-clear-button"
+          on:click={() => (commitMessage = "")}
+          aria-label={"Clear"}
         />
-        {#if commitMessage}
-          <div
-            class="search-input-clear-button"
-            on:click={() => (commitMessage = "")}
-            aria-label={"Clear"}
-          />
-        {/if}
-      </div>
+      {/if}
     </div>
   </div>
-  <div class="contents">
+  <div class="git-view-body">
     {#if status}
       <div class="staged">
         <div
@@ -186,7 +189,6 @@
         {#if stagedOpen}
           <div class="file-view" transition:slide|local={{ duration: 150 }}>
             {#each status.staged as stagedFile}
-              <!-- svelte-ignore missing-declaration -->
               <StagedFileComponent
                 change={stagedFile}
                 {view}
@@ -261,7 +263,7 @@
       transform: rotate(0);
     }
   }
-  .contents {
+  .git-view-body {
     height: calc(100% - 5rem);
     overflow-y: scroll;
     padding-left: 10px;
