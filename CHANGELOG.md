@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.14.3](https://github.com/denolehov/obsidian-git/compare/1.14.2...1.14.3) (2021-11-03)
+
+### Bug Fixes
+
+* open file from Git view when no other file is opened
+
 ### [1.14.2](https://github.com/denolehov/obsidian-git/compare/1.14.1...1.14.2) (2021-11-01)
 
 
