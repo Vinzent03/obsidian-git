@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.15.0](https://github.com/denolehov/obsidian-git/compare/1.14.3...1.15.0) (2021-11-11)
+
+
+### Features
+
+* add custom commit message to auto backup ([b3d8077](https://github.com/denolehov/obsidian-git/commit/b3d8077bab29edf2602cd57a392969abf89e4241)), closes [#135](https://github.com/denolehov/obsidian-git/issues/135)
+
 ### [1.14.3](https://github.com/denolehov/obsidian-git/compare/1.14.2...1.14.3) (2021-11-03)
 
 ### Bug Fixes
