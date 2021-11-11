@@ -11,6 +11,7 @@ export interface ObsidianGitSettings {
     showStatusBar: boolean;
     updateSubmodules: boolean;
     gitPath: string;
+    customMessageOnAutoBackup: boolean;
 }
 
 export interface Author {

@@ -98,7 +98,7 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "commit-push-specified-message",
             name: "Create backup with specified message",
-            callback: () => new CustomMessageModal(this).open()
+            callback: () => this.promiseQueue.addTask(() => this.createBackup(false, true))
         });
 
         this.addCommand({
@@ -248,7 +248,7 @@ export default class ObsidianGit extends Plugin {
         this.setState(PluginState.idle);
     }
 
-    async createBackup(fromAutoBackup: boolean, commitMessage?: string): Promise<void> {
+    async createBackup(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<void> {
         if (!await this.isAllInitialized()) return;
 
 
@@ -271,6 +271,20 @@ export default class ObsidianGit extends Plugin {
         const changedFiles = (await this.gitManager.status()).changed;
 
         if (changedFiles.length !== 0) {
+            let commitMessage: string | undefined;
+            if ((fromAutoBackup && this.settings.customMessageOnAutoBackup || requestCustomMessage)) {
+                if (!this.settings.disablePopups && fromAutoBackup) {
+                    new Notice("Auto backup: Please enter a custom commit message. Leave empty to abort",);
+                }
+                const tempMessage = await new CustomMessageModal(this, true).open();
+
+                if (tempMessage != undefined && tempMessage != "" && tempMessage != "...") {
+                    commitMessage = tempMessage;
+                } else {
+                    this.setState(PluginState.idle);
+                    return;
+                }
+            }
             const commitedFiles = await this.gitManager.commitAll(commitMessage);
             this.displayMessage(`Committed ${commitedFiles} files`);
         } else {

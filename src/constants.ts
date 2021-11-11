@@ -12,11 +12,12 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     listChangedFilesInMessageBody: false,
     showStatusBar: true,
     updateSubmodules: false,
-    gitPath: ""
+    gitPath: "",
+    customMessageOnAutoBackup: false,
 };
 
 export const VIEW_CONFIG = {
     type: 'git-view',
     name: 'Source Control',
     icon: 'feather-git-pull-request'
-}
+};

@@ -126,6 +126,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Specify custom commit message on auto backup")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.customMessageOnAutoBackup)
+                    .onChange((value) => {
+                        plugin.settings.customMessageOnAutoBackup = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Current branch")
             .setDesc("Switch to a different branch")
             .addDropdown(async (dropdown) => {
