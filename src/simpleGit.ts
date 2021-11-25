@@ -11,10 +11,14 @@ export class SimpleGit extends GitManager {
     constructor(plugin: ObsidianGit) {
         super(plugin);
 
-        const adapter = this.app.vault.adapter as FileSystemAdapter;
-        const path = adapter.getBasePath();
+        this.setGitInstance();
 
+    }
+
+    private setGitInstance() {
         if (this.isGitInstalled()) {
+            const adapter = this.app.vault.adapter as FileSystemAdapter;
+            const path = adapter.getBasePath();
             this.git = simpleGit({
                 baseDir: path,
                 binary: this.plugin.settings.gitPath || undefined,
@@ -271,12 +275,12 @@ export class SimpleGit extends GitManager {
     }
 
     updateGitPath(gitPath: string) {
-        return this.git.customBinary(gitPath);
+        this.setGitInstance();
     }
 
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
-        const command = spawnSync('git', ['--version'], {
+        const command = spawnSync(this.plugin.settings.gitPath || 'git', ['--version'], {
             stdio: 'ignore'
         });
 

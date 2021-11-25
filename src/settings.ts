@@ -232,8 +232,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 cb.setPlaceholder("git");
                 cb.onChange((value) => {
                     plugin.settings.gitPath = value;
-                    plugin.gitManager.updateGitPath(value || "git");
                     plugin.saveSettings();
+                    plugin.gitManager.updateGitPath(value || "git");
                 });
             });
     }
