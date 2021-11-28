@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile } from "obsidian";
+import { debounce, Debouncer, EventRef, Notice, Plugin, TFile } from "obsidian";
 import * as path from "path";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
@@ -24,6 +24,8 @@ export default class ObsidianGit extends Plugin {
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
     conflictOutputFile = "conflict-files-obsidian-git.md";
+    autoBackupDebouncer: Debouncer<undefined>;
+    onFileModifyEventRef: EventRef;
 
     setState(state: PluginState) {
         this.state = state;
@@ -126,8 +128,8 @@ export default class ObsidianGit extends Plugin {
     async onunload() {
         (this.app.workspace as any).unregisterHoverLinkSource(VIEW_CONFIG.type);
         this.app.workspace.detachLeavesOfType(VIEW_CONFIG.type);
-        window.clearTimeout(this.timeoutIDBackup);
-        window.clearTimeout(this.timeoutIDPull);
+        this.clearAutoPull();
+        this.clearAutoBackup();
         console.log('unloading ' + this.manifest.name + " plugin");
     }
     async loadSettings() {
@@ -342,15 +344,24 @@ export default class ObsidianGit extends Plugin {
     }
 
     startAutoBackup(minutes?: number) {
-        this.timeoutIDBackup = window.setTimeout(
-            () => {
-                this.promiseQueue.addTask(() => this.createBackup(true));
-                this.saveLastAuto(new Date(), "backup");
-                this.saveSettings();
-                this.startAutoBackup();
-            },
-            (minutes ?? this.settings.autoSaveInterval) * 60000
-        );
+        const time = (minutes ?? this.settings.autoSaveInterval) * 60000;
+        if (this.settings.autoBackupAfterFileChange) {
+            if (minutes === 0) {
+                this.doAutoBackup();
+            } else {
+                this.onFileModifyEventRef = this.app.vault.on("modify", () => this.autoBackupDebouncer());
+                this.autoBackupDebouncer = debounce(() => this.doAutoBackup(), time, true);
+            }
+        } else {
+            this.timeoutIDBackup = window.setTimeout(() => this.doAutoBackup(), time);
+        }
+    }
+
+    doAutoBackup() {
+        this.promiseQueue.addTask(() => this.createBackup(true));
+        this.saveLastAuto(new Date(), "backup");
+        this.saveSettings();
+        this.startAutoBackup();
     }
 
     startAutoPull(minutes?: number) {
@@ -366,11 +377,17 @@ export default class ObsidianGit extends Plugin {
     }
 
     clearAutoBackup(): boolean {
+        let wasActive = false;
         if (this.timeoutIDBackup) {
             window.clearTimeout(this.timeoutIDBackup);
-            return true;
+            wasActive = true;
         }
-        return false;
+        if (this.onFileModifyEventRef) {
+            this.autoBackupDebouncer?.cancel();
+            this.app.vault.offref(this.onFileModifyEventRef);
+            wasActive = true;
+        }
+        return wasActive;
     }
 
     clearAutoPull(): boolean {

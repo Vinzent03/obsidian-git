@@ -12,7 +12,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Vault backup interval (minutes)")
             .setDesc(
-                "Commit and push changes every X minutes. To disable automatic backup, specify negative value or zero (default)"
+                "Commit and push changes every X minutes. (See below setting for further configuration!) To disable automatic backup, specify negative value or zero (default)"
             )
             .addText((text) =>
                 text
@@ -38,6 +38,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         } else {
                             new Notice("Please specify a valid number.");
                         }
+                    })
+            );
+        new Setting(containerEl)
+            .setName("If turned on, do auto backup every X minutes after last change. Prevents auto backup while editing a file. If turned off, do auto backup every X minutes. It's independent from last change.")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.autoBackupAfterFileChange)
+                    .onChange((value) => {
+                        plugin.settings.autoBackupAfterFileChange = value;
+                        plugin.saveSettings();
+                        plugin.clearAutoBackup();
+                        plugin.startAutoBackup(plugin.settings.autoSaveInterval);
                     })
             );
         new Setting(containerEl)

@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     updateSubmodules: false,
     gitPath: "",
     customMessageOnAutoBackup: false,
+    autoBackupAfterFileChange: true,
 };
 
 export const VIEW_CONFIG = {

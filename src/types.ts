@@ -12,6 +12,7 @@ export interface ObsidianGitSettings {
     updateSubmodules: boolean;
     gitPath: string;
     customMessageOnAutoBackup: boolean;
+    autoBackupAfterFileChange: boolean;
 }
 
 export interface Author {
