@@ -22,6 +22,7 @@ export class SimpleGit extends GitManager {
             this.git = simpleGit({
                 baseDir: path,
                 binary: this.plugin.settings.gitPath || undefined,
+                config: ["core.quotepath=off"]
             });
         }
     }
