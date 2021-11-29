@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.16.2](https://github.com/denolehov/obsidian-git/compare/1.16.1...1.16.2) (2021-11-29)
+
+
+### Bug Fixes
+
+* don't use new auto backup after change by default ([cc95a96](https://github.com/denolehov/obsidian-git/commit/cc95a96613386c30c379457d7d33198808403c63))
+
 ### [1.16.1](https://github.com/denolehov/obsidian-git/compare/1.16.0...1.16.1) (2021-11-28)
 
 
