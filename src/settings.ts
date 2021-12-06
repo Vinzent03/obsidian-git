@@ -46,7 +46,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.settings.autoBackupAfterFileChange = value;
                         plugin.saveSettings();
                         plugin.clearAutoBackup();
-                        plugin.startAutoBackup(plugin.settings.autoSaveInterval);
+                        if (plugin.settings.autoSaveInterval > 0) {
+                            plugin.startAutoBackup(plugin.settings.autoSaveInterval);
+                        }
                     })
             );
         new Setting(containerEl)
