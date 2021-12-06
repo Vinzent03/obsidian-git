@@ -380,11 +380,13 @@ export default class ObsidianGit extends Plugin {
         let wasActive = false;
         if (this.timeoutIDBackup) {
             window.clearTimeout(this.timeoutIDBackup);
+            this.timeoutIDBackup = undefined;
             wasActive = true;
         }
         if (this.onFileModifyEventRef) {
             this.autoBackupDebouncer?.cancel();
             this.app.vault.offref(this.onFileModifyEventRef);
+            this.onFileModifyEventRef = undefined;
             wasActive = true;
         }
         return wasActive;
@@ -393,10 +395,12 @@ export default class ObsidianGit extends Plugin {
     clearAutoPull(): boolean {
         if (this.timeoutIDPull) {
             window.clearTimeout(this.timeoutIDPull);
+            this.timeoutIDPull = undefined;
             return true;
         }
         return false;
     }
+
 
     async handleConflict(conflicted: string[]): Promise<void> {
         this.setState(PluginState.conflicted);

@@ -28,10 +28,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 new Notice(
                                     `Automatic backup enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
                                 );
-                            } else if (
-                                plugin.settings.autoSaveInterval <= 0 &&
-                                plugin.timeoutIDBackup
-                            ) {
+                            } else if (plugin.settings.autoSaveInterval <= 0) {
                                 plugin.clearAutoBackup() &&
                                     new Notice("Automatic backup disabled!");
                             }
@@ -72,8 +69,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     `Automatic pull enabled! Every ${plugin.settings.autoPullInterval} minutes.`
                                 );
                             } else if (
-                                plugin.settings.autoPullInterval <= 0 &&
-                                plugin.timeoutIDPull
+                                plugin.settings.autoPullInterval <= 0
                             ) {
                                 plugin.clearAutoPull() &&
                                     new Notice("Automatic pull disabled!");
