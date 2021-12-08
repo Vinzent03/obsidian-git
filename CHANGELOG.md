@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.17.0](https://github.com/denolehov/obsidian-git/compare/1.16.2...1.17.0) (2021-12-08)
+
+
+### Features
+
+* add hostname commit message placeholder ([32d8382](https://github.com/denolehov/obsidian-git/commit/32d8382c804b1e86effb409246dad06cad78506d)), closes [#146](https://github.com/denolehov/obsidian-git/issues/146)
+
+
+### Bug Fixes
+
+* clear autobackup/pull correctly ([1c5eeab](https://github.com/denolehov/obsidian-git/commit/1c5eeab098609ab5925a2ddda3aeef76db2660b3))
+* don't start autobackup with 0 interval time ([a36c741](https://github.com/denolehov/obsidian-git/commit/a36c741cb1a5e557615768af3656dc76d6391ed0))
+
 ### [1.16.2](https://github.com/denolehov/obsidian-git/compare/1.16.1...1.16.2) (2021-11-29)
 
 
