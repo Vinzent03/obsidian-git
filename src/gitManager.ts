@@ -69,6 +69,10 @@ export abstract class GitManager {
             let numFiles = status.staged.length;
             template = template.replace("{{numFiles}}", String(numFiles));
         }
+        if (template.includes("{{hostname}}")) {
+            const hostname = localStorage.getItem(this.plugin.manifest.id + ":hostname") || "";
+            template = template.replace("{{hostname}}", hostname);
+        }
 
         if (template.includes("{{files}}")) {
             status = status ?? await this.status();

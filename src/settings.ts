@@ -86,7 +86,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Commit message")
             .setDesc(
                 "Specify custom commit message. Available placeholders: {{date}}" +
-                " (see below) and {{numFiles}} (number of changed files in the commit)"
+                " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"
             )
             .addText((text) =>
                 text
@@ -112,6 +112,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         plugin.settings.commitDateFormat = value;
                         await plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("{{hostname}} placeholder replacement")
+            .setDesc('Specify custom hostname for every device.')
+            .addText((text) =>
+                text
+                    .setValue(localStorage.getItem(plugin.manifest.id + ":hostname"))
+                    .onChange(async (value) => {
+                        localStorage.setItem(plugin.manifest.id + ":hostname", value);
                     })
             );
 
