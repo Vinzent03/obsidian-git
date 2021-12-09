@@ -21,6 +21,23 @@ Requirements, tips and tricks, common issues and more can be found in the [wiki]
 - Assign hotkeys for pulling/pushing changes to a remote repository
 - Manage different repositories via Git submodules
 
+### Sidebar view
+The Source Control View allows you to stage and commit individual files. It can be opened by the `Open Source Control View` command.
+
+![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
+
+## Available Commands
+- `Create Backup`: Commits all changes and pushes them depending on your setting whether to push on backup or not
+- `Create Backup with specific message`: Same as above, but with a custom message
+- `Commit all changes`: Only commits all changes without pushing
+- `Commit all changes with specific message`: Same as above, but with a custom message
+- `Push`
+- `Pull`
+- `List changed files`: Lists all changes in a modal
+- `Edit remotes` and `Remote remote`
+- `Initlialize a new repo`
+- `Clone an existing remote repo`
+
 ### Contact
 
 If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@evrwhr` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
