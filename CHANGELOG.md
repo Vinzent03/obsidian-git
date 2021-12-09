@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.18.0](https://github.com/denolehov/obsidian-git/compare/1.17.0...1.18.0) (2021-12-09)
+
+
+### Features
+
+* add commands for push and commit ([82dd037](https://github.com/denolehov/obsidian-git/commit/82dd037189a4dbe1b8ef7cad13d0c11b0817af2d)), closes [#122](https://github.com/denolehov/obsidian-git/issues/122)
+* use icons for status bar ([96dcbc4](https://github.com/denolehov/obsidian-git/commit/96dcbc443369803a6f11d69ca80f34176025864a)), closes [#147](https://github.com/denolehov/obsidian-git/issues/147)
+
+
+### Bug Fixes
+
+* show error notices for a longer time ([d455489](https://github.com/denolehov/obsidian-git/commit/d45548993bcb95924a28f723d616e6c2f8c7c293)), closes [#148](https://github.com/denolehov/obsidian-git/issues/148)
+
 ## [1.17.0](https://github.com/denolehov/obsidian-git/compare/1.16.2...1.17.0) (2021-12-08)
 
 
