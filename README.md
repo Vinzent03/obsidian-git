@@ -34,8 +34,8 @@ The Source Control View allows you to stage and commit individual files. It can 
 - `Push`
 - `Pull`
 - `List changed files`: Lists all changes in a modal
-- `Edit remotes` and `Remote remote`
-- `Initlialize a new repo`
+- `Edit remotes` and `Remove remote`
+- `Initialize` a new repo`
 - `Clone an existing remote repo`
 
 ### Contact
