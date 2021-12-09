@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.18.1](https://github.com/denolehov/obsidian-git/compare/1.18.0...1.18.1) (2021-12-09)
+
+
+### Bug Fixes
+
+* use more specific css class ([471b257](https://github.com/denolehov/obsidian-git/commit/471b257671b861f69747882fcd67be22f7dca287))
+
 ## [1.18.0](https://github.com/denolehov/obsidian-git/compare/1.17.0...1.18.0) (2021-12-09)
 
 
