@@ -17,7 +17,7 @@ export class DiscardModal extends Modal {
         titleEl.setText(`${this.deletion ? "Delete" : "Discard"} this file?`);
         contentEl.createEl("h4").setText(`Do you really want to ${this.deletion ? "delete" : "discard the changes of"} "${this.filename}"`);
         const div = contentEl.createDiv();
-        div.addClass("center");
+        div.addClass("obsidian-git-center");
 
         // div.setAttr("margin-left", "auto");
         // div.setAttr("margin-right", "auto");
