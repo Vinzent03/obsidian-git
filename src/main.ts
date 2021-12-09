@@ -63,7 +63,7 @@ export default class ObsidianGit extends Plugin {
 
         this.addCommand({
             id: "pull",
-            name: "Pull from remote repository",
+            name: "Pull",
             callback: () => this.promiseQueue.addTask(() => this.pullChangesFromRemote()),
         });
 
@@ -71,6 +71,29 @@ export default class ObsidianGit extends Plugin {
             id: "push",
             name: "Create backup",
             callback: () => this.promiseQueue.addTask(() => this.createBackup(false))
+        });
+        this.addCommand({
+            id: "commit-push-specified-message",
+            name: "Create backup with specific message",
+            callback: () => this.promiseQueue.addTask(() => this.createBackup(false, true))
+        });
+
+        this.addCommand({
+            id: "commit",
+            name: "Commit all changes",
+            callback: () => this.promiseQueue.addTask(() => this.commit(false))
+        });
+
+        this.addCommand({
+            id: "commit-specified-message",
+            name: "Commit all changes with specific message",
+            callback: () => this.promiseQueue.addTask(() => this.commit(false, true))
+        });
+
+        this.addCommand({
+            id: "push2",
+            name: "Push",
+            callback: () => this.promiseQueue.addTask(() => this.push())
         });
 
         this.addCommand({
@@ -97,11 +120,6 @@ export default class ObsidianGit extends Plugin {
             callback: async () => this.cloneNewRepo()
         });
 
-        this.addCommand({
-            id: "commit-push-specified-message",
-            name: "Create backup with specified message",
-            callback: () => this.promiseQueue.addTask(() => this.createBackup(false, true))
-        });
 
         this.addCommand({
             id: "list-changed-files",
@@ -228,14 +246,13 @@ export default class ObsidianGit extends Plugin {
         return this.gitReady;
     }
 
+    ///Used for command
     async pullChangesFromRemote(): Promise<void> {
 
         if (!await this.isAllInitialized()) return;
 
-        const filesUpdated = await this.gitManager.pull();
-        if (filesUpdated > 0) {
-            this.displayMessage(`Pulled new changes. ${filesUpdated} files updated`);
-        } else {
+        const filesUpdated = await this.pull();
+        if (filesUpdated == 0) {
             this.displayMessage("Everything is up-to-date");
         }
 
@@ -253,7 +270,6 @@ export default class ObsidianGit extends Plugin {
     async createBackup(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<void> {
         if (!await this.isAllInitialized()) return;
 
-
         if (!fromAutoBackup) {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
             await this.app.vault.delete(file);
@@ -270,6 +286,26 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
+        if (!(await this.commit(fromAutoBackup, requestCustomMessage))) return;
+
+        if (!this.settings.disablePush) {
+            // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
+            if (await this.gitManager.canPush()) {
+                if (this.settings.pullBeforePush) {
+                    await this.pull();
+                }
+
+                if (!(await this.push())) return;
+            } else {
+                this.displayMessage("No changes to push");
+            }
+        }
+        this.setState(PluginState.idle);
+    }
+
+    async commit(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<boolean> {
+        if (!await this.isAllInitialized()) return false;
+
         const changedFiles = (await this.gitManager.status()).changed;
 
         if (changedFiles.length !== 0) {
@@ -284,7 +320,7 @@ export default class ObsidianGit extends Plugin {
                     commitMessage = tempMessage;
                 } else {
                     this.setState(PluginState.idle);
-                    return;
+                    return false;
                 }
             }
             const commitedFiles = await this.gitManager.commitAll(commitMessage);
@@ -292,38 +328,37 @@ export default class ObsidianGit extends Plugin {
         } else {
             this.displayMessage("No changes to commit");
         }
-
-        if (!this.settings.disablePush) {
-            if (!this.remotesAreSet()) {
-                return;
-            }
-
-
-            // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
-            if (await this.gitManager.canPush()) {
-                if (this.settings.pullBeforePush) {
-                    const pulledFilesLength = await this.gitManager.pull();
-                    if (pulledFilesLength > 0) {
-                        this.displayMessage(`Pulled ${pulledFilesLength} files from remote`);
-                    }
-                }
-
-                // Refresh because of pull
-                let status: any;
-                if (this.gitManager instanceof SimpleGit && (status = await this.gitManager.status()).conflicted.length > 0) {
-                    this.displayError(`Cannot push. You have ${status.conflicted.length} conflict files`);
-                    this.handleConflict(status.conflicted);
-                    return;
-                } else {
-                    const pushedFiles = await this.gitManager.push();
-                    this.lastUpdate = Date.now();
-                    this.displayMessage(`Pushed ${pushedFiles} files to remote`);
-                }
-            } else {
-                this.displayMessage("No changes to push");
-            }
-        }
         this.setState(PluginState.idle);
+        return true;
+    }
+
+    async push(): Promise<boolean> {
+        if (!await this.isAllInitialized()) return false;
+        if (!this.remotesAreSet()) {
+            return false;
+        }
+        // Refresh because of pull
+        let status: any;
+        if (this.gitManager instanceof SimpleGit && (status = await this.gitManager.status()).conflicted.length > 0) {
+            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict files`);
+            this.handleConflict(status.conflicted);
+            return false;
+        } else {
+            const pushedFiles = await this.gitManager.push();
+            this.lastUpdate = Date.now();
+            this.displayMessage(`Pushed ${pushedFiles} files to remote`);
+            this.setState(PluginState.idle);
+            return true;
+        }
+    }
+
+    /// Used for internals
+    async pull(): Promise<Number> {
+        const pulledFilesLength = await this.gitManager.pull();
+        if (pulledFilesLength > 0) {
+            this.displayMessage(`Pulled ${pulledFilesLength} files from remote`);
+        }
+        return pulledFilesLength;
     }
 
     async remotesAreSet(): Promise<boolean> {

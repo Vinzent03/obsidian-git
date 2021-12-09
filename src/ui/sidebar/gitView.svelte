@@ -74,14 +74,12 @@
   }
   function push() {
     loading = true;
-    plugin.remotesAreSet().then((ready) => {
-      if (ready) {
-        plugin.gitManager.push().then((pushedFiles) => {
-          plugin.displayMessage(`Pushed ${pushedFiles} files to remote`);
-          refresh();
-        });
-      }
-    });
+
+    if (ready) {
+      plugin.push().then((pushedFiles) => {
+        refresh();
+      });
+    }
   }
   function pull() {
     loading = true;
