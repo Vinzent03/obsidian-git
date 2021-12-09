@@ -295,6 +295,7 @@ export class SimpleGit extends GitManager {
     private onError(error: Error | null) {
         if (error) {
             this.plugin.displayError(error.message);
+            this.plugin.setState(PluginState.idle);
         }
     }
 }

@@ -492,7 +492,7 @@ export default class ObsidianGit extends Plugin {
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
 
         if (!this.settings.disablePopups) {
-            new Notice(message);
+            new Notice(message, 5 * 1000);
         }
 
         console.log(`git obsidian message: ${message}`);
@@ -500,7 +500,7 @@ export default class ObsidianGit extends Plugin {
     displayError(message: any, timeout: number = 0): void {
         // Some errors might not be of type string
         message = message.toString();
-        new Notice(message);
+        new Notice(message, 15 * 1000);
         console.log(`git obsidian error: ${message}`);
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
     }

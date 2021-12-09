@@ -257,5 +257,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     plugin.gitManager.updateGitPath(value || "git");
                 });
             });
+        const info = containerEl.createDiv();
+        info.setAttr("align", "center");
+        info.setText("Debugging and logging:\nYou can always see the logs of this and every other plugin by opening the console with");
+        const keys = containerEl.createDiv();
+        keys.setAttr("align", "center");
+        keys.addClass("obsidian-git-shortcuts");
+        keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
     }
 }
