@@ -1,3 +1,4 @@
+import { setIcon } from "obsidian";
 import ObsidianGit from "./main";
 import { PluginState } from "./types";
 
@@ -7,21 +8,19 @@ interface StatusBarMessage {
 }
 
 export class StatusBar {
-    public messages: StatusBarMessage[] = [];
-    public currentMessage: StatusBarMessage;
+    private messages: StatusBarMessage[] = [];
+    private currentMessage: StatusBarMessage;
     public lastMessageTimestamp: number;
+    private base = "obsidian-git-statusbar-";
 
-    private statusBarEl: HTMLElement;
-    private plugin: ObsidianGit;
 
-    constructor(statusBarEl: HTMLElement, plugin: ObsidianGit) {
-        this.statusBarEl = statusBarEl;
-        this.plugin = plugin;
+    constructor(private statusBarEl: HTMLElement, private readonly plugin: ObsidianGit) {
+        this.statusBarEl.setAttribute("aria-label-position", "top");
     }
 
     public displayMessage(message: string, timeout: number) {
         this.messages.push({
-            message: `git: ${message.slice(0, 100)}`,
+            message: `Git: ${message.slice(0, 100)}`,
             timeout: timeout,
         });
         this.display();
@@ -30,6 +29,8 @@ export class StatusBar {
     public display() {
         if (this.messages.length > 0 && !this.currentMessage) {
             this.currentMessage = this.messages.shift();
+            this.statusBarEl.addClass(this.base + "message");
+            this.statusBarEl.ariaLabel = "";
             this.statusBarEl.setText(this.currentMessage.message);
             this.lastMessageTimestamp = Date.now();
         } else if (this.currentMessage) {
@@ -49,36 +50,52 @@ export class StatusBar {
                 this.displayFromNow(this.plugin.lastUpdate);
                 break;
             case PluginState.status:
-                this.statusBarEl.setText("git: checking repo status...");
+                this.statusBarEl.ariaLabel = "Checking repository status...";
+                setIcon(this.statusBarEl, "feather-refresh-cw");
+                this.statusBarEl.addClass(this.base + "status");
                 break;
             case PluginState.add:
-                this.statusBarEl.setText("git: adding files to repo...");
+                this.statusBarEl.ariaLabel = "Adding files...";
+                setIcon(this.statusBarEl, "feather-refresh-w");
+                this.statusBarEl.addClass(this.base + "add");
                 break;
             case PluginState.commit:
-                this.statusBarEl.setText("git: committing changes...");
+                this.statusBarEl.ariaLabel = "Committing changes...";
+                setIcon(this.statusBarEl, "feather-git-commit");
+                this.statusBarEl.addClass(this.base + "commit");
                 break;
             case PluginState.push:
-                this.statusBarEl.setText("git: pushing changes...");
+                this.statusBarEl.ariaLabel = "Pushing changes...";
+                setIcon(this.statusBarEl, "feather-upload");
+                this.statusBarEl.addClass(this.base + "push");
                 break;
             case PluginState.pull:
-                this.statusBarEl.setText("git: pulling changes...");
+                this.statusBarEl.ariaLabel = "Pulling changes...";
+                setIcon(this.statusBarEl, "feather-download");
+                this.statusBarEl.addClass(this.base + "pull");
                 break;
             case PluginState.conflicted:
-                this.statusBarEl.setText("git: you have conflict files...");
+                this.statusBarEl.ariaLabel = "You have conflict files...";
+                setIcon(this.statusBarEl, "feather-alert-circle");
+                this.statusBarEl.addClass(this.base + "conflict");
                 break;
             default:
-                this.statusBarEl.setText("git: failed on initialization!");
+                this.statusBarEl.ariaLabel = "Failed on initialization!";
+                setIcon(this.statusBarEl, "feather-alert-triangle");
+                this.statusBarEl.addClass(this.base + "failed-init");
                 break;
         }
     }
 
     private displayFromNow(timestamp: number): void {
         if (timestamp) {
-            let moment = (window as any).moment;
-            let fromNow = moment(timestamp).fromNow();
-            this.statusBarEl.setText(`git: last update ${fromNow}`);
+            const moment = (window as any).moment;
+            const fromNow = moment(timestamp).fromNow();
+            this.statusBarEl.ariaLabel = `Last Git update: ${fromNow}`;
         } else {
-            this.statusBarEl.setText(`git: ready`);
+            this.statusBarEl.ariaLabel = "Git is ready";
         }
+        setIcon(this.statusBarEl, "feather-check");
+        this.statusBarEl.addClass(this.base + "idle");
     }
 }

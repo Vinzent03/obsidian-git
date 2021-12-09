@@ -11,4 +11,7 @@ export default function addIcons(): void {
     addFeatherIcon('plus');
     addFeatherIcon('skip-back');
     addFeatherIcon('minus');
+    addFeatherIcon('alert-circle');
+    addFeatherIcon('alert-triangle');
+    addFeatherIcon('git-commit');
 }
