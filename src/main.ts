@@ -259,7 +259,7 @@ export default class ObsidianGit extends Plugin {
         if (this.gitManager instanceof SimpleGit) {
             const status = await this.gitManager.status();
             if (status.conflicted.length > 0) {
-                this.displayError(`You have ${status.conflicted.length} conflict files`);
+                this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length>1?'files':'file'}`);
             }
         }
 
@@ -280,7 +280,7 @@ export default class ObsidianGit extends Plugin {
             // check for conflict files on auto backup
             if (fromAutoBackup && status.conflicted.length > 0) {
                 this.setState(PluginState.idle);
-                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict files. Please resolve them and commit per command.`);
+                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length>1?'files':'file'}. Please resolve them and commit per command.`);
                 this.handleConflict(status.conflicted);
                 return;
             }
@@ -323,8 +323,8 @@ export default class ObsidianGit extends Plugin {
                     return false;
                 }
             }
-            const commitedFiles = await this.gitManager.commitAll(commitMessage);
-            this.displayMessage(`Committed ${commitedFiles} files`);
+            const committedFiles = await this.gitManager.commitAll(commitMessage);
+            this.displayMessage(`Committed ${committedFiles} ${committedFiles>1?'files':'file'}`);
         } else {
             this.displayMessage("No changes to commit");
         }
@@ -340,13 +340,13 @@ export default class ObsidianGit extends Plugin {
         // Refresh because of pull
         let status: any;
         if (this.gitManager instanceof SimpleGit && (status = await this.gitManager.status()).conflicted.length > 0) {
-            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict files`);
+            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict ${status.conflicted.length>1?'files':'file'}`);
             this.handleConflict(status.conflicted);
             return false;
         } else {
             const pushedFiles = await this.gitManager.push();
             this.lastUpdate = Date.now();
-            this.displayMessage(`Pushed ${pushedFiles} files to remote`);
+            this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles>1?'files':'file'} to remote`);
             this.setState(PluginState.idle);
             return true;
         }
@@ -356,7 +356,7 @@ export default class ObsidianGit extends Plugin {
     async pull(): Promise<Number> {
         const pulledFilesLength = await this.gitManager.pull();
         if (pulledFilesLength > 0) {
-            this.displayMessage(`Pulled ${pulledFilesLength} files from remote`);
+            this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength>1?'files':'file'} from remote`);
         }
         return pulledFilesLength;
     }
