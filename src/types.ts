@@ -13,6 +13,7 @@ export interface ObsidianGitSettings {
     gitPath: string;
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
+    mergeOnPull: boolean;
 }
 
 export interface Author {
