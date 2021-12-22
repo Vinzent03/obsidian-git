@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.19.0](https://github.com/denolehov/obsidian-git/compare/1.18.1...1.19.0) (2021-12-22)
+
+
+### Features
+
+* add rebase option for pull ([b04e444](https://github.com/denolehov/obsidian-git/commit/b04e444e99ca31d1abb1e4bfdd81cbdaca88caec)), closes [#155](https://github.com/denolehov/obsidian-git/issues/155)
+
 ### [1.18.1](https://github.com/denolehov/obsidian-git/compare/1.18.0...1.18.1) (2021-12-09)
 
 
