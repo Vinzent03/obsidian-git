@@ -37,110 +37,113 @@ export default class ObsidianGit extends Plugin {
         await this.loadSettings();
         addIcons();
 
-        this.registerView(VIEW_CONFIG.type, (leaf) => {
-            return new GitView(leaf, this);
-        });
+        const lowPriorityTaskFn = () => {
+            this.registerView(VIEW_CONFIG.type, (leaf) => {
+                return new GitView(leaf, this);
+            });
 
-        (this.app.workspace as any).registerHoverLinkSource(VIEW_CONFIG.type, {
-            display: 'Git View',
-            defaultMod: true,
-        });
+            (this.app.workspace as any).registerHoverLinkSource(VIEW_CONFIG.type, {
+                display: 'Git View',
+                defaultMod: true,
+            });
 
-        this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
+            this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
-        this.addCommand({
-            id: 'open-git-view',
-            name: 'Open Source Control View',
-            callback: async () => {
-                if (this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).length === 0) {
-                    await this.app.workspace.getRightLeaf(false).setViewState({
-                        type: VIEW_CONFIG.type,
-                    });
+            this.addCommand({
+                id: 'open-git-view',
+                name: 'Open Source Control View',
+                callback: async () => {
+                    if (this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).length === 0) {
+                        await this.app.workspace.getRightLeaf(false).setViewState({
+                            type: VIEW_CONFIG.type,
+                        });
+                    }
+                    this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).first());
+                },
+            });
+
+            this.addCommand({
+                id: "pull",
+                name: "Pull",
+                callback: () => this.promiseQueue.addTask(() => this.pullChangesFromRemote()),
+            });
+
+            this.addCommand({
+                id: "push",
+                name: "Create backup",
+                callback: () => this.promiseQueue.addTask(() => this.createBackup(false))
+            });
+            this.addCommand({
+                id: "commit-push-specified-message",
+                name: "Create backup with specific message",
+                callback: () => this.promiseQueue.addTask(() => this.createBackup(false, true))
+            });
+
+            this.addCommand({
+                id: "commit",
+                name: "Commit all changes",
+                callback: () => this.promiseQueue.addTask(() => this.commit(false))
+            });
+
+            this.addCommand({
+                id: "commit-specified-message",
+                name: "Commit all changes with specific message",
+                callback: () => this.promiseQueue.addTask(() => this.commit(false, true))
+            });
+
+            this.addCommand({
+                id: "push2",
+                name: "Push",
+                callback: () => this.promiseQueue.addTask(() => this.push())
+            });
+
+            this.addCommand({
+                id: "edit-remotes",
+                name: "Edit remotes",
+                callback: async () => this.editRemotes()
+            });
+
+            this.addCommand({
+                id: "remove-remote",
+                name: "Remove remote",
+                callback: async () => this.removeRemote()
+            });
+
+            this.addCommand({
+                id: "init-repo",
+                name: "Initialize a new repo",
+                callback: async () => this.createNewRepo()
+            });
+
+            this.addCommand({
+                id: "clone-repo",
+                name: "Clone an existing remote repo",
+                callback: async () => this.cloneNewRepo()
+            });
+
+
+            this.addCommand({
+                id: "list-changed-files",
+                name: "List changed files",
+                callback: async () => {
+                    const status = await this.gitManager.status();
+                    this.setState(PluginState.idle);
+
+                    new ChangedFilesModal(this, status.changed).open();
                 }
-                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).first());
-            },
-        });
-
-        this.addCommand({
-            id: "pull",
-            name: "Pull",
-            callback: () => this.promiseQueue.addTask(() => this.pullChangesFromRemote()),
-        });
-
-        this.addCommand({
-            id: "push",
-            name: "Create backup",
-            callback: () => this.promiseQueue.addTask(() => this.createBackup(false))
-        });
-        this.addCommand({
-            id: "commit-push-specified-message",
-            name: "Create backup with specific message",
-            callback: () => this.promiseQueue.addTask(() => this.createBackup(false, true))
-        });
-
-        this.addCommand({
-            id: "commit",
-            name: "Commit all changes",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false))
-        });
-
-        this.addCommand({
-            id: "commit-specified-message",
-            name: "Commit all changes with specific message",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false, true))
-        });
-
-        this.addCommand({
-            id: "push2",
-            name: "Push",
-            callback: () => this.promiseQueue.addTask(() => this.push())
-        });
-
-        this.addCommand({
-            id: "edit-remotes",
-            name: "Edit remotes",
-            callback: async () => this.editRemotes()
-        });
-
-        this.addCommand({
-            id: "remove-remote",
-            name: "Remove remote",
-            callback: async () => this.removeRemote()
-        });
-
-        this.addCommand({
-            id: "init-repo",
-            name: "Initialize a new repo",
-            callback: async () => this.createNewRepo()
-        });
-
-        this.addCommand({
-            id: "clone-repo",
-            name: "Clone an existing remote repo",
-            callback: async () => this.cloneNewRepo()
-        });
-
-
-        this.addCommand({
-            id: "list-changed-files",
-            name: "List changed files",
-            callback: async () => {
-                const status = await this.gitManager.status();
-                this.setState(PluginState.idle);
-
-                new ChangedFilesModal(this, status.changed).open();
+            });
+            if (this.settings.showStatusBar) {
+                // init statusBar
+                let statusBarEl = this.addStatusBarItem();
+                this.statusBar = new StatusBar(statusBarEl, this);
+                this.registerInterval(
+                    window.setInterval(() => this.statusBar.display(), 1000)
+                );
             }
-        });
-        if (this.settings.showStatusBar) {
-            // init statusBar
-            let statusBarEl = this.addStatusBarItem();
-            this.statusBar = new StatusBar(statusBarEl, this);
-            this.registerInterval(
-                window.setInterval(() => this.statusBar.display(), 1000)
-            );
+            this.app.workspace.onLayoutReady(() => this.init());
         }
-        this.app.workspace.onLayoutReady(() => this.init());
 
+        window.requestIdleCallback(lowPriorityTaskFn);
     }
 
     async onunload() {
