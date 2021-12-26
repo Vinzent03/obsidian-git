@@ -143,7 +143,8 @@
       on:click={refresh}
     />
     <div class="search-input-container">
-      <input
+      <textarea
+        class="commit-msg"
         type="text"
         spellcheck="true"
         placeholder="Commit Message"
@@ -239,6 +240,19 @@
 </main>
 
 <style lang="scss">
+  .commit-msg {
+    width: 100%;
+    min-height: 1.9em;
+    height: 1.9em;
+    resize: vertical;
+    padding: 2px 5px;
+    background-color: var(--background-modifier-form-field);
+  }
+
+  .search-input-container {
+    width: 100%;
+  }
+
   .file-view {
     margin-left: 5px;
   }
