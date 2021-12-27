@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { setIcon } from "obsidian";
+  import { setIcon, Workspace } from "obsidian";
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
+import { DIFF_VIEW_CONFIG } from "src/constants";
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
   import { DiscardModal } from "src/ui/modals/discardModal";
@@ -10,6 +11,7 @@
   export let change: FileStatusResult;
   export let view: GitView;
   export let manager: GitManager;
+  export let workspace: Workspace;
   let buttons: HTMLElement[] = [];
   $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
@@ -49,6 +51,11 @@
     manager.stage(change.path).then(() => {
       dispatch("git-refresh");
     });
+  }
+
+  function showDiff() {
+    workspace.createLeafInParent(workspace.rootSplit, 0).setViewState({ type: DIFF_VIEW_CONFIG.type });
+    dispatchEvent(new CustomEvent('diff-update', { detail: { path: change.path } }));
   }
 
   function discard() {
@@ -92,9 +99,15 @@
         on:click={discard}
       />
       <div
+        data-icon="feather-edit"
+        aria-label="Show changes"
+        bind:this={buttons[1]}
+        on:click={showDiff}
+      />
+      <div
         data-icon="feather-plus"
         aria-label="Stage"
-        bind:this={buttons[1]}
+        bind:this={buttons[2]}
         on:click={stage}
       />
     </div>

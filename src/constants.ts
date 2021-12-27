@@ -18,8 +18,14 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     mergeOnPull: true,
 };
 
-export const VIEW_CONFIG = {
+export const GIT_VIEW_CONFIG = {
     type: 'git-view',
     name: 'Source Control',
     icon: 'feather-git-pull-request'
 };
+
+export const DIFF_VIEW_CONFIG = {
+    type: 'diff-view',
+    name: 'Diff View',
+    icon: 'feather-git-pull-request'
+}

@@ -60,6 +60,7 @@
       loading = false;
     });
   }
+
   function stageAll() {
     loading = true;
     plugin.gitManager.stageAll().then(() => {
@@ -229,6 +230,7 @@
                 {change}
                 {view}
                 manager={plugin.gitManager}
+                workspace={plugin.app.workspace}
                 on:git-refresh={refresh}
               />
             {/each}
@@ -276,11 +278,12 @@
     }
   }
   .git-view-body {
-    height: calc(100% - 5rem);
-    overflow-y: scroll;
+    overflow-y: auto;
     padding-left: 10px;
   }
   main {
+    display: flex;
+    flex-direction: column;
     height: 100%;
     overflow-y: hidden;
   }

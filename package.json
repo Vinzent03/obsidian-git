@@ -31,6 +31,7 @@
         "typescript": "4.3.5"
     },
     "dependencies": {
+        "diff2html": "^3.4.13",
         "obsidian-community-lib": "^1.0.1",
         "simple-git": "^2.21.0",
         "supports-color": "^7.2.0"

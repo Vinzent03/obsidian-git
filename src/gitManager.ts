@@ -61,6 +61,8 @@ export abstract class GitManager {
 
     abstract updateGitPath(gitPath: string): void;
 
+    abstract getDiffString(filePath: string): string;
+
     async formatCommitMessage(message?: string): Promise<string> {
         let template = message ?? this.plugin.settings.commitMessage;
         let status: Status | undefined;

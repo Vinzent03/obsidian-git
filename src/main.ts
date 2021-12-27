@@ -5,11 +5,12 @@ import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
 import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
-import { DEFAULT_SETTINGS, VIEW_CONFIG } from "./constants";
+import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
 import openInGitHub from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
 import { ObsidianGitSettings, PluginState } from "./types";
+import DiffView from "./ui/diff/diffView";
 import addIcons from "./ui/icons";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
@@ -36,13 +37,18 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
+
         addIcons();
 
-        this.registerView(VIEW_CONFIG.type, (leaf) => {
+        this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
         });
 
-        (this.app.workspace as any).registerHoverLinkSource(VIEW_CONFIG.type, {
+        this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {
+            return new DiffView(leaf, this);
+        });
+
+        (this.app.workspace as any).registerHoverLinkSource(GIT_VIEW_CONFIG.type, {
             display: 'Git View',
             defaultMod: true,
         });
@@ -53,19 +59,28 @@ export default class ObsidianGit extends Plugin {
             id: 'open-git-view',
             name: 'Open Source Control View',
             callback: async () => {
-                if (this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).length === 0) {
+                if (this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type).length === 0) {
                     await this.app.workspace.getRightLeaf(false).setViewState({
-                        type: VIEW_CONFIG.type,
+                        type: GIT_VIEW_CONFIG.type,
                     });
                 }
-                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).first());
+                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type).first());
+            },
+        });
+
+        this.addCommand({
+            id: 'open-diff-view',
+            name: 'Open Diff View',
+            editorCallback: async (editor, view) => {
+                this.app.workspace.createLeafBySplit(view.leaf).setViewState({ type: DIFF_VIEW_CONFIG.type });
+                dispatchEvent(new CustomEvent('diff-update', { detail: { path: view.file.path } }));
             },
         });
 
         this.addCommand({
             id: 'view-file-in-github',
             name: 'Open File in GitHub',
-            editorCallback: (editor, {file}) => openInGitHub(editor, file, this.gitManager),
+            editorCallback: (editor, { file }) => openInGitHub(editor, file, this.gitManager),
         });
 
         this.addCommand({
@@ -151,8 +166,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async onunload() {
-        (this.app.workspace as any).unregisterHoverLinkSource(VIEW_CONFIG.type);
-        this.app.workspace.detachLeavesOfType(VIEW_CONFIG.type);
+        (this.app.workspace as any).unregisterHoverLinkSource(GIT_VIEW_CONFIG.type);
         this.clearAutoPull();
         this.clearAutoBackup();
         console.log('unloading ' + this.manifest.name + " plugin");
