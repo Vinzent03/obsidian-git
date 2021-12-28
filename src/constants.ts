@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
     mergeOnPull: true,
+    treeStructure: false,
 };
 
 export const GIT_VIEW_CONFIG = {

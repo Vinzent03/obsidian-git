@@ -6,6 +6,7 @@
   import { slide } from "svelte/transition";
   import FileComponent from "./components/fileComponent.svelte";
   import StagedFileComponent from "./components/stagedFileComponent.svelte";
+  import TreeComponent from "./components/treeComponent.svelte";
   import GitView from "./sidebarView";
 
   export let plugin: ObsidianGit;
@@ -13,12 +14,22 @@
   let commitMessage = plugin.settings.commitMessage;
   let buttons: HTMLElement[] = [];
   let status: Status | null;
+  let changeHierarchy: any;
+  let stagedHierarchy: any;
   let changesOpen = true;
   let stagedOpen = true;
   let loading = true;
   const debRefresh = debounce(() => refresh(), 300000);
   //Refresh every ten minutes
   const interval = window.setInterval(refresh, 600000);
+  let showTree = plugin.settings.treeStructure;
+  let layoutBtn: HTMLElement;
+  $: {
+    if (layoutBtn) {
+      layoutBtn.empty();
+      setIcon(layoutBtn, showTree ? "feather-list" : "feather-folder", 16);
+    }
+  }
 
   let event: EventRef;
   //This should go in the onMount callback, for some reason it doesn't fire though
@@ -26,6 +37,7 @@
   plugin.app.workspace.onLayoutReady(() =>
     setImmediate(() => {
       buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon"), 16));
+      setIcon(layoutBtn, showTree ? "feather-list" : "feather-folder", 16);
 
       refresh();
 
@@ -57,6 +69,29 @@
     loading = true;
     promise.then((s) => {
       status = s;
+      // https://stackoverflow.com/a/26652662
+      changeHierarchy = s.changed.reduce(function (hier: any, file) {
+        var x = hier;
+        file.path.split("/").forEach(function (item) {
+          if (!x[item]) {
+            x[item] = {};
+          }
+          x = x[item];
+        });
+        x._file_ = file;
+        return hier;
+      }, {});
+      stagedHierarchy = s.staged.reduce(function (hier: any, file) {
+        var x = hier;
+        file.path.split("/").forEach(function (item) {
+          if (!x[item]) {
+            x[item] = {};
+          }
+          x = x[item];
+        });
+        x._file_ = file;
+        return hier;
+      }, {});
       loading = false;
     });
   }
@@ -133,6 +168,13 @@
         bind:this={buttons[4]}
         on:click={pull}
       />
+      <div
+        id="layoutChange"
+        class="nav-action-button"
+        aria-label="Change Layout"
+        bind:this={layoutBtn}
+        on:click={() => (showTree = !showTree)}
+      />
     </div>
     <div
       id="refresh"
@@ -140,7 +182,7 @@
       class:loading
       data-icon="feather-refresh-cw"
       aria-label="Refresh"
-      bind:this={buttons[5]}
+      bind:this={buttons[6]}
       on:click={refresh}
     />
     <div class="search-input-container">
@@ -188,14 +230,24 @@
         </div>
         {#if stagedOpen}
           <div class="file-view" transition:slide|local={{ duration: 150 }}>
-            {#each status.staged as stagedFile}
-              <StagedFileComponent
-                change={stagedFile}
+            {#if showTree}
+              <TreeComponent
+                hierarchy={stagedHierarchy}
+                {plugin}
                 {view}
-                manager={plugin.gitManager}
-                on:git-refresh={refresh}
+                staged={true}
+                topLevel={true}
               />
-            {/each}
+            {:else}
+              {#each status.staged as stagedFile}
+                <StagedFileComponent
+                  change={stagedFile}
+                  {view}
+                  manager={plugin.gitManager}
+                  on:git-refresh={refresh}
+                />
+              {/each}
+            {/if}
           </div>
         {/if}
       </div>
@@ -225,15 +277,25 @@
         </div>
         {#if changesOpen}
           <div class="file-view" transition:slide|local={{ duration: 150 }}>
-            {#each status.changed as change}
-              <FileComponent
-                {change}
+            {#if showTree}
+              <TreeComponent
+                hierarchy={changeHierarchy}
+                {plugin}
                 {view}
-                manager={plugin.gitManager}
-                workspace={plugin.app.workspace}
-                on:git-refresh={refresh}
+                staged={false}
+                topLevel={true}
               />
-            {/each}
+            {:else}
+              {#each status.changed as change}
+                <FileComponent
+                  {change}
+                  {view}
+                  manager={plugin.gitManager}
+                  workspace={plugin.app.workspace}
+                  on:git-refresh={refresh}
+                />
+              {/each}
+            {/if}
           </div>
         {/if}
       </div>

@@ -14,5 +14,7 @@ export default function addIcons(): void {
     addFeatherIcon('alert-circle');
     addFeatherIcon('alert-triangle');
     addFeatherIcon('git-commit');
-    addFeatherIcon('edit')
+    addFeatherIcon('edit');
+    addFeatherIcon('folder');
+    addFeatherIcon('list');
 }

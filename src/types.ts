@@ -14,6 +14,7 @@ export interface ObsidianGitSettings {
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
     mergeOnPull: boolean;
+    treeStructure: boolean;
 }
 
 export interface Author {
