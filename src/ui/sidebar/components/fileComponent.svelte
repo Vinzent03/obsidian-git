@@ -84,6 +84,7 @@ import { DIFF_VIEW_CONFIG } from "src/constants";
     class="path"
     on:mouseover={hover}
     on:click={open}
+    on:dblclick={showDiff}
     on:focus
     aria-label-position={side}
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
@@ -97,12 +98,6 @@ import { DIFF_VIEW_CONFIG } from "src/constants";
         aria-label="Discard"
         bind:this={buttons[0]}
         on:click={discard}
-      />
-      <div
-        data-icon="feather-edit"
-        aria-label="Show changes"
-        bind:this={buttons[1]}
-        on:click={showDiff}
       />
       <div
         data-icon="feather-plus"
