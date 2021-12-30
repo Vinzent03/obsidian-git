@@ -2,7 +2,7 @@ import { Editor, Notice, TFile } from "obsidian";
 import { GitManager } from "./gitManager";
 import { shell } from "electron";
 
-export default async function openInGitHub(editor: Editor, file: TFile, manager: GitManager) {
+export async function openLineInGitHub(editor: Editor, file: TFile, manager: GitManager) {
     const remoteUrl = await manager.getConfig('remote.origin.url') as string;
     const branch = (await manager.branchInfo()).current;
     const [isGitHub, user, repo] = remoteUrl.match(/(?:^https:\/\/github\.com\/(.*)\/(.*)\.git$)|(?:^git@github\.com:(.*)\/(.*)\.git$)/);
@@ -18,3 +18,14 @@ export default async function openInGitHub(editor: Editor, file: TFile, manager:
         new Notice('It seems like you are not using GitHub');
     }
 }
+
+export async function openHistoryInGitHub(file: TFile, manager: GitManager) {
+    const remoteUrl = await manager.getConfig('remote.origin.url') as string;
+    const branch = (await manager.branchInfo()).current;
+    const [isGitHub, user, repo] = remoteUrl.match(/(?:^https:\/\/github\.com\/(.*)\/(.*)\.git$)|(?:^git@github\.com:(.*)\/(.*)\.git$)/);
+    if (!!isGitHub) {
+            await shell.openExternal(`https://github.com/${user}/${repo}/commits/${branch}/${file.path}`);
+    } else {
+        new Notice('It seems like you are not using GitHub');
+    }
+};

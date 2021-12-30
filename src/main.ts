@@ -7,7 +7,7 @@ import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
-import openInGitHub from "./openInGitHub";
+import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
 import { ObsidianGitSettings, PluginState } from "./types";
 import DiffView from "./ui/diff/diffView";
@@ -80,7 +80,13 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: 'view-file-in-github',
             name: 'Open File in GitHub',
-            editorCallback: (editor, { file }) => openInGitHub(editor, file, this.gitManager),
+            editorCallback: (editor, { file }) => openLineInGitHub(editor, file, this.gitManager),
+        });
+
+        this.addCommand({
+            id: 'view-history-in-github',
+            name: 'Open File History on GitHub',
+            editorCallback: (_, { file }) => openHistoryInGitHub(file, this.gitManager),
         });
 
         this.addCommand({
