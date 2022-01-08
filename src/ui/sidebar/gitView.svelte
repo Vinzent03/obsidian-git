@@ -64,6 +64,12 @@
     });
   }
 
+  addEventListener("git-refresh", (_) => {
+    console.log("got");
+
+    refresh();
+  });
+
   async function refresh() {
     loading = true;
 
@@ -233,7 +239,6 @@
                   change={stagedFile}
                   {view}
                   manager={plugin.gitManager}
-                  on:git-refresh={refresh}
                 />
               {/each}
             {/if}

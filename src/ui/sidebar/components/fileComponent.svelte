@@ -5,7 +5,6 @@
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
   import { DiscardModal } from "src/ui/modals/discardModal";
-  import { createEventDispatcher } from "svelte";
   import GitView from "../sidebarView";
 
   export let change: FileStatusResult;
@@ -18,8 +17,6 @@
   setImmediate(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
   );
-
-  const dispatch = createEventDispatcher();
 
   function hover(event: MouseEvent) {
     //Don't show previews of config- or hidden files.
@@ -48,8 +45,10 @@
   }
 
   function stage() {
+    console.log("stage");
+
     manager.stage(change.path).then(() => {
-      dispatch("git-refresh");
+      dispatchEvent(new CustomEvent("git-refresh"));
     });
   }
 
@@ -70,11 +69,11 @@
         if (shouldDiscard === true) {
           if (deleteFile) {
             view.app.vault.adapter.remove(change.path).then(() => {
-              dispatch("git-refresh");
+              dispatchEvent(new CustomEvent("git-refresh"));
             });
           } else {
             manager.discard(change.path).then(() => {
-              dispatch("git-refresh");
+              dispatchEvent(new CustomEvent("git-refresh"));
             });
           }
         }
