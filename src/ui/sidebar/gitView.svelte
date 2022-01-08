@@ -158,7 +158,11 @@
         class="nav-action-button"
         aria-label="Change Layout"
         bind:this={layoutBtn}
-        on:click={() => (showTree = !showTree)}
+        on:click={() => {
+          showTree = !showTree;
+          plugin.settings.treeStructure = showTree;
+          plugin.saveSettings();
+        }}
       />
     </div>
     <div
