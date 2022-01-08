@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.20.0](https://github.com/denolehov/obsidian-git/compare/1.19.0...1.20.0) (2022-01-08)
+
+
+### Features
+
+* :sparkles: Add "Open File in GitHub" Command, fix [#149](https://github.com/denolehov/obsidian-git/issues/149) ([2c216d0](https://github.com/denolehov/obsidian-git/commit/2c216d033fe0a82a68cf4951d72b5af4e9d10c87))
+* :sparkles: Add Command to open file history on GitHub ([e7dd288](https://github.com/denolehov/obsidian-git/commit/e7dd288ba85a87e783d18c2b51e9027ec20f94fa))
+* :sparkles: Add Diff View ([78cd43f](https://github.com/denolehov/obsidian-git/commit/78cd43fadece2b2d6bed80582bba18d842632e1a)), closes [#158](https://github.com/denolehov/obsidian-git/issues/158)
+* :sparkles: Add Folder view to Sidebar ([919dc44](https://github.com/denolehov/obsidian-git/commit/919dc4435f08e8b3217ee66237a0671687bdb5a1)), closes [#134](https://github.com/denolehov/obsidian-git/issues/134)
+* :sparkles: Allow multiline commit messages, fix [#157](https://github.com/denolehov/obsidian-git/issues/157) ([80ea17e](https://github.com/denolehov/obsidian-git/commit/80ea17e34f07f43bfe2aef1b5c520160a0e71e10))
+* Add toggle in Settings to choose default layout ([38c7240](https://github.com/denolehov/obsidian-git/commit/38c7240918d1e463044431d976b9025eb1fdc318))
+
+
+### Bug Fixes
+
+* :bug: Fix RegEx for openInGitHub ([ca59a2d](https://github.com/denolehov/obsidian-git/commit/ca59a2db581643cfd77f3663850fe1243efe4260))
+* :children_crossing: Show diff on double click ([407dcc0](https://github.com/denolehov/obsidian-git/commit/407dcc05d6e9679c7487c1d2dfa78f580c16b5da))
+* catch diff for deleted file ([710cd2c](https://github.com/denolehov/obsidian-git/commit/710cd2cc6e69c1561277c762518ba0ba903e91f3))
+* different tree data structure ([0fd2f95](https://github.com/denolehov/obsidian-git/commit/0fd2f954b66f0336475f8babb1904130711cbc50))
+* many minor fixes ([7d29bef](https://github.com/denolehov/obsidian-git/commit/7d29bef4ed7793b399a704f73a3ab458e043e595))
+* refresh source control view on change ([45e54e2](https://github.com/denolehov/obsidian-git/commit/45e54e21d097492d35084e4b7c52e1f7df5c59b1))
+* remove tree structure from settings ([5af00ae](https://github.com/denolehov/obsidian-git/commit/5af00ae593d573016694da3bc9bbb218c8baa978))
+
 ## [1.19.0](https://github.com/denolehov/obsidian-git/compare/1.18.1...1.19.0) (2021-12-22)
 
 
