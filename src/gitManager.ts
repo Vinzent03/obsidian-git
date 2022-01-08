@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, Status } from "./types";
+import { BranchInfo, FileStatusResult, Status, TreeItem } from "./types";
 
 
 export abstract class GitManager {
@@ -62,6 +62,32 @@ export abstract class GitManager {
     abstract updateGitPath(gitPath: string): void;
 
     abstract getDiffString(filePath: string): Promise<string>;
+
+
+
+    getTreeStructure(children: FileStatusResult[], beginLength: number = 0): TreeItem[] {
+        let list: TreeItem[] = [];
+        children = [...children];
+        while (children.length > 0) {
+            const first = children.first();
+            const restPath = first.path.substring(beginLength);
+            if (restPath.contains("/")) {
+                const title = restPath.substring(0, restPath.indexOf("/"));
+                const childrenWithSameTitle = children.filter((item) => {
+                    return item.path.substring(beginLength).startsWith(title + "/");
+                });
+                childrenWithSameTitle.forEach((item) => children.remove(item));
+                list.push({
+                    title: title,
+                    children: this.getTreeStructure(childrenWithSameTitle, (beginLength > 0 ? (beginLength + title.length) : title.length) + 1)
+                });
+            } else {
+                list.push({ title: restPath, statusResult: first });
+                children.remove(first);
+            }
+        }
+        return list;
+    }
 
     async formatCommitMessage(message?: string): Promise<string> {
         let template = message ?? this.plugin.settings.commitMessage;

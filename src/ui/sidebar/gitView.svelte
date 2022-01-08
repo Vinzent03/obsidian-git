@@ -1,7 +1,7 @@
 <script lang="ts">
   import { debounce, EventRef, setIcon } from "obsidian";
   import ObsidianGit from "src/main";
-  import { Status } from "src/types";
+  import { Status, TreeItem } from "src/types";
   import { onDestroy } from "svelte";
   import { slide } from "svelte/transition";
   import FileComponent from "./components/fileComponent.svelte";
@@ -14,8 +14,8 @@
   let commitMessage = plugin.settings.commitMessage;
   let buttons: HTMLElement[] = [];
   let status: Status | null;
-  let changeHierarchy: any;
-  let stagedHierarchy: any;
+  let changeHierarchy: TreeItem;
+  let stagedHierarchy: TreeItem;
   let changesOpen = true;
   let stagedOpen = true;
   let loading = true;
@@ -64,36 +64,21 @@
     });
   }
 
-  function refresh() {
-    const promise = plugin.gitManager.status();
+  async function refresh() {
     loading = true;
-    promise.then((s) => {
-      status = s;
-      // https://stackoverflow.com/a/26652662
-      changeHierarchy = s.changed.reduce(function (hier: any, file) {
-        var x = hier;
-        file.path.split("/").forEach(function (item) {
-          if (!x[item]) {
-            x[item] = {};
-          }
-          x = x[item];
-        });
-        x._file_ = file;
-        return hier;
-      }, {});
-      stagedHierarchy = s.staged.reduce(function (hier: any, file) {
-        var x = hier;
-        file.path.split("/").forEach(function (item) {
-          if (!x[item]) {
-            x[item] = {};
-          }
-          x = x[item];
-        });
-        x._file_ = file;
-        return hier;
-      }, {});
-      loading = false;
-    });
+
+    status = await plugin.gitManager.status();
+
+    changeHierarchy = {
+      title: "",
+      children: plugin.gitManager.getTreeStructure(status.changed),
+    };
+    stagedHierarchy = {
+      title: "",
+      children: plugin.gitManager.getTreeStructure(status.staged),
+    };
+
+    loading = false;
   }
 
   function stageAll() {

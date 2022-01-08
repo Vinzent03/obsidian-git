@@ -51,3 +51,9 @@ export interface BranchInfo {
     tracking: string;
     branches: string[];
 }
+
+export interface TreeItem {
+    title: string;
+    statusResult?: FileStatusResult;
+    children?: TreeItem[];
+}

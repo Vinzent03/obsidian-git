@@ -1,31 +1,32 @@
 <script lang="ts">
   import ObsidianGit from "src/main";
+  import { TreeItem } from "src/types";
   import { slide } from "svelte/transition";
   import GitView from "../sidebarView";
   import FileComponent from "./fileComponent.svelte";
   import StagedFileComponent from "./stagedFileComponent.svelte";
-  export let hierarchy: any;
+  export let hierarchy: TreeItem;
   export let plugin: ObsidianGit;
   export let view: GitView;
   export let staged: boolean;
   export let topLevel = false;
-  let open: boolean[] = [];
+
+  const closed: Record<string, boolean> = {};
 </script>
 
 <main class:topLevel>
-  {#each Object.keys(hierarchy) as entity, index}
-    <!-- this will break if there is a file called "_file_" without extension -->
-    {#if hierarchy[entity]._file_}
+  {#each hierarchy.children as entity}
+    {#if entity.statusResult}
       <div class="file-view">
         {#if staged}
           <StagedFileComponent
-            change={hierarchy[entity]._file_}
+            change={entity.statusResult}
             manager={plugin.gitManager}
             {view}
           />
         {:else}
           <FileComponent
-            change={hierarchy[entity]._file_}
+            change={entity.statusResult}
             manager={plugin.gitManager}
             {view}
             workspace={plugin.app.workspace}
@@ -35,8 +36,10 @@
     {:else}
       <div
         class="opener tree-item-self is-clickable"
-        class:open={open[index]}
-        on:click={() => (open[index] = !open[index])}
+        class:open={!closed[entity.title]}
+        on:click={() => {
+          closed[entity.title] = !closed[entity.title];
+        }}
       >
         <div>
           <div class="tree-item-icon collapse-icon" style="">
@@ -52,12 +55,12 @@
               /></svg
             >
           </div>
-          <span>{entity}</span>
+          <span>{entity.title}</span>
         </div>
       </div>
-      {#if open[index]}
+      {#if !closed[entity.title]}
         <div class="file-view" transition:slide|local={{ duration: 75 }}>
-          <svelte:self hierarchy={hierarchy[entity]} {plugin} {view} {staged} />
+          <svelte:self hierarchy={entity} {plugin} {view} {staged} />
         </div>
       {/if}
     {/if}
