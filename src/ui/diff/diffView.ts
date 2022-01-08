@@ -57,21 +57,29 @@ export default class DiffView extends ItemView {
 
     async refresh(): Promise<void> {
         if (this.filePath && !this.gettingDiff) {
-            this.gettingDiff = true;
-            const diff = this.parser.parseFromString(
-                html(await this.plugin.gitManager.getDiffString(this.filePath)),
-                'text/html')
-                .querySelector('.d2h-file-diff');
-            this.contentEl.empty();
-            if (diff) {
-                this.contentEl.append(diff);
-            } else {
+            if (!this.app.vault.getAbstractFileByPath(this.filePath)) {
+                this.contentEl.empty();
                 const div = this.contentEl.createDiv({ cls: 'diff-err' });
                 div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
                 div.createEl('br');
-                div.createSpan({ text: 'No changes to this file.' });
+                div.createSpan({ text: this.filePath + ' was deleted' });
+            } else {
+                this.gettingDiff = true;
+                const diff = this.parser.parseFromString(
+                    html(await this.plugin.gitManager.getDiffString(this.filePath)),
+                    'text/html')
+                    .querySelector('.d2h-file-diff');
+                this.contentEl.empty();
+                if (diff) {
+                    this.contentEl.append(diff);
+                } else {
+                    const div = this.contentEl.createDiv({ cls: 'diff-err' });
+                    div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
+                    div.createEl('br');
+                    div.createSpan({ text: 'No changes to' + this.filePath });
+                }
+                this.gettingDiff = false;
             }
-            this.gettingDiff = false;
         }
     }
 
