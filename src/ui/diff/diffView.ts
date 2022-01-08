@@ -1,18 +1,17 @@
 import { html } from "diff2html";
-import { HoverParent, HoverPopover, ItemView, MarkdownView, WorkspaceLeaf } from "obsidian";
+import { ItemView, MarkdownView, WorkspaceLeaf } from "obsidian";
 import { DIFF_VIEW_CONFIG } from "src/constants";
 import ObsidianGit from "src/main";
 
 
 export default class DiffView extends ItemView {
 
-    plugin: ObsidianGit;
     filePath: string;
     parser: DOMParser;
-
-    constructor(leaf: WorkspaceLeaf, plugin: ObsidianGit) {
+    intervalId: number;
+    gettingDiff: boolean = false;
+    constructor(leaf: WorkspaceLeaf, private plugin: ObsidianGit) {
         super(leaf);
-        this.plugin = plugin;
         this.parser = new DOMParser();
 
         this.registerEvent(this.app.workspace.on('active-leaf-change', (leaf) => {
@@ -23,9 +22,9 @@ export default class DiffView extends ItemView {
             }
             this.refresh();
         }));
-        this.firstOpen = this.firstOpen.bind(this);
-        addEventListener('diff-update', this.firstOpen);
-        this.registerInterval(window.setInterval(() => this.refresh(), 10000));
+        addEventListener('diff-update', this.firstOpen.bind(this));
+        this.intervalId = window.setInterval(() => this.refresh(), 10000);
+        this.registerInterval(this.intervalId);
     }
 
     firstOpen(event: CustomEvent) {
@@ -46,7 +45,8 @@ export default class DiffView extends ItemView {
     }
 
     onClose(): Promise<void> {
-        removeEventListener('diff-update', this.firstOpen)
+        removeEventListener('diff-update', this.firstOpen.bind(this));
+        window.clearInterval(this.intervalId);
         return super.onClose();
     }
 
@@ -55,13 +55,14 @@ export default class DiffView extends ItemView {
         return super.onOpen();
     }
 
-    refresh(): void {
-        if (this.filePath) {
-            this.contentEl.empty();
+    async refresh(): Promise<void> {
+        if (this.filePath && !this.gettingDiff) {
+            this.gettingDiff = true;
             const diff = this.parser.parseFromString(
-                html(this.plugin.gitManager.getDiffString(this.filePath)),
+                html(await this.plugin.gitManager.getDiffString(this.filePath)),
                 'text/html')
                 .querySelector('.d2h-file-diff');
+            this.contentEl.empty();
             if (diff) {
                 this.contentEl.append(diff);
             } else {
@@ -70,6 +71,7 @@ export default class DiffView extends ItemView {
                 div.createEl('br');
                 div.createSpan({ text: 'No changes to this file.' });
             }
+            this.gettingDiff = false;
         }
     }
 

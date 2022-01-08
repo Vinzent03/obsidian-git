@@ -47,7 +47,6 @@ export default class ObsidianGit extends Plugin {
         this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {
             return new DiffView(leaf, this);
         });
-
         (this.app.workspace as any).registerHoverLinkSource(GIT_VIEW_CONFIG.type, {
             display: 'Git View',
             defaultMod: true,
@@ -57,7 +56,7 @@ export default class ObsidianGit extends Plugin {
 
         this.addCommand({
             id: 'open-git-view',
-            name: 'Open Source Control View',
+            name: 'Open source control view',
             callback: async () => {
                 if (this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type).length === 0) {
                     await this.app.workspace.getRightLeaf(false).setViewState({
@@ -70,7 +69,7 @@ export default class ObsidianGit extends Plugin {
 
         this.addCommand({
             id: 'open-diff-view',
-            name: 'Open Diff View',
+            name: 'Open diff view',
             editorCallback: async (editor, view) => {
                 this.app.workspace.createLeafBySplit(view.leaf).setViewState({ type: DIFF_VIEW_CONFIG.type });
                 dispatchEvent(new CustomEvent('diff-update', { detail: { path: view.file.path } }));
@@ -78,14 +77,14 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
-            id: 'view-file-in-github',
-            name: 'Open File in GitHub',
+            id: 'view-file-on-github',
+            name: 'Open file on GitHub',
             editorCallback: (editor, { file }) => openLineInGitHub(editor, file, this.gitManager),
         });
 
         this.addCommand({
-            id: 'view-history-in-github',
-            name: 'Open File History on GitHub',
+            id: 'view-history-on-github',
+            name: 'Open file history on GitHub',
             editorCallback: (_, { file }) => openHistoryInGitHub(file, this.gitManager),
         });
 
@@ -173,6 +172,8 @@ export default class ObsidianGit extends Plugin {
 
     async onunload() {
         (this.app.workspace as any).unregisterHoverLinkSource(GIT_VIEW_CONFIG.type);
+        this.app.workspace.detachLeavesOfType(GIT_VIEW_CONFIG.type);
+        this.app.workspace.detachLeavesOfType(DIFF_VIEW_CONFIG.type);
         this.clearAutoPull();
         this.clearAutoBackup();
         console.log('unloading ' + this.manifest.name + " plugin");

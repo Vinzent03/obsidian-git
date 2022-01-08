@@ -1,7 +1,7 @@
 <script lang="ts">
   import { setIcon, Workspace } from "obsidian";
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
-import { DIFF_VIEW_CONFIG } from "src/constants";
+  import { DIFF_VIEW_CONFIG } from "src/constants";
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
   import { DiscardModal } from "src/ui/modals/discardModal";
@@ -54,8 +54,12 @@ import { DIFF_VIEW_CONFIG } from "src/constants";
   }
 
   function showDiff() {
-    workspace.createLeafInParent(workspace.rootSplit, 0).setViewState({ type: DIFF_VIEW_CONFIG.type });
-    dispatchEvent(new CustomEvent('diff-update', { detail: { path: change.path } }));
+    workspace
+      .createLeafInParent(workspace.rootSplit, 0)
+      .setViewState({ type: DIFF_VIEW_CONFIG.type });
+    dispatchEvent(
+      new CustomEvent("diff-update", { detail: { path: change.path } })
+    );
   }
 
   function discard() {

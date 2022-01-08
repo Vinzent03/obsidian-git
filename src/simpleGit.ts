@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from "child_process";
+import { spawnSync } from "child_process";
 import { FileSystemAdapter } from "obsidian";
 import * as path from "path";
 import simpleGit, * as simple from "simple-git";
@@ -299,13 +299,9 @@ export class SimpleGit extends GitManager {
         this.setGitInstance();
     }
 
-    getDiffString(filePath: string): string {
-        const command = spawnSync(this.plugin.settings.gitPath || 'git', ['diff', filePath], {
-            //@ts-ignore
-            cwd: this.plugin.app.vault.adapter.basePath
-        });
-        this.git.diffSummary()
-        return command.output.toString();
+    async getDiffString(filePath: string): Promise<string> {
+        return (await this.git.diff([filePath]));
+
     }
 
     private isGitInstalled(): boolean {

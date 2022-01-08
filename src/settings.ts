@@ -256,10 +256,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.saveSettings();
                     })
             );
-        
+
         new Setting(containerEl)
-            .setName("Use Tree Layout for Sidebar")
-            .setDesc("If turned on, the Tree Layout will be the default.")
+            .setName("Use tree layout for sidebar")
+            .setDesc("If turned on, the tree layout will be the default.")
             .addToggle((toggle) =>
                 toggle
                     .setValue(plugin.settings.treeStructure)

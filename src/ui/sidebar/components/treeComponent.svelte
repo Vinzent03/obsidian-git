@@ -1,9 +1,9 @@
 <script lang="ts">
-  import FileComponent from "./fileComponent.svelte";
   import ObsidianGit from "src/main";
-  import GitView from "../sidebarView";
-  import StagedFileComponent from "./stagedFileComponent.svelte";
   import { slide } from "svelte/transition";
+  import GitView from "../sidebarView";
+  import FileComponent from "./fileComponent.svelte";
+  import StagedFileComponent from "./stagedFileComponent.svelte";
   export let hierarchy: any;
   export let plugin: ObsidianGit;
   export let view: GitView;
@@ -93,6 +93,6 @@
   }
 
   .file-view {
-      margin-left: 5px
+    margin-left: 5px;
   }
 </style>
