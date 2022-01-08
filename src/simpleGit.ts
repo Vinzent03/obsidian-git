@@ -299,6 +299,11 @@ export class SimpleGit extends GitManager {
         this.setGitInstance();
     }
 
+    async getDiffString(filePath: string): Promise<string> {
+        return (await this.git.diff([filePath]));
+
+    }
+
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
         const command = spawnSync(this.plugin.settings.gitPath || 'git', ['--version'], {

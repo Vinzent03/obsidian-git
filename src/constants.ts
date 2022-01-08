@@ -16,10 +16,17 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
     mergeOnPull: true,
+    treeStructure: false,
 };
 
-export const VIEW_CONFIG = {
+export const GIT_VIEW_CONFIG = {
     type: 'git-view',
     name: 'Source Control',
     icon: 'feather-git-pull-request'
 };
+
+export const DIFF_VIEW_CONFIG = {
+    type: 'diff-view',
+    name: 'Diff View',
+    icon: 'feather-git-pull-request'
+}
