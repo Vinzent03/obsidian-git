@@ -7,7 +7,7 @@ import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import { DEFAULT_SETTINGS, VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
-import { SimpleGit } from "./simpleGit";
+import { IsomorphicGit } from "./isomorphicGit";
 import { ObsidianGitSettings, PluginState } from "./types";
 import addIcons from "./ui/icons";
 import { GeneralModal } from "./ui/modals/generalModal";
@@ -174,7 +174,7 @@ export default class ObsidianGit extends Plugin {
 
     async init(): Promise<void> {
         try {
-            this.gitManager = new SimpleGit(this);
+            this.gitManager = new IsomorphicGit(this);
 
             const result = await this.gitManager.checkRequirements();
             switch (result) {
@@ -256,7 +256,7 @@ export default class ObsidianGit extends Plugin {
             this.displayMessage("Everything is up-to-date");
         }
 
-        if (this.gitManager instanceof SimpleGit) {
+        if (this.gitManager instanceof IsomorphicGit) {
             const status = await this.gitManager.status();
             if (status.conflicted.length > 0) {
                 this.displayError(`You have ${status.conflicted.length} conflict files`);
@@ -274,7 +274,7 @@ export default class ObsidianGit extends Plugin {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
             await this.app.vault.delete(file);
         }
-        if (this.gitManager instanceof SimpleGit) {
+        if (this.gitManager instanceof IsomorphicGit) {
             const status = await this.gitManager.status();
 
             // check for conflict files on auto backup
@@ -339,7 +339,7 @@ export default class ObsidianGit extends Plugin {
         }
         // Refresh because of pull
         let status: any;
-        if (this.gitManager instanceof SimpleGit && (status = await this.gitManager.status()).conflicted.length > 0) {
+        if (this.gitManager instanceof IsomorphicGit && (status = await this.gitManager.status()).conflicted.length > 0) {
             this.displayError(`Cannot push. You have ${status.conflicted.length} conflict files`);
             this.handleConflict(status.conflicted);
             return false;

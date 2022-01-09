@@ -23,7 +23,7 @@ export interface Author {
 export interface Status {
     changed: FileStatusResult[];
     staged: FileStatusResult[];
-    conflicted: string[];
+    conflicted: FileStatusResult[];
 }
 
 /**
@@ -72,8 +72,6 @@ export interface Status {
  */
 export interface FileStatusResult {
     path: string;
-    // Original location of the file, when the file has been moved
-    from?: string;
     // First digit of the status code of the file, e.g. 'M' = modified.
     // Represents the status of the index if no merge conflicts, otherwise represents
     // status of one side of the merge.
