@@ -3,14 +3,12 @@
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
-  import { createEventDispatcher } from "svelte";
   import GitView from "../sidebarView";
 
   export let change: FileStatusResult;
   export let view: GitView;
   export let manager: GitManager;
   let buttons: HTMLElement[] = [];
-  const dispatch = createEventDispatcher();
   $: formattedPath = change.path;
   $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
@@ -46,7 +44,7 @@
 
   function unstage() {
     manager.unstage(formattedPath).then(() => {
-      dispatch("git-refresh");
+      dispatchEvent(new CustomEvent("git-refresh"));
     });
   }
 </script>

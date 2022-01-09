@@ -1,11 +1,12 @@
 <script lang="ts">
   import { debounce, EventRef, setIcon } from "obsidian";
   import ObsidianGit from "src/main";
-  import { Status } from "src/types";
+  import { Status, TreeItem } from "src/types";
   import { onDestroy } from "svelte";
   import { slide } from "svelte/transition";
   import FileComponent from "./components/fileComponent.svelte";
   import StagedFileComponent from "./components/stagedFileComponent.svelte";
+  import TreeComponent from "./components/treeComponent.svelte";
   import GitView from "./sidebarView";
 
   export let plugin: ObsidianGit;
@@ -13,12 +14,22 @@
   let commitMessage = plugin.settings.commitMessage;
   let buttons: HTMLElement[] = [];
   let status: Status | null;
+  let changeHierarchy: TreeItem;
+  let stagedHierarchy: TreeItem;
   let changesOpen = true;
   let stagedOpen = true;
   let loading = true;
   const debRefresh = debounce(() => refresh(), 300000);
   //Refresh every ten minutes
   const interval = window.setInterval(refresh, 600000);
+  let showTree = plugin.settings.treeStructure;
+  let layoutBtn: HTMLElement;
+  $: {
+    if (layoutBtn) {
+      layoutBtn.empty();
+      setIcon(layoutBtn, showTree ? "feather-list" : "feather-folder", 16);
+    }
+  }
 
   let event: EventRef;
   //This should go in the onMount callback, for some reason it doesn't fire though
@@ -26,6 +37,7 @@
   plugin.app.workspace.onLayoutReady(() =>
     setImmediate(() => {
       buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon"), 16));
+      setIcon(layoutBtn, showTree ? "feather-list" : "feather-folder", 16);
 
       refresh();
 
@@ -52,14 +64,29 @@
     });
   }
 
-  function refresh() {
-    const promise = plugin.gitManager.status();
+  addEventListener("git-refresh", (_) => {
+    console.log("got");
+
+    refresh();
+  });
+
+  async function refresh() {
     loading = true;
-    promise.then((s) => {
-      status = s;
-      loading = false;
-    });
+
+    status = await plugin.gitManager.status();
+
+    changeHierarchy = {
+      title: "",
+      children: plugin.gitManager.getTreeStructure(status.changed),
+    };
+    stagedHierarchy = {
+      title: "",
+      children: plugin.gitManager.getTreeStructure(status.staged),
+    };
+
+    loading = false;
   }
+
   function stageAll() {
     loading = true;
     plugin.gitManager.stageAll().then(() => {
@@ -132,6 +159,17 @@
         bind:this={buttons[4]}
         on:click={pull}
       />
+      <div
+        id="layoutChange"
+        class="nav-action-button"
+        aria-label="Change Layout"
+        bind:this={layoutBtn}
+        on:click={() => {
+          showTree = !showTree;
+          plugin.settings.treeStructure = showTree;
+          plugin.saveSettings();
+        }}
+      />
     </div>
     <div
       id="refresh"
@@ -139,11 +177,12 @@
       class:loading
       data-icon="feather-refresh-cw"
       aria-label="Refresh"
-      bind:this={buttons[5]}
+      bind:this={buttons[6]}
       on:click={refresh}
     />
     <div class="search-input-container">
-      <input
+      <textarea
+        class="commit-msg"
         type="text"
         spellcheck="true"
         placeholder="Commit Message"
@@ -186,14 +225,23 @@
         </div>
         {#if stagedOpen}
           <div class="file-view" transition:slide|local={{ duration: 150 }}>
-            {#each status.staged as stagedFile}
-              <StagedFileComponent
-                change={stagedFile}
+            {#if showTree}
+              <TreeComponent
+                hierarchy={stagedHierarchy}
+                {plugin}
                 {view}
-                manager={plugin.gitManager}
-                on:git-refresh={refresh}
+                staged={true}
+                topLevel={true}
               />
-            {/each}
+            {:else}
+              {#each status.staged as stagedFile}
+                <StagedFileComponent
+                  change={stagedFile}
+                  {view}
+                  manager={plugin.gitManager}
+                />
+              {/each}
+            {/if}
           </div>
         {/if}
       </div>
@@ -223,14 +271,25 @@
         </div>
         {#if changesOpen}
           <div class="file-view" transition:slide|local={{ duration: 150 }}>
-            {#each status.changed as change}
-              <FileComponent
-                {change}
+            {#if showTree}
+              <TreeComponent
+                hierarchy={changeHierarchy}
+                {plugin}
                 {view}
-                manager={plugin.gitManager}
-                on:git-refresh={refresh}
+                staged={false}
+                topLevel={true}
               />
-            {/each}
+            {:else}
+              {#each status.changed as change}
+                <FileComponent
+                  {change}
+                  {view}
+                  manager={plugin.gitManager}
+                  workspace={plugin.app.workspace}
+                  on:git-refresh={refresh}
+                />
+              {/each}
+            {/if}
           </div>
         {/if}
       </div>
@@ -239,6 +298,19 @@
 </main>
 
 <style lang="scss">
+  .commit-msg {
+    width: 100%;
+    min-height: 1.9em;
+    height: 1.9em;
+    resize: vertical;
+    padding: 2px 5px;
+    background-color: var(--background-modifier-form-field);
+  }
+
+  .search-input-container {
+    width: 100%;
+  }
+
   .file-view {
     margin-left: 5px;
   }
@@ -262,11 +334,12 @@
     }
   }
   .git-view-body {
-    height: calc(100% - 5rem);
-    overflow-y: scroll;
+    overflow-y: auto;
     padding-left: 10px;
   }
   main {
+    display: flex;
+    flex-direction: column;
     height: 100%;
     overflow-y: hidden;
   }

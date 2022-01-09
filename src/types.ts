@@ -13,6 +13,8 @@ export interface ObsidianGitSettings {
     gitPath: string;
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
+    mergeOnPull: boolean;
+    treeStructure: boolean;
 }
 
 export interface Author {
@@ -99,4 +101,10 @@ export interface BranchInfo {
     current: string;
     tracking: string;
     branches: string[];
+}
+
+export interface TreeItem {
+    title: string;
+    statusResult?: FileStatusResult;
+    children?: TreeItem[];
 }

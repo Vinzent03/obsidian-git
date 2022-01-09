@@ -5,10 +5,11 @@ import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
 import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
-import { DEFAULT_SETTINGS, VIEW_CONFIG } from "./constants";
+import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
 import { ObsidianGitSettings, PluginState } from "./types";
+import DiffView from "./ui/diff/diffView";
 import addIcons from "./ui/icons";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
@@ -35,13 +36,17 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
+
         addIcons();
 
-        this.registerView(VIEW_CONFIG.type, (leaf) => {
+        this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
         });
 
-        (this.app.workspace as any).registerHoverLinkSource(VIEW_CONFIG.type, {
+        this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {
+            return new DiffView(leaf, this);
+        });
+        (this.app.workspace as any).registerHoverLinkSource(GIT_VIEW_CONFIG.type, {
             display: 'Git View',
             defaultMod: true,
         });
@@ -50,15 +55,36 @@ export default class ObsidianGit extends Plugin {
 
         this.addCommand({
             id: 'open-git-view',
-            name: 'Open Source Control View',
+            name: 'Open source control view',
             callback: async () => {
-                if (this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).length === 0) {
+                if (this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type).length === 0) {
                     await this.app.workspace.getRightLeaf(false).setViewState({
-                        type: VIEW_CONFIG.type,
+                        type: GIT_VIEW_CONFIG.type,
                     });
                 }
-                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_CONFIG.type).first());
+                this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type).first());
             },
+        });
+
+        this.addCommand({
+            id: 'open-diff-view',
+            name: 'Open diff view',
+            editorCallback: async (editor, view) => {
+                this.app.workspace.createLeafBySplit(view.leaf).setViewState({ type: DIFF_VIEW_CONFIG.type });
+                dispatchEvent(new CustomEvent('diff-update', { detail: { path: view.file.path } }));
+            },
+        });
+
+        this.addCommand({
+            id: 'view-file-on-github',
+            name: 'Open file on GitHub',
+            editorCallback: (editor, { file }) => openLineInGitHub(editor, file, this.gitManager),
+        });
+
+        this.addCommand({
+            id: 'view-history-on-github',
+            name: 'Open file history on GitHub',
+            editorCallback: (_, { file }) => openHistoryInGitHub(file, this.gitManager),
         });
 
         this.addCommand({
@@ -144,8 +170,9 @@ export default class ObsidianGit extends Plugin {
     }
 
     async onunload() {
-        (this.app.workspace as any).unregisterHoverLinkSource(VIEW_CONFIG.type);
-        this.app.workspace.detachLeavesOfType(VIEW_CONFIG.type);
+        (this.app.workspace as any).unregisterHoverLinkSource(GIT_VIEW_CONFIG.type);
+        this.app.workspace.detachLeavesOfType(GIT_VIEW_CONFIG.type);
+        this.app.workspace.detachLeavesOfType(DIFF_VIEW_CONFIG.type);
         this.clearAutoPull();
         this.clearAutoBackup();
         console.log('unloading ' + this.manifest.name + " plugin");
@@ -252,14 +279,14 @@ export default class ObsidianGit extends Plugin {
         if (!await this.isAllInitialized()) return;
 
         const filesUpdated = await this.pull();
-        if (filesUpdated == 0) {
+        if (!filesUpdated) {
             this.displayMessage("Everything is up-to-date");
         }
 
         if (this.gitManager instanceof IsomorphicGit) {
             const status = await this.gitManager.status();
             if (status.conflicted.length > 0) {
-                this.displayError(`You have ${status.conflicted.length} conflict files`);
+                this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
             }
         }
 
@@ -280,7 +307,7 @@ export default class ObsidianGit extends Plugin {
             // check for conflict files on auto backup
             if (fromAutoBackup && status.conflicted.length > 0) {
                 this.setState(PluginState.idle);
-                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict files. Please resolve them and commit per command.`);
+                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
                 this.handleConflict(status.conflicted);
                 return;
             }
@@ -323,8 +350,8 @@ export default class ObsidianGit extends Plugin {
                     return false;
                 }
             }
-            const commitedFiles = await this.gitManager.commitAll(commitMessage);
-            this.displayMessage(`Committed ${commitedFiles} files`);
+            const committedFiles = await this.gitManager.commitAll(commitMessage);
+            this.displayMessage(`Committed ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
         } else {
             this.displayMessage("No changes to commit");
         }
@@ -346,19 +373,25 @@ export default class ObsidianGit extends Plugin {
         } else {
             const pushedFiles = await this.gitManager.push();
             this.lastUpdate = Date.now();
-            this.displayMessage(`Pushed ${pushedFiles} files to remote`);
+            this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
             this.setState(PluginState.idle);
             return true;
         }
     }
 
     /// Used for internals
-    async pull(): Promise<Number> {
+    /// Returns whether the pull added a commit or not.
+    async pull(): Promise<boolean> {
         const pulledFilesLength = await this.gitManager.pull();
+
         if (pulledFilesLength > 0) {
-            this.displayMessage(`Pulled ${pulledFilesLength} files from remote`);
+            if (this.settings.mergeOnPull) {
+                this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
+            } else {
+                this.displayMessage("Rebased on pull");
+            }
         }
-        return pulledFilesLength;
+        return pulledFilesLength != 0;
     }
 
     async remotesAreSet(): Promise<boolean> {

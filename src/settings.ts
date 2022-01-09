@@ -185,6 +185,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Merge on pull")
+            .setDesc("If turned on, merge on pull. If turned off, rebase on pull.")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.mergeOnPull)
+                    .onChange((value) => {
+                        plugin.settings.mergeOnPull = value;
+                        plugin.saveSettings();
+                    })
+            );
+        new Setting(containerEl)
             .setName("Disable push")
             .setDesc("Do not push changes to the remote repository")
             .addToggle((toggle) =>

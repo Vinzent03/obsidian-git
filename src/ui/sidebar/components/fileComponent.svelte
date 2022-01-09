@@ -1,23 +1,22 @@
 <script lang="ts">
-  import { setIcon } from "obsidian";
+  import { setIcon, Workspace } from "obsidian";
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
+  import { DIFF_VIEW_CONFIG } from "src/constants";
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
   import { DiscardModal } from "src/ui/modals/discardModal";
-  import { createEventDispatcher } from "svelte";
   import GitView from "../sidebarView";
 
   export let change: FileStatusResult;
   export let view: GitView;
   export let manager: GitManager;
+  export let workspace: Workspace;
   let buttons: HTMLElement[] = [];
   $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
   setImmediate(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
   );
-
-  const dispatch = createEventDispatcher();
 
   function hover(event: MouseEvent) {
     //Don't show previews of config- or hidden files.
@@ -46,9 +45,20 @@
   }
 
   function stage() {
+    console.log("stage");
+
     manager.stage(change.path).then(() => {
-      dispatch("git-refresh");
+      dispatchEvent(new CustomEvent("git-refresh"));
     });
+  }
+
+  function showDiff() {
+    workspace
+      .createLeafInParent(workspace.rootSplit, 0)
+      .setViewState({ type: DIFF_VIEW_CONFIG.type });
+    dispatchEvent(
+      new CustomEvent("diff-update", { detail: { path: change.path } })
+    );
   }
 
   function discard() {
@@ -59,11 +69,11 @@
         if (shouldDiscard === true) {
           if (deleteFile) {
             view.app.vault.adapter.remove(change.path).then(() => {
-              dispatch("git-refresh");
+              dispatchEvent(new CustomEvent("git-refresh"));
             });
           } else {
             manager.discard(change.path).then(() => {
-              dispatch("git-refresh");
+              dispatchEvent(new CustomEvent("git-refresh"));
             });
           }
         }
@@ -77,6 +87,7 @@
     class="path"
     on:mouseover={hover}
     on:click={open}
+    on:dblclick={showDiff}
     on:focus
     aria-label-position={side}
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
@@ -94,7 +105,7 @@
       <div
         data-icon="feather-plus"
         aria-label="Stage"
-        bind:this={buttons[1]}
+        bind:this={buttons[2]}
         on:click={stage}
       />
     </div>
