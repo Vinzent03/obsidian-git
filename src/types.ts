@@ -4,6 +4,7 @@ export interface ObsidianGitSettings {
     autoSaveInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
+    syncMethod: SyncMethod;
     disablePush: boolean;
     pullBeforePush: boolean;
     disablePopups: boolean;
@@ -13,9 +14,13 @@ export interface ObsidianGitSettings {
     gitPath: string;
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
-    mergeOnPull: boolean;
     treeStructure: boolean;
+
+    /* Obsolete settings */
+    mergeOnPull?: boolean;  // Migrated to `syncMethod = 'merge'`
 }
+
+export type SyncMethod = 'rebase' | 'merge' | 'reset'
 
 export interface Author {
     name: string;

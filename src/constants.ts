@@ -12,10 +12,10 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     listChangedFilesInMessageBody: false,
     showStatusBar: true,
     updateSubmodules: false,
+    syncMethod: 'merge',
     gitPath: "",
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
-    mergeOnPull: true,
     treeStructure: false,
 };
 
@@ -29,4 +29,4 @@ export const DIFF_VIEW_CONFIG = {
     type: 'diff-view',
     name: 'Diff View',
     icon: 'feather-git-pull-request'
-}
+};

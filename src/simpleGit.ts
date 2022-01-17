@@ -2,6 +2,7 @@ import { spawnSync } from "child_process";
 import { FileSystemAdapter } from "obsidian";
 import * as path from "path";
 import simpleGit, * as simple from "simple-git";
+import { Response } from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState } from "./types";
@@ -146,33 +147,43 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.pull);
         if (this.plugin.settings.updateSubmodules)
             await this.git.subModule(["update", "--remote", "--merge", "--recursive"], (err: any) => this.onError(err));
-        let lastRemoteCommitBefore: string;
-        if (!this.plugin.settings.mergeOnPull) {
-            lastRemoteCommitBefore = await this.getNewestRemoteCommit();
 
-        }
-        const pullResult = await this.git.pull([this.plugin.settings.mergeOnPull ? '--no-rebase' : '--rebase'],
-            async (err: Error | null) => {
-                if (err) {
-                    this.plugin.displayError(`Pull failed ${err.message}`);
-                    const status = await this.git.status();
-                    if (status.conflicted.length > 0) {
-                        this.plugin.handleConflict(status.conflicted);
+        const branchInfo = await this.branchInfo()
+        const localCommit = await this.git.revparse([branchInfo.current])
+
+        await this.git.fetch()
+        const upstreamCommit = await this.git.revparse([branchInfo.tracking])
+
+        if (localCommit !== upstreamCommit) {
+            if (this.plugin.settings.syncMethod === 'merge' || this.plugin.settings.syncMethod === 'rebase') {
+                try {
+                    switch(this.plugin.settings.syncMethod) {
+                        case 'merge':
+                            this.git.merge([branchInfo.tracking])
+                            break
+                        case 'rebase':
+                            this.git.rebase([branchInfo.tracking])
+                            break
                     }
+                } catch(err) {
+                    this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`)
+                }
+                const status = await this.git.status();
+                if (status.conflicted.length > 0) {
+                    this.plugin.handleConflict(status.conflicted);
+                }
+            } else if(this.plugin.settings.syncMethod === 'reset') {
+                try {
+                    await this.git.raw(['update-ref', `refs/heads/${branchInfo.current}`, upstreamCommit])
+                } catch (err) {
+                    this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`)
                 }
             }
-        );
-        if (!this.plugin.settings.mergeOnPull) {
-            const lastRemoteCommitAfter = await this.getNewestRemoteCommit();
-            // pullResult is empty for rebased pulls, so I have to compare the latest commits from remote to check for changes
-            if (lastRemoteCommitAfter != lastRemoteCommitBefore) {
-                return 1;
-            } else {
-                return 0;
-            }
 
+            const filesChanged = await this.git.diff([`${localCommit}..${upstreamCommit}`, '--name-only'])
+            return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).length
         } else {
-            return pullResult.files.length;
+            return 0;
         }
     }
 

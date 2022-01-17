@@ -1,5 +1,6 @@
 import { Notice, PluginSettingTab, Setting } from "obsidian";
 import ObsidianGit from "./main";
+import { SyncMethod } from "./types";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     display(): void {
@@ -81,6 +82,28 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         }
                     })
             );
+        new Setting(containerEl)
+            .setName("Sync Method")
+            .setDesc(
+                "Selects the method used for handling new changes found in your remote git repository."
+            )
+            .addDropdown(async (dropdown) => {
+                const options: Record<SyncMethod, string> = {
+                    'merge': 'Merge',
+                    'rebase': 'Rebase',
+                    'reset': 'None (for use with Obsidian Sync)',
+                }
+                dropdown.addOptions(options)
+                if (plugin.settings.syncMethod) {
+                    dropdown.setValue(plugin.settings.syncMethod)
+                } else {
+                    dropdown.setValue('merge')
+                }
+                dropdown.onChange(async (option) => {
+                    plugin.settings.syncMethod = option as SyncMethod
+                    plugin.saveSettings()
+                })
+            });
 
         new Setting(containerEl)
             .setName("Commit message")
@@ -184,17 +207,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
-        new Setting(containerEl)
-            .setName("Merge on pull")
-            .setDesc("If turned on, merge on pull. If turned off, rebase on pull.")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.mergeOnPull)
-                    .onChange((value) => {
-                        plugin.settings.mergeOnPull = value;
-                        plugin.saveSettings();
-                    })
-            );
         new Setting(containerEl)
             .setName("Disable push")
             .setDesc("Do not push changes to the remote repository")
