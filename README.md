@@ -44,8 +44,7 @@ If you have any kind of feedback or questions, feel free to reach out via GitHub
 
 This plugin was initial developed by [denolehov](https://github.com/denolehov). Since March, it's mainly [Vinzent03](https://github.com/Vinzent03) who is developing on this plugin.
 
-> If you want to support me ([Vinzent03](https://github.com/Vinzent03)) you can consider [buying me a coffee](https://www.buymeacoffee.com/Vinzent03).
-
+> If you want to support me ([Vinzent03](https://github.com/Vinzent03)) you can support me on Ko-fi
 <br>
 
-<a href="https://www.buymeacoffee.com/Vinzent03"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=Vinzent03&button_colour=5F7FFF&font_colour=ffffff&font_family=Inter&outline_colour=000000&coffee_colour=FFDD00"></a>
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F195IQ5)
