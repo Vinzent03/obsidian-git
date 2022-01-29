@@ -16,11 +16,13 @@ export interface ObsidianGitSettings {
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
 
-    /* Obsolete settings */
-    mergeOnPull?: boolean;  // Migrated to `syncMethod = 'merge'`
+    /**
+     * @deprecated Migrated to `syncMethod = 'merge'`
+     */
+    mergeOnPull?: boolean;
 }
 
-export type SyncMethod = 'rebase' | 'merge' | 'reset'
+export type SyncMethod = 'rebase' | 'merge' | 'reset';
 
 export interface Author {
     name: string;

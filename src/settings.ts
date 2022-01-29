@@ -87,22 +87,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setDesc(
                 "Selects the method used for handling new changes found in your remote git repository."
             )
-            .addDropdown(async (dropdown) => {
+            .addDropdown((dropdown) => {
                 const options: Record<SyncMethod, string> = {
                     'merge': 'Merge',
                     'rebase': 'Rebase',
                     'reset': 'None (for use with Obsidian Sync)',
-                }
-                dropdown.addOptions(options)
-                if (plugin.settings.syncMethod) {
-                    dropdown.setValue(plugin.settings.syncMethod)
-                } else {
-                    dropdown.setValue('merge')
-                }
-                dropdown.onChange(async (option) => {
-                    plugin.settings.syncMethod = option as SyncMethod
-                    plugin.saveSettings()
-                })
+                };
+                dropdown.addOptions(options);
+                dropdown.setValue(plugin.settings.syncMethod);
+
+                dropdown.onChange(async (option: SyncMethod) => {
+                    plugin.settings.syncMethod = option;
+                    plugin.saveSettings();
+                });
             });
 
         new Setting(containerEl)

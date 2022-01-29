@@ -2,7 +2,6 @@ import { spawnSync } from "child_process";
 import { FileSystemAdapter } from "obsidian";
 import * as path from "path";
 import simpleGit, * as simple from "simple-git";
-import { Response } from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState } from "./types";
@@ -148,40 +147,42 @@ export class SimpleGit extends GitManager {
         if (this.plugin.settings.updateSubmodules)
             await this.git.subModule(["update", "--remote", "--merge", "--recursive"], (err: any) => this.onError(err));
 
-        const branchInfo = await this.branchInfo()
-        const localCommit = await this.git.revparse([branchInfo.current])
+        const branchInfo = await this.branchInfo();
+        const localCommit = await this.git.revparse([branchInfo.current]);
 
-        await this.git.fetch()
-        const upstreamCommit = await this.git.revparse([branchInfo.tracking])
+        await this.git.fetch((err: any) => this.onError(err));
+        const upstreamCommit = await this.git.revparse([branchInfo.tracking]);
 
         if (localCommit !== upstreamCommit) {
             if (this.plugin.settings.syncMethod === 'merge' || this.plugin.settings.syncMethod === 'rebase') {
                 try {
-                    switch(this.plugin.settings.syncMethod) {
+                    switch (this.plugin.settings.syncMethod) {
                         case 'merge':
-                            this.git.merge([branchInfo.tracking])
-                            break
+                            await this.git.merge([branchInfo.tracking]);
+                            break;
                         case 'rebase':
-                            this.git.rebase([branchInfo.tracking])
-                            break
+                            await this.git.rebase([branchInfo.tracking]);
+
                     }
-                } catch(err) {
-                    this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`)
-                }
-                const status = await this.git.status();
-                if (status.conflicted.length > 0) {
-                    this.plugin.handleConflict(status.conflicted);
-                }
-            } else if(this.plugin.settings.syncMethod === 'reset') {
-                try {
-                    await this.git.raw(['update-ref', `refs/heads/${branchInfo.current}`, upstreamCommit])
                 } catch (err) {
-                    this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`)
+                    this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`);
+                    const status = await this.git.status();
+                    if (status.conflicted.length > 0) {
+                        this.plugin.handleConflict(status.conflicted);
+                    }
+                    return;
+                }
+
+            } else if (this.plugin.settings.syncMethod === 'reset') {
+                try {
+                    await this.git.raw(['update-ref', `refs/heads/${branchInfo.current}`, upstreamCommit]);
+                } catch (err) {
+                    this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`);
                 }
             }
 
-            const filesChanged = await this.git.diff([`${localCommit}..${upstreamCommit}`, '--name-only'])
-            return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).length
+            const filesChanged = await this.git.diff([`${localCommit}..${upstreamCommit}`, '--name-only']);
+            return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).length;
         } else {
             return 0;
         }

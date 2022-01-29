@@ -37,6 +37,7 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
+        this.migrateSettings();
 
         addIcons();
 
@@ -159,7 +160,6 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
-        this.migrateSettings()
 
         if (this.settings.showStatusBar) {
             // init statusBar
@@ -174,10 +174,10 @@ export default class ObsidianGit extends Plugin {
     }
 
     migrateSettings() {
-        if(this.settings.mergeOnPull) {
-            this.settings.syncMethod = 'merge'
-            this.settings.mergeOnPull = undefined
-            this.saveSettings()
+        if (this.settings.mergeOnPull != undefined) {
+            this.settings.syncMethod = this.settings.mergeOnPull ? 'merge' : 'rebase';
+            this.settings.mergeOnPull = undefined;
+            this.saveSettings();
         }
     }
 
