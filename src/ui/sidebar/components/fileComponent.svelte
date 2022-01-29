@@ -45,8 +45,6 @@
   }
 
   function stage() {
-    console.log("stage");
-
     manager.stage(change.path).then(() => {
       dispatchEvent(new CustomEvent("git-refresh"));
     });

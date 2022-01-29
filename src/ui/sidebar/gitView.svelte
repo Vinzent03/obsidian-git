@@ -65,8 +65,6 @@
   }
 
   addEventListener("git-refresh", (_) => {
-    console.log("got");
-
     refresh();
   });
 

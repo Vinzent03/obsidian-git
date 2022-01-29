@@ -1,4 +1,4 @@
-import { Notice, PluginSettingTab, Setting } from "obsidian";
+import { Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 import ObsidianGit from "./main";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
@@ -274,6 +274,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         const keys = containerEl.createDiv();
         keys.setAttr("align", "center");
         keys.addClass("obsidian-git-shortcuts");
-        keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
+        if (Platform.isMacOS === true) {
+            keys.createEl("kbd", { text: "CMD (⌘) + OPTION (⌥) + I" });
+        } else {
+            keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
+        }
     }
 }
