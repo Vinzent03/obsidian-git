@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.20.1](https://github.com/denolehov/obsidian-git/compare/1.20.0...1.20.1) (2022-01-29)
+
+
+### Bug Fixes
+
+* show correct debug console hotkey ([087582e](https://github.com/denolehov/obsidian-git/commit/087582e429d96345c1f1ee17e0d6a1eeb71d9489)), closes [#175](https://github.com/denolehov/obsidian-git/issues/175)
+
 ## [1.20.0](https://github.com/denolehov/obsidian-git/compare/1.19.0...1.20.0) (2022-01-08)
 
 
