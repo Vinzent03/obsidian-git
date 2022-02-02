@@ -176,6 +176,7 @@ export class SimpleGit extends GitManager {
             } else if (this.plugin.settings.syncMethod === 'reset') {
                 try {
                     await this.git.raw(['update-ref', `refs/heads/${branchInfo.current}`, upstreamCommit]);
+                    await this.unstageAll();
                 } catch (err) {
                     this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`);
                 }
@@ -186,12 +187,6 @@ export class SimpleGit extends GitManager {
         } else {
             return 0;
         }
-    }
-
-    private async getNewestRemoteCommit(): Promise<string> {
-        const branchInfo = await this.branchInfo();
-        const newestRemoteCommit = (await this.git.log([`-n 1 ${branchInfo.tracking}`])).all[0].hash;
-        return newestRemoteCommit;
     }
 
     async push(): Promise<number> {
