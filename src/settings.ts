@@ -91,7 +91,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 const options: Record<SyncMethod, string> = {
                     'merge': 'Merge',
                     'rebase': 'Rebase',
-                    'reset': 'None (for use with Obsidian Sync)',
+                    'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
                 };
                 dropdown.addOptions(options);
                 dropdown.setValue(plugin.settings.syncMethod);
