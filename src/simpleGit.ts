@@ -15,7 +15,7 @@ export class SimpleGit extends GitManager {
 
     }
 
-    private setGitInstance() {
+    private async setGitInstance() {
         if (this.isGitInstalled()) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const path = adapter.getBasePath();
@@ -24,6 +24,7 @@ export class SimpleGit extends GitManager {
                 binary: this.plugin.settings.gitPath || undefined,
                 config: ["core.quotepath=off"]
             });
+            this.git.cwd(await this.git.revparse("--show-toplevel"));
         }
     }
 
