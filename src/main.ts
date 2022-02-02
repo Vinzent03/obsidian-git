@@ -37,6 +37,7 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
+        this.migrateSettings();
 
         addIcons();
 
@@ -158,6 +159,8 @@ export default class ObsidianGit extends Plugin {
                 new ChangedFilesModal(this, status.changed).open();
             }
         });
+
+
         if (this.settings.showStatusBar) {
             // init statusBar
             let statusBarEl = this.addStatusBarItem();
@@ -168,6 +171,14 @@ export default class ObsidianGit extends Plugin {
         }
         this.app.workspace.onLayoutReady(() => this.init());
 
+    }
+
+    migrateSettings() {
+        if (this.settings.mergeOnPull != undefined) {
+            this.settings.syncMethod = this.settings.mergeOnPull ? 'merge' : 'rebase';
+            this.settings.mergeOnPull = undefined;
+            this.saveSettings();
+        }
     }
 
     async onunload() {
@@ -386,11 +397,7 @@ export default class ObsidianGit extends Plugin {
         const pulledFilesLength = await this.gitManager.pull();
 
         if (pulledFilesLength > 0) {
-            if (this.settings.mergeOnPull) {
-                this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
-            } else {
-                this.displayMessage("Rebased on pull");
-            }
+            this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
         }
         return pulledFilesLength != 0;
     }
