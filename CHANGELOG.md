@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.21.0](https://github.com/denolehov/obsidian-git/compare/1.20.1...1.20.2) (2022-02-02)
+
+
+### Bug Fixes
+
+* stage files in vault below git root ([9d3c662](https://github.com/denolehov/obsidian-git/commit/9d3c6620f32b392935a689a9ff645aa664f49478)), closes [#172](https://github.com/denolehov/obsidian-git/issues/172)
+
+### Features
+
+* new sync method ([f1d6b33](https://github.com/denolehov/obsidian-git/commit/f1d6b334972b76271a15883c31784812f24d6878))
+
 ### [1.20.1](https://github.com/denolehov/obsidian-git/compare/1.20.0...1.20.1) (2022-01-29)
 
 
