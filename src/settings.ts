@@ -12,9 +12,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Vault backup interval (minutes)")
-            .setDesc(
-                "Commit and push changes every X minutes. (See below setting for further configuration!) To disable automatic backup, specify negative value or zero (default)"
-            )
+            .setDesc("Commit and push changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)")
             .addText((text) =>
                 text
                     .setValue(String(plugin.settings.autoSaveInterval))
@@ -54,9 +52,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
         new Setting(containerEl)
             .setName("Auto pull interval (minutes)")
-            .setDesc(
-                "Pull changes every X minutes. To disable automatic pull, specify negative value or zero (default)"
-            )
+            .setDesc("Pull changes every X minutes. Set to 0 (default) to disable.")
             .addText((text) =>
                 text
                     .setValue(String(plugin.settings.autoPullInterval))
