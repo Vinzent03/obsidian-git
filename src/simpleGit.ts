@@ -104,7 +104,7 @@ export class SimpleGit extends GitManager {
 
     async stage(filepath: string): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.add(filepath, (err) => this.onError(err));
+        await this.git.add(["--", filepath], (err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
     }
 
