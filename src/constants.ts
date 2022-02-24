@@ -4,6 +4,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
     autoSaveInterval: 0,
+    autoSaveIntervalMode: 'default',
     autoPullInterval: 0,
     autoPullOnBoot: false,
     disablePush: false,
@@ -15,7 +16,6 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     syncMethod: 'merge',
     gitPath: "",
     customMessageOnAutoBackup: false,
-    autoBackupAfterFileChange: false,
     treeStructure: false,
 };
 

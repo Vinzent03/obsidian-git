@@ -179,6 +179,12 @@ export default class ObsidianGit extends Plugin {
             this.settings.mergeOnPull = undefined;
             this.saveSettings();
         }
+
+        if (this.settings.autoBackupAfterFileChange != undefined) {
+            this.settings.autoSaveIntervalMode = this.settings.autoBackupAfterFileChange ? 'after-change' : 'default';
+            this.settings.autoBackupAfterFileChange = undefined;
+            this.saveSettings();
+        }
     }
 
     async onunload() {
@@ -231,17 +237,16 @@ export default class ObsidianGit extends Plugin {
                         this.promiseQueue.addTask(() => this.pullChangesFromRemote());
                     }
                     const lastAutos = await this.loadLastAuto();
+                    const now = new Date();
 
                     if (this.settings.autoSaveInterval > 0) {
-                        const now = new Date();
-
-                        const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60));
+                        const timeSinceLastBackup = Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60);
+                        const diff = this.settings.autoSaveInterval - timeSinceLastBackup;
                         this.startAutoBackup(diff <= 0 ? 0 : diff);
                     }
                     if (this.settings.autoPullInterval > 0) {
-                        const now = new Date();
-
-                        const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60));
+                        const timeSinceLastPull = Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60);
+                        const diff = this.settings.autoPullInterval - timeSinceLastPull;
                         this.startAutoPull(diff <= 0 ? 0 : diff);
                     }
                     break;
@@ -421,15 +426,37 @@ export default class ObsidianGit extends Plugin {
 
     startAutoBackup(minutes?: number) {
         const time = (minutes ?? this.settings.autoSaveInterval) * 60000;
-        if (this.settings.autoBackupAfterFileChange) {
-            if (minutes === 0) {
-                this.doAutoBackup();
-            } else {
-                this.onFileModifyEventRef = this.app.vault.on("modify", () => this.autoBackupDebouncer());
-                this.autoBackupDebouncer = debounce(() => this.doAutoBackup(), time, true);
+
+        switch (this.settings.autoSaveIntervalMode) {
+            case 'default': {
+                this.timeoutIDBackup = window.setTimeout(() => this.doAutoBackup(), time);
+                return;
             }
-        } else {
-            this.timeoutIDBackup = window.setTimeout(() => this.doAutoBackup(), time);
+            case 'after-change': {
+                if (minutes === 0) {
+                    this.doAutoBackup();
+                } else {
+                    this.onFileModifyEventRef = this.app.vault.on("modify", () => this.autoBackupDebouncer());
+                    this.autoBackupDebouncer = debounce(() => this.doAutoBackup(), time, true);
+                }
+                return;
+            }
+            case 'after-inactive': {
+                if (minutes === 0) {
+                    this.doAutoBackup();
+                } else {
+                    this.off('blur');
+                    this.on('blur', () => {
+                        this.timeoutIDBackup = window.setTimeout(() => this.doAutoBackup(), time);
+                    });
+
+                    this.off('focus');
+                    this.on('focus', () => {
+                        window.clearTimeout(this.timeoutIDBackup);
+                    });
+                }
+                return;
+            }
         }
     }
 
@@ -465,6 +492,10 @@ export default class ObsidianGit extends Plugin {
             this.onFileModifyEventRef = undefined;
             wasActive = true;
         }
+
+        this.off('blur');
+        this.off('focus');
+
         return wasActive;
     }
 
@@ -579,5 +610,18 @@ export default class ObsidianGit extends Plugin {
         new Notice(message, 15 * 1000);
         console.log(`git obsidian error: ${message}`);
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
+    }
+
+    private on(event: keyof WindowEventMap, listener: EventListener) {
+        this.eventListeners[event] = (this.eventListeners[event] ?? []).concat(listener);
+        window.addEventListener(event, listener);
+    }
+
+    private off(event: string) {
+        const listeners = this.eventListeners[event] ?? [];
+
+        listeners.forEach((listener) => {
+            window.removeEventListener(event, listener);
+        });
     }
 }

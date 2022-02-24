@@ -1,6 +1,6 @@
 import { Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 import ObsidianGit from "./main";
-import { SyncMethod } from "./types";
+import { BackupIntervalMode, SyncMethod } from "./types";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     display(): void {
@@ -20,36 +20,68 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         if (!isNaN(Number(value))) {
                             plugin.settings.autoSaveInterval = Number(value);
                             plugin.saveSettings();
+                            const wasAutobackupActive = plugin.clearAutoBackup();
 
                             if (plugin.settings.autoSaveInterval > 0) {
-                                plugin.clearAutoBackup();
                                 plugin.startAutoBackup(plugin.settings.autoSaveInterval);
-                                new Notice(
-                                    `Automatic backup enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
-                                );
-                            } else if (plugin.settings.autoSaveInterval <= 0) {
-                                plugin.clearAutoBackup() &&
-                                    new Notice("Automatic backup disabled!");
+                                this.showAutoBackupEnabledNotice(plugin.settings.autoSaveInterval, plugin.settings.autoSaveIntervalMode);
+                            } else if (wasAutobackupActive) {
+                                new Notice("Automatic backup disabled!");
                             }
                         } else {
                             new Notice("Please specify a valid number.");
                         }
                     })
             );
+
         new Setting(containerEl)
-            .setName("If turned on, do auto backup every X minutes after last change. Prevents auto backup while editing a file. If turned off, do auto backup every X minutes. It's independent from last change.")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.autoBackupAfterFileChange)
-                    .onChange((value) => {
-                        plugin.settings.autoBackupAfterFileChange = value;
-                        plugin.saveSettings();
-                        plugin.clearAutoBackup();
-                        if (plugin.settings.autoSaveInterval > 0) {
-                            plugin.startAutoBackup(plugin.settings.autoSaveInterval);
+            .setName("Auto backup mode")
+            .setDesc(createFragment((fragment) => {
+                fragment.appendText('If auto backup interval is set, backup is run in fixed intervals in default mode. This setting can be set to one of the following values:');
+                fragment.createEl('br');
+
+                fragment.appendText('- ');
+                fragment.createEl('strong', { text: 'Default: ' });
+                fragment.appendText('do auto backup every X minutes. It\'s independent from last change.');
+                fragment.createEl('br');
+
+
+                fragment.appendText('- ');
+                fragment.createEl('strong', { text: 'After last change: ' });
+                fragment.appendText('do auto backup X minutes after last change. Prevents auto backup while editing a file.');
+                fragment.createEl('br');
+
+                fragment.appendText('- ');
+                fragment.createEl('strong', { text: 'While window inactive: ' });
+                fragment.appendText('do auto backup X minutes after Obsidian window was deactivated (put to background). Prevents auto backup while using Obsidian.')
+            }))
+            .addDropdown((dropdown) => {
+                const options: Record<BackupIntervalMode, string> = {
+                    'default': 'Default',
+                    'after-change': 'After last change',
+                    'after-inactive': 'While window inactive',
+                };
+                dropdown.addOptions(options);
+                dropdown.setValue(plugin.settings.autoSaveIntervalMode ?? 'default');
+
+                dropdown.onChange(async (mode: BackupIntervalMode) => {
+                    plugin.settings.autoSaveIntervalMode = mode;
+                    plugin.saveSettings();
+
+                    switch (mode) {
+                        case 'default': { return; }
+                        case 'after-change':
+                        case 'after-inactive': {
+                            plugin.clearAutoBackup();
+                            if (plugin.settings.autoSaveInterval > 0) {
+                                plugin.startAutoBackup(plugin.settings.autoSaveInterval);
+                            }
+                            return;
                         }
-                    })
-            );
+                    }
+                });
+            });
+
         new Setting(containerEl)
             .setName("Auto pull interval (minutes)")
             .setDesc("Pull changes every X minutes. Set to 0 (default) to disable.")
@@ -284,5 +316,15 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         } else {
             keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
         }
+    }
+
+    private showAutoBackupEnabledNotice(interval: number, mode: BackupIntervalMode) {
+        const messageByMode: Record<BackupIntervalMode, string> = {
+            default: `Every ${interval} minutes.`,
+            'after-change': `${interval} minutes since last file change.`,
+            'after-inactive': `${interval} minutes since Obsidian window is put to background.`,
+        }
+
+        new Notice(`Automatic backup enabled! ${messageByMode[mode]}`);
     }
 }

@@ -2,6 +2,7 @@ export interface ObsidianGitSettings {
     commitMessage: string;
     commitDateFormat: string;
     autoSaveInterval: number;
+    autoSaveIntervalMode: BackupIntervalMode;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
     syncMethod: SyncMethod;
@@ -13,9 +14,12 @@ export interface ObsidianGitSettings {
     updateSubmodules: boolean;
     gitPath: string;
     customMessageOnAutoBackup: boolean;
-    autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
 
+    /**
+     * @deprecated Migrated to `autoSaveIntervalMode = 'default'`
+     */
+    autoBackupAfterFileChange?: boolean;
     /**
      * @deprecated Migrated to `syncMethod = 'merge'`
      */
@@ -23,6 +27,8 @@ export interface ObsidianGitSettings {
 }
 
 export type SyncMethod = 'rebase' | 'merge' | 'reset';
+
+export type BackupIntervalMode = 'default' | 'after-change' | 'after-inactive';
 
 export interface Author {
     name: string;
