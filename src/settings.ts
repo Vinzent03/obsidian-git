@@ -112,14 +112,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
         new Setting(containerEl)
             .setName("Sync Method")
-            .setDesc(
-                "Selects the method used for handling new changes found in your remote git repository."
-            )
+            .setDesc(createFragment((fragment) => {
+                fragment.appendText("Selects the method used for handling new changes found in your remote git repository.");
+                fragment.createEl('br');
+                fragment.createEl('br');
+                fragment.appendText("Note: Other sync service only updates the HEAD without touching the working directory");
+            }))
             .addDropdown((dropdown) => {
                 const options: Record<SyncMethod, string> = {
                     'merge': 'Merge',
                     'rebase': 'Rebase',
-                    'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
+                    'reset': 'Other sync service',
                 };
                 dropdown.addOptions(options);
                 dropdown.setValue(plugin.settings.syncMethod);
