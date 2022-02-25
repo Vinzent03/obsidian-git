@@ -80,7 +80,7 @@
 </script>
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
-<main on:mouseover={hover} on:click={open} on:dblclick={showDiff}>
+<main on:mouseover={hover} on:click={open} on:dblclick={showDiff} on:focus>
   <span
     class="path"
     aria-label-position={side}
@@ -110,6 +110,7 @@
 
 <style lang="scss">
   main {
+    cursor: pointer;
     background-color: var(--background-secondary);
     border-radius: 4px;
     width: 98%;
