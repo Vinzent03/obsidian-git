@@ -80,13 +80,9 @@
 </script>
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
-<main>
+<main on:mouseover={hover} on:click={open} on:dblclick={showDiff}>
   <span
     class="path"
-    on:mouseover={hover}
-    on:click={open}
-    on:dblclick={showDiff}
-    on:focus
     aria-label-position={side}
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
   >
@@ -128,11 +124,11 @@
       max-width: 75%;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
 
-      &:hover {
-        color: var(--text-normal);
-        transition: all 200ms;
-      }
+    &:hover .path {
+      color: var(--text-normal);
+      transition: all 200ms;
     }
 
     .tools {
