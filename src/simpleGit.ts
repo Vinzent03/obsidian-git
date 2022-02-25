@@ -96,7 +96,7 @@ export class SimpleGit extends GitManager {
     async commit(message?: string): Promise<number> {
         this.plugin.setState(PluginState.commit);
 
-        const res = (await this.git.commit(await this.formatCommitMessage(message))).summary.changes;
+        const res = (await this.git.commit(await this.formatCommitMessage(message), (err) => this.onError(err))).summary.changes;
         this.plugin.setState(PluginState.idle);
         return res;
 
