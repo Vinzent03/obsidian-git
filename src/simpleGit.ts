@@ -86,7 +86,7 @@ export class SimpleGit extends GitManager {
         }
         this.plugin.setState(PluginState.add);
 
-        await this.git.add("./*", (err) => this.onError(err));
+        await this.git.add("-A", (err) => this.onError(err));
 
         this.plugin.setState(PluginState.commit);
 
@@ -111,16 +111,14 @@ export class SimpleGit extends GitManager {
     async stageAll(): Promise<void> {
         this.plugin.setState(PluginState.add);
         await this.git.add(
-            "./*", (err) => this.onError(err)
+            "-A", (err) => this.onError(err)
         );
         this.plugin.setState(PluginState.idle);
     }
 
     async unstageAll(): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.reset(
-            ["--", "./*"], (err) => this.onError(err)
-        );
+        await this.git.reset([], (err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
     }
 
