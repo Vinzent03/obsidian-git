@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.21.2](https://github.com/denolehov/obsidian-git/compare/1.21.1...1.21.2) (2022-03-01)
+
+
+### Bug Fixes
+
+* catch git error on commit ([fe78ae3](https://github.com/denolehov/obsidian-git/commit/fe78ae364e5296a378a3d0844a3daa53b3d024c7))
+* stage files without glob pattern ([99b1f6c](https://github.com/denolehov/obsidian-git/commit/99b1f6c3d61e4b2fca274531fa98359af0a8c64e)), closes [#196](https://github.com/denolehov/obsidian-git/issues/196)
+
 ### [1.21.1](https://github.com/denolehov/obsidian-git/compare/1.21.0...1.21.1) (2022-02-19)
 
 
