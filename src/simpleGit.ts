@@ -145,7 +145,7 @@ export class SimpleGit extends GitManager {
             await this.git.subModule(["update", "--remote", "--merge", "--recursive"], (err) => this.onError(err));
 
         const branchInfo = await this.branchInfo();
-        const localCommit = await this.git.revparse([branchInfo.current], (err) => this.onError(err));
+        const localCommit = await this.git.revparse([branchInfo.tracking], (err) => this.onError(err));
 
         await this.git.fetch((err) => this.onError(err));
         const upstreamCommit = await this.git.revparse([branchInfo.tracking], (err) => this.onError(err));
@@ -178,6 +178,7 @@ export class SimpleGit extends GitManager {
                     this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`);
                 }
             }
+            console.log(localCommit);
 
             const filesChanged = await this.git.diff([`${localCommit}..${upstreamCommit}`, '--name-only']);
             return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).length;
