@@ -20,6 +20,7 @@ export interface ObsidianGitSettings {
      * @deprecated Migrated to `syncMethod = 'merge'`
      */
     mergeOnPull?: boolean;
+    refreshSourceControl: boolean;
 }
 
 export type SyncMethod = 'rebase' | 'merge' | 'reset';

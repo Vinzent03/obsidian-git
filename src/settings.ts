@@ -225,6 +225,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Automatically refresh Source Control View on file changes")
+            .setDesc("On slower machines this may cause lags. If so, just disable this option")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.refreshSourceControl)
+                    .onChange((value) => {
+                        plugin.settings.refreshSourceControl = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Update submodules")
             .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
             .addToggle((toggle) =>

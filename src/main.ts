@@ -302,6 +302,7 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
+        dispatchEvent(new CustomEvent('git-source-control-refresh'));
         this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
@@ -367,6 +368,8 @@ export default class ObsidianGit extends Plugin {
         } else {
             this.displayMessage("No changes to commit");
         }
+        dispatchEvent(new CustomEvent('git-source-control-refresh'));
+
         this.setState(PluginState.idle);
         return true;
     }
