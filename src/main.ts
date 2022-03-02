@@ -173,10 +173,14 @@ export default class ObsidianGit extends Plugin {
 
     }
 
-    migrateSettings() {
+    migrateSettings(): Promise<void> {
         if (this.settings.mergeOnPull != undefined) {
             this.settings.syncMethod = this.settings.mergeOnPull ? 'merge' : 'rebase';
             this.settings.mergeOnPull = undefined;
+            return this.saveSettings();
+        }
+        if (this.settings.autoCommitMessage === undefined) {
+            this.settings.autoCommitMessage = this.settings.commitMessage;
             this.saveSettings();
         }
     }
@@ -189,9 +193,11 @@ export default class ObsidianGit extends Plugin {
         this.clearAutoBackup();
         console.log('unloading ' + this.manifest.name + " plugin");
     }
+
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     }
+
     async saveSettings() {
         await this.saveData(this.settings);
     }
@@ -349,8 +355,8 @@ export default class ObsidianGit extends Plugin {
         const changedFiles = (await this.gitManager.status()).changed;
 
         if (changedFiles.length !== 0) {
-            let commitMessage: string | undefined;
-            if ((fromAutoBackup && this.settings.customMessageOnAutoBackup || requestCustomMessage)) {
+            let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
+            if ((fromAutoBackup && this.settings.customMessageOnAutoBackup) || requestCustomMessage) {
                 if (!this.settings.disablePopups && fromAutoBackup) {
                     new Notice("Auto backup: Please enter a custom commit message. Leave empty to abort",);
                 }

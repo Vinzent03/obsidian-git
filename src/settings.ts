@@ -99,14 +99,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName("Commit message")
+            .setName("Commit message on manual backup/commit")
             .setDesc(
-                "Specify custom commit message. Available placeholders: {{date}}" +
+                "Available placeholders: {{date}}" +
                 " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"
             )
             .addText((text) =>
                 text
-                    .setPlaceholder("vault backup")
+                    .setPlaceholder("vault backup: {{date}}")
                     .setValue(
                         plugin.settings.commitMessage
                             ? plugin.settings.commitMessage
@@ -114,6 +114,24 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     )
                     .onChange((value) => {
                         plugin.settings.commitMessage = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Commit message on auto backup")
+            .setDesc(
+                "Available placeholders: {{date}}" +
+                " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"
+            )
+            .addText((text) =>
+                text
+                    .setPlaceholder("vault backup: {{date}}")
+                    .setValue(
+                        plugin.settings.autoCommitMessage
+                    )
+                    .onChange((value) => {
+                        plugin.settings.autoCommitMessage = value;
                         plugin.saveSettings();
                     })
             );
@@ -146,7 +164,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Preview commit message")
             .addButton((button) =>
                 button.setButtonText("Preview").onClick(async () => {
-                    let commitMessagePreview = await plugin.gitManager.formatCommitMessage();
+                    let commitMessagePreview = await plugin.gitManager.formatCommitMessage(plugin.settings.commitMessage);
                     new Notice(`${commitMessagePreview}`);
                 })
             );
@@ -164,6 +182,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Specify custom commit message on auto backup")
+            .setDesc("You will get a pop up to specify your message")
             .addToggle((toggle) =>
                 toggle
                     .setValue(plugin.settings.customMessageOnAutoBackup)

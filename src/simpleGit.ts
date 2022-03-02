@@ -79,10 +79,10 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async commitAll(message?: string): Promise<number> {
+    async commitAll(message: string): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
-            await this.git.subModule(["foreach", "--recursive", `git add -A && if [ ! -z "$(git status --porcelain)" ]; then git commit -m "${message ?? await this.formatCommitMessage()}"; fi`], (err) => this.onError(err));
+            await this.git.subModule(["foreach", "--recursive", `git add -A && if [ ! -z "$(git status --porcelain)" ]; then git commit -m "${await this.formatCommitMessage(message)}"; fi`], (err) => this.onError(err));
         }
         this.plugin.setState(PluginState.add);
 
@@ -93,7 +93,7 @@ export class SimpleGit extends GitManager {
         return (await this.git.commit(await this.formatCommitMessage(message), (err) => this.onError(err))).summary.changes;
     }
 
-    async commit(message?: string): Promise<number> {
+    async commit(message: string): Promise<number> {
         this.plugin.setState(PluginState.commit);
 
         const res = (await this.git.commit(await this.formatCommitMessage(message), (err) => this.onError(err))).summary.changes;

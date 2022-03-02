@@ -1,5 +1,6 @@
 export interface ObsidianGitSettings {
     commitMessage: string;
+    autoCommitMessage: string;
     commitDateFormat: string;
     autoSaveInterval: number;
     autoPullInterval: number;
