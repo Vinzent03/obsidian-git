@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.22.0](https://github.com/denolehov/obsidian-git/compare/1.21.2...1.22.0) (2022-03-02)
+
+
+### Features
+
+* separate commit message for auto backup ([b59db5d](https://github.com/denolehov/obsidian-git/commit/b59db5dc816479fd6dad5d798d0979c49c8b8ccf)), closes [#197](https://github.com/denolehov/obsidian-git/issues/197)
+
+
+### Bug Fixes
+
+* automatically refresh source control ([9c2b063](https://github.com/denolehov/obsidian-git/commit/9c2b063584366226da876c9e5e6509868b6a01cd)), closes [#199](https://github.com/denolehov/obsidian-git/issues/199)
+* correct pull changes count ([6aead15](https://github.com/denolehov/obsidian-git/commit/6aead155571eda2499ef1ab6377236152124df96)), closes [#198](https://github.com/denolehov/obsidian-git/issues/198)
+
 ### [1.21.2](https://github.com/denolehov/obsidian-git/compare/1.21.1...1.21.2) (2022-03-01)
 
 
