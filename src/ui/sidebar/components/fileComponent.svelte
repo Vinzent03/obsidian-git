@@ -131,7 +131,7 @@
       color: var(--text-normal);
       transition: all 200ms;
     }
-
+    
     .tools {
       display: flex;
       align-items: center;

@@ -87,11 +87,11 @@
       max-width: 75%;
       overflow: hidden;
       text-overflow: ellipsis;
-
-      &:hover .path {
-        color: var(--text-normal);
-        transition: all 200ms;
-      }
+    }
+    
+    &:hover .path {
+      color: var(--text-normal);
+      transition: all 200ms;
     }
 
     .tools {
