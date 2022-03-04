@@ -85,8 +85,7 @@
       if (commitMessage !== plugin.settings.commitMessage) {
         commitMessage = "";
       }
-      refresh();
-    });
+    }).finally(refresh);
   }
 
   addEventListener("git-refresh", (_) => {
@@ -112,30 +111,22 @@
 
   function stageAll() {
     loading = true;
-    plugin.gitManager.stageAll().then(() => {
-      refresh();
-    });
+    plugin.gitManager.stageAll().finally(refresh);
   }
   function unstageAll() {
     loading = true;
-    plugin.gitManager.unstageAll().then(() => {
-      refresh();
-    });
+    plugin.gitManager.unstageAll().finally(refresh);
   }
   function push() {
     loading = true;
 
     if (ready) {
-      plugin.push().then((pushedFiles) => {
-        refresh();
-      });
+      plugin.push().finally(refresh);
     }
   }
   function pull() {
     loading = true;
-    plugin.pullChangesFromRemote().then(() => {
-      refresh();
-    });
+    plugin.pullChangesFromRemote().finally(refresh);
   }
 </script>
 

@@ -45,7 +45,7 @@
   }
 
   function stage() {
-    manager.stage(change.path).then(() => {
+    manager.stage(change.path).finally(() => {
       dispatchEvent(new CustomEvent("git-refresh"));
     });
   }
@@ -66,11 +66,11 @@
       .then((shouldDiscard) => {
         if (shouldDiscard === true) {
           if (deleteFile) {
-            view.app.vault.adapter.remove(change.path).then(() => {
+            view.app.vault.adapter.remove(change.path).finally(() => {
               dispatchEvent(new CustomEvent("git-refresh"));
             });
           } else {
-            manager.discard(change.path).then(() => {
+            manager.discard(change.path).finally(() => {
               dispatchEvent(new CustomEvent("git-refresh"));
             });
           }

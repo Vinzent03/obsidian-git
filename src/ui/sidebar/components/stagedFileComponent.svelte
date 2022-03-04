@@ -43,7 +43,7 @@
   }
 
   function unstage() {
-    manager.unstage(formattedPath).then(() => {
+    manager.unstage(formattedPath).finally(() => {
       dispatchEvent(new CustomEvent("git-refresh"));
     });
   }
