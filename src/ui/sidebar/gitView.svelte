@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { debounce, EventRef, setIcon } from "obsidian";
+  import { debounce, EventRef, MetadataCache, setIcon } from "obsidian";
   import ObsidianGit from "src/main";
   import { Status, TreeItem } from "src/types";
   import { onDestroy } from "svelte";
@@ -19,9 +19,12 @@
   let changesOpen = true;
   let stagedOpen = true;
   let loading = true;
-  const debRefresh = debounce(() => refresh(), 300000);
-  //Refresh every ten minutes
-  const interval = window.setInterval(refresh, 600000);
+  const debRefresh = debounce(() => {
+    if (plugin.settings.refreshSourceControl) {
+      refresh();
+    }
+  }, 1000);
+
   let showTree = plugin.settings.treeStructure;
   let layoutBtn: HTMLElement;
   $: {
@@ -31,7 +34,11 @@
     }
   }
 
-  let event: EventRef;
+  let modifyEvent: EventRef;
+  let deleteEvent: EventRef;
+  let createEvent: EventRef;
+  let renameEvent: EventRef;
+
   //This should go in the onMount callback, for some reason it doesn't fire though
   //setImmediate's callback will execute after the current event loop finishes.
   plugin.app.workspace.onLayoutReady(() =>
@@ -41,17 +48,35 @@
 
       refresh();
 
-      event = plugin.app.metadataCache.on("resolved", () => {
+      modifyEvent = plugin.app.vault.on("modify", () => {
+        debRefresh();
+      });
+      deleteEvent = plugin.app.vault.on("delete", () => {
+        debRefresh();
+      });
+      createEvent = plugin.app.vault.on("create", () => {
+        debRefresh();
+      });
+      renameEvent = plugin.app.vault.on("rename", () => {
         debRefresh();
       });
 
-      plugin.registerInterval(interval);
-      plugin.registerEvent(event);
+      addEventListener('git-source-control-refresh', refresh);
+
+      plugin.registerEvent(modifyEvent);
+      plugin.registerEvent(deleteEvent);
+      plugin.registerEvent(createEvent);
+      plugin.registerEvent(renameEvent);
     })
   );
+
   onDestroy(() => {
-    window.clearInterval(interval);
-    plugin.app.metadataCache.offref(event);
+    plugin.app.metadataCache.offref(modifyEvent);
+    plugin.app.metadataCache.offref(deleteEvent);
+    plugin.app.metadataCache.offref(createEvent);
+    plugin.app.metadataCache.offref(renameEvent);
+    removeEventListener('git-source-control-refresh', refresh);
+    
   });
 
   function commit() {
@@ -65,8 +90,6 @@
   }
 
   addEventListener("git-refresh", (_) => {
-    console.log("got");
-
     refresh();
   });
 

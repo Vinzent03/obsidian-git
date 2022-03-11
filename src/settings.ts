@@ -1,5 +1,6 @@
-import { Notice, PluginSettingTab, Setting } from "obsidian";
+import { Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 import ObsidianGit from "./main";
+import { SyncMethod } from "./types";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     display(): void {
@@ -11,9 +12,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Vault backup interval (minutes)")
-            .setDesc(
-                "Commit and push changes every X minutes. (See below setting for further configuration!) To disable automatic backup, specify negative value or zero (default)"
-            )
+            .setDesc("Commit and push changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)")
             .addText((text) =>
                 text
                     .setValue(String(plugin.settings.autoSaveInterval))
@@ -53,9 +52,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
         new Setting(containerEl)
             .setName("Auto pull interval (minutes)")
-            .setDesc(
-                "Pull changes every X minutes. To disable automatic pull, specify negative value or zero (default)"
-            )
+            .setDesc("Pull changes every X minutes. Set to 0 (default) to disable.")
             .addText((text) =>
                 text
                     .setValue(String(plugin.settings.autoPullInterval))
@@ -81,16 +78,35 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         }
                     })
             );
+        new Setting(containerEl)
+            .setName("Sync Method")
+            .setDesc(
+                "Selects the method used for handling new changes found in your remote git repository."
+            )
+            .addDropdown((dropdown) => {
+                const options: Record<SyncMethod, string> = {
+                    'merge': 'Merge',
+                    'rebase': 'Rebase',
+                    'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
+                };
+                dropdown.addOptions(options);
+                dropdown.setValue(plugin.settings.syncMethod);
+
+                dropdown.onChange(async (option: SyncMethod) => {
+                    plugin.settings.syncMethod = option;
+                    plugin.saveSettings();
+                });
+            });
 
         new Setting(containerEl)
-            .setName("Commit message")
+            .setName("Commit message on manual backup/commit")
             .setDesc(
-                "Specify custom commit message. Available placeholders: {{date}}" +
+                "Available placeholders: {{date}}" +
                 " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"
             )
             .addText((text) =>
                 text
-                    .setPlaceholder("vault backup")
+                    .setPlaceholder("vault backup: {{date}}")
                     .setValue(
                         plugin.settings.commitMessage
                             ? plugin.settings.commitMessage
@@ -98,6 +114,24 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     )
                     .onChange((value) => {
                         plugin.settings.commitMessage = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Commit message on auto backup")
+            .setDesc(
+                "Available placeholders: {{date}}" +
+                " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"
+            )
+            .addText((text) =>
+                text
+                    .setPlaceholder("vault backup: {{date}}")
+                    .setValue(
+                        plugin.settings.autoCommitMessage
+                    )
+                    .onChange((value) => {
+                        plugin.settings.autoCommitMessage = value;
                         plugin.saveSettings();
                     })
             );
@@ -130,7 +164,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setName("Preview commit message")
             .addButton((button) =>
                 button.setButtonText("Preview").onClick(async () => {
-                    let commitMessagePreview = await plugin.gitManager.formatCommitMessage();
+                    let commitMessagePreview = await plugin.gitManager.formatCommitMessage(plugin.settings.commitMessage);
                     new Notice(`${commitMessagePreview}`);
                 })
             );
@@ -148,6 +182,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Specify custom commit message on auto backup")
+            .setDesc("You will get a pop up to specify your message")
             .addToggle((toggle) =>
                 toggle
                     .setValue(plugin.settings.customMessageOnAutoBackup)
@@ -185,17 +220,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Merge on pull")
-            .setDesc("If turned on, merge on pull. If turned off, rebase on pull.")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.mergeOnPull)
-                    .onChange((value) => {
-                        plugin.settings.mergeOnPull = value;
-                        plugin.saveSettings();
-                    })
-            );
-        new Setting(containerEl)
             .setName("Disable push")
             .setDesc("Do not push changes to the remote repository")
             .addToggle((toggle) =>
@@ -215,6 +239,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.pullBeforePush)
                     .onChange((value) => {
                         plugin.settings.pullBeforePush = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Automatically refresh Source Control View on file changes")
+            .setDesc("On slower machines this may cause lags. If so, just disable this option")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.refreshSourceControl)
+                    .onChange((value) => {
+                        plugin.settings.refreshSourceControl = value;
                         plugin.saveSettings();
                     })
             );
@@ -274,6 +310,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         const keys = containerEl.createDiv();
         keys.setAttr("align", "center");
         keys.addClass("obsidian-git-shortcuts");
-        keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
+        if (Platform.isMacOS === true) {
+            keys.createEl("kbd", { text: "CMD (⌘) + OPTION (⌥) + I" });
+        } else {
+            keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
+        }
     }
 }

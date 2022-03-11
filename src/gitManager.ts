@@ -89,8 +89,7 @@ export abstract class GitManager {
         return list;
     }
 
-    async formatCommitMessage(message?: string): Promise<string> {
-        let template = message ?? this.plugin.settings.commitMessage;
+    async formatCommitMessage(template: string): Promise<string> {
         let status: Status | undefined;
         if (template.includes("{{numFiles}}")) {
             status = await this.status();

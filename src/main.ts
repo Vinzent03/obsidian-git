@@ -36,6 +36,7 @@ export default class ObsidianGit extends Plugin {
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
+        this.migrateSettings();
 
         addIcons();
 
@@ -157,6 +158,8 @@ export default class ObsidianGit extends Plugin {
                 new ChangedFilesModal(this, status.changed).open();
             }
         });
+
+
         if (this.settings.showStatusBar) {
             // init statusBar
             let statusBarEl = this.addStatusBarItem();
@@ -169,6 +172,18 @@ export default class ObsidianGit extends Plugin {
 
     }
 
+    migrateSettings(): Promise<void> {
+        if (this.settings.mergeOnPull != undefined) {
+            this.settings.syncMethod = this.settings.mergeOnPull ? 'merge' : 'rebase';
+            this.settings.mergeOnPull = undefined;
+            return this.saveSettings();
+        }
+        if (this.settings.autoCommitMessage === undefined) {
+            this.settings.autoCommitMessage = this.settings.commitMessage;
+            this.saveSettings();
+        }
+    }
+
     async onunload() {
         (this.app.workspace as any).unregisterHoverLinkSource(GIT_VIEW_CONFIG.type);
         this.app.workspace.detachLeavesOfType(GIT_VIEW_CONFIG.type);
@@ -177,9 +192,11 @@ export default class ObsidianGit extends Plugin {
         this.clearAutoBackup();
         console.log('unloading ' + this.manifest.name + " plugin");
     }
+
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     }
+
     async saveSettings() {
         await this.saveData(this.settings);
     }
@@ -290,6 +307,7 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
+        dispatchEvent(new CustomEvent('git-source-control-refresh'));
         this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
@@ -336,8 +354,8 @@ export default class ObsidianGit extends Plugin {
         const changedFiles = (await this.gitManager.status()).changed;
 
         if (changedFiles.length !== 0) {
-            let commitMessage: string | undefined;
-            if ((fromAutoBackup && this.settings.customMessageOnAutoBackup || requestCustomMessage)) {
+            let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
+            if ((fromAutoBackup && this.settings.customMessageOnAutoBackup) || requestCustomMessage) {
                 if (!this.settings.disablePopups && fromAutoBackup) {
                     new Notice("Auto backup: Please enter a custom commit message. Leave empty to abort",);
                 }
@@ -355,6 +373,8 @@ export default class ObsidianGit extends Plugin {
         } else {
             this.displayMessage("No changes to commit");
         }
+        dispatchEvent(new CustomEvent('git-source-control-refresh'));
+
         this.setState(PluginState.idle);
         return true;
     }
@@ -385,11 +405,7 @@ export default class ObsidianGit extends Plugin {
         const pulledFilesLength = await this.gitManager.pull();
 
         if (pulledFilesLength > 0) {
-            if (this.settings.mergeOnPull) {
-                this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
-            } else {
-                this.displayMessage("Rebased on pull");
-            }
+            this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
         }
         return pulledFilesLength != 0;
     }

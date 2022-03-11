@@ -2,6 +2,7 @@ import { ObsidianGitSettings } from "./types";
 
 export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
+    autoCommitMessage: undefined, // default undefined for settings migration
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
     autoSaveInterval: 0,
     autoPullInterval: 0,
@@ -12,11 +13,12 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     listChangedFilesInMessageBody: false,
     showStatusBar: true,
     updateSubmodules: false,
+    syncMethod: 'merge',
     gitPath: "",
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
-    mergeOnPull: true,
     treeStructure: false,
+    refreshSourceControl: true,
 };
 
 export const GIT_VIEW_CONFIG = {
@@ -29,4 +31,4 @@ export const DIFF_VIEW_CONFIG = {
     type: 'diff-view',
     name: 'Diff View',
     icon: 'feather-git-pull-request'
-}
+};

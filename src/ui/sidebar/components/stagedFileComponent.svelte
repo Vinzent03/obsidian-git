@@ -49,12 +49,9 @@
   }
 </script>
 
-<main>
+<main on:mouseover={hover} on:focus on:click={open} on:dblclick>
   <span
     class="path"
-    on:mouseover={hover}
-    on:focus
-    on:click={open}
     aria-label-position={side}
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
   >
@@ -75,6 +72,7 @@
 
 <style lang="scss">
   main {
+    cursor: pointer;
     background-color: var(--background-secondary);
     border-radius: 4px;
     width: 98%;
@@ -89,11 +87,11 @@
       max-width: 75%;
       overflow: hidden;
       text-overflow: ellipsis;
-
-      &:hover {
-        color: var(--text-normal);
-        transition: all 200ms;
-      }
+    }
+    
+    &:hover .path {
+      color: var(--text-normal);
+      transition: all 200ms;
     }
 
     .tools {
