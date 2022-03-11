@@ -7,6 +7,7 @@ import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
+import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { IsomorphicGit } from "./isomorphicGit";
 import { ObsidianGitSettings, PluginState } from "./types";
 import DiffView from "./ui/diff/diffView";
@@ -295,8 +296,10 @@ export default class ObsidianGit extends Plugin {
 
         if (!await this.isAllInitialized()) return;
 
-        await this.gitManager.pull()
-        this.displayMessage("Pulled");
+        const filesUpdated = await this.pull();
+        if (!filesUpdated) {
+            this.displayMessage("Everything is up-to-date");
+        }
 
         if (this.gitManager instanceof IsomorphicGit) {
             const status = await this.gitManager.status();
@@ -335,7 +338,7 @@ export default class ObsidianGit extends Plugin {
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
             if (await this.gitManager.canPush()) {
                 if (this.settings.pullBeforePush) {
-                    await this.gitManager.pull()
+                    await this.pull();
                 }
 
                 if (!(await this.push())) return;
@@ -367,7 +370,7 @@ export default class ObsidianGit extends Plugin {
                 }
             }
             const committedFiles = await this.gitManager.commitAll(commitMessage);
-            this.displayMessage(`Committed ${committedFiles} ${committedFiles == 0 ? 'file' : 'files'}`);
+            this.displayMessage(`Committed ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
         } else {
             this.displayMessage("No changes to commit");
         }
@@ -385,7 +388,7 @@ export default class ObsidianGit extends Plugin {
         // Refresh because of pull
         let status: any;
         if (this.gitManager instanceof IsomorphicGit && (status = await this.gitManager.status()).conflicted.length > 0) {
-            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict files`);
+            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
             this.handleConflict(status.conflicted);
             return false;
         } else {
