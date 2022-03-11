@@ -27,7 +27,7 @@ export abstract class GitManager {
 
     abstract discard(filepath: string): Promise<void>;
 
-    abstract pull(): Promise<number>;
+    abstract pull(): Promise<void>;
 
     abstract push(): Promise<number>;
 

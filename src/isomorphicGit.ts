@@ -1,22 +1,69 @@
-// TODO: Use different FS, maybe custom one?
-import * as fs from 'fs';
+// TODO: Use different FS for mobile, maybe custom one?
 import git from "isomorphic-git";
 // TODO: Use Obsidian's HTTP to bypass CORS
-import http from "isomorphic-git/http/node";
-import { Notice } from 'obsidian';
+import http from "isomorphic-git/http/web";
+import { Notice, request } from 'obsidian';
 
 
 import ObsidianGit from './main';
 import { GitManager } from "./gitManager";
+import { MyAdapter } from './myAdapter';
 import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 
 // TODO: Set to idle, what's a nice way to do this...
 // TODO: Nicer way to display error... I'm doing it multiple times if I call other
 // helpers...
 // TODO: Is there a style setup, like ESLint or Prettier?
+
+// const myHTTP = {
+//     async request({
+//         url,
+//         method,
+//         headers,
+//         body,
+//     }: { url: string, method?: string, headers?: object, body: any, }) {
+//         console.log("In request(): ", { url, method, headers, body })
+//         if (method == undefined) {
+//             method = "GET";
+//         }
+//         console.log("In request(), after fixing: ", { url, method, headers, body })
+
+
+//         const res = await request({ url, method, headers, body })
+//         console.log("HEY HERE's RES: ", res)
+
+//         return {
+//             url,
+//             method,
+//             headers,
+//             body: res,
+//             statusCode: 200,
+//             statusMessage: "No idea if it succeeded..."
+//         }
+
+//     }
+// }
+
+const myHTTP = {
+    async request({
+        url,
+        method,
+        headers,
+        body,
+    }) {
+        console.log("again")
+        console.log({ url, method, headers, body })
+        const res = await http.request({ url, method, headers, body })
+        // return res
+        console.log("ORIGINAL BODY: ", body)
+        console.log("RETURNED BODY: ", res.body)
+        console.log("STATUS MESSAGE: ", res.statusMessage)
+        return { url, method, headers, body: res.body, statusCode: 200, statusMessage: "OK" }
+    }
+}
 export class IsomorphicGit extends GitManager {
     private repo: {
-        fs: any,
+        fs: MyAdapter,
         dir: string
     }
     private readonly FILE = 0;
@@ -47,8 +94,9 @@ export class IsomorphicGit extends GitManager {
         super(plugin);
 
         this.repo = {
-            fs: fs,
+            fs: new MyAdapter(this.app.vault),
             dir: "",
+            onAuth: () => ({ username: "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" })
         };
     }
 
@@ -82,10 +130,12 @@ export class IsomorphicGit extends GitManager {
     async commit(message?: string): Promise<number> {
         try {
             this.plugin.setState(PluginState.commit)
+            const status = await this.status()
+            console.log("This is status: ", status)
+            const numChangedFiles = status.changed.length
             const formatMessage = message ?? await this.formatCommitMessage();
             await git.commit({ ...this.repo, message: formatMessage });
-            // TODO: Return number of changed files
-            return 0;
+            return numChangedFiles;
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -142,21 +192,20 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async pull(): Promise<number> {
+    async pull(): Promise<void> {
         try {
             this.plugin.setState(PluginState.pull)
             // TODO: Submodules
             const progressNotice = new Notice("Initializing clone", this.noticeLength);
-            const pullResult = await git.pull({
-                ...this.repo, http: http, onProgress: (progress) => {
+            await git.pull({
+                ...this.repo, http: myHTTP,
+                headers: this.getAuth(),
+                onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = `Cloning progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
                 }
             })
             progressNotice.hide()
             this.plugin.lastUpdate = Date.now()
-
-            // TODO: Return number of changed files
-            return 0;
         } catch (error) {
             this.plugin.displayError(error)
             throw error
@@ -168,11 +217,16 @@ export class IsomorphicGit extends GitManager {
             this.plugin.setState(PluginState.status)
             const status = await this.status()
             const numChangedFiles = status.changed.length
+            console.log("Changed files: ", status.changed)
 
             this.plugin.setState(PluginState.push)
             // TODO: Submodules support
             // TODO: Maybe an onProgress here too?
-            await git.push({ ...this.repo, http: http })
+            await git.push({
+                ...this.repo, http: myHTTP,
+                headers: this.getAuth(),
+                force: true
+            })
             return numChangedFiles
         } catch (error) {
             this.plugin.displayError(error);
@@ -182,8 +236,7 @@ export class IsomorphicGit extends GitManager {
 
     async canPush(): Promise<boolean> {
         // TODO: Submodules support
-        const status = await this.status()
-        return status.changed.length !== 0;
+        return true;
     }
 
     async checkRequirements(): Promise<'valid' | 'missing-repo' | 'missing-git'> {
@@ -212,6 +265,7 @@ export class IsomorphicGit extends GitManager {
                 ...this.repo,
                 path: `branch.${current}.merge`
             }))?.split("refs/heads")[1];
+
 
             let tracking = trackingBranch ? remote + trackingBranch : undefined;
 
@@ -250,7 +304,11 @@ export class IsomorphicGit extends GitManager {
     async clone(url: string, dir: string): Promise<void> {
         try {
             // TODO: onProgress
-            await git.clone({ ...this.repo, http: http, url: url })
+            await git.clone({
+                ...this.repo, http: myHTTP,
+                headers: this.getAuth(),
+                url: url
+            })
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -285,7 +343,10 @@ export class IsomorphicGit extends GitManager {
     async fetch(remote?: string): Promise<void> {
         // TODO: onProgress
         try {
-            const args = { ...this.repo, http: http }
+            const args = {
+                ...this.repo, http: myHTTP,
+                headers: this.getAuth(),
+            }
             if (remote) { args.remoteRef = remote }
             await git.fetch(args);
         } catch (error) {
@@ -322,7 +383,11 @@ export class IsomorphicGit extends GitManager {
 
     async updateUpstreamBranch(remoteBranch: string): Promise<void> {
         const [remote, branch] = remoteBranch.split("/")
-        await git.push({ ...this.repo, http: http, remote: remote, remoteRef: branch })
+        await git.push({
+            ...this.repo, http: myHTTP,
+            headers: this.getAuth(),
+            remote: remote, remoteRef: branch
+        })
     }
 
     updateGitPath(gitPath: string): void {
@@ -331,8 +396,25 @@ export class IsomorphicGit extends GitManager {
     }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
-        const status = (this.status_mapping as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
-        // status will always be two characters
-        return { index: status[0], working_dir: status[1], path: row[this.FILE] };
+        try {
+            const status = (this.status_mapping as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
+            // status will always be two characters
+            return { index: status[0], working_dir: status[1], path: row[this.FILE] };
+        } catch (error) {
+            console.log("Status: ", String(status))
+            console.log("row: ", row)
+        }
     };
+
+    private getAuth() {
+        // const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
+        // const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
+        const username = "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"
+        const auth = "Basic " + btoa(username);
+        return {
+            Authorization: auth,
+            accept: "application/x-git-upload-pack-result",
+            "content-type": "application/x-git-upload-pack-request"
+        }
+    }
 }

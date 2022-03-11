@@ -278,10 +278,8 @@ export default class ObsidianGit extends Plugin {
 
         if (!await this.isAllInitialized()) return;
 
-        const filesUpdated = await this.pull();
-        if (!filesUpdated) {
-            this.displayMessage("Everything is up-to-date");
-        }
+        await this.gitManager.pull()
+        this.displayMessage("Pulled");
 
         if (this.gitManager instanceof IsomorphicGit) {
             const status = await this.gitManager.status();
@@ -319,7 +317,7 @@ export default class ObsidianGit extends Plugin {
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
             if (await this.gitManager.canPush()) {
                 if (this.settings.pullBeforePush) {
-                    await this.pull();
+                    await this.gitManager.pull()
                 }
 
                 if (!(await this.push())) return;
@@ -351,7 +349,7 @@ export default class ObsidianGit extends Plugin {
                 }
             }
             const committedFiles = await this.gitManager.commitAll(commitMessage);
-            this.displayMessage(`Committed ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
+            this.displayMessage(`Committed ${committedFiles} ${committedFiles == 0 ? 'file' : 'files'}`);
         } else {
             this.displayMessage("No changes to commit");
         }
@@ -371,27 +369,14 @@ export default class ObsidianGit extends Plugin {
             this.handleConflict(status.conflicted);
             return false;
         } else {
+            console.log("Pushign....")
             const pushedFiles = await this.gitManager.push();
+            console.log("Pushed!", pushedFiles)
             this.lastUpdate = Date.now();
             this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
             this.setState(PluginState.idle);
             return true;
         }
-    }
-
-    /// Used for internals
-    /// Returns whether the pull added a commit or not.
-    async pull(): Promise<boolean> {
-        const pulledFilesLength = await this.gitManager.pull();
-
-        if (pulledFilesLength > 0) {
-            if (this.settings.mergeOnPull) {
-                this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
-            } else {
-                this.displayMessage("Rebased on pull");
-            }
-        }
-        return pulledFilesLength != 0;
     }
 
     async remotesAreSet(): Promise<boolean> {
