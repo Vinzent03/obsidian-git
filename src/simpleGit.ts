@@ -41,14 +41,12 @@ export class SimpleGit extends GitManager {
             changed: status.files.filter((e) => e.working_dir !== " ").map((e) => {
                 const res = this.formatPath(e.path);
                 e.path = res.path;
-                e.from = res.from;
                 e.working_dir = e.working_dir === "?" ? "U" : e.working_dir;
                 return e;
             }),
             staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {
                 const res = this.formatPath(e.path, e.index === "R");
                 e.path = res.path;
-                e.from = res.from;
                 return e;
             }),
             conflicted: status.conflicted.map((e) => this.formatPath(e).path),
