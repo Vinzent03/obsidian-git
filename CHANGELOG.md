@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.22.0](https://github.com/denolehov/obsidian-git/compare/1.21.2...1.22.0) (2022-03-02)
+
+
+### Features
+
+* separate commit message for auto backup ([b59db5d](https://github.com/denolehov/obsidian-git/commit/b59db5dc816479fd6dad5d798d0979c49c8b8ccf)), closes [#197](https://github.com/denolehov/obsidian-git/issues/197)
+
+
+### Bug Fixes
+
+* automatically refresh source control ([9c2b063](https://github.com/denolehov/obsidian-git/commit/9c2b063584366226da876c9e5e6509868b6a01cd)), closes [#199](https://github.com/denolehov/obsidian-git/issues/199)
+* correct pull changes count ([6aead15](https://github.com/denolehov/obsidian-git/commit/6aead155571eda2499ef1ab6377236152124df96)), closes [#198](https://github.com/denolehov/obsidian-git/issues/198)
+
+### [1.21.2](https://github.com/denolehov/obsidian-git/compare/1.21.1...1.21.2) (2022-03-01)
+
+
+### Bug Fixes
+
+* catch git error on commit ([fe78ae3](https://github.com/denolehov/obsidian-git/commit/fe78ae364e5296a378a3d0844a3daa53b3d024c7))
+* stage files without glob pattern ([99b1f6c](https://github.com/denolehov/obsidian-git/commit/99b1f6c3d61e4b2fca274531fa98359af0a8c64e)), closes [#196](https://github.com/denolehov/obsidian-git/issues/196)
+
+### [1.21.1](https://github.com/denolehov/obsidian-git/compare/1.21.0...1.21.1) (2022-02-19)
+
+
+### Bug Fixes
+
+* better automatic backup/pull description ([10c3072](https://github.com/denolehov/obsidian-git/commit/10c307228da5c79cf62acfa2d6c90d2f519855a8)), closes [#181](https://github.com/denolehov/obsidian-git/issues/181)
+* catch more git errors ([153fd82](https://github.com/denolehov/obsidian-git/commit/153fd82d7467d6c58905fa77c4376b2e79594810))
+* stage filenames with leading '-' ([c06296e](https://github.com/denolehov/obsidian-git/commit/c06296e364962474299687e941fcdab8e03c9061)), closes [#184](https://github.com/denolehov/obsidian-git/issues/184)
+
+### [1.21.0](https://github.com/denolehov/obsidian-git/compare/1.20.1...1.20.2) (2022-02-02)
+
+
+### Bug Fixes
+
+* stage files in vault below git root ([9d3c662](https://github.com/denolehov/obsidian-git/commit/9d3c6620f32b392935a689a9ff645aa664f49478)), closes [#172](https://github.com/denolehov/obsidian-git/issues/172)
+
+### Features
+
+* new sync method ([f1d6b33](https://github.com/denolehov/obsidian-git/commit/f1d6b334972b76271a15883c31784812f24d6878))
+
+### [1.20.1](https://github.com/denolehov/obsidian-git/compare/1.20.0...1.20.1) (2022-01-29)
+
+
+### Bug Fixes
+
+* show correct debug console hotkey ([087582e](https://github.com/denolehov/obsidian-git/commit/087582e429d96345c1f1ee17e0d6a1eeb71d9489)), closes [#175](https://github.com/denolehov/obsidian-git/issues/175)
+
 ## [1.20.0](https://github.com/denolehov/obsidian-git/compare/1.19.0...1.20.0) (2022-01-08)
 
 

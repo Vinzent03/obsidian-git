@@ -35,7 +35,7 @@ body:
     label: Addition context
     description: Add any other context about the problem here.
 - type: dropdown
-  id: version
+  id: os
   attributes:
     label: Operating system
     description: Which OS are you using?
@@ -43,5 +43,11 @@ body:
       - Windows
       - Linux
       - macOS
+  validations:
+    required: true
+- type: input
+  id: version
+  attributes: 
+    label: Plugin version
   validations:
     required: true
