@@ -133,7 +133,7 @@ export class IsomorphicGit extends GitManager {
             const status = await this.status()
             console.log("This is status: ", status)
             const numChangedFiles = status.changed.length
-            const formatMessage = message ?? await this.formatCommitMessage();
+            const formatMessage = message ?? await this.formatCommitMessage(this.plugin.settings.commitMessage);
             await git.commit({ ...this.repo, message: formatMessage });
             return numChangedFiles;
         } catch (error) {
@@ -192,13 +192,14 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async pull(): Promise<void> {
+    async pull(): Promise<number> {
         try {
             this.plugin.setState(PluginState.pull)
             // TODO: Submodules
             const progressNotice = new Notice("Initializing clone", this.noticeLength);
             await git.pull({
-                ...this.repo, http: myHTTP,
+                ...this.repo,
+                http: myHTTP,
                 headers: this.getAuth(),
                 onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = `Cloning progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
@@ -206,6 +207,11 @@ export class IsomorphicGit extends GitManager {
             })
             progressNotice.hide()
             this.plugin.lastUpdate = Date.now()
+            // TODO: Not a native command in isomorphic-git to get number of
+            // changed files, but we could do a diff between latest commit
+            // before and after pull using this snippet: 
+            // https://isomorphic-git.org/docs/en/snippets#git-diff---name-status-commithash1-commithash2
+            return 1;
         } catch (error) {
             this.plugin.displayError(error)
             throw error
@@ -393,6 +399,10 @@ export class IsomorphicGit extends GitManager {
     updateGitPath(gitPath: string): void {
         // isomorphic-git library has its own git client
         return
+    }
+
+    async getDiffString(filePath: string): Promise<string> {
+        return "Not Implemented!"
     }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
