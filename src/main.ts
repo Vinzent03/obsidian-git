@@ -1,5 +1,5 @@
 import { debounce, Debouncer, EventRef, Notice, Plugin, TFile } from "obsidian";
-import * as path from "path";
+import normalize from "path-normalize";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -272,7 +272,7 @@ export default class ObsidianGit extends Plugin {
         if (url) {
             let dir = await new GeneralModal(this.app, [], "Enter directory for clone. It needs to be empty or not existent.").open();
             if (dir) {
-                dir = path.normalize(dir);
+                dir = normalize(dir);
                 new Notice(`Cloning new repo into "${dir}"`);
                 await this.gitManager.clone(url, dir);
                 new Notice("Cloned new repo");

@@ -1,5 +1,5 @@
 // TODO: Use different FS for mobile, maybe custom one?
-import git from "isomorphic-git";
+import git from "isomorphic-git/index.umd.min";
 import { Notice, requestUrl } from 'obsidian';
 
 
