@@ -19,7 +19,7 @@
         "electron": "^16.0.5",
         "esbuild": "^0.12.26",
         "esbuild-svelte": "^0.5.4",
-        "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
+        "obsidian": "^0.13.30",
         "prettier": "2.1.2",
         "sass": "^1.39.0",
         "scss": "^0.2.4",
@@ -34,7 +34,6 @@
         "isomorphic-git": "^1.10.3",
         "diff2html": "^3.4.13",
         "obsidian-community-lib": "^1.0.1",
-        "simple-git": "^2.21.0",
         "supports-color": "^7.2.0"
     },
     "moduleFileExtensions": [

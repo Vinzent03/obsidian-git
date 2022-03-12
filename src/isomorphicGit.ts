@@ -1,8 +1,6 @@
 // TODO: Use different FS for mobile, maybe custom one?
 import git from "isomorphic-git";
-// TODO: Use Obsidian's HTTP to bypass CORS
-import http from "isomorphic-git/http/web";
-import { Notice, request } from 'obsidian';
+import { Notice, requestUrl } from 'obsidian';
 
 
 import ObsidianGit from './main';
@@ -15,34 +13,6 @@ import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 // helpers...
 // TODO: Is there a style setup, like ESLint or Prettier?
 
-// const myHTTP = {
-//     async request({
-//         url,
-//         method,
-//         headers,
-//         body,
-//     }: { url: string, method?: string, headers?: object, body: any, }) {
-//         console.log("In request(): ", { url, method, headers, body })
-//         if (method == undefined) {
-//             method = "GET";
-//         }
-//         console.log("In request(), after fixing: ", { url, method, headers, body })
-
-
-//         const res = await request({ url, method, headers, body })
-//         console.log("HEY HERE's RES: ", res)
-
-//         return {
-//             url,
-//             method,
-//             headers,
-//             body: res,
-//             statusCode: 200,
-//             statusMessage: "No idea if it succeeded..."
-//         }
-
-//     }
-// }
 
 const myHTTP = {
     async request({
@@ -50,21 +20,39 @@ const myHTTP = {
         method,
         headers,
         body,
-    }) {
-        console.log("again")
-        console.log({ url, method, headers, body })
-        const res = await http.request({ url, method, headers, body })
-        // return res
-        console.log("ORIGINAL BODY: ", body)
-        console.log("RETURNED BODY: ", res.body)
-        console.log("STATUS MESSAGE: ", res.statusMessage)
-        return { url, method, headers, body: res.body, statusCode: 200, statusMessage: "OK" }
+    }): Promise<{
+        url: string,
+        method: string,
+        headers: object,
+        body: AsyncIterableIterator<Uint8Array>,
+        statusCode: number,
+        statusMessage: string,
+    }> {
+        // We can't stream yet, so collect body and set it to the ArrayBuffer
+        // because that's what requestUrl expects
+        if (body) {
+            body = await collect(body)
+            body = body.buffer
+        }
+
+        const res = await requestUrl({ url, method, headers, body })
+
+        return {
+            url,
+            method,
+            headers: res.headers,
+            body: [new Uint8Array(res.arrayBuffer)],
+            statusCode: res.status,
+            statusMessage: res.text,
+        }
     }
 }
+
 export class IsomorphicGit extends GitManager {
     private repo: {
         fs: MyAdapter,
-        dir: string
+        dir: string,
+        author: object,
     }
     private readonly FILE = 0;
     private readonly HEAD = 1;
@@ -96,7 +84,10 @@ export class IsomorphicGit extends GitManager {
         this.repo = {
             fs: new MyAdapter(this.app.vault),
             dir: "",
-            onAuth: () => ({ username: "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" })
+            author: {
+                name: "warrenalphonso",
+            },
+            onAuth: () => ({ username: "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" }),
         };
     }
 
@@ -200,7 +191,6 @@ export class IsomorphicGit extends GitManager {
             await git.pull({
                 ...this.repo,
                 http: myHTTP,
-                headers: this.getAuth(),
                 onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = `Cloning progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
                 }
@@ -230,7 +220,6 @@ export class IsomorphicGit extends GitManager {
             // TODO: Maybe an onProgress here too?
             await git.push({
                 ...this.repo, http: myHTTP,
-                headers: this.getAuth(),
                 force: true
             })
             return numChangedFiles
@@ -312,7 +301,6 @@ export class IsomorphicGit extends GitManager {
             // TODO: onProgress
             await git.clone({
                 ...this.repo, http: myHTTP,
-                headers: this.getAuth(),
                 url: url
             })
         } catch (error) {
@@ -351,7 +339,6 @@ export class IsomorphicGit extends GitManager {
         try {
             const args = {
                 ...this.repo, http: myHTTP,
-                headers: this.getAuth(),
             }
             if (remote) { args.remoteRef = remote }
             await git.fetch(args);
@@ -391,7 +378,6 @@ export class IsomorphicGit extends GitManager {
         const [remote, branch] = remoteBranch.split("/")
         await git.push({
             ...this.repo, http: myHTTP,
-            headers: this.getAuth(),
             remote: remote, remoteRef: branch
         })
     }
@@ -415,16 +401,64 @@ export class IsomorphicGit extends GitManager {
             console.log("row: ", row)
         }
     };
+}
 
-    private getAuth() {
-        // const username = window.localStorage.getItem(this.plugin.manifest.id + ":username");
-        // const password = window.localStorage.getItem(this.plugin.manifest.id + ":password");
-        const username = "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"
-        const auth = "Basic " + btoa(username);
-        return {
-            Authorization: auth,
-            accept: "application/x-git-upload-pack-result",
-            "content-type": "application/x-git-upload-pack-request"
-        }
+// All because we can't use (for await)...
+
+// Convert a value to an Async Iterator
+// This will be easier with async generator functions.
+function fromValue(value) {
+    let queue = [value]
+    return {
+        next() {
+            return Promise.resolve({ done: queue.length === 0, value: queue.pop() })
+        },
+        return() {
+            queue = []
+            return {}
+        },
+        [Symbol.asyncIterator]() {
+            return this
+        },
     }
+}
+
+function getIterator(iterable) {
+    if (iterable[Symbol.asyncIterator]) {
+        return iterable[Symbol.asyncIterator]()
+    }
+    if (iterable[Symbol.iterator]) {
+        return iterable[Symbol.iterator]()
+    }
+    if (iterable.next) {
+        return iterable
+    }
+    return fromValue(iterable)
+}
+
+async function forAwait(iterable, cb) {
+    const iter = getIterator(iterable)
+    while (true) {
+        const { value, done } = await iter.next()
+        if (value) await cb(value)
+        if (done) break
+    }
+    if (iter.return) iter.return()
+}
+
+async function collect(iterable) {
+    let size = 0
+    const buffers = []
+    // This will be easier once `for await ... of` loops are available.
+    await forAwait(iterable, value => {
+        buffers.push(value)
+        size += value.byteLength
+    })
+    const result = new Uint8Array(size)
+    let nextIndex = 0
+    for (const buffer of buffers) {
+        result.set(buffer, nextIndex)
+        nextIndex += buffer.byteLength
+    }
+    return result
 }
