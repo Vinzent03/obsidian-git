@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.24.0](https://github.com/denolehov/obsidian-git/compare/1.23.0...1.24.0) (2022-03-18)
+
+
+### Features
+
+* add show, diff, log as api ([b3a72a4](https://github.com/denolehov/obsidian-git/commit/b3a72a46dfb917b28ca9af7848994668d1846b64))
+
 ## [1.23.0](https://github.com/denolehov/obsidian-git/compare/1.22.0...1.23.0) (2022-03-18)
 
 
