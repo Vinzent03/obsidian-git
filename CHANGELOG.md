@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.23.0](https://github.com/denolehov/obsidian-git/compare/1.22.0...1.23.0) (2022-03-18)
+
+
+### Features
+
+* reworked diff view handling ([be4856b](https://github.com/denolehov/obsidian-git/commit/be4856b0f3a6ecc7f4416f98d9eb05a992b61443)), closes [#202](https://github.com/denolehov/obsidian-git/issues/202) [#203](https://github.com/denolehov/obsidian-git/issues/203)
+
+
+### Bug Fixes
+
+* expand selection width on stagedFileComponent too ([daf8ac7](https://github.com/denolehov/obsidian-git/commit/daf8ac7e4279d6334fd36b4706c85c77d2e8dbbe))
+* highlight staged file on hover ([ef0d3e6](https://github.com/denolehov/obsidian-git/commit/ef0d3e6640712669e8d303d7cf1bff7dbdedbc7d))
+* refresh source control view on exception ([c1eee7b](https://github.com/denolehov/obsidian-git/commit/c1eee7b0d378677dff4da75fc3945b88c3ede7d3)), closes [#183](https://github.com/denolehov/obsidian-git/issues/183)
+
 ## [1.22.0](https://github.com/denolehov/obsidian-git/compare/1.21.2...1.22.0) (2022-03-02)
 
 
