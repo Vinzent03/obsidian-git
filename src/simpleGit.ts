@@ -1,7 +1,8 @@
 import { spawnSync } from "child_process";
 import { FileSystemAdapter } from "obsidian";
 import * as path from "path";
-import simpleGit, * as simple from "simple-git";
+import * as simple from "simple-git";
+import simpleGit, { DefaultLogFields } from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState } from "./types";
@@ -178,7 +179,6 @@ export class SimpleGit extends GitManager {
                     this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`);
                 }
             }
-            console.log(localCommit);
 
             const filesChanged = await this.git.diff([`${localCommit}..${upstreamCommit}`, '--name-only']);
             return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).length;
@@ -237,6 +237,15 @@ export class SimpleGit extends GitManager {
             tracking: status.tracking,
             branches: branches.all,
         };
+    }
+
+    async log(file?: string): Promise<ReadonlyArray<DefaultLogFields>> {
+        const res = await this.git.log({ file: file, }, (err) => this.onError(err));
+        return res.all;
+    }
+
+    async show(commitHash: string, file: string): Promise<string> {
+        return this.git.show([commitHash + ":" + file], (err) => this.onError(err));
     }
 
     async checkout(branch: string): Promise<void> {
@@ -309,6 +318,10 @@ export class SimpleGit extends GitManager {
             return (await this.git.diff(["--cached", "--", filePath]));
         else
             return (await this.git.diff(["--", filePath]));
+    }
+
+    async diff(file: string, commit1: string, commit2: string): Promise<string> {
+        return (await this.git.diff([`${commit1}..${commit2}`, "--", file]));
     }
 
     private isGitInstalled(): boolean {
