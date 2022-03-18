@@ -33,7 +33,7 @@
     "dependencies": {
         "diff2html": "^3.4.13",
         "obsidian-community-lib": "^1.0.1",
-        "simple-git": "^2.21.0",
+        "simple-git": "^3.3.0",
         "supports-color": "^7.2.0"
     },
     "moduleFileExtensions": [

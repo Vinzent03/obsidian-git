@@ -46,8 +46,6 @@
       buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon"), 16));
       setIcon(layoutBtn, showTree ? "feather-list" : "feather-folder", 16);
 
-      refresh();
-
       modifyEvent = plugin.app.vault.on("modify", () => {
         debRefresh();
       });

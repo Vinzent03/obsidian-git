@@ -72,8 +72,7 @@ export default class ObsidianGit extends Plugin {
             id: 'open-diff-view',
             name: 'Open diff view',
             editorCallback: async (editor, view) => {
-                this.app.workspace.createLeafBySplit(view.leaf).setViewState({ type: DIFF_VIEW_CONFIG.type });
-                dispatchEvent(new CustomEvent('diff-update', { detail: { path: view.file.path } }));
+                this.app.workspace.createLeafBySplit(view.leaf).setViewState({ type: DIFF_VIEW_CONFIG.type, state: { staged: false, file: view.file.path } });
             },
         });
 
@@ -232,6 +231,7 @@ export default class ObsidianGit extends Plugin {
                 case "valid":
                     this.gitReady = true;
                     this.setState(PluginState.idle);
+                    dispatchEvent(new CustomEvent('git-source-control-refresh'));
 
                     if (this.settings.autoPullOnBoot) {
                         this.promiseQueue.addTask(() => this.pullChangesFromRemote());

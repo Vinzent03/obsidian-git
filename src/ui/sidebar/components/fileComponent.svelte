@@ -50,13 +50,31 @@
     });
   }
 
-  function showDiff() {
-    workspace
-      .createLeafInParent(workspace.rootSplit, 0)
-      .setViewState({ type: DIFF_VIEW_CONFIG.type });
-    dispatchEvent(
-      new CustomEvent("diff-update", { detail: { path: change.path } })
-    );
+  function showDiff(event: MouseEvent) {
+    const leaf = workspace.activeLeaf;
+
+    if (
+      leaf &&
+      !leaf.getViewState().pinned &&
+      !(event.ctrlKey || event.getModifierState("Meta"))
+    ) {
+      leaf.setViewState({
+        type: DIFF_VIEW_CONFIG.type,
+        state: {
+          file: change.path,
+          staged: false,
+        },
+      });
+    } else {
+      workspace.createLeafInParent(workspace.rootSplit, 0).setViewState({
+        type: DIFF_VIEW_CONFIG.type,
+        active: true,
+        state: {
+          file: change.path,
+          staged: false,
+        },
+      });
+    }
   }
 
   function discard() {
@@ -80,16 +98,25 @@
 </script>
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
-<main on:mouseover={hover} on:click={open} on:dblclick={showDiff} on:focus>
+<main on:mouseover={hover} on:click|self={showDiff} on:focus>
   <span
     class="path"
     aria-label-position={side}
     aria-label={change.path.split("/").last() != change.path ? change.path : ""}
+    on:click|self={showDiff}
   >
     {change.path.split("/").last().replace(".md", "")}
   </span>
   <div class="tools">
     <div class="buttons">
+      {#if view.app.vault.getAbstractFileByPath(change.path)}
+        <div
+          data-icon="go-to-file"
+          aria-label="Open File"
+          bind:this={buttons[1]}
+          on:click={open}
+        />
+      {/if}
       <div
         data-icon="feather-skip-back"
         aria-label="Discard"
@@ -131,7 +158,7 @@
       color: var(--text-normal);
       transition: all 200ms;
     }
-    
+
     .tools {
       display: flex;
       align-items: center;

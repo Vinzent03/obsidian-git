@@ -304,9 +304,11 @@ export class SimpleGit extends GitManager {
         this.setGitInstance();
     }
 
-    async getDiffString(filePath: string): Promise<string> {
-        return (await this.git.diff([filePath]));
-
+    async getDiffString(filePath: string, stagedChanges = false): Promise<string> {
+        if (stagedChanges)
+            return (await this.git.diff(["--cached", "--", filePath]));
+        else
+            return (await this.git.diff(["--", filePath]));
     }
 
     private isGitInstalled(): boolean {
