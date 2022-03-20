@@ -66,3 +66,8 @@ export interface TreeItem {
     statusResult?: FileStatusResult;
     children?: TreeItem[];
 }
+
+export interface DiffViewState {
+    staged: boolean,
+    file: string,
+}
