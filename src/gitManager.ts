@@ -61,6 +61,8 @@ export abstract class GitManager {
 
     abstract updateGitPath(gitPath: string): void;
 
+    abstract updateBasePath(basePath: string): void;
+
     abstract getDiffString(filePath: string): Promise<string>;
 
 

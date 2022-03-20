@@ -304,6 +304,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     plugin.gitManager.updateGitPath(value || "git");
                 });
             });
+
+        new Setting(containerEl)
+            .setName("Base Path")
+            .addText((cb) => {
+                cb.setValue(plugin.settings.basePath);
+                cb.onChange((value) => {
+                    plugin.settings.basePath = value;
+                    plugin.saveSettings();
+                    plugin.gitManager.updateBasePath(value || "");
+                });
+            });
         const info = containerEl.createDiv();
         info.setAttr("align", "center");
         info.setText("Debugging and logging:\nYou can always see the logs of this and every other plugin by opening the console with");
