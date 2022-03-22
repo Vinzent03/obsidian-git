@@ -39,6 +39,7 @@
   let createEvent: EventRef;
   let renameEvent: EventRef;
 
+  addEventListener("git-refresh", refresh);
   //This should go in the onMount callback, for some reason it doesn't fire though
   //setImmediate's callback will execute after the current event loop finishes.
   plugin.app.workspace.onLayoutReady(() =>
@@ -59,8 +60,6 @@
         debRefresh();
       });
 
-      addEventListener('git-source-control-refresh', refresh);
-
       plugin.registerEvent(modifyEvent);
       plugin.registerEvent(deleteEvent);
       plugin.registerEvent(createEvent);
@@ -73,22 +72,20 @@
     plugin.app.metadataCache.offref(deleteEvent);
     plugin.app.metadataCache.offref(createEvent);
     plugin.app.metadataCache.offref(renameEvent);
-    removeEventListener('git-source-control-refresh', refresh);
-    
+    removeEventListener("git-refresh", refresh);
   });
 
   function commit() {
     loading = true;
-    plugin.gitManager.commit(commitMessage).then(() => {
-      if (commitMessage !== plugin.settings.commitMessage) {
-        commitMessage = "";
-      }
-    }).finally(refresh);
+    plugin.gitManager
+      .commit(commitMessage)
+      .then(() => {
+        if (commitMessage !== plugin.settings.commitMessage) {
+          commitMessage = "";
+        }
+      })
+      .finally(refresh);
   }
-
-  addEventListener("git-refresh", (_) => {
-    refresh();
-  });
 
   async function refresh() {
     loading = true;

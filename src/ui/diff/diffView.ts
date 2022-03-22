@@ -13,7 +13,7 @@ export default class DiffView extends ItemView {
     constructor(leaf: WorkspaceLeaf, private plugin: ObsidianGit) {
         super(leaf);
         this.parser = new DOMParser();
-        addEventListener('git-source-control-refresh', this.refresh.bind(this));
+        addEventListener('git-refresh', this.refresh.bind(this));
     }
 
     getViewType(): string {
@@ -40,7 +40,7 @@ export default class DiffView extends ItemView {
     }
 
     onClose(): Promise<void> {
-        removeEventListener('git-source-control-refresh', this.refresh.bind(this));
+        removeEventListener('git-refresh', this.refresh.bind(this));
         return super.onClose();
     }
 

@@ -65,6 +65,9 @@ export default class ObsidianGit extends Plugin {
                     });
                 }
                 this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type).first());
+
+                dispatchEvent(new CustomEvent("git-refresh"));
+
             },
         });
 
@@ -231,7 +234,7 @@ export default class ObsidianGit extends Plugin {
                 case "valid":
                     this.gitReady = true;
                     this.setState(PluginState.idle);
-                    dispatchEvent(new CustomEvent('git-source-control-refresh'));
+                    dispatchEvent(new CustomEvent('git-refresh'));
 
                     if (this.settings.autoPullOnBoot) {
                         this.promiseQueue.addTask(() => this.pullChangesFromRemote());
@@ -308,7 +311,7 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
-        dispatchEvent(new CustomEvent('git-source-control-refresh'));
+        dispatchEvent(new CustomEvent('git-refresh'));
         this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
@@ -374,7 +377,7 @@ export default class ObsidianGit extends Plugin {
         } else {
             this.displayMessage("No changes to commit");
         }
-        dispatchEvent(new CustomEvent('git-source-control-refresh'));
+        dispatchEvent(new CustomEvent('git-refresh'));
 
         this.setState(PluginState.idle);
         return true;
