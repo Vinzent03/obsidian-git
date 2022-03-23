@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.24.1](https://github.com/denolehov/obsidian-git/compare/1.24.0...1.24.1) (2022-03-23)
+
+
+### Bug Fixes
+
+* :adhesive_bandage: More specific CSS selectors for the diff-view ([c0c9a38](https://github.com/denolehov/obsidian-git/commit/c0c9a381f2c4c0527674e4e215e2418c71d68b73))
+* refresh source control view on first open ([6e75300](https://github.com/denolehov/obsidian-git/commit/6e75300424eb8d78f1a4c79caf830ce5d5fd1727))
+
 ## [1.24.0](https://github.com/denolehov/obsidian-git/compare/1.23.0...1.24.0) (2022-03-18)
 
 
