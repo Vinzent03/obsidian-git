@@ -20,9 +20,14 @@ export class SimpleGit extends GitManager {
         if (this.isGitInstalled()) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const path = adapter.getBasePath();
-            const extraPath = this.plugin.settings.basePath || ""
+            let extraPath = ""
+            // Because the basePath setting is a relative path, a leading `/` must
+            // be appended before concatenating with the path.
+            if (this.plugin.settings.basePath){
+              extraPath = "/" + this.plugin.settings.basePath;
+            }
             this.git = simpleGit({
-                baseDir: path + "/" + extraPath,
+                baseDir: path + extraPath,
                 binary: this.plugin.settings.gitPath || undefined,
                 config: ["core.quotepath=off"]
             });
