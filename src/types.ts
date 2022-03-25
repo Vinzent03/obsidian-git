@@ -22,6 +22,7 @@ export interface ObsidianGitSettings {
      */
     mergeOnPull?: boolean;
     refreshSourceControl: boolean;
+    basePath: string;
 }
 
 export type SyncMethod = 'rebase' | 'merge' | 'reset';
