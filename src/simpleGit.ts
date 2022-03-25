@@ -1,6 +1,7 @@
 import { spawnSync } from "child_process";
 import { FileSystemAdapter } from "obsidian";
 import * as path from "path";
+import { sep } from "path";
 import * as simple from "simple-git";
 import simpleGit, { DefaultLogFields } from "simple-git";
 import { GitManager } from "./gitManager";
@@ -20,11 +21,11 @@ export class SimpleGit extends GitManager {
         if (this.isGitInstalled()) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const path = adapter.getBasePath();
-            let extraPath = ""
+            let extraPath = "";
             // Because the basePath setting is a relative path, a leading `/` must
             // be appended before concatenating with the path.
-            if (this.plugin.settings.basePath){
-              extraPath = "/" + this.plugin.settings.basePath;
+            if (this.plugin.settings.basePath) {
+                extraPath = sep + this.plugin.settings.basePath;
             }
             this.git = simpleGit({
                 baseDir: path + extraPath,
