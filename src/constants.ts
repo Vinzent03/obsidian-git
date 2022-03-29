@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     autoBackupAfterFileChange: false,
     treeStructure: false,
     refreshSourceControl: true,
+    basePath: "",
 };
 
 export const GIT_VIEW_CONFIG = {

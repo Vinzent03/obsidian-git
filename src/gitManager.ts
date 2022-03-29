@@ -62,6 +62,8 @@ export abstract class GitManager {
 
     abstract updateGitPath(gitPath: string): void;
 
+    abstract updateBasePath(basePath: string): void;
+
     abstract getDiffString(filePath: string, stagedChanges: boolean): Promise<string>;
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
