@@ -16,6 +16,8 @@ export interface ObsidianGitSettings {
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
+    username: string;
+    password: string;
 
     /**
      * @deprecated Migrated to `syncMethod = 'merge'`

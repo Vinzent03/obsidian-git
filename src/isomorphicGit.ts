@@ -1,5 +1,5 @@
 // TODO: Use different FS for mobile, maybe custom one?
-import git from "isomorphic-git/index.umd.min";
+import git from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 
 
@@ -85,9 +85,9 @@ export class IsomorphicGit extends GitManager {
             fs: new MyAdapter(this.app.vault),
             dir: "",
             author: {
-                name: "warrenalphonso",
+                name: this.plugin.settings.username,
             },
-            onAuth: () => ({ username: "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" }),
+            onAuth: () => ({ username: this.plugin.settings.password }),
         };
     }
 

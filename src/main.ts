@@ -392,7 +392,7 @@ export default class ObsidianGit extends Plugin {
             this.handleConflict(status.conflicted);
             return false;
         } else {
-            console.log("Pushign....")
+            console.log("Pushing....")
             const pushedFiles = await this.gitManager.push();
             console.log("Pushed!", pushedFiles)
             this.lastUpdate = Date.now();

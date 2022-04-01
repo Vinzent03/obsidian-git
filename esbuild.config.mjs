@@ -25,7 +25,7 @@ esbuild.build({
     logLevel: "info",
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
-    platform: 'browser',
+    platform: 'node',
     plugins: [sveltePlugin({
         compileOptions: {
             css: true,

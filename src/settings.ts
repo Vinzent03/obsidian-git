@@ -308,8 +308,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Username")
             .addText(cb => {
-                cb.setValue(window.localStorage.getItem(plugin.manifest.id + ":username"));
-                cb.onChange(value => window.localStorage.setItem(plugin.manifest.id + ":username", value));
+                cb.setValue(plugin.settings.username)
+                cb.onChange((value) => {
+                    plugin.settings.username = value
+                    plugin.saveSettings()
+                    new Notice("Saved username");
+                })
             });
 
         let password: string;
@@ -320,15 +324,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 cb.inputEl.autocapitalize = "off";
                 cb.inputEl.autocomplete = "off";
                 cb.inputEl.spellcheck = false;
-                cb.onChange(value => password = value);
-            });
-        passwordSetting.addButton(cb => {
-            cb.setButtonText("Set")
-                .setWarning().onClick((_) => {
-                    window.localStorage.setItem(plugin.manifest.id + ":password", password);
+                cb.onChange((value) => {
+                    plugin.settings.password = value
+                    plugin.saveSettings()
                     new Notice("Saved token");
                 });
-        });
+            });
         const info = containerEl.createDiv();
         info.setAttr("align", "center");
         info.setText("Debugging and logging:\nYou can always see the logs of this and every other plugin by opening the console with");
