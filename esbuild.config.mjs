@@ -25,13 +25,16 @@ esbuild.build({
     logLevel: "info",
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
-    platform: 'node',
-    plugins: [sveltePlugin({
-        compileOptions: {
-            css: true,
-            dev: !prod,
-        },
-        preprocess: autoPreprocess(),
-    })],
+    platform: 'browser',
+    plugins: [
+        sveltePlugin({
+            compileOptions: {
+                css: true,
+                dev: !prod,
+            },
+            preprocess: autoPreprocess(),
+        }),
+    ],
+    inject: ["polyfill_buffer.js"],
     outfile: 'main.js',
 }).catch(() => process.exit(1));
