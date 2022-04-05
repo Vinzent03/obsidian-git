@@ -19,11 +19,15 @@
   let changesOpen = true;
   let stagedOpen = true;
   let loading = true;
-  const debRefresh = debounce(() => {
-    if (plugin.settings.refreshSourceControl) {
-      refresh();
-    }
-  }, 1000);
+  const debRefresh = debounce(
+    () => {
+      if (plugin.settings.refreshSourceControl) {
+        refresh();
+      }
+    },
+    7000,
+    true
+  );
 
   let showTree = plugin.settings.treeStructure;
   let layoutBtn: HTMLElement;
