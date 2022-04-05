@@ -306,8 +306,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName("Git Repository Path")
-            .setDesc("Sets the relative path to the git repository.")
+            .setName("Base Path (Git repository path)")
+            .setDesc("Sets the relative path from where to execute the git binary. Mostly used to set the path to the git repository.")
             .addText((cb) => {
                 cb.setValue(plugin.settings.basePath);
                 cb.onChange((value) => {
