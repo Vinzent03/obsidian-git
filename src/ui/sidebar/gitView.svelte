@@ -34,7 +34,7 @@
   $: {
     if (layoutBtn) {
       layoutBtn.empty();
-      setIcon(layoutBtn, showTree ? "feather-list" : "feather-folder", 16);
+      setIcon(layoutBtn, showTree ? "list" : "folder", 16);
     }
   }
 
@@ -49,7 +49,7 @@
   plugin.app.workspace.onLayoutReady(() =>
     setImmediate(() => {
       buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon"), 16));
-      setIcon(layoutBtn, showTree ? "feather-list" : "feather-folder", 16);
+      setIcon(layoutBtn, showTree ? "list" : "folder", 16);
 
       modifyEvent = plugin.app.vault.on("modify", () => {
         debRefresh();
@@ -134,7 +134,7 @@
     <div class="group">
       <div
         id="commit-btn"
-        data-icon="feather-check"
+        data-icon="check"
         class="nav-action-button"
         aria-label="Commit"
         bind:this={buttons[0]}
@@ -143,7 +143,7 @@
       <div
         id="stage-all"
         class="nav-action-button"
-        data-icon="feather-plus-circle"
+        data-icon="plus-circle"
         aria-label="Stage all"
         bind:this={buttons[1]}
         on:click={stageAll}
@@ -151,7 +151,7 @@
       <div
         id="unstage-all"
         class="nav-action-button"
-        data-icon="feather-minus-circle"
+        data-icon="minus-circle"
         aria-label="Unstage all"
         bind:this={buttons[2]}
         on:click={unstageAll}
@@ -159,7 +159,7 @@
       <div
         id="push"
         class="nav-action-button"
-        data-icon="feather-upload"
+        data-icon="upload"
         aria-label="Push"
         bind:this={buttons[3]}
         on:click={push}
@@ -167,7 +167,7 @@
       <div
         id="pull"
         class="nav-action-button"
-        data-icon="feather-download"
+        data-icon="download"
         aria-label="Pull"
         bind:this={buttons[4]}
         on:click={pull}
@@ -188,7 +188,7 @@
       id="refresh"
       class="nav-action-button"
       class:loading
-      data-icon="feather-refresh-cw"
+      data-icon="refresh-cw"
       aria-label="Refresh"
       bind:this={buttons[6]}
       on:click={refresh}

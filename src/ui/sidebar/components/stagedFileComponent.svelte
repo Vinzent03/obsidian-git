@@ -99,7 +99,7 @@
         />
       {/if}
       <div
-        data-icon="feather-minus"
+        data-icon="minus"
         aria-label="Unstage"
         bind:this={buttons[0]}
         on:click={unstage}

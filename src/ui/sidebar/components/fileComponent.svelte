@@ -118,13 +118,13 @@
         />
       {/if}
       <div
-        data-icon="feather-skip-back"
+        data-icon="skip-back"
         aria-label="Discard"
         bind:this={buttons[0]}
         on:click={discard}
       />
       <div
-        data-icon="feather-plus"
+        data-icon="plus"
         aria-label="Stage"
         bind:this={buttons[2]}
         on:click={stage}

@@ -11,7 +11,6 @@ import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
 import { ObsidianGitSettings, PluginState } from "./types";
 import DiffView from "./ui/diff/diffView";
-import addIcons from "./ui/icons";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
 
@@ -28,18 +27,18 @@ export default class ObsidianGit extends Plugin {
     conflictOutputFile = "conflict-files-obsidian-git.md";
     autoBackupDebouncer: Debouncer<undefined>;
     onFileModifyEventRef: EventRef;
+    offlineMode: boolean = false;
 
     setState(state: PluginState) {
         this.state = state;
         this.statusBar?.display();
     }
 
+
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
         this.migrateSettings();
-
-        addIcons();
 
         this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
@@ -48,6 +47,7 @@ export default class ObsidianGit extends Plugin {
         this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {
             return new DiffView(leaf, this);
         });
+
         (this.app.workspace as any).registerHoverLinkSource(GIT_VIEW_CONFIG.type, {
             display: 'Git View',
             defaultMod: true,
@@ -398,7 +398,9 @@ export default class ObsidianGit extends Plugin {
             const pushedFiles = await this.gitManager.push();
             this.lastUpdate = Date.now();
             this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
+            this.offlineMode = false;
             this.setState(PluginState.idle);
+
             return true;
         }
     }
@@ -407,6 +409,7 @@ export default class ObsidianGit extends Plugin {
     /// Returns whether the pull added a commit or not.
     async pull(): Promise<boolean> {
         const pulledFilesLength = await this.gitManager.pull();
+        this.offlineMode = false;
 
         if (pulledFilesLength > 0) {
             this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
@@ -585,10 +588,10 @@ export default class ObsidianGit extends Plugin {
 
         console.log(`git obsidian message: ${message}`);
     }
-    displayError(message: any, timeout: number = 0): void {
+    displayError(message: any, timeout: number = 10 * 1000): void {
         // Some errors might not be of type string
         message = message.toString();
-        new Notice(message, 15 * 1000);
+        new Notice(message, timeout);
         console.log(`git obsidian error: ${message}`);
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
     }

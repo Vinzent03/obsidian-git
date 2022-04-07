@@ -350,8 +350,18 @@ export class SimpleGit extends GitManager {
 
     private onError(error: Error | null) {
         if (error) {
-            this.plugin.displayError(error.message);
-            this.plugin.setState(PluginState.idle);
+            let networkFailure = error.message.contains("Could not resolve host");
+            if (!networkFailure) {
+                this.plugin.displayError(error.message);
+                this.plugin.setState(PluginState.idle);
+            } else if (!this.plugin.offlineMode) {
+                this.plugin.displayError("Git: Going into offline mode. Future network errors will no longer be displayed.", 2000);
+            }
+
+            if (networkFailure) {
+                this.plugin.offlineMode = true;
+                this.plugin.setState(PluginState.idle);
+            }
         }
     }
 }
