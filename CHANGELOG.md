@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.25.0](https://github.com/denolehov/obsidian-git/compare/1.24.1...1.25.0) (2022-04-07)
+
+
+### Features
+
+* custom git repository root ([#209](https://github.com/denolehov/obsidian-git/issues/209)) ([4157e42](https://github.com/denolehov/obsidian-git/commit/4157e42fa6cbd0f69d8ed03169c5bc836229d6d4))
+* offline mode ([6989ba4](https://github.com/denolehov/obsidian-git/commit/6989ba4fd7ce44bfac5c6f7479cf41ef8fcb5de3)), closes [#211](https://github.com/denolehov/obsidian-git/issues/211)
+
+
+### Bug Fixes
+
+* refresh source control view less frequently ([b90b1a5](https://github.com/denolehov/obsidian-git/commit/b90b1a5fa596142f42698727dd76cadd97e9bdc6))
+
 ### [1.24.1](https://github.com/denolehov/obsidian-git/compare/1.24.0...1.24.1) (2022-03-23)
 
 
