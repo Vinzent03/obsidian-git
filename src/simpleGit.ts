@@ -90,7 +90,36 @@ export class SimpleGit extends GitManager {
     async commitAll(message: string): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
-            await this.git.subModule(["foreach", "--recursive", `git add -A && if [ ! -z "$(git status --porcelain)" ]; then git commit -m "${await this.formatCommitMessage(message)}"; fi`], (err) => this.onError(err));
+            this.git.outputHandler(async (x, y, z) => {
+                let body = ""
+                let root = this.app.vault.adapter.basePath
+                y.on('data', (chunk) => {
+                    body += chunk.toString('utf8')
+                })
+                y.on('end', async () => {
+                    let m = body.split('\n')
+                    let l = m.map(x => {
+                        let a = x.match(/'([^']*)'/)
+                        if (a != undefined) {
+                            if (x.startsWith("Entering")) {
+                                return root + "/" + a[1] + "/"
+                            }
+                        }
+                    })
+
+                    l.reverse()
+                    l.forEach(async (x) => {
+                        if (x != undefined) {
+                            await this.git.cwd({path: x, root: false}).add("-A", (err) => this.onError(err))
+                            await this.git.cwd({path: x, root: false}).commit(await this.formatCommitMessage(message), (err) => this.onError(err))
+                        }
+                    })
+                })
+            })
+            
+            await this.git.subModule(["foreach", "--recursive", ''])
+
+            this.git.outputHandler(() => {})
         }
         this.plugin.setState(PluginState.add);
 
