@@ -92,7 +92,7 @@ export class SimpleGit extends GitManager {
             this.plugin.setState(PluginState.commit);
             this.git.outputHandler(async (x, y, z) => {
                 let body = ""
-                let root = this.app.vault.adapter.basePath
+                let root = this.app.vault.adapter.basePath + (this.plugin.settings.basePath ? sep + this.plugin.settings.basePath : "")
                 y.on('data', (chunk) => {
                     body += chunk.toString('utf8')
                 })
@@ -101,9 +101,7 @@ export class SimpleGit extends GitManager {
                     let l = m.map(x => {
                         let a = x.match(/'([^']*)'/)
                         if (a != undefined) {
-                            if (x.startsWith("Entering")) {
-                                return root + "/" + a[1] + "/"
-                            }
+                            return root + sep + a[1] + sep
                         }
                     })
 
