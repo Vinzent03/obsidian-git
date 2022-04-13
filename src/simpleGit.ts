@@ -90,26 +90,26 @@ export class SimpleGit extends GitManager {
     async commitAll(message: string): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
-            this.git.outputHandler(async (x, y, z) => {
+            this.git.outputHandler(async (cmd, stdout, stderr) => {
                 let body = ""
                 let root = this.app.vault.adapter.basePath + (this.plugin.settings.basePath ? sep + this.plugin.settings.basePath : "")
-                y.on('data', (chunk) => {
+                stdout.on('data', (chunk) => {
                     body += chunk.toString('utf8')
                 })
-                y.on('end', async () => {
-                    let m = body.split('\n')
-                    let l = m.map(x => {
-                        let a = x.match(/'([^']*)'/)
-                        if (a != undefined) {
-                            return root + sep + a[1] + sep
+                stdout.on('end', async () => {
+                    let submods = body.split('\n')
+                    submods = submods.map(i => {
+                        let submod = i.match(/'([^']*)'/)
+                        if (submod != undefined) {
+                            return root + sep + submod[1] + sep
                         }
                     })
 
-                    l.reverse()
-                    l.forEach(async (x) => {
-                        if (x != undefined) {
-                            await this.git.cwd({path: x, root: false}).add("-A", (err) => this.onError(err))
-                            await this.git.cwd({path: x, root: false}).commit(await this.formatCommitMessage(message), (err) => this.onError(err))
+                    submods.reverse()
+                    submods.forEach(async (i) => {
+                        if (i != undefined) {
+                            await this.git.cwd({path: i, root: false}).add("-A", (err) => this.onError(err))
+                            await this.git.cwd({path: i, root: false}).commit(await this.formatCommitMessage(message), (err) => this.onError(err))
                         }
                     })
                 })
