@@ -1,4 +1,5 @@
 import { App } from "obsidian";
+import { DefaultLogFields } from "simple-git";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, Status, TreeItem } from "./types";
 
@@ -61,8 +62,18 @@ export abstract class GitManager {
 
     abstract updateGitPath(gitPath: string): void;
 
-    abstract getDiffString(filePath: string): Promise<string>;
+    abstract updateBasePath(basePath: string): void;
 
+    abstract getDiffString(filePath: string, stagedChanges: boolean): Promise<string>;
+
+    // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
+    abstract diff(file: string, commit1: string, commit2: string): Promise<string>;
+
+    // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
+    abstract log(file: string): Promise<ReadonlyArray<DefaultLogFields>>;
+
+    // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
+    abstract show(commitHash: string, file: string): Promise<string>;
 
 
     getTreeStructure(children: FileStatusResult[], beginLength: number = 0): TreeItem[] {

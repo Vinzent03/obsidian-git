@@ -316,8 +316,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 })
             });
 
-        let password: string;
-        const passwordSetting = new Setting(containerEl)
+        new Setting(containerEl)
             .setName("Password/Personal access token")
             .setDesc("Type in your password and press on the button to set it. You won't be able to see it again.")
             .addText(cb => {
@@ -330,6 +329,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     new Notice("Saved token");
                 });
             });
+
+        new Setting(containerEl)
+            .setName("Base Path (Git repository path)")
+            .setDesc("Sets the relative path from where to execute the git binary. Mostly used to set the path to the git repository.")
+            .addText((cb) => {
+                cb.setValue(plugin.settings.basePath);
+                cb.onChange((value) => {
+                    plugin.settings.basePath = value;
+                    plugin.saveSettings();
+                    plugin.gitManager.updateBasePath(value || "");
+                });
+            });
+
         const info = containerEl.createDiv();
         info.setAttr("align", "center");
         info.setText("Debugging and logging:\nYou can always see the logs of this and every other plugin by opening the console with");

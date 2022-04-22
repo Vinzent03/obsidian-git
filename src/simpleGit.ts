@@ -1,7 +1,9 @@
 import { spawnSync } from "child_process";
 import { FileSystemAdapter } from "obsidian";
 import * as path from "path";
-import simpleGit, * as simple from "simple-git";
+import { sep } from "path";
+import * as simple from "simple-git";
+import simpleGit, { DefaultLogFields } from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState } from "./types";
@@ -19,8 +21,14 @@ export class SimpleGit extends GitManager {
         if (this.isGitInstalled()) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const path = adapter.getBasePath();
+            let extraPath = "";
+            // Because the basePath setting is a relative path, a leading `/` must
+            // be appended before concatenating with the path.
+            if (this.plugin.settings.basePath) {
+                extraPath = sep + this.plugin.settings.basePath;
+            }
             this.git = simpleGit({
-                baseDir: path,
+                baseDir: path + extraPath,
                 binary: this.plugin.settings.gitPath || undefined,
                 config: ["core.quotepath=off"]
             });
@@ -80,7 +88,47 @@ export class SimpleGit extends GitManager {
     async commitAll(message: string): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
-            await this.git.subModule(["foreach", "--recursive", `git add -A && if [ ! -z "$(git status --porcelain)" ]; then git commit -m "${await this.formatCommitMessage(message)}"; fi`], (err) => this.onError(err));
+
+            await new Promise<void>(async (resolve, reject) => {
+
+                this.git.outputHandler(async (cmd, stdout, stderr, args) => {
+
+                    // Do not run this handler on other commands
+                    if (!(args.contains("submodule") && args.contains("foreach"))) return;
+
+                    let body = "";
+                    let root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? sep + this.plugin.settings.basePath : "");
+                    stdout.on('data', (chunk) => {
+                        body += chunk.toString('utf8');
+                    });
+                    stdout.on('end', async () => {
+                        let submods = body.split('\n');
+
+                        // Remove words like `Entering` in front of each line and filter empty lines
+                        submods = submods.map(i => {
+                            let submod = i.match(/'([^']*)'/);
+                            if (submod != undefined) {
+                                return root + sep + submod[1] + sep;
+                            }
+                        });
+
+                        submods.reverse();
+                        for (const item of submods) {
+                            // Catch empty lines
+                            if (item != undefined) {
+                                await this.git.cwd({ path: item, root: false }).add("-A", (err) => this.onError(err));
+                                await this.git.cwd({ path: item, root: false }).commit(await this.formatCommitMessage(message), (err) => this.onError(err));
+                            }
+                        }
+                        resolve();
+                    });
+                });
+
+
+                await this.git.subModule(["foreach", "--recursive", '']);
+                this.git.outputHandler(() => { });
+            });
+
         }
         this.plugin.setState(PluginState.add);
 
@@ -176,7 +224,6 @@ export class SimpleGit extends GitManager {
                     this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`);
                 }
             }
-            console.log(localCommit);
 
             const filesChanged = await this.git.diff([`${localCommit}..${upstreamCommit}`, '--name-only']);
             return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).length;
@@ -235,6 +282,15 @@ export class SimpleGit extends GitManager {
             tracking: status.tracking,
             branches: branches.all,
         };
+    }
+
+    async log(file?: string): Promise<ReadonlyArray<DefaultLogFields>> {
+        const res = await this.git.log({ file: file, }, (err) => this.onError(err));
+        return res.all;
+    }
+
+    async show(commitHash: string, file: string): Promise<string> {
+        return this.git.show([commitHash + ":" + file], (err) => this.onError(err));
     }
 
     async checkout(branch: string): Promise<void> {
@@ -302,9 +358,19 @@ export class SimpleGit extends GitManager {
         this.setGitInstance();
     }
 
-    async getDiffString(filePath: string): Promise<string> {
-        return (await this.git.diff([filePath]));
+    updateBasePath(basePath: string) {
+        this.setGitInstance();
+    }
 
+    async getDiffString(filePath: string, stagedChanges = false): Promise<string> {
+        if (stagedChanges)
+            return (await this.git.diff(["--cached", "--", filePath]));
+        else
+            return (await this.git.diff(["--", filePath]));
+    }
+
+    async diff(file: string, commit1: string, commit2: string): Promise<string> {
+        return (await this.git.diff([`${commit1}..${commit2}`, "--", file]));
     }
 
     private isGitInstalled(): boolean {
@@ -322,8 +388,18 @@ export class SimpleGit extends GitManager {
 
     private onError(error: Error | null) {
         if (error) {
-            this.plugin.displayError(error.message);
-            this.plugin.setState(PluginState.idle);
+            let networkFailure = error.message.contains("Could not resolve host");
+            if (!networkFailure) {
+                this.plugin.displayError(error.message);
+                this.plugin.setState(PluginState.idle);
+            } else if (!this.plugin.offlineMode) {
+                this.plugin.displayError("Git: Going into offline mode. Future network errors will no longer be displayed.", 2000);
+            }
+
+            if (networkFailure) {
+                this.plugin.offlineMode = true;
+                this.plugin.setState(PluginState.idle);
+            }
         }
     }
 }

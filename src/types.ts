@@ -24,6 +24,7 @@ export interface ObsidianGitSettings {
      */
     mergeOnPull?: boolean;
     refreshSourceControl: boolean;
+    basePath: string;
 }
 
 export type SyncMethod = 'rebase' | 'merge' | 'reset';
@@ -118,4 +119,9 @@ export interface TreeItem {
     title: string;
     statusResult?: FileStatusResult;
     children?: TreeItem[];
+}
+
+export interface DiffViewState {
+    staged: boolean,
+    file: string,
 }
