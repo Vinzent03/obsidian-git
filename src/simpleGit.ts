@@ -90,7 +90,47 @@ export class SimpleGit extends GitManager {
     async commitAll(message: string): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
-            await this.git.subModule(["foreach", "--recursive", `git add -A && if [ ! -z "$(git status --porcelain)" ]; then git commit -m "${await this.formatCommitMessage(message)}"; fi`], (err) => this.onError(err));
+
+            await new Promise<void>(async (resolve, reject) => {
+
+                this.git.outputHandler(async (cmd, stdout, stderr, args) => {
+
+                    // Do not run this handler on other commands
+                    if (!(args.contains("submodule") && args.contains("foreach"))) return;
+
+                    let body = "";
+                    let root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? sep + this.plugin.settings.basePath : "");
+                    stdout.on('data', (chunk) => {
+                        body += chunk.toString('utf8');
+                    });
+                    stdout.on('end', async () => {
+                        let submods = body.split('\n');
+
+                        // Remove words like `Entering` in front of each line and filter empty lines
+                        submods = submods.map(i => {
+                            let submod = i.match(/'([^']*)'/);
+                            if (submod != undefined) {
+                                return root + sep + submod[1] + sep;
+                            }
+                        });
+
+                        submods.reverse();
+                        for (const item of submods) {
+                            // Catch empty lines
+                            if (item != undefined) {
+                                await this.git.cwd({ path: item, root: false }).add("-A", (err) => this.onError(err));
+                                await this.git.cwd({ path: item, root: false }).commit(await this.formatCommitMessage(message), (err) => this.onError(err));
+                            }
+                        }
+                        resolve();
+                    });
+                });
+
+
+                await this.git.subModule(["foreach", "--recursive", '']);
+                this.git.outputHandler(() => { });
+            });
+
         }
         this.plugin.setState(PluginState.add);
 
