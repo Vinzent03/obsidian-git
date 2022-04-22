@@ -192,7 +192,7 @@ export class IsomorphicGit extends GitManager {
                 ...this.repo,
                 http: myHTTP,
                 onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = `Cloning progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
+                    (progressNotice as any).noticeEl.innerText = `Pulling progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
                 }
             })
             progressNotice.hide()
