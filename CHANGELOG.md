@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.1](https://github.com/denolehov/obsidian-git/compare/1.25.0...1.25.1) (2022-04-22)
+
+
+### Bug Fixes
+
+* recursive submodules ([#217](https://github.com/denolehov/obsidian-git/issues/217)) ([98f566f](https://github.com/denolehov/obsidian-git/commit/98f566ffa29bb99dde44615f52fd352c099bd7f4))
+
 ## [1.25.0](https://github.com/denolehov/obsidian-git/compare/1.24.1...1.25.0) (2022-04-07)
 
 
