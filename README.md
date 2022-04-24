@@ -40,9 +40,9 @@ The Source Control View allows you to stage and commit individual files. It can 
 
 ### Contact
 
-If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@evrwhr` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
+If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@Vinadon` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
 
-This plugin was initial developed by [denolehov](https://github.com/denolehov). Since March, it's mainly [Vinzent03](https://github.com/Vinzent03) who is developing on this plugin.
+This plugin was initial developed by [denolehov](https://github.com/denolehov). Since March 2021, it is [Vinzent03](https://github.com/Vinzent03) who is developing on this plugin.
 
 > If you want to support me ([Vinzent03](https://github.com/Vinzent03)) you can support me on Ko-fi
 <br>
