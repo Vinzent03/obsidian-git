@@ -222,6 +222,9 @@ export default class ObsidianGit extends Plugin {
     async init(): Promise<void> {
         try {
             this.gitManager = new SimpleGit(this);
+            if (this.gitManager instanceof SimpleGit) {
+                await this.gitManager.setGitInstance();
+            }
 
             const result = await this.gitManager.checkRequirements();
             switch (result) {

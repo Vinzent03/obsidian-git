@@ -306,10 +306,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName("Base Path (Git repository path)")
-            .setDesc("Sets the relative path from where to execute the git binary. Mostly used to set the path to the git repository.")
+            .setName("Custom base path (Git repository path)")
+            .setDesc(`
+            Sets the relative path to the vault from which the Git binary should be executed.
+             Mostly used to set the path to the Git repository, which is only required if the Git repository is below the vault root directory. Use "\\" instead of "/" on Windows.
+            `)
             .addText((cb) => {
                 cb.setValue(plugin.settings.basePath);
+                cb.setPlaceholder("directory/directory-with-git-repo");
                 cb.onChange((value) => {
                     plugin.settings.basePath = value;
                     plugin.saveSettings();
