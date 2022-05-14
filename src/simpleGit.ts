@@ -46,29 +46,34 @@ export class SimpleGit extends GitManager {
     }> {
         this.plugin.setState(PluginState.status);
         const status = await this.git.status((err) => this.onError(err));
-
         this.plugin.setState(PluginState.idle);
         return {
             changed: status.files.filter((e) => e.working_dir !== " ").map((e) => {
-                const res = this.formatPath(e.path);
+                const res = this.formatPath(e);
                 e.path = res.path;
                 e.from = res.from;
                 e.working_dir = e.working_dir === "?" ? "U" : e.working_dir;
                 return e;
             }),
             staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {
-                const res = this.formatPath(e.path, e.index === "R");
+                const res = this.formatPath(e, e.index === "R");
                 e.path = res.path;
                 e.from = res.from;
                 return e;
             }),
-            conflicted: status.conflicted.map((e) => this.formatPath(e).path),
+            conflicted: status.conflicted.map((e) => this.formatPath({
+                path: e,
+                from: undefined,
+                index: undefined,
+                working_dir: undefined
+            }).path),
         };
     }
 
     //Remove wrong `"` like "My file.md"
-    formatPath(path: string, renamed: boolean = false): { path: string, from?: string; } {
-        function format(path: string): string {
+    formatPath(path: simple.FileStatusResult, renamed: boolean = false): { path: string, from?: string; } {
+        function format(path?: string): string {
+            if (path == undefined) return undefined;
 
             if (path.startsWith('"') && path.endsWith('"')) {
                 return path.substring(1, path.length - 1);
@@ -77,15 +82,13 @@ export class SimpleGit extends GitManager {
             }
         }
         if (renamed) {
-            const paths = path.split(" -> ").map((e) => format(e));
-
             return {
-                from: paths[0],
-                path: paths[1],
+                from: format(path.from),
+                path: format(path.path),
             };
         } else {
             return {
-                path: format(path)
+                path: format(path.path)
             };
         }
     }
@@ -242,7 +245,7 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status();
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
-        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
+        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch], (err) => this.onError(err))).changed;
 
         this.plugin.setState(PluginState.push);
         if (this.plugin.settings.updateSubmodules) {
