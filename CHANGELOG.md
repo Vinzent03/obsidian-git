@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.3](https://github.com/denolehov/obsidian-git/compare/1.25.2...1.25.3) (2022-05-14)
+
+
+### Bug Fixes
+
+* show renamed files ([b76c783](https://github.com/denolehov/obsidian-git/commit/b76c78332978dbbf7045f94295ed3228de7132a9)), closes [#226](https://github.com/denolehov/obsidian-git/issues/226)
+
 ### [1.25.2](https://github.com/denolehov/obsidian-git/compare/1.25.1...1.25.2) (2022-05-07)
 
 
