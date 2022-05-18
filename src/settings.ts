@@ -294,6 +294,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Disable commit hooks")
+            .setDesc("Disable commit hooks with the '--no-verify' parameter")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.disableCommitHooks)
+                    .onChange((value) => {
+                        plugin.settings.disableCommitHooks = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Custom Git binary path")
             .addText((cb) => {
                 cb.setValue(plugin.settings.gitPath);

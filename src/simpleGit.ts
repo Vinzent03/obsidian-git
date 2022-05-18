@@ -94,6 +94,8 @@ export class SimpleGit extends GitManager {
     }
 
     async commitAll(message: string): Promise<number> {
+        const commitOptions = this.plugin.settings.disableCommitHooks ? ['--no-verify'] : [];
+
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
 
@@ -125,7 +127,7 @@ export class SimpleGit extends GitManager {
                             // Catch empty lines
                             if (item != undefined) {
                                 await this.git.cwd({ path: item, root: false }).add("-A", (err) => this.onError(err));
-                                await this.git.cwd({ path: item, root: false }).commit(await this.formatCommitMessage(message), (err) => this.onError(err));
+                                await this.git.cwd({ path: item, root: false }).commit(await this.formatCommitMessage(message), commitOptions, (err) => this.onError(err));
                             }
                         }
                         resolve();
@@ -144,13 +146,15 @@ export class SimpleGit extends GitManager {
 
         this.plugin.setState(PluginState.commit);
 
-        return (await this.git.commit(await this.formatCommitMessage(message), (err) => this.onError(err))).summary.changes;
+        return (await this.git.commit(await this.formatCommitMessage(message), commitOptions, (err) => this.onError(err))).summary.changes;
     }
 
     async commit(message: string): Promise<number> {
+        const commitOptions = this.plugin.settings.disableCommitHooks ? ['--no-verify'] : [];
+
         this.plugin.setState(PluginState.commit);
 
-        const res = (await this.git.commit(await this.formatCommitMessage(message), (err) => this.onError(err))).summary.changes;
+        const res = (await this.git.commit(await this.formatCommitMessage(message), commitOptions, (err) => this.onError(err))).summary.changes;
         this.plugin.setState(PluginState.idle);
         return res;
 

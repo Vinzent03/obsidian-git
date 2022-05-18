@@ -12,6 +12,7 @@ export interface ObsidianGitSettings {
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
     updateSubmodules: boolean;
+    disableCommitHooks: boolean;
     gitPath: string;
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
