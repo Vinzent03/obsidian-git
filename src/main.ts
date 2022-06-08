@@ -9,7 +9,7 @@ import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants
 import { GitManager } from "./gitManager";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
-import { ObsidianGitSettings, PluginState } from "./types";
+import { ObsidianGitSettings, PluginState, Status } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
@@ -311,6 +311,7 @@ export default class ObsidianGit extends Plugin {
             const status = await this.gitManager.status();
             if (status.conflicted.length > 0) {
                 this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
+                this.handleConflict(status.conflicted);
             }
         }
 
@@ -322,22 +323,6 @@ export default class ObsidianGit extends Plugin {
     async createBackup(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<void> {
         if (!await this.isAllInitialized()) return;
 
-        if (!fromAutoBackup) {
-            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
-            await this.app.vault.delete(file);
-        }
-        if (this.gitManager instanceof SimpleGit) {
-            const status = await this.gitManager.status();
-
-            // check for conflict files on auto backup
-            if (fromAutoBackup && status.conflicted.length > 0) {
-                this.setState(PluginState.idle);
-                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
-                this.handleConflict(status.conflicted);
-                return;
-            }
-        }
-
         if (!(await this.commit(fromAutoBackup, requestCustomMessage))) return;
 
         if (!this.settings.disablePush) {
@@ -347,7 +332,7 @@ export default class ObsidianGit extends Plugin {
                     await this.pull();
                 }
 
-                if (!(await this.push())) return;
+                await this.push();
             } else {
                 this.displayMessage("No changes to push");
             }
@@ -358,7 +343,23 @@ export default class ObsidianGit extends Plugin {
     async commit(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<boolean> {
         if (!await this.isAllInitialized()) return false;
 
-        const changedFiles = (await this.gitManager.status()).changed;
+        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+
+        if (file) await this.app.vault.delete(file);
+        let status;
+
+        if (this.gitManager instanceof SimpleGit) {
+            status = (await this.gitManager.status()) as Status & { conflicted: string[]; };
+            // check for conflict files on auto backup
+            if (fromAutoBackup && status.conflicted.length > 0) {
+                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
+                this.handleConflict(status.conflicted);
+                return;
+            }
+        } else {
+            status = await this.gitManager.status();
+        }
+        const changedFiles = status.changed;
 
         if (changedFiles.length !== 0) {
             let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
@@ -391,6 +392,11 @@ export default class ObsidianGit extends Plugin {
         if (!this.remotesAreSet()) {
             return false;
         }
+
+        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+
+        if (file) await this.app.vault.delete(file);
+
         // Refresh because of pull
         let status: any;
         if (this.gitManager instanceof SimpleGit && (status = await this.gitManager.status()).conflicted.length > 0) {
