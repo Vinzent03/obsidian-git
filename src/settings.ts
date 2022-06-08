@@ -10,6 +10,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.empty();
         containerEl.createEl("h2", { text: "Git Backup settings" });
 
+        containerEl.createEl('br');
+        containerEl.createEl("h3", { text: "Automatic" });
+
         new Setting(containerEl)
             .setName("Vault backup interval (minutes)")
             .setDesc("Commit and push changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)")
@@ -78,25 +81,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         }
                     })
             );
-        new Setting(containerEl)
-            .setName("Sync Method")
-            .setDesc(
-                "Selects the method used for handling new changes found in your remote git repository."
-            )
-            .addDropdown((dropdown) => {
-                const options: Record<SyncMethod, string> = {
-                    'merge': 'Merge',
-                    'rebase': 'Rebase',
-                    'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
-                };
-                dropdown.addOptions(options);
-                dropdown.setValue(plugin.settings.syncMethod);
-
-                dropdown.onChange(async (option: SyncMethod) => {
-                    plugin.settings.syncMethod = option;
-                    plugin.saveSettings();
-                });
-            });
 
         new Setting(containerEl)
             .setName("Commit message on manual backup/commit")
@@ -119,6 +103,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Specify custom commit message on auto backup")
+            .setDesc("You will get a pop up to specify your message")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.customMessageOnAutoBackup)
+                    .onChange((value) => {
+                        plugin.settings.customMessageOnAutoBackup = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Commit message on auto backup")
             .setDesc(
                 "Available placeholders: {{date}}" +
@@ -135,6 +131,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.saveSettings();
                     })
             );
+
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Commit message" });
 
         new Setting(containerEl)
             .setName("{{date}} placeholder format")
@@ -180,30 +179,26 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
-        new Setting(containerEl)
-            .setName("Specify custom commit message on auto backup")
-            .setDesc("You will get a pop up to specify your message")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.customMessageOnAutoBackup)
-                    .onChange((value) => {
-                        plugin.settings.customMessageOnAutoBackup = value;
-                        plugin.saveSettings();
-                    })
-            );
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Backup" });
 
         new Setting(containerEl)
-            .setName("Current branch")
-            .setDesc("Switch to a different branch")
-            .addDropdown(async (dropdown) => {
-                const branchInfo = await plugin.gitManager.branchInfo();
-                for (const branch of branchInfo.branches) {
-                    dropdown.addOption(branch, branch);
-                }
-                dropdown.setValue(branchInfo.current);
-                dropdown.onChange(async (option) => {
-                    await plugin.gitManager.checkout(option);
-                    new Notice(`Checked out to ${option}`);
+            .setName("Sync Method")
+            .setDesc(
+                "Selects the method used for handling new changes found in your remote git repository."
+            )
+            .addDropdown((dropdown) => {
+                const options: Record<SyncMethod, string> = {
+                    'merge': 'Merge',
+                    'rebase': 'Rebase',
+                    'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
+                };
+                dropdown.addOptions(options);
+                dropdown.setValue(plugin.settings.syncMethod);
+
+                dropdown.onChange(async (option: SyncMethod) => {
+                    plugin.settings.syncMethod = option;
+                    plugin.saveSettings();
                 });
             });
 
@@ -220,13 +215,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Disable push")
-            .setDesc("Do not push changes to the remote repository")
+            .setName("Push on backup")
+            .setDesc("Disable to only commit changes")
             .addToggle((toggle) =>
                 toggle
-                    .setValue(plugin.settings.disablePush)
+                    .setValue(!plugin.settings.disablePush)
                     .onChange((value) => {
-                        plugin.settings.disablePush = value;
+                        plugin.settings.disablePush = !value;
                         plugin.saveSettings();
                     })
             );
@@ -243,6 +238,25 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Miscellaneous" });
+
+        new Setting(containerEl)
+            .setName("Current branch")
+            .setDesc("Switch to a different branch")
+            .addDropdown(async (dropdown) => {
+                const branchInfo = await plugin.gitManager.branchInfo();
+                for (const branch of branchInfo.branches) {
+                    dropdown.addOption(branch, branch);
+                }
+                dropdown.setValue(branchInfo.current);
+                dropdown.onChange(async (option) => {
+                    await plugin.gitManager.checkout(option);
+                    new Notice(`Checked out to ${option}`);
+                });
+            });
+
+
         new Setting(containerEl)
             .setName("Automatically refresh Source Control View on file changes")
             .setDesc("On slower machines this may cause lags. If so, just disable this option")
@@ -251,18 +265,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.refreshSourceControl)
                     .onChange((value) => {
                         plugin.settings.refreshSourceControl = value;
-                        plugin.saveSettings();
-                    })
-            );
-
-        new Setting(containerEl)
-            .setName("Update submodules")
-            .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.updateSubmodules)
-                    .onChange((value) => {
-                        plugin.settings.updateSubmodules = value;
                         plugin.saveSettings();
                     })
             );
@@ -289,6 +291,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.showStatusBar)
                     .onChange((value) => {
                         plugin.settings.showStatusBar = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Advanced" });
+
+        new Setting(containerEl)
+            .setName("Update submodules")
+            .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.updateSubmodules)
+                    .onChange((value) => {
+                        plugin.settings.updateSubmodules = value;
                         plugin.saveSettings();
                     })
             );
