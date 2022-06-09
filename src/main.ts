@@ -59,7 +59,7 @@ export default class ObsidianGit extends Plugin {
     async refresh() {
         const gitView = this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type);
 
-        if (gitView.length > 0) {
+        if (this.settings.changedFilesInStatusBar || gitView.length > 0) {
             this.loading = true;
             dispatchEvent(new CustomEvent("git-view-refresh"));
 

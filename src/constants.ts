@@ -22,6 +22,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     refreshSourceControl: true,
     basePath: "",
     differentIntervalCommitAndPush: false,
+    changedFilesInStatusBar: false,
 };
 
 export const GIT_VIEW_CONFIG = {

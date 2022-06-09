@@ -18,6 +18,7 @@ export interface ObsidianGitSettings {
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
     differentIntervalCommitAndPush: boolean;
+    changedFilesInStatusBar: boolean;
 
     /**
      * @deprecated Migrated to `syncMethod = 'merge'`
