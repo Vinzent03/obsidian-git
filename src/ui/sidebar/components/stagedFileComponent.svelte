@@ -1,6 +1,7 @@
 <script lang="ts">
   import { setIcon } from "obsidian";
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
+import { format } from "path";
   import { DIFF_VIEW_CONFIG } from "src/constants";
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
@@ -10,7 +11,7 @@
   export let view: GitView;
   export let manager: GitManager;
   let buttons: HTMLElement[] = [];
-  $: formattedPath = change.path;
+  $: formattedPath = change.vault_path;
   $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
   setImmediate(() =>
@@ -73,7 +74,7 @@
   }
 
   function unstage() {
-    manager.unstage(formattedPath).finally(() => {
+    manager.unstage(change.path).finally(() => {
       dispatchEvent(new CustomEvent("git-refresh"));
     });
   }
@@ -83,14 +84,14 @@
   <span
     class="path"
     aria-label-position={side}
-    aria-label={change.path.split("/").last() != change.path ? change.path : ""}
+    aria-label={formattedPath.split("/").last() != formattedPath ? formattedPath : ""}
     on:click={showDiff}
   >
     {formattedPath.split("/").last().replace(".md", "")}
   </span>
   <div class="tools">
     <div class="buttons">
-      {#if view.app.vault.getAbstractFileByPath(change.path)}
+      {#if view.app.vault.getAbstractFileByPath(formattedPath)}
         <div
           data-icon="go-to-file"
           aria-label="Open File"

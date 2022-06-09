@@ -40,6 +40,7 @@ export interface Status {
 }
 export interface FileStatusResult {
     path: string;
+    vault_path: string;
     from?: string;
     index: string;
     working_dir: string;

@@ -27,7 +27,7 @@
       hoverPreview(
         event,
         view as any,
-        change.path.split("/").last().replace(".md", "")
+        change.vault_path.split("/").last().replace(".md", "")
       );
     }
   }
@@ -40,7 +40,7 @@
         change.working_dir === "D"
       )
     ) {
-      openOrSwitch(view.app as any, change.path, event);
+      openOrSwitch(view.app as any, change.vault_path, event);
     }
   }
 
@@ -79,12 +79,12 @@
 
   function discard() {
     const deleteFile = change.working_dir == "U";
-    new DiscardModal(view.app, deleteFile, change.path)
+    new DiscardModal(view.app, deleteFile, change.vault_path)
       .myOpen()
       .then((shouldDiscard) => {
         if (shouldDiscard === true) {
           if (deleteFile) {
-            view.app.vault.adapter.remove(change.path).finally(() => {
+            view.app.vault.adapter.remove(change.vault_path).finally(() => {
               dispatchEvent(new CustomEvent("git-refresh"));
             });
           } else {
@@ -102,14 +102,14 @@
   <span
     class="path"
     aria-label-position={side}
-    aria-label={change.path.split("/").last() != change.path ? change.path : ""}
+    aria-label={change.vault_path.split("/").last() != change.vault_path ? change.vault_path : ""}
     on:click|self={showDiff}
   >
-    {change.path.split("/").last().replace(".md", "")}
+    {change.vault_path.split("/").last().replace(".md", "")}
   </span>
   <div class="tools">
     <div class="buttons">
-      {#if view.app.vault.getAbstractFileByPath(change.path)}
+      {#if view.app.vault.getAbstractFileByPath(change.vault_path)}
         <div
           data-icon="go-to-file"
           aria-label="Open File"

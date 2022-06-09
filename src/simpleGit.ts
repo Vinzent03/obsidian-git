@@ -50,16 +50,22 @@ export class SimpleGit extends GitManager {
         return {
             changed: status.files.filter((e) => e.working_dir !== " ").map((e) => {
                 const res = this.formatPath(e);
-                e.path = res.path;
-                e.from = res.from;
-                e.working_dir = e.working_dir === "?" ? "U" : e.working_dir;
-                return e;
+
+                return <FileStatusResult>{
+                    path: res.path,
+                    from: res.from,
+                    working_dir: e.working_dir === "?" ? "U" : e.working_dir,
+                    vault_path: this.getVaultPath(res.path),
+                };
             }),
             staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {
                 const res = this.formatPath(e, e.index === "R");
-                e.path = res.path;
-                e.from = res.from;
-                return e;
+                return <FileStatusResult>{
+                    path: res.path,
+                    from: res.from,
+                    index: e.index,
+                    vault_path: this.getVaultPath(res.path),
+                };
             }),
             conflicted: status.conflicted.map((e) => this.formatPath({
                 path: e,
@@ -68,6 +74,14 @@ export class SimpleGit extends GitManager {
                 working_dir: undefined
             }).path),
         };
+    }
+
+    getVaultPath(path: string): String {
+        if (this.plugin.settings.basePath) {
+            return this.plugin.settings.basePath + "/" + path;
+        } else {
+            return path;
+        }
     }
 
     //Remove wrong `"` like "My file.md"
@@ -105,7 +119,7 @@ export class SimpleGit extends GitManager {
                     if (!(args.contains("submodule") && args.contains("foreach"))) return;
 
                     let body = "";
-                    let root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? sep + this.plugin.settings.basePath : "");
+                    let root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? "/" + this.plugin.settings.basePath : "");
                     stdout.on('data', (chunk) => {
                         body += chunk.toString('utf8');
                     });
@@ -116,7 +130,7 @@ export class SimpleGit extends GitManager {
                         submods = submods.map(i => {
                             let submod = i.match(/'([^']*)'/);
                             if (submod != undefined) {
-                                return root + sep + submod[1] + sep;
+                                return root + "/" + submod[1] + sep;
                             }
                         });
 
