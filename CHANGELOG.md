@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.26.0](https://github.com/denolehov/obsidian-git/compare/1.25.3...1.26.0) (2022-06-09)
+
+
+### Features
+
+* different intervals for commit and push ([59367aa](https://github.com/denolehov/obsidian-git/commit/59367aa3d0fde912cf393f5e48989758f44b82e0)), closes [#106](https://github.com/denolehov/obsidian-git/issues/106)
+* show changes files count in status bar ([d091694](https://github.com/denolehov/obsidian-git/commit/d0916947546aad84f506f39f9f754a6b3c33f42c)), closes [#243](https://github.com/denolehov/obsidian-git/issues/243)
+
+
+### Bug Fixes
+
+* handle merge conflict better ([101aff9](https://github.com/denolehov/obsidian-git/commit/101aff991ecaecd57f004dd7bfd1811866b755e5))
+
 ### [1.25.3](https://github.com/denolehov/obsidian-git/compare/1.25.2...1.25.3) (2022-05-14)
 
 
