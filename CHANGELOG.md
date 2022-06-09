@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.26.1](https://github.com/denolehov/obsidian-git/compare/1.26.0...1.26.1) (2022-06-09)
+
+
+### Bug Fixes
+
+* open file with custom base path ([8a11666](https://github.com/denolehov/obsidian-git/commit/8a11666e6d430ed3fba952a584b9f8af6cc462fe))
+* use correct path with custom base path ([0d86e68](https://github.com/denolehov/obsidian-git/commit/0d86e6872fa16c809f7bf71f05e344acaf31008d))
+
 ## [1.26.0](https://github.com/denolehov/obsidian-git/compare/1.25.3...1.26.0) (2022-06-09)
 
 
