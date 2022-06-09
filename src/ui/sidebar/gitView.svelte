@@ -11,23 +11,14 @@
 
   export let plugin: ObsidianGit;
   export let view: GitView;
+  let loading: boolean;
+  let status: Status | null;
   let commitMessage = plugin.settings.commitMessage;
   let buttons: HTMLElement[] = [];
-  let status: Status | null;
   let changeHierarchy: TreeItem;
   let stagedHierarchy: TreeItem;
   let changesOpen = true;
   let stagedOpen = true;
-  let loading = true;
-  const debRefresh = debounce(
-    () => {
-      if (plugin.settings.refreshSourceControl) {
-        refresh();
-      }
-    },
-    7000,
-    true
-  );
 
   let showTree = plugin.settings.treeStructure;
   let layoutBtn: HTMLElement;
@@ -37,48 +28,18 @@
       setIcon(layoutBtn, showTree ? "list" : "folder", 16);
     }
   }
-
-  let modifyEvent: EventRef;
-  let deleteEvent: EventRef;
-  let createEvent: EventRef;
-  let renameEvent: EventRef;
-
-  addEventListener("git-refresh", refresh);
+  addEventListener("git-view-refresh", refresh);
   //This should go in the onMount callback, for some reason it doesn't fire though
   //setImmediate's callback will execute after the current event loop finishes.
   plugin.app.workspace.onLayoutReady(() =>
     setImmediate(() => {
       buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon"), 16));
       setIcon(layoutBtn, showTree ? "list" : "folder", 16);
-
-      modifyEvent = plugin.app.vault.on("modify", () => {
-        debRefresh();
-      });
-      deleteEvent = plugin.app.vault.on("delete", () => {
-        debRefresh();
-      });
-      createEvent = plugin.app.vault.on("create", () => {
-        debRefresh();
-      });
-      renameEvent = plugin.app.vault.on("rename", () => {
-        debRefresh();
-      });
-
-      plugin.registerEvent(modifyEvent);
-      plugin.registerEvent(deleteEvent);
-      plugin.registerEvent(createEvent);
-      plugin.registerEvent(renameEvent);
     })
   );
-
   onDestroy(() => {
-    plugin.app.metadataCache.offref(modifyEvent);
-    plugin.app.metadataCache.offref(deleteEvent);
-    plugin.app.metadataCache.offref(createEvent);
-    plugin.app.metadataCache.offref(renameEvent);
-    removeEventListener("git-refresh", refresh);
+    removeEventListener("git-view-refresh", refresh);
   });
-
   function commit() {
     loading = true;
     plugin.gitManager
@@ -88,44 +49,46 @@
           commitMessage = "";
         }
       })
-      .finally(refresh);
+      .finally(triggerRefresh);
   }
 
   async function refresh() {
-    loading = true;
+    status = plugin.cachedStatus;
+    if (status) {
+      changeHierarchy = {
+        title: "",
+        children: plugin.gitManager.getTreeStructure(status.changed),
+      };
+      stagedHierarchy = {
+        title: "",
+        children: plugin.gitManager.getTreeStructure(status.staged),
+      };
+    }
+    loading = plugin.loading;
+  }
 
-    status = await plugin.gitManager.status();
-
-    changeHierarchy = {
-      title: "",
-      children: plugin.gitManager.getTreeStructure(status.changed),
-    };
-    stagedHierarchy = {
-      title: "",
-      children: plugin.gitManager.getTreeStructure(status.staged),
-    };
-
-    loading = false;
+  function triggerRefresh(){
+    dispatchEvent(new CustomEvent("git-refresh"));
   }
 
   function stageAll() {
     loading = true;
-    plugin.gitManager.stageAll().finally(refresh);
+    plugin.gitManager.stageAll().finally(triggerRefresh);
   }
   function unstageAll() {
     loading = true;
-    plugin.gitManager.unstageAll().finally(refresh);
+    plugin.gitManager.unstageAll().finally(triggerRefresh);
   }
   function push() {
     loading = true;
 
     if (ready) {
-      plugin.push().finally(refresh);
+      plugin.push().finally(triggerRefresh);
     }
   }
   function pull() {
     loading = true;
-    plugin.pullChangesFromRemote().finally(refresh);
+    plugin.pullChangesFromRemote().finally(triggerRefresh);
   }
 </script>
 
@@ -191,7 +154,7 @@
       data-icon="refresh-cw"
       aria-label="Refresh"
       bind:this={buttons[6]}
-      on:click={refresh}
+      on:click={triggerRefresh}
     />
     <div class="search-input-container">
       <textarea
@@ -299,7 +262,7 @@
                   {view}
                   manager={plugin.gitManager}
                   workspace={plugin.app.workspace}
-                  on:git-refresh={refresh}
+                  on:git-refresh={triggerRefresh}
                 />
               {/each}
             {/if}

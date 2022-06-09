@@ -29,17 +29,68 @@ export default class ObsidianGit extends Plugin {
     autoBackupDebouncer: Debouncer<undefined>;
     onFileModifyEventRef: EventRef;
     offlineMode: boolean = false;
+    loading = false;
+    cachedStatus: Status | undefined;
+    modifyEvent: EventRef;
+    deleteEvent: EventRef;
+    createEvent: EventRef;
+    renameEvent: EventRef;
 
-    setState(state: PluginState) {
+    debRefresh = debounce(
+        () => {
+            if (this.settings.refreshSourceControl) {
+                this.refresh();
+            }
+        },
+        7000,
+        true
+    );
+
+    setState(state: PluginState): void {
         this.state = state;
         this.statusBar?.display();
     }
 
+    async updateCachedStatus(): Promise<Status> {
+        this.cachedStatus = await this.gitManager.status();
+        return this.cachedStatus;
+    }
+
+    async refresh() {
+        const gitView = this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type);
+
+        if (gitView.length > 0) {
+            this.loading = true;
+            dispatchEvent(new CustomEvent("git-view-refresh"));
+
+            await this.updateCachedStatus();
+            this.loading = false;
+            dispatchEvent(new CustomEvent("git-view-refresh"));
+        }
+    }
 
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
         this.migrateSettings();
+        this.modifyEvent = this.app.vault.on("modify", () => {
+            this.debRefresh();
+        });
+        this.deleteEvent = this.app.vault.on("delete", () => {
+            this.debRefresh();
+        });
+        this.createEvent = this.app.vault.on("create", () => {
+            this.debRefresh();
+        });
+        this.renameEvent = this.app.vault.on("rename", () => {
+            this.debRefresh();
+        });
+
+        this.registerEvent(this.modifyEvent);
+        this.registerEvent(this.deleteEvent);
+        this.registerEvent(this.createEvent);
+        this.registerEvent(this.renameEvent);
+        addEventListener("git-refresh", this.refresh.bind(this));
 
         this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
@@ -194,6 +245,12 @@ export default class ObsidianGit extends Plugin {
         this.app.workspace.detachLeavesOfType(DIFF_VIEW_CONFIG.type);
         this.clearAutoPull();
         this.clearAutoBackup();
+        removeEventListener("git-refresh", this.refresh.bind(this));
+        this.app.metadataCache.offref(this.modifyEvent);
+        this.app.metadataCache.offref(this.deleteEvent);
+        this.app.metadataCache.offref(this.createEvent);
+        this.app.metadataCache.offref(this.renameEvent);
+
         console.log('unloading ' + this.manifest.name + " plugin");
     }
 
