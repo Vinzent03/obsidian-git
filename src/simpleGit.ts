@@ -303,13 +303,17 @@ export class SimpleGit extends GitManager {
         };
     }
 
-    async log(file?: string): Promise<ReadonlyArray<DefaultLogFields>> {
-        const res = await this.git.log({ file: file, }, (err) => this.onError(err));
+    async log(file?: string, relativeToRepo: boolean = false): Promise<ReadonlyArray<DefaultLogFields>> {
+        const path = (relativeToRepo && this.plugin.settings.basePath) ? file : file?.substring(this.plugin.settings.basePath.length + 1);
+
+        const res = await this.git.log({ file: path, }, (err) => this.onError(err));
         return res.all;
     }
 
-    async show(commitHash: string, file: string): Promise<string> {
-        return this.git.show([commitHash + ":" + file], (err) => this.onError(err));
+    async show(commitHash: string, file: string, relativeToRepo: boolean = false): Promise<string> {
+        const path = (relativeToRepo && this.plugin.settings.basePath) ? file : file.substring(this.plugin.settings.basePath.length + 1);
+
+        return this.git.show([commitHash + ":" + path], (err) => this.onError(err));
     }
 
     async checkout(branch: string): Promise<void> {
