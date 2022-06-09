@@ -12,10 +12,32 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         containerEl.createEl('br');
         containerEl.createEl("h3", { text: "Automatic" });
+        const commitOrBackup = plugin.settings.differentIntervalCommitAndPush ? "commit" : "backup";
 
         new Setting(containerEl)
-            .setName("Vault backup interval (minutes)")
-            .setDesc("Commit and push changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)")
+            .setName("Split automatic commit and push")
+            .setDesc("Enable to use separate timer for commit and push")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.differentIntervalCommitAndPush)
+                    .onChange((value) => {
+                        plugin.settings.differentIntervalCommitAndPush = value;
+                        plugin.saveSettings();
+                        plugin.clearAutoBackup();
+                        plugin.clearAutoPush();
+                        if (plugin.settings.autoSaveInterval > 0) {
+                            plugin.startAutoBackup(plugin.settings.autoSaveInterval);
+                        }
+                        if (value && plugin.settings.autoPushInterval > 0) {
+                            plugin.startAutoPush(plugin.settings.autoPushInterval);
+                        }
+                        this.display();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName(`Vault ${commitOrBackup} interval (minutes)`)
+            .setDesc(`${plugin.settings.differentIntervalCommitAndPush ? "Commit" : "Commit and push"} changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)`)
             .addText((text) =>
                 text
                     .setValue(String(plugin.settings.autoSaveInterval))
@@ -28,19 +50,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 plugin.clearAutoBackup();
                                 plugin.startAutoBackup(plugin.settings.autoSaveInterval);
                                 new Notice(
-                                    `Automatic backup enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
+                                    `Automatic ${commitOrBackup} enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
                                 );
                             } else if (plugin.settings.autoSaveInterval <= 0) {
                                 plugin.clearAutoBackup() &&
-                                    new Notice("Automatic backup disabled!");
+                                    new Notice(`Automatic ${commitOrBackup} disabled!`);
                             }
                         } else {
                             new Notice("Please specify a valid number.");
                         }
                     })
             );
+
         new Setting(containerEl)
-            .setName("If turned on, do auto backup every X minutes after last change. Prevents auto backup while editing a file. If turned off, do auto backup every X minutes. It's independent from last change.")
+            .setName(`If turned on, do auto ${commitOrBackup} every X minutes after last change. Prevents auto ${commitOrBackup} while editing a file. If turned off, do auto ${commitOrBackup} every X minutes. It's independent from last change.`)
             .addToggle((toggle) =>
                 toggle
                     .setValue(plugin.settings.autoBackupAfterFileChange)
@@ -53,6 +76,36 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         }
                     })
             );
+
+        if (plugin.settings.differentIntervalCommitAndPush) {
+            new Setting(containerEl)
+                .setName(`Vault push interval (minutes)`)
+                .setDesc("Push changes every X minutes. Set to 0 (default) to disable.")
+                .addText((text) =>
+                    text
+                        .setValue(String(plugin.settings.autoPushInterval))
+                        .onChange((value) => {
+                            if (!isNaN(Number(value))) {
+                                plugin.settings.autoPushInterval = Number(value);
+                                plugin.saveSettings();
+
+                                if (plugin.settings.autoPushInterval > 0) {
+                                    plugin.clearAutoPush();
+                                    plugin.startAutoPush(plugin.settings.autoPushInterval);
+                                    new Notice(
+                                        `Automatic push enabled! Every ${plugin.settings.autoPushInterval} minutes.`
+                                    );
+                                } else if (plugin.settings.autoPushInterval <= 0) {
+                                    plugin.clearAutoPush() &&
+                                        new Notice("Automatic push disabled!");
+                                }
+                            } else {
+                                new Notice("Please specify a valid number.");
+                            }
+                        })
+                );
+        }
+
         new Setting(containerEl)
             .setName("Auto pull interval (minutes)")
             .setDesc("Pull changes every X minutes. Set to 0 (default) to disable.")
@@ -115,7 +168,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Commit message on auto backup")
+            .setName("Commit message on auto backup/commit")
             .setDesc(
                 "Available placeholders: {{date}}" +
                 " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"

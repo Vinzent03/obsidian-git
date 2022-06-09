@@ -20,6 +20,7 @@ export default class ObsidianGit extends Plugin {
     statusBar: StatusBar;
     state: PluginState;
     timeoutIDBackup: number;
+    timeoutIDPush: number;
     timeoutIDPull: number;
     lastUpdate: number;
     gitReady = false;
@@ -204,18 +205,21 @@ export default class ObsidianGit extends Plugin {
         await this.saveData(this.settings);
     }
 
-    async saveLastAuto(date: Date, mode: "backup" | "pull") {
+    async saveLastAuto(date: Date, mode: "backup" | "pull" | "push") {
         if (mode === "backup") {
             window.localStorage.setItem(this.manifest.id + ":lastAutoBackup", date.toString());
         } else if (mode === "pull") {
             window.localStorage.setItem(this.manifest.id + ":lastAutoPull", date.toString());
+        } else if (mode === "push") {
+            window.localStorage.setItem(this.manifest.id + ":lastAutoPush", date.toString());
         }
     }
 
-    async loadLastAuto(): Promise<{ "backup": Date, "pull": Date; }> {
+    async loadLastAuto(): Promise<{ "backup": Date, "pull": Date; "push": Date; }> {
         return {
             "backup": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoBackup") ?? ""),
-            "pull": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPull") ?? "")
+            "pull": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPull") ?? ""),
+            "push": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPush") ?? ""),
         };
     }
 
@@ -249,6 +253,12 @@ export default class ObsidianGit extends Plugin {
 
                         const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60));
                         this.startAutoBackup(diff <= 0 ? 0 : diff);
+                    }
+                    if (this.settings.differentIntervalCommitAndPush && this.settings.autoPushInterval > 0) {
+                        const now = new Date();
+
+                        const diff = this.settings.autoPushInterval - (Math.round(((now.getTime() - lastAutos.push.getTime()) / 1000) / 60));
+                        this.startAutoPush(diff <= 0 ? 0 : diff);
                     }
                     if (this.settings.autoPullInterval > 0) {
                         const now = new Date();
@@ -406,7 +416,11 @@ export default class ObsidianGit extends Plugin {
         } else {
             const pushedFiles = await this.gitManager.push();
             this.lastUpdate = Date.now();
-            this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
+            if (pushedFiles > 0) {
+                this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
+            } else {
+                this.displayMessage(`No changes to push`);
+            }
             this.offlineMode = false;
             this.setState(PluginState.idle);
 
@@ -457,8 +471,15 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    doAutoBackup() {
-        this.promiseQueue.addTask(() => this.createBackup(true));
+    // This is used for both auto backup and commit
+    doAutoBackup(): void {
+        this.promiseQueue.addTask(() => {
+            if (this.settings.differentIntervalCommitAndPush) {
+                return this.commit(true);
+            } else {
+                return this.createBackup(true);
+            }
+        });
         this.saveLastAuto(new Date(), "backup");
         this.saveSettings();
         this.startAutoBackup();
@@ -473,6 +494,18 @@ export default class ObsidianGit extends Plugin {
                 this.startAutoPull();
             },
             (minutes ?? this.settings.autoPullInterval) * 60000
+        );
+    }
+
+    startAutoPush(minutes?: number) {
+        this.timeoutIDPush = window.setTimeout(
+            () => {
+                this.promiseQueue.addTask(() => this.push());
+                this.saveLastAuto(new Date(), "push");
+                this.saveSettings();
+                this.startAutoPush();
+            },
+            (minutes ?? this.settings.autoPushInterval) * 60000
         );
     }
 
@@ -496,6 +529,15 @@ export default class ObsidianGit extends Plugin {
         if (this.timeoutIDPull) {
             window.clearTimeout(this.timeoutIDPull);
             this.timeoutIDPull = undefined;
+            return true;
+        }
+        return false;
+    }
+
+    clearAutoPush(): boolean {
+        if (this.timeoutIDPush) {
+            window.clearTimeout(this.timeoutIDPush);
+            this.timeoutIDPush = undefined;
             return true;
         }
         return false;

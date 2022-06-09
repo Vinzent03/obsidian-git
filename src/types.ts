@@ -3,6 +3,7 @@ export interface ObsidianGitSettings {
     autoCommitMessage: string;
     commitDateFormat: string;
     autoSaveInterval: number;
+    autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
     syncMethod: SyncMethod;
@@ -16,6 +17,7 @@ export interface ObsidianGitSettings {
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
+    differentIntervalCommitAndPush: boolean;
 
     /**
      * @deprecated Migrated to `syncMethod = 'merge'`
