@@ -325,7 +325,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Disable notifications")
             .setDesc(
-                "Disable notifications for git operations to minimize distraction (refer to status bar for updates)"
+                "Disable notifications for git operations to minimize distraction (refer to status bar for updates). Errors are still shown as notifications even if you enable this setting"
             )
             .addToggle((toggle) =>
                 toggle
