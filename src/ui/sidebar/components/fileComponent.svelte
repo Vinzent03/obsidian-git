@@ -40,7 +40,7 @@
         change.working_dir === "D"
       )
     ) {
-      openOrSwitch(view.app as any, change.vault_path, event);
+      openOrSwitch(change.vault_path, event);
     }
   }
 

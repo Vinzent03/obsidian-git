@@ -40,7 +40,7 @@ import { format } from "path";
         change.index === "D"
       )
     ) {
-      openOrSwitch(view.app as any, formattedPath, event);
+      openOrSwitch(formattedPath, event);
     }
   }
 
