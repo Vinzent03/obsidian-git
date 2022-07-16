@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { setIcon } from "obsidian";
+  import { FileView, setIcon, TAbstractFile } from "obsidian";
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
-import { format } from "path";
+  import { format } from "path";
   import { DIFF_VIEW_CONFIG } from "src/constants";
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
@@ -45,8 +45,9 @@ import { format } from "path";
   }
 
   function showDiff(event: MouseEvent) {
-    const leaf = view.app.workspace.activeLeaf;
-
+    const workspace = view.app.workspace;
+    const leaf = workspace.getMostRecentLeaf(workspace.rootSplit);
+    
     if (
       leaf &&
       !leaf.getViewState().pinned &&
@@ -59,9 +60,10 @@ import { format } from "path";
           staged: true,
         },
       });
+      workspace.setActiveLeaf(leaf,true,true)
     } else {
-      view.app.workspace
-        .createLeafInParent(view.app.workspace.rootSplit, 0)
+      workspace
+        .createLeafInParent(workspace.rootSplit, 0)
         .setViewState({
           type: DIFF_VIEW_CONFIG.type,
           active: true,
@@ -84,7 +86,9 @@ import { format } from "path";
   <span
     class="path"
     aria-label-position={side}
-    aria-label={formattedPath.split("/").last() != formattedPath ? formattedPath : ""}
+    aria-label={formattedPath.split("/").last() != formattedPath
+      ? formattedPath
+      : ""}
     on:click={showDiff}
   >
     {formattedPath.split("/").last().replace(".md", "")}

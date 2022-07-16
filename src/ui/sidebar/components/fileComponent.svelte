@@ -51,7 +51,7 @@
   }
 
   function showDiff(event: MouseEvent) {
-    const leaf = workspace.activeLeaf;
+    const leaf = workspace.getMostRecentLeaf(workspace.rootSplit);
 
     if (
       leaf &&
