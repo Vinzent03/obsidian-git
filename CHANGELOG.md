@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.26.2](https://github.com/denolehov/obsidian-git/compare/1.26.1...1.26.2) (2022-07-16)
+
+
+### Bug Fixes
+
+* clarification about disabling notifications ([#249](https://github.com/denolehov/obsidian-git/issues/249)) ([f90b284](https://github.com/denolehov/obsidian-git/commit/f90b284f1f4140eab6aec1b77353cb52e661a8e3))
+* commit only staged files ([f71fdf5](https://github.com/denolehov/obsidian-git/commit/f71fdf58271c1490887f057c6ecc5e6d3689dbd4)), closes [#253](https://github.com/denolehov/obsidian-git/issues/253)
+* open diff view in correct pane ([96d2913](https://github.com/denolehov/obsidian-git/commit/96d2913c67bf8348953440954d5e41986c6b121b)), closes [#252](https://github.com/denolehov/obsidian-git/issues/252)
+* open files from source control view ([0d5ec26](https://github.com/denolehov/obsidian-git/commit/0d5ec262187281517c4a63a78c417c8d9940750f)), closes [#258](https://github.com/denolehov/obsidian-git/issues/258)
+
 ### [1.26.1](https://github.com/denolehov/obsidian-git/compare/1.26.0...1.26.1) (2022-06-09)
 
 
