@@ -426,9 +426,9 @@ export default class ObsidianGit extends Plugin {
         } else {
             status = await this.gitManager.status();
         }
-        const changedFiles = status.changed; + status.staged;
+        const changedFiles = status.changed.length + status.staged.length;
 
-        if (changedFiles.length !== 0) {
+        if (changedFiles !== 0) {
             let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
             if ((fromAutoBackup && this.settings.customMessageOnAutoBackup) || requestCustomMessage) {
                 if (!this.settings.disablePopups && fromAutoBackup) {
