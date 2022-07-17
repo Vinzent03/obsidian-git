@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.26.3](https://github.com/denolehov/obsidian-git/compare/1.26.2...1.26.3) (2022-07-17)
+
+
+### Bug Fixes
+
+* commit only staged files, again ([ba35555](https://github.com/denolehov/obsidian-git/commit/ba35555eebbac5f4a69aaa7da6847928e0ddd017)), closes [#253](https://github.com/denolehov/obsidian-git/issues/253)
+
 ### [1.26.2](https://github.com/denolehov/obsidian-git/compare/1.26.1...1.26.2) (2022-07-16)
 
 
