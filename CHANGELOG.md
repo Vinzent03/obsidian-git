@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.26.4](https://github.com/denolehov/obsidian-git/compare/1.26.3...1.26.4) (2022-07-20)
+
+
+### Bug Fixes
+
+* Version History Diff for empty base path ([3b9b699](https://github.com/denolehov/obsidian-git/commit/3b9b69938d97c1a257755a4896857fe8ee8db557)), closes [#263](https://github.com/denolehov/obsidian-git/issues/263)
+
 ### [1.26.3](https://github.com/denolehov/obsidian-git/compare/1.26.2...1.26.3) (2022-07-17)
 
 
