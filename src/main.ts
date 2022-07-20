@@ -426,6 +426,12 @@ export default class ObsidianGit extends Plugin {
         } else {
             status = await this.gitManager.status();
         }
+
+        if (await this.hasTooBigFiles(status)) {
+            this.setState(PluginState.idle);
+            return false;
+        }
+
         const changedFiles = status.changed.length + status.staged.length;
 
         if (changedFiles !== 0) {
@@ -452,6 +458,33 @@ export default class ObsidianGit extends Plugin {
 
         this.setState(PluginState.idle);
         return true;
+    }
+
+    async hasTooBigFiles(status: Status): Promise<boolean> {
+        const branchInfo = await this.gitManager.branchInfo();
+        const remote = branchInfo.tracking?.split("/")[0];
+
+        if (remote) {
+            const remoteUrl = await this.gitManager.getRemoteUrl(remote);
+
+            //Check for files >100mb on GitHub remote
+            if (remoteUrl.includes("github.com")) {
+
+                const tooBigFiles = [...status.staged, ...status.changed].filter(f => {
+                    const file = this.app.vault.getAbstractFileByPath(f.vault_path);
+                    if (file instanceof TFile) {
+                        return file.stat.size >= 100000000;
+                    }
+                    return false;
+                });
+                if (tooBigFiles.length > 0) {
+                    this.displayError(`Did not commit, because following files are too big: ${tooBigFiles.map((e) => e.vault_path)}. Please remove them.`);
+
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     async push(): Promise<boolean> {

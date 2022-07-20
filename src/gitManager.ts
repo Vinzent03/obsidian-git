@@ -54,6 +54,8 @@ export abstract class GitManager {
 
     abstract getRemotes(): Promise<string[]>;
 
+    abstract getRemoteUrl(remote: string): Promise<string>;
+
     abstract getRemoteBranches(remote: string): Promise<string[]>;
 
     abstract removeRemote(remoteName: string): Promise<void>;

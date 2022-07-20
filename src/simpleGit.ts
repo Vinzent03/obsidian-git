@@ -303,6 +303,10 @@ export class SimpleGit extends GitManager {
         };
     }
 
+    async getRemoteUrl(remote: string): Promise<string> {
+        return await this.git.remote(["get-url", remote], (err, url) => this.onError(err)) || undefined;
+    }
+
     async log(file?: string, relativeToVault: boolean = true): Promise<ReadonlyArray<DefaultLogFields>> {
         const path = (relativeToVault && this.plugin.settings.basePath.length > 0) ? file?.substring(this.plugin.settings.basePath.length + 1) : file;
 
@@ -352,6 +356,9 @@ export class SimpleGit extends GitManager {
 
     async getRemoteBranches(remote: string): Promise<string[]> {
         const res = await this.git.branch(["-r", "--list", `${remote}*`], (err) => this.onError(err));
+        console.log(remote);
+        console.log(res);
+
         const list = [];
         for (var item in res.branches) {
             list.push(res.branches[item].name);
