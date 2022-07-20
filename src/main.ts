@@ -9,7 +9,7 @@ import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants
 import { GitManager } from "./gitManager";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
-import { ObsidianGitSettings, PluginState, Status } from "./types";
+import { FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
@@ -427,7 +427,7 @@ export default class ObsidianGit extends Plugin {
             status = await this.gitManager.status();
         }
 
-        if (await this.hasTooBigFiles(status)) {
+        if (await this.hasTooBigFiles([...status.staged, ...status.changed])) {
             this.setState(PluginState.idle);
             return false;
         }
@@ -460,7 +460,7 @@ export default class ObsidianGit extends Plugin {
         return true;
     }
 
-    async hasTooBigFiles(status: Status): Promise<boolean> {
+    async hasTooBigFiles(files: FileStatusResult[]): Promise<boolean> {
         const branchInfo = await this.gitManager.branchInfo();
         const remote = branchInfo.tracking?.split("/")[0];
 
@@ -470,7 +470,7 @@ export default class ObsidianGit extends Plugin {
             //Check for files >100mb on GitHub remote
             if (remoteUrl.includes("github.com")) {
 
-                const tooBigFiles = [...status.staged, ...status.changed].filter(f => {
+                const tooBigFiles = files.filter(f => {
                     const file = this.app.vault.getAbstractFileByPath(f.vault_path);
                     if (file instanceof TFile) {
                         return file.stat.size >= 100000000;

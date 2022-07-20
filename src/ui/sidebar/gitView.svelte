@@ -1,7 +1,7 @@
 <script lang="ts">
   import { debounce, EventRef, MetadataCache, setIcon } from "obsidian";
   import ObsidianGit from "src/main";
-  import { Status, TreeItem } from "src/types";
+  import { PluginState, Status, TreeItem } from "src/types";
   import { onDestroy } from "svelte";
   import { slide } from "svelte/transition";
   import FileComponent from "./components/fileComponent.svelte";
@@ -40,8 +40,14 @@
   onDestroy(() => {
     removeEventListener("git-view-refresh", refresh);
   });
-  function commit() {
+
+  async function commit() {
     loading = true;
+    
+    if (await plugin.hasTooBigFiles(status.staged)) {
+      plugin.setState(PluginState.idle);
+      return false;
+    }
     plugin.gitManager
       .commit(commitMessage)
       .then(() => {
@@ -67,7 +73,7 @@
     loading = plugin.loading;
   }
 
-  function triggerRefresh(){
+  function triggerRefresh() {
     dispatchEvent(new CustomEvent("git-refresh"));
   }
 
