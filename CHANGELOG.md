@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.27.1](https://github.com/denolehov/obsidian-git/compare/1.27.0...1.27.1) (2022-07-20)
+
+
+### Bug Fixes
+
+* check for too big files in source control view ([2275d4f](https://github.com/denolehov/obsidian-git/commit/2275d4f716c00a305bf4371e9cb1b934669b2272))
+
 ## [1.27.0](https://github.com/denolehov/obsidian-git/compare/1.26.4...1.27.0) (2022-07-20)
 
 
