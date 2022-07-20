@@ -1,7 +1,7 @@
 import { spawnSync } from "child_process";
 import { FileSystemAdapter, normalizePath, Notice } from "obsidian";
 import * as path from "path";
-import { sep, } from "path";
+import { sep } from "path";
 import * as simple from "simple-git";
 import simpleGit, { DefaultLogFields } from "simple-git";
 import { GitManager } from "./gitManager";
@@ -303,15 +303,15 @@ export class SimpleGit extends GitManager {
         };
     }
 
-    async log(file?: string, relativeToRepo: boolean = false): Promise<ReadonlyArray<DefaultLogFields>> {
-        const path = (relativeToRepo && this.plugin.settings.basePath) ? file : file?.substring(this.plugin.settings.basePath.length + 1);
+    async log(file?: string, relativeToVault: boolean = true): Promise<ReadonlyArray<DefaultLogFields>> {
+        const path = (relativeToVault && this.plugin.settings.basePath.length > 0) ? file?.substring(this.plugin.settings.basePath.length + 1) : file;
 
         const res = await this.git.log({ file: path, }, (err) => this.onError(err));
         return res.all;
     }
 
-    async show(commitHash: string, file: string, relativeToRepo: boolean = false): Promise<string> {
-        const path = (relativeToRepo && this.plugin.settings.basePath) ? file : file.substring(this.plugin.settings.basePath.length + 1);
+    async show(commitHash: string, file: string, relativeToVault: boolean = true): Promise<string> {
+        const path = (relativeToVault && this.plugin.settings.basePath.length > 0) ? file.substring(this.plugin.settings.basePath.length + 1) : file;
 
         return this.git.show([commitHash + ":" + path], (err) => this.onError(err));
     }
