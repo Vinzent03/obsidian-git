@@ -73,23 +73,7 @@ export default class ObsidianGit extends Plugin {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
         this.migrateSettings();
-        this.modifyEvent = this.app.vault.on("modify", () => {
-            this.debRefresh();
-        });
-        this.deleteEvent = this.app.vault.on("delete", () => {
-            this.debRefresh();
-        });
-        this.createEvent = this.app.vault.on("create", () => {
-            this.debRefresh();
-        });
-        this.renameEvent = this.app.vault.on("rename", () => {
-            this.debRefresh();
-        });
 
-        this.registerEvent(this.modifyEvent);
-        this.registerEvent(this.deleteEvent);
-        this.registerEvent(this.createEvent);
-        this.registerEvent(this.renameEvent);
         addEventListener("git-refresh", this.refresh.bind(this));
 
         this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
@@ -298,6 +282,25 @@ export default class ObsidianGit extends Plugin {
                 case "valid":
                     this.gitReady = true;
                     this.setState(PluginState.idle);
+
+                    this.modifyEvent = this.app.vault.on("modify", () => {
+                        this.debRefresh();
+                    });
+                    this.deleteEvent = this.app.vault.on("delete", () => {
+                        this.debRefresh();
+                    });
+                    this.createEvent = this.app.vault.on("create", () => {
+                        this.debRefresh();
+                    });
+                    this.renameEvent = this.app.vault.on("rename", () => {
+                        this.debRefresh();
+                    });
+
+                    this.registerEvent(this.modifyEvent);
+                    this.registerEvent(this.deleteEvent);
+                    this.registerEvent(this.createEvent);
+                    this.registerEvent(this.renameEvent);
+
                     dispatchEvent(new CustomEvent('git-refresh'));
 
                     if (this.settings.autoPullOnBoot) {
