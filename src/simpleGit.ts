@@ -170,9 +170,12 @@ export class SimpleGit extends GitManager {
 
     }
 
-    async stage(filepath: string): Promise<void> {
+    async stage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.add(["--", filepath], (err) => this.onError(err));
+
+        path = this.getPath(path, relativeToVault);
+        await this.git.add(["--", path], (err) => this.onError(err));
+
         this.plugin.setState(PluginState.idle);
     }
 
@@ -190,13 +193,13 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.idle);
     }
 
-    async unstage(filepath: string): Promise<void> {
+    async unstage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.reset(
-            ["--", filepath], (err) => this.onError(err)
-        );
-        this.plugin.setState(PluginState.idle);
 
+        path = this.getPath(path, relativeToVault);
+        await this.git.reset(["--", path], (err) => this.onError(err));
+
+        this.plugin.setState(PluginState.idle);
     }
 
     async discard(filepath: string): Promise<void> {
@@ -308,14 +311,14 @@ export class SimpleGit extends GitManager {
     }
 
     async log(file?: string, relativeToVault: boolean = true): Promise<ReadonlyArray<DefaultLogFields>> {
-        const path = (relativeToVault && this.plugin.settings.basePath.length > 0) ? file?.substring(this.plugin.settings.basePath.length + 1) : file;
+        const path = this.getPath(file, relativeToVault);
 
         const res = await this.git.log({ file: path, }, (err) => this.onError(err));
         return res.all;
     }
 
     async show(commitHash: string, file: string, relativeToVault: boolean = true): Promise<string> {
-        const path = (relativeToVault && this.plugin.settings.basePath.length > 0) ? file.substring(this.plugin.settings.basePath.length + 1) : file;
+        const path = this.getPath(file, relativeToVault);
 
         return this.git.show([commitHash + ":" + path], (err) => this.onError(err));
     }
@@ -390,6 +393,10 @@ export class SimpleGit extends GitManager {
 
     updateBasePath(basePath: string) {
         this.setGitInstance(true);
+    }
+
+    getPath(path: string, relativeToVault: boolean): string {
+        return (relativeToVault && this.plugin.settings.basePath.length > 0) ? path.substring(this.plugin.settings.basePath.length + 1) : path;
     }
 
     async getDiffString(filePath: string, stagedChanges = false): Promise<string> {

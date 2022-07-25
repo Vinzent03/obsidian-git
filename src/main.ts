@@ -163,6 +163,30 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "stage-current-file",
+            name: "Stage current file",
+            checkCallback: (checking) => {
+                if (checking) {
+                    return this.app.workspace.getActiveFile() !== null;
+                } else {
+                    this.promiseQueue.addTask(() => this.stageCurrentFile());
+                }
+            }
+        });
+
+        this.addCommand({
+            id: "unstage-current-file",
+            name: "Unstage current file",
+            checkCallback: (checking) => {
+                if (checking) {
+                    return this.app.workspace.getActiveFile() !== null;
+                } else {
+                    this.promiseQueue.addTask(() => this.unstageCurrentFile());
+                }
+            }
+        });
+
+        this.addCommand({
             id: "edit-remotes",
             name: "Edit remotes",
             callback: async () => this.editRemotes()
@@ -531,6 +555,32 @@ export default class ObsidianGit extends Plugin {
             this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
         }
         return pulledFilesLength != 0;
+    }
+
+    async stageCurrentFile(): Promise<boolean> {
+        if (!await this.isAllInitialized()) return false;
+
+        const file = this.app.workspace.getActiveFile();
+        await this.gitManager.stage(file.path, true);
+        this.displayMessage(`Staged ${file.path}`);
+
+        dispatchEvent(new CustomEvent('git-refresh'));
+
+        this.setState(PluginState.idle);
+        return true;
+    }
+
+    async unstageCurrentFile(): Promise<boolean> {
+        if (!await this.isAllInitialized()) return false;
+
+        const file = this.app.workspace.getActiveFile();
+        await this.gitManager.unstage(file.path, true);
+        this.displayMessage(`Unstaged ${file.path}`);
+
+        dispatchEvent(new CustomEvent('git-refresh'));
+
+        this.setState(PluginState.idle);
+        return true;
     }
 
     async remotesAreSet(): Promise<boolean> {

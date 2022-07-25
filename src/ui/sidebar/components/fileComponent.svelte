@@ -45,7 +45,7 @@
   }
 
   function stage() {
-    manager.stage(change.path).finally(() => {
+    manager.stage(change.path, false).finally(() => {
       dispatchEvent(new CustomEvent("git-refresh"));
     });
   }
@@ -102,7 +102,9 @@
   <span
     class="path"
     aria-label-position={side}
-    aria-label={change.vault_path.split("/").last() != change.vault_path ? change.vault_path : ""}
+    aria-label={change.vault_path.split("/").last() != change.vault_path
+      ? change.vault_path
+      : ""}
     on:click|self={showDiff}
   >
     {change.vault_path.split("/").last().replace(".md", "")}

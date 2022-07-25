@@ -76,7 +76,7 @@
   }
 
   function unstage() {
-    manager.unstage(change.path).finally(() => {
+    manager.unstage(change.path, false).finally(() => {
       dispatchEvent(new CustomEvent("git-refresh"));
     });
   }
