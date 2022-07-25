@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.28.0](https://github.com/denolehov/obsidian-git/compare/1.27.1...1.28.0) (2022-07-25)
+
+
+### Features
+
+* stage and unstage current file ([f014e52](https://github.com/denolehov/obsidian-git/commit/f014e52e11cbb345a313914a9e71e0807a0d4197)), closes [#265](https://github.com/denolehov/obsidian-git/issues/265)
+
+
+### Bug Fixes
+
+* register event listener after initial load ([d32d0f4](https://github.com/denolehov/obsidian-git/commit/d32d0f4bc26db390da8008e8af878eef97ba98f4))
+
 ### [1.27.1](https://github.com/denolehov/obsidian-git/compare/1.27.0...1.27.1) (2022-07-20)
 
 
