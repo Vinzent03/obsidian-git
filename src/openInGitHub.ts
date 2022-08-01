@@ -1,4 +1,3 @@
-import { shell } from "electron";
 import { Editor, Notice, TFile } from "obsidian";
 import { GitManager } from "./gitManager";
 
@@ -8,9 +7,9 @@ export async function openLineInGitHub(editor: Editor, file: TFile, manager: Git
         const from = editor.getCursor("from").line + 1;
         const to = editor.getCursor("to").line + 1;
         if (from === to) {
-            await shell.openExternal(`https://github.com/${user}/${repo}/blob/${branch}/${file.path}?plain=1#L${from}`);
+            window.open(`https://github.com/${user}/${repo}/blob/${branch}/${file.path}?plain=1#L${from}`);
         } else {
-            await shell.openExternal(`https://github.com/${user}/${repo}/blob/${branch}/${file.path}?plain=1#L${from}-L${to}`);
+            window.open(`https://github.com/${user}/${repo}/blob/${branch}/${file.path}?plain=1#L${from}-L${to}`);
         }
     } else {
         new Notice('It seems like you are not using GitHub');
@@ -21,7 +20,7 @@ export async function openHistoryInGitHub(file: TFile, manager: GitManager) {
     const { isGitHub, branch, repo, user } = await getData(manager);
 
     if (isGitHub) {
-        await shell.openExternal(`https://github.com/${user}/${repo}/commits/${branch}/${file.path}`);
+        window.open(`https://github.com/${user}/${repo}/commits/${branch}/${file.path}`);
     } else {
         new Notice('It seems like you are not using GitHub');
     }
