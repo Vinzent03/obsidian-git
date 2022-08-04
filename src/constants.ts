@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     autoCommitMessage: undefined, // default undefined for settings migration
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
     autoSaveInterval: 0,
+    autoPushInterval: 0,
     autoPullInterval: 0,
     autoPullOnBoot: false,
     disablePush: false,
@@ -20,6 +21,8 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     treeStructure: false,
     refreshSourceControl: true,
     basePath: "",
+    differentIntervalCommitAndPush: false,
+    changedFilesInStatusBar: false,
 };
 
 export const GIT_VIEW_CONFIG = {

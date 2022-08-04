@@ -2,6 +2,91 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.28.0](https://github.com/denolehov/obsidian-git/compare/1.27.1...1.28.0) (2022-07-25)
+
+
+### Features
+
+* stage and unstage current file ([f014e52](https://github.com/denolehov/obsidian-git/commit/f014e52e11cbb345a313914a9e71e0807a0d4197)), closes [#265](https://github.com/denolehov/obsidian-git/issues/265)
+
+
+### Bug Fixes
+
+* register event listener after initial load ([d32d0f4](https://github.com/denolehov/obsidian-git/commit/d32d0f4bc26db390da8008e8af878eef97ba98f4))
+
+### [1.27.1](https://github.com/denolehov/obsidian-git/compare/1.27.0...1.27.1) (2022-07-20)
+
+
+### Bug Fixes
+
+* check for too big files in source control view ([2275d4f](https://github.com/denolehov/obsidian-git/commit/2275d4f716c00a305bf4371e9cb1b934669b2272))
+
+## [1.27.0](https://github.com/denolehov/obsidian-git/compare/1.26.4...1.27.0) (2022-07-20)
+
+
+### Features
+
+* check for too big files ([f0f3942](https://github.com/denolehov/obsidian-git/commit/f0f394246fb001dcd4b5b42f17d764f7a95a4486)), closes [#248](https://github.com/denolehov/obsidian-git/issues/248) [#189](https://github.com/denolehov/obsidian-git/issues/189)
+
+### [1.26.4](https://github.com/denolehov/obsidian-git/compare/1.26.3...1.26.4) (2022-07-20)
+
+
+### Bug Fixes
+
+* Version History Diff for empty base path ([3b9b699](https://github.com/denolehov/obsidian-git/commit/3b9b69938d97c1a257755a4896857fe8ee8db557)), closes [#263](https://github.com/denolehov/obsidian-git/issues/263)
+
+### [1.26.3](https://github.com/denolehov/obsidian-git/compare/1.26.2...1.26.3) (2022-07-17)
+
+
+### Bug Fixes
+
+* commit only staged files, again ([ba35555](https://github.com/denolehov/obsidian-git/commit/ba35555eebbac5f4a69aaa7da6847928e0ddd017)), closes [#253](https://github.com/denolehov/obsidian-git/issues/253)
+
+### [1.26.2](https://github.com/denolehov/obsidian-git/compare/1.26.1...1.26.2) (2022-07-16)
+
+
+### Bug Fixes
+
+* clarification about disabling notifications ([#249](https://github.com/denolehov/obsidian-git/issues/249)) ([f90b284](https://github.com/denolehov/obsidian-git/commit/f90b284f1f4140eab6aec1b77353cb52e661a8e3))
+* commit only staged files ([f71fdf5](https://github.com/denolehov/obsidian-git/commit/f71fdf58271c1490887f057c6ecc5e6d3689dbd4)), closes [#253](https://github.com/denolehov/obsidian-git/issues/253)
+* open diff view in correct pane ([96d2913](https://github.com/denolehov/obsidian-git/commit/96d2913c67bf8348953440954d5e41986c6b121b)), closes [#252](https://github.com/denolehov/obsidian-git/issues/252)
+* open files from source control view ([0d5ec26](https://github.com/denolehov/obsidian-git/commit/0d5ec262187281517c4a63a78c417c8d9940750f)), closes [#258](https://github.com/denolehov/obsidian-git/issues/258)
+
+### [1.26.1](https://github.com/denolehov/obsidian-git/compare/1.26.0...1.26.1) (2022-06-09)
+
+
+### Bug Fixes
+
+* open file with custom base path ([8a11666](https://github.com/denolehov/obsidian-git/commit/8a11666e6d430ed3fba952a584b9f8af6cc462fe))
+* use correct path with custom base path ([0d86e68](https://github.com/denolehov/obsidian-git/commit/0d86e6872fa16c809f7bf71f05e344acaf31008d))
+
+## [1.26.0](https://github.com/denolehov/obsidian-git/compare/1.25.3...1.26.0) (2022-06-09)
+
+
+### Features
+
+* different intervals for commit and push ([59367aa](https://github.com/denolehov/obsidian-git/commit/59367aa3d0fde912cf393f5e48989758f44b82e0)), closes [#106](https://github.com/denolehov/obsidian-git/issues/106)
+* show changes files count in status bar ([d091694](https://github.com/denolehov/obsidian-git/commit/d0916947546aad84f506f39f9f754a6b3c33f42c)), closes [#243](https://github.com/denolehov/obsidian-git/issues/243)
+
+
+### Bug Fixes
+
+* handle merge conflict better ([101aff9](https://github.com/denolehov/obsidian-git/commit/101aff991ecaecd57f004dd7bfd1811866b755e5))
+
+### [1.25.3](https://github.com/denolehov/obsidian-git/compare/1.25.2...1.25.3) (2022-05-14)
+
+
+### Bug Fixes
+
+* show renamed files ([b76c783](https://github.com/denolehov/obsidian-git/commit/b76c78332978dbbf7045f94295ed3228de7132a9)), closes [#226](https://github.com/denolehov/obsidian-git/issues/226)
+
+### [1.25.2](https://github.com/denolehov/obsidian-git/compare/1.25.1...1.25.2) (2022-05-07)
+
+
+### Bug Fixes
+
+* improve base path description ([8ee3a63](https://github.com/denolehov/obsidian-git/commit/8ee3a63fff91d4c9fd61cb9da73cc738026b8af1))
+
 ### [1.25.1](https://github.com/denolehov/obsidian-git/compare/1.25.0...1.25.1) (2022-04-22)
 
 

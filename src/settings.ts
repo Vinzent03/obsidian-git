@@ -10,9 +10,34 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.empty();
         containerEl.createEl("h2", { text: "Git Backup settings" });
 
+        containerEl.createEl('br');
+        containerEl.createEl("h3", { text: "Automatic" });
+        const commitOrBackup = plugin.settings.differentIntervalCommitAndPush ? "commit" : "backup";
+
         new Setting(containerEl)
-            .setName("Vault backup interval (minutes)")
-            .setDesc("Commit and push changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)")
+            .setName("Split automatic commit and push")
+            .setDesc("Enable to use separate timer for commit and push")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.differentIntervalCommitAndPush)
+                    .onChange((value) => {
+                        plugin.settings.differentIntervalCommitAndPush = value;
+                        plugin.saveSettings();
+                        plugin.clearAutoBackup();
+                        plugin.clearAutoPush();
+                        if (plugin.settings.autoSaveInterval > 0) {
+                            plugin.startAutoBackup(plugin.settings.autoSaveInterval);
+                        }
+                        if (value && plugin.settings.autoPushInterval > 0) {
+                            plugin.startAutoPush(plugin.settings.autoPushInterval);
+                        }
+                        this.display();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName(`Vault ${commitOrBackup} interval (minutes)`)
+            .setDesc(`${plugin.settings.differentIntervalCommitAndPush ? "Commit" : "Commit and push"} changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)`)
             .addText((text) =>
                 text
                     .setValue(String(plugin.settings.autoSaveInterval))
@@ -25,19 +50,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 plugin.clearAutoBackup();
                                 plugin.startAutoBackup(plugin.settings.autoSaveInterval);
                                 new Notice(
-                                    `Automatic backup enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
+                                    `Automatic ${commitOrBackup} enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
                                 );
                             } else if (plugin.settings.autoSaveInterval <= 0) {
                                 plugin.clearAutoBackup() &&
-                                    new Notice("Automatic backup disabled!");
+                                    new Notice(`Automatic ${commitOrBackup} disabled!`);
                             }
                         } else {
                             new Notice("Please specify a valid number.");
                         }
                     })
             );
+
         new Setting(containerEl)
-            .setName("If turned on, do auto backup every X minutes after last change. Prevents auto backup while editing a file. If turned off, do auto backup every X minutes. It's independent from last change.")
+            .setName(`If turned on, do auto ${commitOrBackup} every X minutes after last change. Prevents auto ${commitOrBackup} while editing a file. If turned off, do auto ${commitOrBackup} every X minutes. It's independent from last change.`)
             .addToggle((toggle) =>
                 toggle
                     .setValue(plugin.settings.autoBackupAfterFileChange)
@@ -50,6 +76,36 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         }
                     })
             );
+
+        if (plugin.settings.differentIntervalCommitAndPush) {
+            new Setting(containerEl)
+                .setName(`Vault push interval (minutes)`)
+                .setDesc("Push changes every X minutes. Set to 0 (default) to disable.")
+                .addText((text) =>
+                    text
+                        .setValue(String(plugin.settings.autoPushInterval))
+                        .onChange((value) => {
+                            if (!isNaN(Number(value))) {
+                                plugin.settings.autoPushInterval = Number(value);
+                                plugin.saveSettings();
+
+                                if (plugin.settings.autoPushInterval > 0) {
+                                    plugin.clearAutoPush();
+                                    plugin.startAutoPush(plugin.settings.autoPushInterval);
+                                    new Notice(
+                                        `Automatic push enabled! Every ${plugin.settings.autoPushInterval} minutes.`
+                                    );
+                                } else if (plugin.settings.autoPushInterval <= 0) {
+                                    plugin.clearAutoPush() &&
+                                        new Notice("Automatic push disabled!");
+                                }
+                            } else {
+                                new Notice("Please specify a valid number.");
+                            }
+                        })
+                );
+        }
+
         new Setting(containerEl)
             .setName("Auto pull interval (minutes)")
             .setDesc("Pull changes every X minutes. Set to 0 (default) to disable.")
@@ -78,25 +134,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         }
                     })
             );
-        new Setting(containerEl)
-            .setName("Sync Method")
-            .setDesc(
-                "Selects the method used for handling new changes found in your remote git repository."
-            )
-            .addDropdown((dropdown) => {
-                const options: Record<SyncMethod, string> = {
-                    'merge': 'Merge',
-                    'rebase': 'Rebase',
-                    'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
-                };
-                dropdown.addOptions(options);
-                dropdown.setValue(plugin.settings.syncMethod);
-
-                dropdown.onChange(async (option: SyncMethod) => {
-                    plugin.settings.syncMethod = option;
-                    plugin.saveSettings();
-                });
-            });
 
         new Setting(containerEl)
             .setName("Commit message on manual backup/commit")
@@ -119,7 +156,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Commit message on auto backup")
+            .setName("Specify custom commit message on auto backup")
+            .setDesc("You will get a pop up to specify your message")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.customMessageOnAutoBackup)
+                    .onChange((value) => {
+                        plugin.settings.customMessageOnAutoBackup = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Commit message on auto backup/commit")
             .setDesc(
                 "Available placeholders: {{date}}" +
                 " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"
@@ -135,6 +184,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.saveSettings();
                     })
             );
+
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Commit message" });
 
         new Setting(containerEl)
             .setName("{{date}} placeholder format")
@@ -180,30 +232,26 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
-        new Setting(containerEl)
-            .setName("Specify custom commit message on auto backup")
-            .setDesc("You will get a pop up to specify your message")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.customMessageOnAutoBackup)
-                    .onChange((value) => {
-                        plugin.settings.customMessageOnAutoBackup = value;
-                        plugin.saveSettings();
-                    })
-            );
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Backup" });
 
         new Setting(containerEl)
-            .setName("Current branch")
-            .setDesc("Switch to a different branch")
-            .addDropdown(async (dropdown) => {
-                const branchInfo = await plugin.gitManager.branchInfo();
-                for (const branch of branchInfo.branches) {
-                    dropdown.addOption(branch, branch);
-                }
-                dropdown.setValue(branchInfo.current);
-                dropdown.onChange(async (option) => {
-                    await plugin.gitManager.checkout(option);
-                    new Notice(`Checked out to ${option}`);
+            .setName("Sync Method")
+            .setDesc(
+                "Selects the method used for handling new changes found in your remote git repository."
+            )
+            .addDropdown((dropdown) => {
+                const options: Record<SyncMethod, string> = {
+                    'merge': 'Merge',
+                    'rebase': 'Rebase',
+                    'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
+                };
+                dropdown.addOptions(options);
+                dropdown.setValue(plugin.settings.syncMethod);
+
+                dropdown.onChange(async (option: SyncMethod) => {
+                    plugin.settings.syncMethod = option;
+                    plugin.saveSettings();
                 });
             });
 
@@ -220,13 +268,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Disable push")
-            .setDesc("Do not push changes to the remote repository")
+            .setName("Push on backup")
+            .setDesc("Disable to only commit changes")
             .addToggle((toggle) =>
                 toggle
-                    .setValue(plugin.settings.disablePush)
+                    .setValue(!plugin.settings.disablePush)
                     .onChange((value) => {
-                        plugin.settings.disablePush = value;
+                        plugin.settings.disablePush = !value;
                         plugin.saveSettings();
                     })
             );
@@ -243,6 +291,25 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Miscellaneous" });
+
+        new Setting(containerEl)
+            .setName("Current branch")
+            .setDesc("Switch to a different branch")
+            .addDropdown(async (dropdown) => {
+                const branchInfo = await plugin.gitManager.branchInfo();
+                for (const branch of branchInfo.branches) {
+                    dropdown.addOption(branch, branch);
+                }
+                dropdown.setValue(branchInfo.current);
+                dropdown.onChange(async (option) => {
+                    await plugin.gitManager.checkout(option);
+                    new Notice(`Checked out to ${option}`);
+                });
+            });
+
+
         new Setting(containerEl)
             .setName("Automatically refresh Source Control View on file changes")
             .setDesc("On slower machines this may cause lags. If so, just disable this option")
@@ -256,21 +323,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Update submodules")
-            .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.updateSubmodules)
-                    .onChange((value) => {
-                        plugin.settings.updateSubmodules = value;
-                        plugin.saveSettings();
-                    })
-            );
-
-        new Setting(containerEl)
             .setName("Disable notifications")
             .setDesc(
-                "Disable notifications for git operations to minimize distraction (refer to status bar for updates)"
+                "Disable notifications for git operations to minimize distraction (refer to status bar for updates). Errors are still shown as notifications even if you enable this setting"
             )
             .addToggle((toggle) =>
                 toggle
@@ -294,6 +349,32 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Show changes files count in status bar")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.changedFilesInStatusBar)
+                    .onChange((value) => {
+                        plugin.settings.changedFilesInStatusBar = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Advanced" });
+
+        new Setting(containerEl)
+            .setName("Update submodules")
+            .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.updateSubmodules)
+                    .onChange((value) => {
+                        plugin.settings.updateSubmodules = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Custom Git binary path")
             .addText((cb) => {
                 cb.setValue(plugin.settings.gitPath);
@@ -308,12 +389,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Username")
             .addText(cb => {
-                cb.setValue(plugin.settings.username)
+                cb.setValue(plugin.settings.username);
                 cb.onChange((value) => {
-                    plugin.settings.username = value
-                    plugin.saveSettings()
+                    plugin.settings.username = value;
+                    plugin.saveSettings();
                     new Notice("Saved username");
-                })
+                });
             });
 
         new Setting(containerEl)
@@ -324,17 +405,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 cb.inputEl.autocomplete = "off";
                 cb.inputEl.spellcheck = false;
                 cb.onChange((value) => {
-                    plugin.settings.password = value
-                    plugin.saveSettings()
+                    plugin.settings.password = value;
+                    plugin.saveSettings();
                     new Notice("Saved token");
                 });
             });
 
         new Setting(containerEl)
-            .setName("Base Path (Git repository path)")
-            .setDesc("Sets the relative path from where to execute the git binary. Mostly used to set the path to the git repository.")
+            .setName("Custom base path (Git repository path)")
+            .setDesc(`
+            Sets the relative path to the vault from which the Git binary should be executed.
+             Mostly used to set the path to the Git repository, which is only required if the Git repository is below the vault root directory. Use "\\" instead of "/" on Windows.
+            `)
             .addText((cb) => {
                 cb.setValue(plugin.settings.basePath);
+                cb.setPlaceholder("directory/directory-with-git-repo");
                 cb.onChange((value) => {
                     plugin.settings.basePath = value;
                     plugin.saveSettings();

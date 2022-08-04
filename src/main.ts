@@ -8,7 +8,7 @@ import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants
 import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
-import { ObsidianGitSettings, PluginState } from "./types";
+import { FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
@@ -20,6 +20,7 @@ export default class ObsidianGit extends Plugin {
     statusBar: StatusBar;
     state: PluginState;
     timeoutIDBackup: number;
+    timeoutIDPush: number;
     timeoutIDPull: number;
     lastUpdate: number;
     gitReady = false;
@@ -28,17 +29,52 @@ export default class ObsidianGit extends Plugin {
     autoBackupDebouncer: Debouncer<undefined>;
     onFileModifyEventRef: EventRef;
     offlineMode: boolean = false;
+    loading = false;
+    cachedStatus: Status | undefined;
+    modifyEvent: EventRef;
+    deleteEvent: EventRef;
+    createEvent: EventRef;
+    renameEvent: EventRef;
 
-    setState(state: PluginState) {
+    debRefresh = debounce(
+        () => {
+            if (this.settings.refreshSourceControl) {
+                this.refresh();
+            }
+        },
+        7000,
+        true
+    );
+
+    setState(state: PluginState): void {
         this.state = state;
         this.statusBar?.display();
     }
 
+    async updateCachedStatus(): Promise<Status> {
+        this.cachedStatus = await this.gitManager.status();
+        return this.cachedStatus;
+    }
+
+    async refresh() {
+        const gitView = this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type);
+
+        if (this.settings.changedFilesInStatusBar || gitView.length > 0) {
+            this.loading = true;
+            dispatchEvent(new CustomEvent("git-view-refresh"));
+
+            await this.updateCachedStatus();
+            this.loading = false;
+            dispatchEvent(new CustomEvent("git-view-refresh"));
+        }
+    }
 
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
         await this.loadSettings();
         this.migrateSettings();
+
+        addEventListener("git-refresh", this.refresh.bind(this));
 
         this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
@@ -127,6 +163,30 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "stage-current-file",
+            name: "Stage current file",
+            checkCallback: (checking) => {
+                if (checking) {
+                    return this.app.workspace.getActiveFile() !== null;
+                } else {
+                    this.promiseQueue.addTask(() => this.stageCurrentFile());
+                }
+            }
+        });
+
+        this.addCommand({
+            id: "unstage-current-file",
+            name: "Unstage current file",
+            checkCallback: (checking) => {
+                if (checking) {
+                    return this.app.workspace.getActiveFile() !== null;
+                } else {
+                    this.promiseQueue.addTask(() => this.unstageCurrentFile());
+                }
+            }
+        });
+
+        this.addCommand({
             id: "edit-remotes",
             name: "Edit remotes",
             callback: async () => this.editRemotes()
@@ -193,6 +253,12 @@ export default class ObsidianGit extends Plugin {
         this.app.workspace.detachLeavesOfType(DIFF_VIEW_CONFIG.type);
         this.clearAutoPull();
         this.clearAutoBackup();
+        removeEventListener("git-refresh", this.refresh.bind(this));
+        this.app.metadataCache.offref(this.modifyEvent);
+        this.app.metadataCache.offref(this.deleteEvent);
+        this.app.metadataCache.offref(this.createEvent);
+        this.app.metadataCache.offref(this.renameEvent);
+
         console.log('unloading ' + this.manifest.name + " plugin");
     }
 
@@ -204,25 +270,30 @@ export default class ObsidianGit extends Plugin {
         await this.saveData(this.settings);
     }
 
-    async saveLastAuto(date: Date, mode: "backup" | "pull") {
+    async saveLastAuto(date: Date, mode: "backup" | "pull" | "push") {
         if (mode === "backup") {
             window.localStorage.setItem(this.manifest.id + ":lastAutoBackup", date.toString());
         } else if (mode === "pull") {
             window.localStorage.setItem(this.manifest.id + ":lastAutoPull", date.toString());
+        } else if (mode === "push") {
+            window.localStorage.setItem(this.manifest.id + ":lastAutoPush", date.toString());
         }
     }
 
-    async loadLastAuto(): Promise<{ "backup": Date, "pull": Date; }> {
+    async loadLastAuto(): Promise<{ "backup": Date, "pull": Date; "push": Date; }> {
         return {
             "backup": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoBackup") ?? ""),
-            "pull": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPull") ?? "")
+            "pull": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPull") ?? ""),
+            "push": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPush") ?? ""),
         };
     }
 
     async init(): Promise<void> {
         try {
             this.gitManager = new IsomorphicGit(this);
-
+            // if (gitManager instanceof SimpleGit) {
+            //     await this.gitManager.setGitInstance();
+            // }
             const result = await this.gitManager.checkRequirements();
             switch (result) {
                 case "missing-git":
@@ -234,6 +305,25 @@ export default class ObsidianGit extends Plugin {
                 case "valid":
                     this.gitReady = true;
                     this.setState(PluginState.idle);
+
+                    this.modifyEvent = this.app.vault.on("modify", () => {
+                        this.debRefresh();
+                    });
+                    this.deleteEvent = this.app.vault.on("delete", () => {
+                        this.debRefresh();
+                    });
+                    this.createEvent = this.app.vault.on("create", () => {
+                        this.debRefresh();
+                    });
+                    this.renameEvent = this.app.vault.on("rename", () => {
+                        this.debRefresh();
+                    });
+
+                    this.registerEvent(this.modifyEvent);
+                    this.registerEvent(this.deleteEvent);
+                    this.registerEvent(this.createEvent);
+                    this.registerEvent(this.renameEvent);
+
                     dispatchEvent(new CustomEvent('git-refresh'));
 
                     if (this.settings.autoPullOnBoot) {
@@ -246,6 +336,12 @@ export default class ObsidianGit extends Plugin {
 
                         const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60));
                         this.startAutoBackup(diff <= 0 ? 0 : diff);
+                    }
+                    if (this.settings.differentIntervalCommitAndPush && this.settings.autoPushInterval > 0) {
+                        const now = new Date();
+
+                        const diff = this.settings.autoPushInterval - (Math.round(((now.getTime() - lastAutos.push.getTime()) / 1000) / 60));
+                        this.startAutoPush(diff <= 0 ? 0 : diff);
                     }
                     if (this.settings.autoPullInterval > 0) {
                         const now = new Date();
@@ -304,12 +400,13 @@ export default class ObsidianGit extends Plugin {
             this.displayMessage("Everything is up-to-date");
         }
 
-        if (this.gitManager instanceof IsomorphicGit) {
-            const status = await this.gitManager.status();
-            if (status.conflicted.length > 0) {
-                this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
-            }
-        }
+        // if (this.gitManager instanceof IsomorphicGit) {
+        //     const status = await this.gitManager.status();
+        //     if (status.conflicted.length > 0) {
+        //         this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
+        //         this.handleConflict(status.conflicted);
+        //     }
+        // }
 
         dispatchEvent(new CustomEvent('git-refresh'));
         this.lastUpdate = Date.now();
@@ -344,7 +441,7 @@ export default class ObsidianGit extends Plugin {
                     await this.pull();
                 }
 
-                if (!(await this.push())) return;
+                await this.push();
             } else {
                 this.displayMessage("No changes to push");
             }
@@ -355,9 +452,24 @@ export default class ObsidianGit extends Plugin {
     async commit(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<boolean> {
         if (!await this.isAllInitialized()) return false;
 
-        const changedFiles = (await this.gitManager.status()).changed;
+        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
 
-        if (changedFiles.length !== 0) {
+        if (file) await this.app.vault.delete(file);
+        let status;
+
+        if (false) {
+        } else {
+            status = await this.gitManager.status();
+        }
+
+        if (await this.hasTooBigFiles([...status.staged, ...status.changed])) {
+            this.setState(PluginState.idle);
+            return false;
+        }
+
+        const changedFiles = status.changed.length + status.staged.length;
+
+        if (changedFiles !== 0) {
             let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
             if ((fromAutoBackup && this.settings.customMessageOnAutoBackup) || requestCustomMessage) {
                 if (!this.settings.disablePopups && fromAutoBackup) {
@@ -383,11 +495,43 @@ export default class ObsidianGit extends Plugin {
         return true;
     }
 
+    async hasTooBigFiles(files: FileStatusResult[]): Promise<boolean> {
+        const branchInfo = await this.gitManager.branchInfo();
+        const remote = branchInfo.tracking?.split("/")[0];
+
+        if (remote) {
+            const remoteUrl = await this.gitManager.getRemoteUrl(remote);
+
+            //Check for files >100mb on GitHub remote
+            if (remoteUrl.includes("github.com")) {
+
+                const tooBigFiles = files.filter(f => {
+                    const file = this.app.vault.getAbstractFileByPath(f.vault_path);
+                    if (file instanceof TFile) {
+                        return file.stat.size >= 100000000;
+                    }
+                    return false;
+                });
+                if (tooBigFiles.length > 0) {
+                    this.displayError(`Did not commit, because following files are too big: ${tooBigFiles.map((e) => e.vault_path)}. Please remove them.`);
+
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     async push(): Promise<boolean> {
         if (!await this.isAllInitialized()) return false;
         if (!this.remotesAreSet()) {
             return false;
         }
+
+        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+
+        if (file) await this.app.vault.delete(file);
+
         // Refresh because of pull
         let status: any;
         if (this.gitManager instanceof IsomorphicGit && (status = await this.gitManager.status()).conflicted.length > 0) {
@@ -399,7 +543,11 @@ export default class ObsidianGit extends Plugin {
             const pushedFiles = await this.gitManager.push();
             console.log("Pushed!", pushedFiles);
             this.lastUpdate = Date.now();
-            this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
+            if (pushedFiles > 0) {
+                this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
+            } else {
+                this.displayMessage(`No changes to push`);
+            }
             this.offlineMode = false;
             this.setState(PluginState.idle);
 
@@ -417,6 +565,32 @@ export default class ObsidianGit extends Plugin {
             this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
         }
         return pulledFilesLength != 0;
+    }
+
+    async stageCurrentFile(): Promise<boolean> {
+        if (!await this.isAllInitialized()) return false;
+
+        const file = this.app.workspace.getActiveFile();
+        await this.gitManager.stage(file.path, true);
+        this.displayMessage(`Staged ${file.path}`);
+
+        dispatchEvent(new CustomEvent('git-refresh'));
+
+        this.setState(PluginState.idle);
+        return true;
+    }
+
+    async unstageCurrentFile(): Promise<boolean> {
+        if (!await this.isAllInitialized()) return false;
+
+        const file = this.app.workspace.getActiveFile();
+        await this.gitManager.unstage(file.path, true);
+        this.displayMessage(`Unstaged ${file.path}`);
+
+        dispatchEvent(new CustomEvent('git-refresh'));
+
+        this.setState(PluginState.idle);
+        return true;
     }
 
     async remotesAreSet(): Promise<boolean> {
@@ -450,8 +624,15 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    doAutoBackup() {
-        this.promiseQueue.addTask(() => this.createBackup(true));
+    // This is used for both auto backup and commit
+    doAutoBackup(): void {
+        this.promiseQueue.addTask(() => {
+            if (this.settings.differentIntervalCommitAndPush) {
+                return this.commit(true);
+            } else {
+                return this.createBackup(true);
+            }
+        });
         this.saveLastAuto(new Date(), "backup");
         this.saveSettings();
         this.startAutoBackup();
@@ -466,6 +647,18 @@ export default class ObsidianGit extends Plugin {
                 this.startAutoPull();
             },
             (minutes ?? this.settings.autoPullInterval) * 60000
+        );
+    }
+
+    startAutoPush(minutes?: number) {
+        this.timeoutIDPush = window.setTimeout(
+            () => {
+                this.promiseQueue.addTask(() => this.push());
+                this.saveLastAuto(new Date(), "push");
+                this.saveSettings();
+                this.startAutoPush();
+            },
+            (minutes ?? this.settings.autoPushInterval) * 60000
         );
     }
 
@@ -489,6 +682,15 @@ export default class ObsidianGit extends Plugin {
         if (this.timeoutIDPull) {
             window.clearTimeout(this.timeoutIDPull);
             this.timeoutIDPull = undefined;
+            return true;
+        }
+        return false;
+    }
+
+    clearAutoPush(): boolean {
+        if (this.timeoutIDPush) {
+            window.clearTimeout(this.timeoutIDPush);
+            this.timeoutIDPush = undefined;
             return true;
         }
         return false;

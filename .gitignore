@@ -14,3 +14,5 @@ yarn.lock
 .prettierignore
 .prettierrc.json
 /data.json
+
+.vscode

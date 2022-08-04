@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { FileSystemAdapter } from "obsidian";
+import { FileSystemAdapter, normalizePath, Notice } from "obsidian";
 import * as path from "path";
 import { sep } from "path";
 import * as simple from "simple-git";
@@ -12,23 +12,26 @@ export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
     constructor(plugin: ObsidianGit) {
         super(plugin);
-
-        this.setGitInstance();
-
     }
 
-    private async setGitInstance() {
+    async setGitInstance(ignoreError: boolean = false): Promise<void> {
         if (this.isGitInstalled()) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const path = adapter.getBasePath();
-            let extraPath = "";
+            let basePath = path;
             // Because the basePath setting is a relative path, a leading `/` must
             // be appended before concatenating with the path.
             if (this.plugin.settings.basePath) {
-                extraPath = sep + this.plugin.settings.basePath;
+                const exists = await adapter.exists(normalizePath(this.plugin.settings.basePath));
+                if (exists) {
+                    basePath = path + sep + this.plugin.settings.basePath;
+                } else if (!ignoreError) {
+                    new Notice("ObsidianGit: Base path does not exist");
+                }
             }
+
             this.git = simpleGit({
-                baseDir: path + extraPath,
+                baseDir: basePath,
                 binary: this.plugin.settings.gitPath || undefined,
                 config: ["core.quotepath=off"]
             });
@@ -43,27 +46,48 @@ export class SimpleGit extends GitManager {
     }> {
         this.plugin.setState(PluginState.status);
         const status = await this.git.status((err) => this.onError(err));
-
         this.plugin.setState(PluginState.idle);
         return {
             changed: status.files.filter((e) => e.working_dir !== " ").map((e) => {
-                const res = this.formatPath(e.path);
-                e.path = res.path;
-                e.working_dir = e.working_dir === "?" ? "U" : e.working_dir;
-                return e;
+                const res = this.formatPath(e);
+
+                return <FileStatusResult>{
+                    path: res.path,
+                    from: res.from,
+                    working_dir: e.working_dir === "?" ? "U" : e.working_dir,
+                    vault_path: this.getVaultPath(res.path),
+                };
             }),
             staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {
-                const res = this.formatPath(e.path, e.index === "R");
-                e.path = res.path;
-                return e;
+                const res = this.formatPath(e, e.index === "R");
+                return <FileStatusResult>{
+                    path: res.path,
+                    from: res.from,
+                    index: e.index,
+                    vault_path: this.getVaultPath(res.path),
+                };
             }),
-            conflicted: status.conflicted.map((e) => this.formatPath(e).path),
+            conflicted: status.conflicted.map((e) => this.formatPath({
+                path: e,
+                from: undefined,
+                index: undefined,
+                working_dir: undefined
+            }).path),
         };
     }
 
+    getVaultPath(path: string): String {
+        if (this.plugin.settings.basePath) {
+            return this.plugin.settings.basePath + "/" + path;
+        } else {
+            return path;
+        }
+    }
+
     //Remove wrong `"` like "My file.md"
-    formatPath(path: string, renamed: boolean = false): { path: string, from?: string; } {
-        function format(path: string): string {
+    formatPath(path: simple.FileStatusResult, renamed: boolean = false): { path: string, from?: string; } {
+        function format(path?: string): string {
+            if (path == undefined) return undefined;
 
             if (path.startsWith('"') && path.endsWith('"')) {
                 return path.substring(1, path.length - 1);
@@ -72,15 +96,13 @@ export class SimpleGit extends GitManager {
             }
         }
         if (renamed) {
-            const paths = path.split(" -> ").map((e) => format(e));
-
             return {
-                from: paths[0],
-                path: paths[1],
+                from: format(path.from),
+                path: format(path.path),
             };
         } else {
             return {
-                path: format(path)
+                path: format(path.path)
             };
         }
     }
@@ -97,7 +119,7 @@ export class SimpleGit extends GitManager {
                     if (!(args.contains("submodule") && args.contains("foreach"))) return;
 
                     let body = "";
-                    let root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? sep + this.plugin.settings.basePath : "");
+                    let root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? "/" + this.plugin.settings.basePath : "");
                     stdout.on('data', (chunk) => {
                         body += chunk.toString('utf8');
                     });
@@ -108,7 +130,7 @@ export class SimpleGit extends GitManager {
                         submods = submods.map(i => {
                             let submod = i.match(/'([^']*)'/);
                             if (submod != undefined) {
-                                return root + sep + submod[1] + sep;
+                                return root + "/" + submod[1] + sep;
                             }
                         });
 
@@ -148,9 +170,12 @@ export class SimpleGit extends GitManager {
 
     }
 
-    async stage(filepath: string): Promise<void> {
+    async stage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.add(["--", filepath], (err) => this.onError(err));
+
+        path = this.getPath(path, relativeToVault);
+        await this.git.add(["--", path], (err) => this.onError(err));
+
         this.plugin.setState(PluginState.idle);
     }
 
@@ -168,13 +193,13 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.idle);
     }
 
-    async unstage(filepath: string): Promise<void> {
+    async unstage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.reset(
-            ["--", filepath], (err) => this.onError(err)
-        );
-        this.plugin.setState(PluginState.idle);
 
+        path = this.getPath(path, relativeToVault);
+        await this.git.reset(["--", path], (err) => this.onError(err));
+
+        this.plugin.setState(PluginState.idle);
     }
 
     async discard(filepath: string): Promise<void> {
@@ -191,7 +216,7 @@ export class SimpleGit extends GitManager {
             await this.git.subModule(["update", "--remote", "--merge", "--recursive"], (err) => this.onError(err));
 
         const branchInfo = await this.branchInfo();
-        const localCommit = await this.git.revparse([branchInfo.tracking], (err) => this.onError(err));
+        const localCommit = await this.git.revparse([branchInfo.current], (err) => this.onError(err));
 
         await this.git.fetch((err) => this.onError(err));
         const upstreamCommit = await this.git.revparse([branchInfo.tracking], (err) => this.onError(err));
@@ -209,10 +234,6 @@ export class SimpleGit extends GitManager {
                     }
                 } catch (err) {
                     this.plugin.displayError(`Pull failed (${this.plugin.settings.syncMethod}): ${err.message}`);
-                    const status = await this.status();
-                    if (status.conflicted.length > 0) {
-                        this.plugin.handleConflict(status.conflicted);
-                    }
                     return;
                 }
 
@@ -224,8 +245,9 @@ export class SimpleGit extends GitManager {
                     this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`);
                 }
             }
+            const afterMergeCommit = await this.git.revparse([branchInfo.current], (err) => this.onError(err));
 
-            const filesChanged = await this.git.diff([`${localCommit}..${upstreamCommit}`, '--name-only']);
+            const filesChanged = await this.git.diff([`${localCommit}..${afterMergeCommit}`, '--name-only']);
             return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).length;
         } else {
             return 0;
@@ -237,7 +259,7 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status();
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
-        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
+        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch], (err) => this.onError(err))).changed;
 
         this.plugin.setState(PluginState.push);
         if (this.plugin.settings.updateSubmodules) {
@@ -284,13 +306,21 @@ export class SimpleGit extends GitManager {
         };
     }
 
-    async log(file?: string): Promise<ReadonlyArray<DefaultLogFields>> {
-        const res = await this.git.log({ file: file, }, (err) => this.onError(err));
+    async getRemoteUrl(remote: string): Promise<string> {
+        return await this.git.remote(["get-url", remote], (err, url) => this.onError(err)) || undefined;
+    }
+
+    async log(file?: string, relativeToVault: boolean = true): Promise<ReadonlyArray<DefaultLogFields>> {
+        const path = this.getPath(file, relativeToVault);
+
+        const res = await this.git.log({ file: path, }, (err) => this.onError(err));
         return res.all;
     }
 
-    async show(commitHash: string, file: string): Promise<string> {
-        return this.git.show([commitHash + ":" + file], (err) => this.onError(err));
+    async show(commitHash: string, file: string, relativeToVault: boolean = true): Promise<string> {
+        const path = this.getPath(file, relativeToVault);
+
+        return this.git.show([commitHash + ":" + path], (err) => this.onError(err));
     }
 
     async checkout(branch: string): Promise<void> {
@@ -329,6 +359,9 @@ export class SimpleGit extends GitManager {
 
     async getRemoteBranches(remote: string): Promise<string[]> {
         const res = await this.git.branch(["-r", "--list", `${remote}*`], (err) => this.onError(err));
+        console.log(remote);
+        console.log(res);
+
         const list = [];
         for (var item in res.branches) {
             list.push(res.branches[item].name);
@@ -359,7 +392,11 @@ export class SimpleGit extends GitManager {
     }
 
     updateBasePath(basePath: string) {
-        this.setGitInstance();
+        this.setGitInstance(true);
+    }
+
+    getPath(path: string, relativeToVault: boolean): string {
+        return (relativeToVault && this.plugin.settings.basePath.length > 0) ? path.substring(this.plugin.settings.basePath.length + 1) : path;
     }
 
     async getDiffString(filePath: string, stagedChanges = false): Promise<string> {

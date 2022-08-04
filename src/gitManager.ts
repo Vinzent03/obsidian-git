@@ -22,9 +22,9 @@ export abstract class GitManager {
 
     abstract unstageAll(): Promise<void>;
 
-    abstract stage(filepath: string): Promise<void>;
+    abstract stage(filepath: string, relativeToVault: boolean): Promise<void>;
 
-    abstract unstage(filepath: string): Promise<void>;
+    abstract unstage(filepath: string, relativeToVault: boolean): Promise<void>;
 
     abstract discard(filepath: string): Promise<void>;
 
@@ -54,6 +54,8 @@ export abstract class GitManager {
 
     abstract getRemotes(): Promise<string[]>;
 
+    abstract getRemoteUrl(remote: string): Promise<string>;
+
     abstract getRemoteBranches(remote: string): Promise<string[]>;
 
     abstract removeRemote(remoteName: string): Promise<void>;
@@ -70,10 +72,10 @@ export abstract class GitManager {
     abstract diff(file: string, commit1: string, commit2: string): Promise<string>;
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
-    abstract log(file: string): Promise<ReadonlyArray<DefaultLogFields>>;
+    abstract log(file: string, relativeToVault: boolean): Promise<ReadonlyArray<DefaultLogFields>>;
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
-    abstract show(commitHash: string, file: string): Promise<string>;
+    abstract show(commitHash: string, file: string, relativeToVault: boolean): Promise<string>;
 
 
     getTreeStructure(children: FileStatusResult[], beginLength: number = 0): TreeItem[] {

@@ -3,6 +3,7 @@ export interface ObsidianGitSettings {
     autoCommitMessage: string;
     commitDateFormat: string;
     autoSaveInterval: number;
+    autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
     syncMethod: SyncMethod;
@@ -18,6 +19,8 @@ export interface ObsidianGitSettings {
     treeStructure: boolean;
     username: string;
     password: string;
+    differentIntervalCommitAndPush: boolean;
+    changedFilesInStatusBar: boolean;
 
     /**
      * @deprecated Migrated to `syncMethod = 'merge'`
@@ -86,6 +89,9 @@ export interface Status {
  */
 export interface FileStatusResult {
     path: string;
+    vault_path: string;
+    from?: string;
+
     // First digit of the status code of the file, e.g. 'M' = modified.
     // Represents the status of the index if no merge conflicts, otherwise represents
     // status of one side of the merge.

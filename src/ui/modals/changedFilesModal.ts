@@ -28,14 +28,14 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
         if (item.working_dir != " ") working_dir = `Working dir: ${item.working_dir} `;
         if (item.index != " ") index = `Index: ${item.index}`;
 
-        return `${working_dir}${index} | ${item.path}`;
+        return `${working_dir}${index} | ${item.vault_path}`;
     }
 
     onChooseItem(item: FileStatusResult, _: MouseEvent | KeyboardEvent): void {
-        if (this.plugin.app.metadataCache.getFirstLinkpathDest(item.path, "") == null) {
-            (this.app as any).openWithDefaultApp(item.path);
+        if (this.plugin.app.metadataCache.getFirstLinkpathDest(item.vault_path, "") == null) {
+            (this.app as any).openWithDefaultApp(item.vault_path);
         } else {
-            this.plugin.app.workspace.openLinkText(item.path, "/");
+            this.plugin.app.workspace.openLinkText(item.vault_path, "/");
         }
     }
 }
