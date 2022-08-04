@@ -3,8 +3,8 @@ import git from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 
 
-import ObsidianGit from './main';
 import { GitManager } from "./gitManager";
+import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
 import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 
@@ -31,11 +31,11 @@ const myHTTP = {
         // We can't stream yet, so collect body and set it to the ArrayBuffer
         // because that's what requestUrl expects
         if (body) {
-            body = await collect(body)
-            body = body.buffer
+            body = await collect(body);
+            body = body.buffer;
         }
 
-        const res = await requestUrl({ url, method, headers, body })
+        const res = await requestUrl({ url, method, headers, body });
 
         return {
             url,
@@ -44,16 +44,16 @@ const myHTTP = {
             body: [new Uint8Array(res.arrayBuffer)],
             statusCode: res.status,
             statusMessage: res.text,
-        }
+        };
     }
-}
+};
 
 export class IsomorphicGit extends GitManager {
     private repo: {
         fs: MyAdapter,
         dir: string,
         author: object,
-    }
+    };
     private readonly FILE = 0;
     private readonly HEAD = 1;
     private readonly WORKDIR = 2;
@@ -93,14 +93,14 @@ export class IsomorphicGit extends GitManager {
 
     async status(): Promise<Status> {
         try {
-            this.plugin.setState(PluginState.status)
+            this.plugin.setState(PluginState.status);
             const status = (await git.statusMatrix(this.repo)).map(row => this.getFileStatusResult(row));
 
-            const changed = status.filter(fileStatus => fileStatus.working_dir !== " ")
-            const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "?")
+            const changed = status.filter(fileStatus => fileStatus.working_dir !== " ");
+            const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "?");
             // TODO: How to determine merge conflicts with isomorphic-git?
-            const conflicted: FileStatusResult[] = []
-            return { changed, staged, conflicted }
+            const conflicted: FileStatusResult[] = [];
+            return { changed, staged, conflicted };
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -110,8 +110,8 @@ export class IsomorphicGit extends GitManager {
     async commitAll(message?: string): Promise<number> {
         // TODO: Submodules support
         try {
-            await this.stageAll()
-            return this.commit(message)
+            await this.stageAll();
+            return this.commit(message);
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -120,10 +120,10 @@ export class IsomorphicGit extends GitManager {
 
     async commit(message?: string): Promise<number> {
         try {
-            this.plugin.setState(PluginState.commit)
-            const status = await this.status()
-            console.log("This is status: ", status)
-            const numChangedFiles = status.changed.length
+            this.plugin.setState(PluginState.commit);
+            const status = await this.status();
+            console.log("This is status: ", status);
+            const numChangedFiles = status.changed.length;
             const formatMessage = message ?? await this.formatCommitMessage(this.plugin.settings.commitMessage);
             await git.commit({ ...this.repo, message: formatMessage });
             return numChangedFiles;
@@ -136,7 +136,7 @@ export class IsomorphicGit extends GitManager {
     async stage(filepath: string): Promise<void> {
         try {
             this.plugin.setState(PluginState.add);
-            await git.add({ ...this.repo, filepath: filepath })
+            await git.add({ ...this.repo, filepath: filepath });
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -155,8 +155,8 @@ export class IsomorphicGit extends GitManager {
 
     async unstage(filepath: string): Promise<void> {
         try {
-            this.plugin.setState(PluginState.add)
-            await git.resetIndex({ ...this.repo, filepath: filepath })
+            this.plugin.setState(PluginState.add);
+            await git.resetIndex({ ...this.repo, filepath: filepath });
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -166,7 +166,7 @@ export class IsomorphicGit extends GitManager {
     async unstageAll(): Promise<void> {
         try {
             // Unstage all files
-            await this.unstage(".")
+            await this.unstage(".");
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -175,17 +175,17 @@ export class IsomorphicGit extends GitManager {
 
     async discard(filepath: string): Promise<void> {
         try {
-            this.plugin.setState(PluginState.add)
-            await git.checkout({ ...this.repo, filepaths: [filepath] })
+            this.plugin.setState(PluginState.add);
+            await git.checkout({ ...this.repo, filepaths: [filepath] });
         } catch (error) {
-            this.plugin.displayError(error)
-            throw error
+            this.plugin.displayError(error);
+            throw error;
         }
     }
 
     async pull(): Promise<number> {
         try {
-            this.plugin.setState(PluginState.pull)
+            this.plugin.setState(PluginState.pull);
             // TODO: Submodules
             const progressNotice = new Notice("Initializing clone", this.noticeLength);
             await git.pull({
@@ -194,35 +194,35 @@ export class IsomorphicGit extends GitManager {
                 onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = `Pulling progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
                 }
-            })
-            progressNotice.hide()
-            this.plugin.lastUpdate = Date.now()
+            });
+            progressNotice.hide();
+            this.plugin.lastUpdate = Date.now();
             // TODO: Not a native command in isomorphic-git to get number of
             // changed files, but we could do a diff between latest commit
             // before and after pull using this snippet: 
             // https://isomorphic-git.org/docs/en/snippets#git-diff---name-status-commithash1-commithash2
             return 1;
         } catch (error) {
-            this.plugin.displayError(error)
-            throw error
+            this.plugin.displayError(error);
+            throw error;
         }
     }
 
     async push(): Promise<number> {
         try {
-            this.plugin.setState(PluginState.status)
-            const status = await this.status()
-            const numChangedFiles = status.changed.length
-            console.log("Changed files: ", status.changed)
+            this.plugin.setState(PluginState.status);
+            const status = await this.status();
+            const numChangedFiles = status.changed.length;
+            console.log("Changed files: ", status.changed);
 
-            this.plugin.setState(PluginState.push)
+            this.plugin.setState(PluginState.push);
             // TODO: Submodules support
             // TODO: Maybe an onProgress here too?
             await git.push({
                 ...this.repo, http: myHTTP,
                 force: true
-            })
-            return numChangedFiles
+            });
+            return numChangedFiles;
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -238,11 +238,11 @@ export class IsomorphicGit extends GitManager {
         // TODO: I think the user doesn't have to install git themselves with
         // isomorphic-git so remove "missing-git"?
         try {
-            await git.listBranches(this.repo)
+            await git.listBranches(this.repo);
         } catch (error) {
-            return "missing-repo"
+            return "missing-repo";
         }
-        return "valid"
+        return "valid";
     }
 
     async branchInfo(): Promise<BranchInfo> {
@@ -302,7 +302,7 @@ export class IsomorphicGit extends GitManager {
             await git.clone({
                 ...this.repo, http: myHTTP,
                 url: url
-            })
+            });
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -339,8 +339,8 @@ export class IsomorphicGit extends GitManager {
         try {
             const args = {
                 ...this.repo, http: myHTTP,
-            }
-            if (remote) { args.remoteRef = remote }
+            };
+            if (remote) { args.remoteRef = remote; }
             await git.fetch(args);
         } catch (error) {
             this.plugin.displayError(error);
@@ -350,7 +350,7 @@ export class IsomorphicGit extends GitManager {
 
     async setRemote(name: string, url: string): Promise<void> {
         try {
-            await git.addRemote({ ...this.repo, remote: name, url: url })
+            await git.addRemote({ ...this.repo, remote: name, url: url });
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -361,34 +361,34 @@ export class IsomorphicGit extends GitManager {
         const remotes = this.getRemotes();
         const remoteBranches = [];
         for (var remote_ in remotes) {
-            remoteBranches.push(...await git.listBranches({ ...this.repo, remote: remote_ }))
+            remoteBranches.push(...await git.listBranches({ ...this.repo, remote: remote_ }));
         }
-        return remoteBranches.filter(branch => branch.includes(remote))
+        return remoteBranches.filter(branch => branch.includes(remote));
     }
 
     async getRemotes(): Promise<string[]> {
-        return (await git.listRemotes({ ...this.repo })).map(remoteUrl => remoteUrl.remote)
+        return (await git.listRemotes({ ...this.repo })).map(remoteUrl => remoteUrl.remote);
     }
 
     async removeRemote(remoteName: string): Promise<void> {
-        await git.deleteRemote({ ...this.repo, remote: remoteName })
+        await git.deleteRemote({ ...this.repo, remote: remoteName });
     }
 
     async updateUpstreamBranch(remoteBranch: string): Promise<void> {
-        const [remote, branch] = remoteBranch.split("/")
+        const [remote, branch] = remoteBranch.split("/");
         await git.push({
             ...this.repo, http: myHTTP,
             remote: remote, remoteRef: branch
-        })
+        });
     }
 
     updateGitPath(gitPath: string): void {
         // isomorphic-git library has its own git client
-        return
+        return;
     }
 
     async getDiffString(filePath: string): Promise<string> {
-        return "Not Implemented!"
+        return "Not Implemented!";
     }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
@@ -397,8 +397,8 @@ export class IsomorphicGit extends GitManager {
             // status will always be two characters
             return { index: status[0], working_dir: status[1], path: row[this.FILE] };
         } catch (error) {
-            console.log("Status: ", String(status))
-            console.log("row: ", row)
+            console.log("Status: ", String(status));
+            console.log("row: ", row);
         }
     };
 }
@@ -408,57 +408,57 @@ export class IsomorphicGit extends GitManager {
 // Convert a value to an Async Iterator
 // This will be easier with async generator functions.
 function fromValue(value) {
-    let queue = [value]
+    let queue = [value];
     return {
         next() {
-            return Promise.resolve({ done: queue.length === 0, value: queue.pop() })
+            return Promise.resolve({ done: queue.length === 0, value: queue.pop() });
         },
         return() {
-            queue = []
-            return {}
+            queue = [];
+            return {};
         },
         [Symbol.asyncIterator]() {
-            return this
+            return this;
         },
-    }
+    };
 }
 
 function getIterator(iterable) {
     if (iterable[Symbol.asyncIterator]) {
-        return iterable[Symbol.asyncIterator]()
+        return iterable[Symbol.asyncIterator]();
     }
     if (iterable[Symbol.iterator]) {
-        return iterable[Symbol.iterator]()
+        return iterable[Symbol.iterator]();
     }
     if (iterable.next) {
-        return iterable
+        return iterable;
     }
-    return fromValue(iterable)
+    return fromValue(iterable);
 }
 
 async function forAwait(iterable, cb) {
-    const iter = getIterator(iterable)
+    const iter = getIterator(iterable);
     while (true) {
-        const { value, done } = await iter.next()
-        if (value) await cb(value)
-        if (done) break
+        const { value, done } = await iter.next();
+        if (value) await cb(value);
+        if (done) break;
     }
-    if (iter.return) iter.return()
+    if (iter.return) iter.return();
 }
 
 async function collect(iterable) {
-    let size = 0
-    const buffers = []
+    let size = 0;
+    const buffers = [];
     // This will be easier once `for await ... of` loops are available.
     await forAwait(iterable, value => {
-        buffers.push(value)
-        size += value.byteLength
-    })
-    const result = new Uint8Array(size)
-    let nextIndex = 0
+        buffers.push(value);
+        size += value.byteLength;
+    });
+    const result = new Uint8Array(size);
+    let nextIndex = 0;
     for (const buffer of buffers) {
-        result.set(buffer, nextIndex)
-        nextIndex += buffer.byteLength
+        result.set(buffer, nextIndex);
+        nextIndex += buffer.byteLength;
     }
-    return result
+    return result;
 }

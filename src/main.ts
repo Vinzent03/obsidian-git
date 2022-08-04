@@ -7,8 +7,8 @@ import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
-import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { IsomorphicGit } from "./isomorphicGit";
+import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ObsidianGitSettings, PluginState } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
@@ -395,9 +395,9 @@ export default class ObsidianGit extends Plugin {
             this.handleConflict(status.conflicted);
             return false;
         } else {
-            console.log("Pushing....")
+            console.log("Pushing....");
             const pushedFiles = await this.gitManager.push();
-            console.log("Pushed!", pushedFiles)
+            console.log("Pushed!", pushedFiles);
             this.lastUpdate = Date.now();
             this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
             this.offlineMode = false;
