@@ -1,5 +1,4 @@
 import { debounce, Debouncer, EventRef, Notice, Plugin, TFile } from "obsidian";
-import normalize from "path-normalize";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -13,6 +12,7 @@ import { ObsidianGitSettings, PluginState } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
+const normalize = require("path-normalize");
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -323,17 +323,17 @@ export default class ObsidianGit extends Plugin {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
             await this.app.vault.delete(file);
         }
-        if (this.gitManager instanceof IsomorphicGit) {
-            const status = await this.gitManager.status();
+        // if (this.gitManager instanceof IsomorphicGit) {
+        //     const status = await this.gitManager.status();
 
-            // check for conflict files on auto backup
-            if (fromAutoBackup && status.conflicted.length > 0) {
-                this.setState(PluginState.idle);
-                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
-                this.handleConflict(status.conflicted);
-                return;
-            }
-        }
+        //     // check for conflict files on auto backup
+        //     if (fromAutoBackup && status.conflicted.length > 0) {
+        //         this.setState(PluginState.idle);
+        //         this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
+        //         this.handleConflict(status.conflicted);
+        //         return;
+        //     }
+        // }
 
         if (!(await this.commit(fromAutoBackup, requestCustomMessage))) return;
 

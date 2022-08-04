@@ -1,5 +1,5 @@
 // TODO: Use different FS for mobile, maybe custom one?
-import git from "isomorphic-git";
+import git, { AuthCallback, GitHttpRequest, GitHttpResponse, HttpClient } from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 
 
@@ -20,14 +20,7 @@ const myHTTP = {
         method,
         headers,
         body,
-    }): Promise<{
-        url: string,
-        method: string,
-        headers: object,
-        body: AsyncIterableIterator<Uint8Array>,
-        statusCode: number,
-        statusMessage: string,
-    }> {
+    }: GitHttpRequest): Promise<GitHttpResponse> {
         // We can't stream yet, so collect body and set it to the ArrayBuffer
         // because that's what requestUrl expects
         if (body) {
@@ -49,10 +42,24 @@ const myHTTP = {
 };
 
 export class IsomorphicGit extends GitManager {
+    updateBasePath(basePath: string): void {
+        throw new Error("Method not implemented.");
+    }
+    diff(file: string, commit1: string, commit2: string): Promise<string> {
+        throw new Error("Method not implemented.");
+    }
+    log(file: string): Promise<string[]> {
+        throw new Error("Method not implemented.");
+    }
+    show(commitHash: string, file: string): Promise<string> {
+        throw new Error("Method not implemented.");
+    }
     private repo: {
         fs: MyAdapter,
         dir: string,
         author: object,
+        onAuth: AuthCallback,
+        http: HttpClient,
     };
     private readonly FILE = 0;
     private readonly HEAD = 1;
@@ -87,7 +94,11 @@ export class IsomorphicGit extends GitManager {
             author: {
                 name: this.plugin.settings.username,
             },
-            onAuth: () => ({ username: this.plugin.settings.password }),
+            onAuth: () => ({
+                username: this.plugin.settings.username,
+                password: this.plugin.settings.password
+            }),
+            http: myHTTP,
         };
     }
 
@@ -190,7 +201,6 @@ export class IsomorphicGit extends GitManager {
             const progressNotice = new Notice("Initializing clone", this.noticeLength);
             await git.pull({
                 ...this.repo,
-                http: myHTTP,
                 onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = `Pulling progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
                 }
@@ -219,7 +229,7 @@ export class IsomorphicGit extends GitManager {
             // TODO: Submodules support
             // TODO: Maybe an onProgress here too?
             await git.push({
-                ...this.repo, http: myHTTP,
+                ...this.repo,
                 force: true
             });
             return numChangedFiles;
@@ -300,7 +310,7 @@ export class IsomorphicGit extends GitManager {
         try {
             // TODO: onProgress
             await git.clone({
-                ...this.repo, http: myHTTP,
+                ...this.repo,
                 url: url
             });
         } catch (error) {
@@ -338,7 +348,7 @@ export class IsomorphicGit extends GitManager {
         // TODO: onProgress
         try {
             const args = {
-                ...this.repo, http: myHTTP,
+                ...this.repo
             };
             if (remote) { args.remoteRef = remote; }
             await git.fetch(args);
@@ -377,7 +387,7 @@ export class IsomorphicGit extends GitManager {
     async updateUpstreamBranch(remoteBranch: string): Promise<void> {
         const [remote, branch] = remoteBranch.split("/");
         await git.push({
-            ...this.repo, http: myHTTP,
+            ...this.repo,
             remote: remote, remoteRef: branch
         });
     }
@@ -446,7 +456,7 @@ async function forAwait(iterable, cb) {
     if (iter.return) iter.return();
 }
 
-async function collect(iterable) {
+async function collect(iterable: AsyncIterator<Uint8Array>) {
     let size = 0;
     const buffers = [];
     // This will be easier once `for await ... of` loops are available.
