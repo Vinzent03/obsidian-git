@@ -23,6 +23,7 @@ export default class ObsidianGit extends Plugin {
     timeoutIDPush: number;
     timeoutIDPull: number;
     lastUpdate: number;
+    lastPulledFiles: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
     conflictOutputFile = "conflict-files-obsidian-git.md";
@@ -548,13 +549,14 @@ export default class ObsidianGit extends Plugin {
     /// Used for internals
     /// Returns whether the pull added a commit or not.
     async pull(): Promise<boolean> {
-        const pulledFilesLength = await this.gitManager.pull();
+        const pulledFiles = await this.gitManager.pull();
         this.offlineMode = false;
 
-        if (pulledFilesLength > 0) {
-            this.displayMessage(`Pulled ${pulledFilesLength} ${pulledFilesLength > 1 ? 'files' : 'file'} from remote`);
+        if (pulledFiles.length > 0) {
+            this.displayMessage(`Pulled ${pulledFiles.length} ${pulledFiles.length > 1 ? 'files' : 'file'} from remote`);
+            this.lastPulledFiles = pulledFiles;
         }
-        return pulledFilesLength != 0;
+        return pulledFiles.length != 0;
     }
 
     async stageCurrentFile(): Promise<boolean> {

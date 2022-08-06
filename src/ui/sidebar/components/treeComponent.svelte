@@ -1,14 +1,15 @@
 <script lang="ts">
   import ObsidianGit from "src/main";
-  import { TreeItem } from "src/types";
+  import { FileType, TreeItem } from "src/types";
   import { slide } from "svelte/transition";
   import GitView from "../sidebarView";
   import FileComponent from "./fileComponent.svelte";
+  import PulledFileComponent from "./pulledFileComponent.svelte";
   import StagedFileComponent from "./stagedFileComponent.svelte";
   export let hierarchy: TreeItem;
   export let plugin: ObsidianGit;
   export let view: GitView;
-  export let staged: boolean;
+  export let fileType: FileType;
   export let topLevel = false;
 
   const closed: Record<string, boolean> = {};
@@ -18,19 +19,21 @@
   {#each hierarchy.children as entity}
     {#if entity.statusResult}
       <div class="file-view">
-        {#if staged}
+        {#if fileType == FileType.staged}
           <StagedFileComponent
             change={entity.statusResult}
             manager={plugin.gitManager}
             {view}
           />
-        {:else}
+        {:else if fileType == FileType.changed}
           <FileComponent
             change={entity.statusResult}
             manager={plugin.gitManager}
             {view}
             workspace={plugin.app.workspace}
           />
+        {:else if fileType == FileType.pulled}
+          <PulledFileComponent change={entity.statusResult} {view} />
         {/if}
       </div>
     {:else}
@@ -60,7 +63,7 @@
       </div>
       {#if !closed[entity.title]}
         <div class="file-view" transition:slide|local={{ duration: 75 }}>
-          <svelte:self hierarchy={entity} {plugin} {view} {staged} />
+          <svelte:self hierarchy={entity} {plugin} {view} {fileType} />
         </div>
       {/if}
     {/if}

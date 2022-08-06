@@ -76,3 +76,9 @@ export interface DiffViewState {
     staged: boolean,
     file: string,
 }
+
+export enum FileType {
+    staged,
+    changed,
+    pulled,
+}
