@@ -20,8 +20,9 @@ export class MyAdapter {
         this.promises.symlink = this.symlink.bind(this);
     }
     async readFile(path: string, opts: any) {
-        if (opts.encoding == "utf8") {
-            return this.adapter.read(path);
+        if (opts == "utf8" || opts.encoding == "utf8") {
+            const res = await this.adapter.read(path);
+            return res;
         } else {
             return this.adapter.readBinary(path);
         }
@@ -39,7 +40,6 @@ export class MyAdapter {
         const res = await this.adapter.list(path);
         const all = [...res.files, ...res.folders];
         let formattedAll = all.map(e => normalizePath(e.substring(path.length)));
-        formattedAll = formattedAll.filter(item => !item.startsWith("."));
         formattedAll.remove("_git");
 
         return formattedAll;
@@ -74,10 +74,10 @@ export class MyAdapter {
     async lstat(path: string) {
         return this.stat(path);
     }
-    async readlink() {
-        throw new Error("Method not implemented.");
+    async readlink(path: string) {
+        throw new Error(`readlink of (${path}) is not implemented.`);
     }
-    async symlink() {
-        throw new Error("Method not implemented.");
+    async symlink(path: string) {
+        throw new Error(`symlink of (${path}) is not implemented.`);
     }
 }
