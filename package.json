@@ -31,8 +31,10 @@
     "dependencies": {
         "diff2html": "^3.4.13",
         "obsidian-community-lib": "^2.0.1",
-        "isomorphic-git":"^1.19.1" ,
-        "supports-color": "^7.2.0"
+        "isomorphic-git": "^1.19.1",
+        "supports-color": "^7.2.0",
+        "buffer": "^6.0.3",
+        "path-normalize": "^6.0.6"
     },
     "moduleFileExtensions": [
         "js",

@@ -1,5 +1,4 @@
 import { App } from "obsidian";
-import { DefaultLogFields } from "simple-git";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, Status, TreeItem } from "./types";
 
@@ -72,7 +71,7 @@ export abstract class GitManager {
     abstract diff(file: string, commit1: string, commit2: string): Promise<string>;
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
-    abstract log(file: string, relativeToVault: boolean): Promise<ReadonlyArray<DefaultLogFields>>;
+    abstract log(file: string, relativeToVault: boolean): Promise<ReadonlyArray<string>>;
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
     abstract show(commitHash: string, file: string, relativeToVault: boolean): Promise<string>;

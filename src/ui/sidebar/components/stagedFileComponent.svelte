@@ -1,7 +1,6 @@
 <script lang="ts">
   import { FileView, setIcon, TAbstractFile } from "obsidian";
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
-  import { format } from "path";
   import { DIFF_VIEW_CONFIG } from "src/constants";
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
