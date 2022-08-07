@@ -42,18 +42,6 @@ const myHTTP = {
 };
 
 export class IsomorphicGit extends GitManager {
-    updateBasePath(basePath: string): void {
-        throw new Error("Method not implemented.");
-    }
-    diff(file: string, commit1: string, commit2: string): Promise<string> {
-        throw new Error("Method not implemented.");
-    }
-    log(file: string): Promise<string[]> {
-        throw new Error("Method not implemented.");
-    }
-    show(commitHash: string, file: string): Promise<string> {
-        throw new Error("Method not implemented.");
-    }
     private repo: {
         fs: MyAdapter,
         dir: string,
@@ -90,7 +78,7 @@ export class IsomorphicGit extends GitManager {
 
         this.repo = {
             fs: new MyAdapter(this.app.vault),
-            dir: "",
+            dir: plugin.settings.basePath,
             author: {
                 name: this.plugin.settings.username,
             },
@@ -386,6 +374,14 @@ export class IsomorphicGit extends GitManager {
         await git.deleteRemote({ ...this.repo, remote: remoteName });
     }
 
+    async getRemoteUrl(remote: string): Promise<string> {
+        return (await git.listRemotes({ ...this.repo })).filter((item) => item.remote == remote)[0].url;
+    }
+
+    updateBasePath(basePath: string): void {
+        this.repo.dir = basePath;
+    }
+
     async updateUpstreamBranch(remoteBranch: string): Promise<void> {
         const [remote, branch] = remoteBranch.split("/");
         await git.push({
@@ -400,7 +396,17 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getDiffString(filePath: string): Promise<string> {
-        throw "Not Implemented!";
+        throw new Error("Method not implemented.");
+    }
+
+    diff(file: string, commit1: string, commit2: string): Promise<string> {
+        throw new Error("Method not implemented.");
+    }
+    log(file: string): Promise<string[]> {
+        throw new Error("Method not implemented.");
+    }
+    show(commitHash: string, file: string): Promise<string> {
+        throw new Error("Method not implemented.");
     }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
