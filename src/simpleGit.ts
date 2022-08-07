@@ -76,14 +76,6 @@ export class SimpleGit extends GitManager {
         };
     }
 
-    getVaultPath(path: string): String {
-        if (this.plugin.settings.basePath) {
-            return this.plugin.settings.basePath + "/" + path;
-        } else {
-            return path;
-        }
-    }
-
     //Remove wrong `"` like "My file.md"
     formatPath(path: simple.FileStatusResult, renamed: boolean = false): { path: string, from?: string; } {
         function format(path?: string): string {

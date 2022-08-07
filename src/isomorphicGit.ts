@@ -405,7 +405,12 @@ export class IsomorphicGit extends GitManager {
         try {
             const status = (this.status_mapping as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
             // status will always be two characters
-            return { index: status[0], working_dir: status[1], path: row[this.FILE] };
+            return {
+                index: status[0],
+                working_dir: status[1],
+                path: row[this.FILE],
+                vault_path: this.getVaultPath(row[this.FILE])
+            };
         } catch (error) {
             console.log("Status: ", String(status));
             console.log("row: ", row);

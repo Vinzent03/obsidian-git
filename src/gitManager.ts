@@ -77,6 +77,15 @@ export abstract class GitManager {
     abstract show(commitHash: string, file: string, relativeToVault: boolean): Promise<string>;
 
 
+
+    getVaultPath(path: string): string {
+        if (this.plugin.settings.basePath) {
+            return this.plugin.settings.basePath + "/" + path;
+        } else {
+            return path;
+        }
+    }
+
     getTreeStructure(children: FileStatusResult[], beginLength: number = 0): TreeItem[] {
         let list: TreeItem[] = [];
         children = [...children];
