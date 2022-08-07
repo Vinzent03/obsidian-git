@@ -176,8 +176,10 @@ export class IsomorphicGit extends GitManager {
 
     async unstageAll(): Promise<void> {
         try {
-            // Unstage all files
-            await this.unstage(".");
+            const changed = this.plugin.cachedStatus.staged;
+            for (const file of changed) {
+                await this.unstage(file.path);
+            }
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -398,7 +400,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getDiffString(filePath: string): Promise<string> {
-        return "Not Implemented!";
+        throw "Not Implemented!";
     }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
