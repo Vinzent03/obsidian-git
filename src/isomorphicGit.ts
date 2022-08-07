@@ -96,7 +96,7 @@ export class IsomorphicGit extends GitManager {
             const status = (await git.statusMatrix(this.repo)).map(row => this.getFileStatusResult(row));
 
             const changed = status.filter(fileStatus => fileStatus.working_dir !== " ");
-            const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "?");
+            const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "U");
             // TODO: How to determine merge conflicts with isomorphic-git?
             const conflicted: FileStatusResult[] = [];
             return { changed, staged, conflicted };
@@ -177,7 +177,7 @@ export class IsomorphicGit extends GitManager {
     async discard(filepath: string): Promise<void> {
         try {
             this.plugin.setState(PluginState.add);
-            await git.checkout({ ...this.repo, filepaths: [filepath] });
+            await git.checkout({ ...this.repo, filepaths: [filepath], force: true });
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -414,14 +414,14 @@ export class IsomorphicGit extends GitManager {
             const status = (this.status_mapping as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
             // status will always be two characters
             return {
-                index: status[0],
-                working_dir: status[1],
+                index: status[0] == "?" ? "U" : status[0],
+                working_dir: status[1] == "?" ? "U" : status[1],
                 path: row[this.FILE],
                 vault_path: this.getVaultPath(row[this.FILE])
             };
         } catch (error) {
-            console.log("Status: ", String(status));
-            console.log("row: ", row);
+            this.plugin.displayError(error);
+            throw error;
         }
     };
 }
