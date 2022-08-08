@@ -296,52 +296,54 @@
           </div>
         {/if}
       </div>
-      <div class="pulled">
-        <div
-          class="opener tree-item-self is-clickable"
-          class:open={lastPulledFilesOpen}
-          on:click={() => (lastPulledFilesOpen = !lastPulledFilesOpen)}
-        >
-          <div>
-            <div class="tree-item-icon collapse-icon" style="">
-              <svg
-                viewBox="0 0 100 100"
-                class="right-triangle"
-                width="8"
-                height="8"
-                ><path
-                  fill="currentColor"
-                  stroke="currentColor"
-                  d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
-                /></svg
-              >
+      {#if lastPulledFiles.length > 0}
+        <div class="pulled">
+          <div
+            class="opener tree-item-self is-clickable"
+            class:open={lastPulledFilesOpen}
+            on:click={() => (lastPulledFilesOpen = !lastPulledFilesOpen)}
+          >
+            <div>
+              <div class="tree-item-icon collapse-icon" style="">
+                <svg
+                  viewBox="0 0 100 100"
+                  class="right-triangle"
+                  width="8"
+                  height="8"
+                  ><path
+                    fill="currentColor"
+                    stroke="currentColor"
+                    d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
+                  /></svg
+                >
+              </div>
+              <span>Recently Pulled Changes</span>
             </div>
-            <span>Recently Pulled Changes</span>
+            <span class="tree-item-flair">{lastPulledFiles.length}</span>
           </div>
-          <span class="tree-item-flair">{lastPulledFiles.length}</span>
-        </div>
-        {#if lastPulledFilesOpen}
-          <div class="file-view" transition:slide|local={{ duration: 150 }}>
-            {#if showTree}
-              <TreeComponent
-                hierarchy={lastPulledFilesHierarchy}
-                {plugin}
-                {view}
-                fileType={FileType.pulled}
-                topLevel={true}
-              />
-            {:else}
-              {#each lastPulledFiles as change}
-                <PulledFileComponent
-                  {change}
+          {#if lastPulledFilesOpen}
+            <div class="file-view" transition:slide|local={{ duration: 150 }}>
+              {#if showTree}
+                <TreeComponent
+                  hierarchy={lastPulledFilesHierarchy}
+                  {plugin}
                   {view}
-                  on:git-refresh={triggerRefresh}
+                  fileType={FileType.pulled}
+                  topLevel={true}
                 />
-              {/each}
-            {/if}
-          </div>
-        {/if}
-      </div>
+              {:else}
+                {#each lastPulledFiles as change}
+                  <PulledFileComponent
+                    {change}
+                    {view}
+                    on:git-refresh={triggerRefresh}
+                  />
+                {/each}
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
     {/if}
   </div>
 </main>
