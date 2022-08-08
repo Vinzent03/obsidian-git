@@ -393,7 +393,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 cb.onChange((value) => {
                     plugin.settings.username = value;
                     plugin.saveSettings();
-                    new Notice("Saved username");
+                });
+            });
+
+        new Setting(containerEl)
+            .setName("Email")
+            .addText(cb => {
+                cb.setValue(plugin.settings.email);
+                cb.onChange((value) => {
+                    plugin.settings.email = value;
+                    plugin.saveSettings();
                 });
             });
 

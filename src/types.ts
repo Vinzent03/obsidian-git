@@ -18,6 +18,7 @@ export interface ObsidianGitSettings {
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
     username: string;
+    email: string;
     password: string;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;

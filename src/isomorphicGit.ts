@@ -6,7 +6,7 @@ import { Notice, requestUrl } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
-import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
+import { Author, BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 
 // TODO: Set to idle, what's a nice way to do this...
 // TODO: Nicer way to display error... I'm doing it multiple times if I call other
@@ -45,7 +45,6 @@ export class IsomorphicGit extends GitManager {
     private repo: {
         fs: MyAdapter,
         dir: string,
-        author: object,
         onAuth: AuthCallback,
         http: HttpClient,
     };
@@ -79,9 +78,6 @@ export class IsomorphicGit extends GitManager {
         this.repo = {
             fs: new MyAdapter(this.app.vault),
             dir: plugin.settings.basePath,
-            author: {
-                name: this.plugin.settings.username,
-            },
             onAuth: () => ({
                 username: this.plugin.settings.username,
                 password: this.plugin.settings.password
@@ -124,12 +120,23 @@ export class IsomorphicGit extends GitManager {
             console.log("This is status: ", status);
             const numChangedFiles = status.changed.length;
             const formatMessage = message ?? await this.formatCommitMessage(this.plugin.settings.commitMessage);
-            await git.commit({ ...this.repo, message: formatMessage });
+            await git.commit({
+                ...this.repo,
+                message: formatMessage,
+                author: this.getAuthor()
+            });
             return numChangedFiles;
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
         }
+    }
+
+    getAuthor(): Author {
+        return {
+            name: this.plugin.settings.username,
+            email: this.plugin.settings.email
+        };
     }
 
     async stage(filepath: string): Promise<void> {
