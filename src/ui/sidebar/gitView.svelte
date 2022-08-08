@@ -1,10 +1,17 @@
 <script lang="ts">
   import { debounce, EventRef, MetadataCache, setIcon } from "obsidian";
   import ObsidianGit from "src/main";
-  import { PluginState, Status, TreeItem } from "src/types";
+  import {
+    PluginState,
+    Status,
+    TreeItem,
+    FileStatusResult,
+    FileType,
+  } from "src/types";
   import { onDestroy } from "svelte";
   import { slide } from "svelte/transition";
   import FileComponent from "./components/fileComponent.svelte";
+  import PulledFileComponent from "./components/pulledFileComponent.svelte";
   import StagedFileComponent from "./components/stagedFileComponent.svelte";
   import TreeComponent from "./components/treeComponent.svelte";
   import GitView from "./sidebarView";
@@ -13,12 +20,15 @@
   export let view: GitView;
   let loading: boolean;
   let status: Status | null;
+  let lastPulledFiles: FileStatusResult[] = [];
   let commitMessage = plugin.settings.commitMessage;
   let buttons: HTMLElement[] = [];
   let changeHierarchy: TreeItem;
   let stagedHierarchy: TreeItem;
+  let lastPulledFilesHierarchy: TreeItem;
   let changesOpen = true;
   let stagedOpen = true;
+  let lastPulledFilesOpen = true;
 
   let showTree = plugin.settings.treeStructure;
   let layoutBtn: HTMLElement;
@@ -43,7 +53,7 @@
 
   async function commit() {
     loading = true;
-    
+
     if (await plugin.hasTooBigFiles(status.staged)) {
       plugin.setState(PluginState.idle);
       return false;
@@ -60,6 +70,14 @@
 
   async function refresh() {
     status = plugin.cachedStatus;
+    if (plugin.lastPulledFiles && plugin.lastPulledFiles != lastPulledFiles) {
+      lastPulledFiles = plugin.lastPulledFiles;
+      
+      lastPulledFilesHierarchy = {
+        title: "",
+        children: plugin.gitManager.getTreeStructure(lastPulledFiles),
+      };
+    }
     if (status) {
       changeHierarchy = {
         title: "",
@@ -212,7 +230,7 @@
                 hierarchy={stagedHierarchy}
                 {plugin}
                 {view}
-                staged={true}
+                fileType={FileType.staged}
                 topLevel={true}
               />
             {:else}
@@ -258,7 +276,7 @@
                 hierarchy={changeHierarchy}
                 {plugin}
                 {view}
-                staged={false}
+                fileType={FileType.changed}
                 topLevel={true}
               />
             {:else}
@@ -275,6 +293,54 @@
           </div>
         {/if}
       </div>
+      {#if lastPulledFiles.length > 0}
+        <div class="pulled">
+          <div
+            class="opener tree-item-self is-clickable"
+            class:open={lastPulledFilesOpen}
+            on:click={() => (lastPulledFilesOpen = !lastPulledFilesOpen)}
+          >
+            <div>
+              <div class="tree-item-icon collapse-icon" style="">
+                <svg
+                  viewBox="0 0 100 100"
+                  class="right-triangle"
+                  width="8"
+                  height="8"
+                  ><path
+                    fill="currentColor"
+                    stroke="currentColor"
+                    d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
+                  /></svg
+                >
+              </div>
+              <span>Recently Pulled Changes</span>
+            </div>
+            <span class="tree-item-flair">{lastPulledFiles.length}</span>
+          </div>
+          {#if lastPulledFilesOpen}
+            <div class="file-view" transition:slide|local={{ duration: 150 }}>
+              {#if showTree}
+                <TreeComponent
+                  hierarchy={lastPulledFilesHierarchy}
+                  {plugin}
+                  {view}
+                  fileType={FileType.pulled}
+                  topLevel={true}
+                />
+              {:else}
+                {#each lastPulledFiles as change}
+                  <PulledFileComponent
+                    {change}
+                    {view}
+                    on:git-refresh={triggerRefresh}
+                  />
+                {/each}
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
     {/if}
   </div>
 </main>

@@ -210,7 +210,7 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.idle);
     }
 
-    async pull(): Promise<number> {
+    async pull(): Promise<FileStatusResult[]> {
         this.plugin.setState(PluginState.pull);
         if (this.plugin.settings.updateSubmodules)
             await this.git.subModule(["update", "--remote", "--merge", "--recursive"], (err) => this.onError(err));
@@ -248,9 +248,16 @@ export class SimpleGit extends GitManager {
             const afterMergeCommit = await this.git.revparse([branchInfo.current], (err) => this.onError(err));
 
             const filesChanged = await this.git.diff([`${localCommit}..${afterMergeCommit}`, '--name-only']);
-            return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).length;
+
+            return filesChanged.split(/\r\n|\r|\n/).filter((value) => value.length > 0).map((e) => {
+                return <FileStatusResult>{
+                    path: e,
+                    working_dir: 'P',
+                    vault_path: this.getVaultPath(e),
+                };
+            });
         } else {
-            return 0;
+            return [];
         }
     }
 
