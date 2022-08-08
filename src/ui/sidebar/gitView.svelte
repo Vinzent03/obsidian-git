@@ -70,6 +70,14 @@
 
   async function refresh() {
     status = plugin.cachedStatus;
+    if (plugin.lastPulledFiles && plugin.lastPulledFiles != lastPulledFiles) {
+      lastPulledFiles = plugin.lastPulledFiles;
+      
+      lastPulledFilesHierarchy = {
+        title: "",
+        children: plugin.gitManager.getTreeStructure(lastPulledFiles),
+      };
+    }
     if (status) {
       changeHierarchy = {
         title: "",
@@ -78,10 +86,6 @@
       stagedHierarchy = {
         title: "",
         children: plugin.gitManager.getTreeStructure(status.staged),
-      };
-      lastPulledFilesHierarchy = {
-        title: "",
-        children: plugin.gitManager.getTreeStructure(lastPulledFiles),
       };
     }
     loading = plugin.loading;
@@ -108,14 +112,7 @@
   }
   function pull() {
     loading = true;
-    plugin
-      .pullChangesFromRemote()
-      .then(() => {
-        if (plugin.lastPulledFiles != null) {
-          lastPulledFiles = plugin.lastPulledFiles;
-        }
-      })
-      .finally(triggerRefresh);
+    plugin.pullChangesFromRemote().finally(triggerRefresh);
   }
 </script>
 
