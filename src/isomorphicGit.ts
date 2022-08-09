@@ -191,12 +191,14 @@ export class IsomorphicGit extends GitManager {
     }
 
     async pull(): Promise<number> {
+        const progressNotice = new Notice("Initializing pull", this.noticeLength);
+
         try {
             this.plugin.setState(PluginState.pull);
             // TODO: Submodules
-            const progressNotice = new Notice("Initializing clone", this.noticeLength);
             await git.pull({
                 ...this.repo,
+                author: this.getAuthor(),
                 onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = `Pulling progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
                 }
@@ -209,6 +211,7 @@ export class IsomorphicGit extends GitManager {
             // https://isomorphic-git.org/docs/en/snippets#git-diff---name-status-commithash1-commithash2
             return 1;
         } catch (error) {
+            progressNotice.hide();
             this.plugin.displayError(error);
             throw error;
         }
