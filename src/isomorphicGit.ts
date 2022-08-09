@@ -209,7 +209,9 @@ export class IsomorphicGit extends GitManager {
 
         try {
             this.plugin.setState(PluginState.pull);
-            // TODO: Submodules
+
+            const localCommit = await git.resolveRef({ ...this.repo, ref: "HEAD" });
+
             await git.pull({
                 ...this.repo,
                 author: this.getAuthor(),
@@ -218,12 +220,9 @@ export class IsomorphicGit extends GitManager {
                 }
             });
             progressNotice.hide();
+            const upstreamCommit = await git.resolveRef({ ...this.repo, ref: "HEAD" });
             this.plugin.lastUpdate = Date.now();
-            // TODO: Not a native command in isomorphic-git to get number of
-            // changed files, but we could do a diff between latest commit
-            // before and after pull using this snippet: 
-            // https://isomorphic-git.org/docs/en/snippets#git-diff---name-status-commithash1-commithash2
-            return 1;
+            return await this.getFileChangesCount(localCommit, upstreamCommit);
         } catch (error) {
             progressNotice.hide();
             this.plugin.displayError(error);
@@ -441,7 +440,7 @@ export class IsomorphicGit extends GitManager {
         return;
     }
 
-    async getFileChangesCount(commitHash1: string, commitHash2: string) {
+    async getFileChangesCount(commitHash1: string, commitHash2: string): Promise<number> {
         const res = await git.walk({
             ...this.repo,
             trees: [git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })],
