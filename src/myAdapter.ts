@@ -21,8 +21,7 @@ export class MyAdapter {
     }
     async readFile(path: string, opts: any) {
         if (opts == "utf8" || opts.encoding == "utf8") {
-            const res = await this.adapter.read(path);
-            return res;
+            return this.adapter.read(path);
         } else {
             return this.adapter.readBinary(path);
         }
@@ -40,7 +39,6 @@ export class MyAdapter {
         const res = await this.adapter.list(path);
         const all = [...res.files, ...res.folders];
         let formattedAll = all.map(e => normalizePath(e.substring(path.length)));
-        formattedAll.remove("_git");
 
         return formattedAll;
     }

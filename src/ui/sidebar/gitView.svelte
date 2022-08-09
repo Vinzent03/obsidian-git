@@ -30,12 +30,12 @@
   }
   addEventListener("git-view-refresh", refresh);
   //This should go in the onMount callback, for some reason it doesn't fire though
-  //Promise's callback will execute after the current event loop finishes.
+  //setTimeout's callback will execute after the current event loop finishes.
   plugin.app.workspace.onLayoutReady(() => {
-    Promise.resolve(() => {
+    window.setTimeout(() => {
       buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon"), 16));
       setIcon(layoutBtn, showTree ? "list" : "folder", 16);
-    });
+    }, 0);
   });
   onDestroy(() => {
     removeEventListener("git-view-refresh", refresh);
