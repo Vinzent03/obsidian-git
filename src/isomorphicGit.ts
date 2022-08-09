@@ -1,5 +1,5 @@
 // TODO: Use different FS for mobile, maybe custom one?
-import git, { AuthCallback, GitHttpRequest, GitHttpResponse, HttpClient } from "isomorphic-git";
+import git, { AuthCallback, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient } from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 
 
@@ -190,6 +190,20 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
+    getProgressText(action: string, event: GitProgressEvent): string {
+        let out = `${action} progress:`;
+        if (event.phase) {
+            out = `${out} ${event.phase}:`;
+        }
+        if (event.loaded) {
+            out = `${out} ${event.loaded}`;
+            if (event.total) {
+                out = `${out} of ${event.total}`;
+            }
+        }
+        return out;
+    }
+
     async pull(): Promise<number> {
         const progressNotice = new Notice("Initializing pull", this.noticeLength);
 
@@ -200,7 +214,7 @@ export class IsomorphicGit extends GitManager {
                 ...this.repo,
                 author: this.getAuthor(),
                 onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = `Pulling progress: ${progress.phase}: ${progress.loaded} of ${progress.total}`;
+                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Pulling", progress);
                 }
             });
             progressNotice.hide();
@@ -218,6 +232,8 @@ export class IsomorphicGit extends GitManager {
     }
 
     async push(): Promise<number> {
+        const progressNotice = new Notice("Initializing push", this.noticeLength);
+
         try {
             this.plugin.setState(PluginState.status);
             const status = await this.branchInfo();
@@ -226,14 +242,17 @@ export class IsomorphicGit extends GitManager {
             const numChangedFiles = await this.getFileChangesCount(currentBranch, trackingBranch);
 
             this.plugin.setState(PluginState.push);
-            // TODO: Submodules support
-            // TODO: Maybe an onProgress here too?
+
             await git.push({
                 ...this.repo,
-                force: true
+                onProgress: (progress) => {
+                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Pushing", progress);
+                }
             });
+            progressNotice.hide();
             return numChangedFiles;
         } catch (error) {
+            progressNotice.hide();
             this.plugin.displayError(error);
             throw error;
         }
@@ -307,13 +326,18 @@ export class IsomorphicGit extends GitManager {
     }
 
     async clone(url: string, dir: string): Promise<void> {
+        const progressNotice = new Notice("Initializing clone", this.noticeLength);
         try {
-            // TODO: onProgress
             await git.clone({
                 ...this.repo,
-                url: url
+                url: url,
+                onProgress: (progress) => {
+                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);
+                }
             });
+            progressNotice.hide();
         } catch (error) {
+            progressNotice.hide();
             this.plugin.displayError(error);
             throw error;
         }
