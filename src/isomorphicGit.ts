@@ -346,7 +346,9 @@ export class IsomorphicGit extends GitManager {
             const args = {
                 ...this.repo
             };
-            if (remote) { args.remoteRef = remote; }
+            if (remote) {
+                args.remote = remote;
+            }
             await git.fetch(args);
         } catch (error) {
             this.plugin.displayError(error);
@@ -364,12 +366,14 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getRemoteBranches(remote: string): Promise<string[]> {
-        const remotes = this.getRemotes();
-        const remoteBranches = [];
-        for (var remote_ in remotes) {
-            remoteBranches.push(...await git.listBranches({ ...this.repo, remote: remote_ }));
-        }
-        return remoteBranches.filter(branch => branch.includes(remote));
+        let remoteBranches = [];
+        remoteBranches.push(...await git.listBranches({ ...this.repo, remote: remote }));
+
+        remoteBranches.remove("HEAD");
+
+        //Align with simple-git
+        remoteBranches = remoteBranches.map((e) => `${remote}/${e}`);
+        return remoteBranches;
     }
 
     async getRemotes(): Promise<string[]> {
@@ -392,7 +396,8 @@ export class IsomorphicGit extends GitManager {
         const [remote, branch] = remoteBranch.split("/");
         await git.push({
             ...this.repo,
-            remote: remote, remoteRef: branch
+            remote: remote,
+            remoteRef: branch
         });
     }
 

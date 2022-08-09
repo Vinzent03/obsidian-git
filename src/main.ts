@@ -523,8 +523,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async push(): Promise<boolean> {
-        if (!await this.isAllInitialized()) return false;
-        if (!this.remotesAreSet()) {
+        if (! await this.isAllInitialized()) return false;
+        if (! await this.remotesAreSet()) {
             return false;
         }
 
