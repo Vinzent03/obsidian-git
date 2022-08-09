@@ -212,12 +212,13 @@ export class IsomorphicGit extends GitManager {
 
             const localCommit = await git.resolveRef({ ...this.repo, ref: "HEAD" });
 
+            //TODO: Split into fetch and merge to have more control over merge conflicts
             await git.pull({
                 ...this.repo,
                 author: this.getAuthor(),
                 onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = this.getProgressText("Pulling", progress);
-                }
+                },
             });
             progressNotice.hide();
             const upstreamCommit = await git.resolveRef({ ...this.repo, ref: "HEAD" });
@@ -501,19 +502,16 @@ export class IsomorphicGit extends GitManager {
     }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
-        try {
-            const status = (this.status_mapping as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
-            // status will always be two characters
-            return {
-                index: status[0] == "?" ? "U" : status[0],
-                working_dir: status[1] == "?" ? "U" : status[1],
-                path: row[this.FILE],
-                vault_path: this.getVaultPath(row[this.FILE])
-            };
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+
+        const status = (this.status_mapping as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
+        // status will always be two characters
+        return {
+            index: status[0] == "?" ? "U" : status[0],
+            working_dir: status[1] == "?" ? "U" : status[1],
+            path: row[this.FILE],
+            vault_path: this.getVaultPath(row[this.FILE])
+        };
+
     };
 }
 
