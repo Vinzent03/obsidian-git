@@ -347,7 +347,7 @@ export class IsomorphicGit extends GitManager {
     async fetch(remote?: string): Promise<void> {
         // TODO: onProgress
         try {
-            const args = {
+            const args: any = {
                 ...this.repo
             };
             if (remote) {
@@ -498,7 +498,7 @@ export class IsomorphicGit extends GitManager {
 
 // Convert a value to an Async Iterator
 // This will be easier with async generator functions.
-function fromValue(value) {
+function fromValue(value: any) {
     let queue = [value];
     return {
         next() {
@@ -514,7 +514,7 @@ function fromValue(value) {
     };
 }
 
-function getIterator(iterable) {
+function getIterator(iterable: any) {
     if (iterable[Symbol.asyncIterator]) {
         return iterable[Symbol.asyncIterator]();
     }
@@ -527,7 +527,7 @@ function getIterator(iterable) {
     return fromValue(iterable);
 }
 
-async function forAwait(iterable, cb) {
+async function forAwait(iterable: any, cb: any) {
     const iter = getIterator(iterable);
     while (true) {
         const { value, done } = await iter.next();
@@ -537,11 +537,11 @@ async function forAwait(iterable, cb) {
     if (iter.return) iter.return();
 }
 
-async function collect(iterable: AsyncIterator<Uint8Array>) {
+async function collect(iterable: any): Promise<Uint8Array> {
     let size = 0;
-    const buffers = [];
+    const buffers: Uint8Array[] = [];
     // This will be easier once `for await ... of` loops are available.
-    await forAwait(iterable, value => {
+    await forAwait(iterable, (value: any) => {
         buffers.push(value);
         size += value.byteLength;
     });
