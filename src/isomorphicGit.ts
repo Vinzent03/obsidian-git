@@ -395,10 +395,17 @@ export class IsomorphicGit extends GitManager {
 
     async updateUpstreamBranch(remoteBranch: string): Promise<void> {
         const [remote, branch] = remoteBranch.split("/");
-        await git.push({
+        const branchInfo = await this.branchInfo();
+
+        await git.setConfig({
             ...this.repo,
-            remote: remote,
-            remoteRef: branch
+            path: `branch.${branchInfo.current}.merge`,
+            value: `refs/heads/${branch}`
+        });
+        await git.setConfig({
+            ...this.repo,
+            path: `branch.${branch}.remote`,
+            value: remote
         });
     }
 
