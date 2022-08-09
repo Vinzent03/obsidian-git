@@ -217,9 +217,10 @@ export class IsomorphicGit extends GitManager {
     async push(): Promise<number> {
         try {
             this.plugin.setState(PluginState.status);
-            const status = await this.status();
-            const numChangedFiles = status.changed.length;
-            console.log("Changed files: ", status.changed);
+            const status = await this.branchInfo();
+            const trackingBranch = status.tracking;
+            const currentBranch = status.current;
+            const numChangedFiles = await this.getFileChangesCount(currentBranch, trackingBranch);
 
             this.plugin.setState(PluginState.push);
             // TODO: Submodules support
@@ -406,16 +407,62 @@ export class IsomorphicGit extends GitManager {
         return;
     }
 
+    async getFileChangesCount(commitHash1: string, commitHash2: string) {
+        const res = await git.walk({
+            ...this.repo,
+            trees: [git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })],
+            map: async function (filepath, [A, B]) {
+                // ignore directories
+                if (filepath === '.') {
+                    return;
+                }
+                if ((await A.type()) === 'tree' || (await B.type()) === 'tree') {
+                    return;
+                }
+
+                // generate ids
+                const Aoid = await A.oid();
+                const Boid = await B.oid();
+
+                // determine modification type
+                let type = 'equal';
+                if (Aoid !== Boid) {
+                    type = 'modify';
+                }
+                if (Aoid === undefined) {
+                    type = 'add';
+                }
+                if (Boid === undefined) {
+                    type = 'remove';
+                }
+
+                if (Aoid === undefined && Boid === undefined) {
+                    console.log('Something weird happened:');
+                    console.log(A);
+                    console.log(B);
+                }
+                if (type === 'equal') {
+                    return;
+                }
+                return {
+                    path: `/${filepath}`,
+                    type: type,
+                };
+            },
+        });
+        return res.length;
+    }
+
     async getDiffString(filePath: string): Promise<string> {
         throw new Error("Method not implemented.");
-    }
+    };
 
     diff(file: string, commit1: string, commit2: string): Promise<string> {
         throw new Error("Method not implemented.");
-    }
+    };
     log(file: string): Promise<string[]> {
         throw new Error("Method not implemented.");
-    }
+    };
     show(commitHash: string, file: string): Promise<string> {
         throw new Error("Method not implemented.");
     }
