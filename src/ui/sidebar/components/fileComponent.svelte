@@ -14,7 +14,7 @@
   let buttons: HTMLElement[] = [];
   $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
-  setImmediate(() =>
+  Promise.resolve(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
   );
 

@@ -13,7 +13,7 @@
   $: formattedPath = change.vault_path;
   $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
-  setImmediate(() =>
+  Promise.resolve(() =>
     buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
   );
 
@@ -46,7 +46,7 @@
   function showDiff(event: MouseEvent) {
     const workspace = view.app.workspace;
     const leaf = workspace.getMostRecentLeaf(workspace.rootSplit);
-    
+
     if (
       leaf &&
       !leaf.getViewState().pinned &&
@@ -59,18 +59,16 @@
           staged: true,
         },
       });
-      workspace.setActiveLeaf(leaf,true,true)
+      workspace.setActiveLeaf(leaf, true, true);
     } else {
-      workspace
-        .createLeafInParent(workspace.rootSplit, 0)
-        .setViewState({
-          type: DIFF_VIEW_CONFIG.type,
-          active: true,
-          state: {
-            file: change.path,
-            staged: true,
-          },
-        });
+      workspace.createLeafInParent(workspace.rootSplit, 0).setViewState({
+        type: DIFF_VIEW_CONFIG.type,
+        active: true,
+        state: {
+          file: change.path,
+          staged: true,
+        },
+      });
     }
   }
 
