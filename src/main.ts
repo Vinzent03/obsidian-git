@@ -478,7 +478,7 @@ export default class ObsidianGit extends Plugin {
                 }
             }
             const committedFiles = await this.gitManager.commitAll(commitMessage);
-            this.displayMessage(`Committed ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
+            this.displayMessage(`Committed ${committedFiles} ${committedFiles == 1 ? 'files' : 'file'}`);
         } else {
             this.displayMessage("No changes to commit");
         }
