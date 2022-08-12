@@ -5,7 +5,7 @@ export class GeneralModal extends SuggestModal<string> {
     resolve: ((value: string | PromiseLike<string>) => void) | null = null;
 
 
-    constructor(app: App, remotes: string[], placeholder: string) {
+    constructor(app: App, remotes: string[], placeholder: string, private allowEmpty = false) {
         super(app);
         this.list = remotes;
         this.setPlaceholder(placeholder);
@@ -28,7 +28,7 @@ export class GeneralModal extends SuggestModal<string> {
     }
 
     getSuggestions(query: string): string[] {
-        return [query.length > 0 ? query : "...", ...this.list];
+        return [(this.allowEmpty || query.length > 0) ? query : "...", ...this.list];
     }
 
     renderSuggestion(value: string, el: HTMLElement): void {
