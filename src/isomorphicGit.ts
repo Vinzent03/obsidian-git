@@ -94,7 +94,7 @@ export class IsomorphicGit extends GitManager {
             const changed = status.filter(fileStatus => fileStatus.working_dir !== " ");
             const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "U");
             // TODO: How to determine merge conflicts with isomorphic-git?
-            const conflicted: FileStatusResult[] = [];
+            const conflicted: string[] = [];
             return { changed, staged, conflicted };
         } catch (error) {
             this.plugin.displayError(error);
@@ -103,7 +103,6 @@ export class IsomorphicGit extends GitManager {
     };
 
     async commitAll(message?: string): Promise<number> {
-        // TODO: Submodules support
         try {
             await this.stageAll();
             return this.commit(message);

@@ -49,6 +49,9 @@ export class MyAdapter {
         return this.adapter.rmdir(path, opts?.options?.recursive ?? false);
     }
     async stat(path: string) {
+
+        if (path === ".")
+            path = "";
         const stat = await this.adapter.stat(normalizePath(path));
         if (stat) {
             return {

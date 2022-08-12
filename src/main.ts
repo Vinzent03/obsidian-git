@@ -8,7 +8,7 @@ import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants
 import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
-import { FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
+import { ALLOWSIMPLEGIT, FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
@@ -258,6 +258,7 @@ export default class ObsidianGit extends Plugin {
         this.app.metadataCache.offref(this.deleteEvent);
         this.app.metadataCache.offref(this.createEvent);
         this.app.metadataCache.offref(this.renameEvent);
+        this.debRefresh.cancel();
 
         console.log('unloading ' + this.manifest.name + " plugin");
     }
@@ -459,7 +460,7 @@ export default class ObsidianGit extends Plugin {
 
         if (false) {
         } else {
-            status = await this.gitManager.status();
+            status = await this.updateCachedStatus();
         }
 
         if (await this.hasTooBigFiles([...status.staged, ...status.changed])) {

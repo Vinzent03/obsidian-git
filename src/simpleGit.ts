@@ -6,7 +6,7 @@ import * as simple from "simple-git";
 import simpleGit, { DefaultLogFields } from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, PluginState } from "./types";
+import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
