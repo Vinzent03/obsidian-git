@@ -67,16 +67,6 @@ export abstract class GitManager {
 
     abstract getDiffString(filePath: string, stagedChanges: boolean): Promise<string>;
 
-    // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
-    abstract diff(file: string, commit1: string, commit2: string): Promise<string>;
-
-    // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
-    abstract log(file: string, relativeToVault: boolean): Promise<ReadonlyArray<string>>;
-
-    // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
-    abstract show(commitHash: string, file: string, relativeToVault: boolean): Promise<string>;
-
-
 
     getVaultPath(path: string): string {
         if (this.plugin.settings.basePath) {

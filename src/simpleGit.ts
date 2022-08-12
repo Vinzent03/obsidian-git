@@ -39,11 +39,7 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async status(): Promise<{
-        changed: FileStatusResult[];
-        staged: FileStatusResult[];
-        conflicted: string[];
-    }> {
+    async status(): Promise<Status> {
         this.plugin.setState(PluginState.status);
         const status = await this.git.status((err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
@@ -302,6 +298,8 @@ export class SimpleGit extends GitManager {
         return await this.git.remote(["get-url", remote], (err, url) => this.onError(err)) || undefined;
     }
 
+
+    // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
     async log(file?: string, relativeToVault: boolean = true): Promise<ReadonlyArray<DefaultLogFields>> {
         const path = this.getPath(file, relativeToVault);
 

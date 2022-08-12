@@ -491,16 +491,6 @@ export class IsomorphicGit extends GitManager {
         throw new Error("Method not implemented.");
     };
 
-    diff(file: string, commit1: string, commit2: string): Promise<string> {
-        throw new Error("Method not implemented.");
-    };
-    log(file: string): Promise<string[]> {
-        throw new Error("Method not implemented.");
-    };
-    show(commitHash: string, file: string): Promise<string> {
-        throw new Error("Method not implemented.");
-    }
-
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
 
         const status = (this.status_mapping as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
