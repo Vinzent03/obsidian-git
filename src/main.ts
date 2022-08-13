@@ -476,22 +476,6 @@ export default class ObsidianGit extends Plugin {
     async createBackup(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<void> {
         if (!await this.isAllInitialized()) return;
 
-        if (!fromAutoBackup) {
-            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
-            await this.app.vault.delete(file);
-        }
-        if (this.gitManager instanceof SimpleGit) {
-            const status = await this.gitManager.status();
-
-            // check for conflict files on auto backup
-            if (fromAutoBackup && status.conflicted.length > 0) {
-                this.setState(PluginState.idle);
-                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
-                this.handleConflict(status.conflicted);
-                return;
-            }
-        }
-
         if (!(await this.commit(fromAutoBackup, requestCustomMessage))) return;
 
         if (!this.settings.disablePush) {
@@ -517,10 +501,20 @@ export default class ObsidianGit extends Plugin {
         if (file) await this.app.vault.delete(file);
         let status;
 
-        if (false) {
+        if (this.gitManager instanceof SimpleGit) {
+            const status = await this.gitManager.status();
+
+            // check for conflict files on auto backup
+            if (fromAutoBackup && status.conflicted.length > 0) {
+                this.setState(PluginState.idle);
+                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
+                this.handleConflict(status.conflicted);
+                return;
+            }
         } else {
             status = await this.updateCachedStatus();
         }
+
 
         if (await this.hasTooBigFiles([...status.staged, ...status.changed])) {
             this.setState(PluginState.idle);
