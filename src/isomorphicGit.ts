@@ -121,20 +121,12 @@ export class IsomorphicGit extends GitManager {
             await git.commit({
                 ...this.repo,
                 message: formatMessage,
-                author: this.getAuthor()
             });
             return numChangedFiles;
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
         }
-    }
-
-    getAuthor(): Author {
-        return {
-            name: this.plugin.settings.username,
-            email: this.plugin.settings.email
-        };
     }
 
     async stage(filepath: string): Promise<void> {
@@ -214,7 +206,6 @@ export class IsomorphicGit extends GitManager {
             //TODO: Split into fetch and merge to have more control over merge conflicts
             await git.pull({
                 ...this.repo,
-                author: this.getAuthor(),
                 onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = this.getProgressText("Pulling", progress);
                 },

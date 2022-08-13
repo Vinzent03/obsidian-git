@@ -25,11 +25,11 @@ esbuild.build({
     target: 'es2016',
     logLevel: "info",
     define: {
-        ALLOWSIMPLEGIT : allowSimpleGit,
+        ALLOWSIMPLEGIT: allowSimpleGit,
     },
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
-    platform: allowSimpleGit? 'node' : 'browser',
+    platform: (allowSimpleGit || !prod) ? 'node' : 'browser',
     plugins: [
         sveltePlugin({
             compileOptions: {
@@ -39,6 +39,6 @@ esbuild.build({
             preprocess: autoPreprocess(),
         }),
     ],
-    inject: ["polyfill_buffer.js"],
+    inject: (allowSimpleGit || !prod)?[]:["polyfill_buffer.js"],
     outfile: 'main.js',
 }).catch(() => process.exit(1));
