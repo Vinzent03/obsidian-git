@@ -220,7 +220,9 @@ export class IsomorphicGit extends GitManager {
 
     async push(): Promise<number> {
         const progressNotice = new Notice("Initializing push", this.noticeLength);
-
+        if (! await this.canPush()) {
+            return 0;
+        }
         try {
             this.plugin.setState(PluginState.status);
             const status = await this.branchInfo();
@@ -250,9 +252,8 @@ export class IsomorphicGit extends GitManager {
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
 
-        const current = git.resolveRef({ ...this.getRepo(), ref: currentBranch });
-        const tracking = git.resolveRef({ ...this.getRepo(), ref: trackingBranch });
-
+        const current = await git.resolveRef({ ...this.getRepo(), ref: currentBranch });
+        const tracking = await git.resolveRef({ ...this.getRepo(), ref: trackingBranch });
 
         return current != tracking;
     }
