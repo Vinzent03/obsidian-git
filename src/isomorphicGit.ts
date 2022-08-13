@@ -1,4 +1,3 @@
-// TODO: Use different FS for mobile, maybe custom one?
 import git, { AuthCallback, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient } from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 
@@ -7,11 +6,6 @@ import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
 import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
-
-// TODO: Set to idle, what's a nice way to do this...
-// TODO: Nicer way to display error... I'm doing it multiple times if I call other
-// helpers...
-// TODO: Is there a style setup, like ESLint or Prettier?
 
 
 const myHTTP = {
@@ -366,17 +360,23 @@ export class IsomorphicGit extends GitManager {
     };
 
     async fetch(remote?: string): Promise<void> {
-        // TODO: onProgress
+        const progressNotice = new Notice("Initializing fetch", this.noticeLength);
+
         try {
             const args: any = {
-                ...this.repo
+                ...this.repo,
+                onProgress: (progress: GitProgressEvent) => {
+                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Fetching", progress);
+                }
             };
             if (remote) {
                 args.remote = remote;
             }
             await git.fetch(args);
+            progressNotice.hide();
         } catch (error) {
             this.plugin.displayError(error);
+            progressNotice.hide();
             throw error;
         }
     }
