@@ -21,17 +21,29 @@ const myHTTP = {
             body = await collect(body);
             body = body.buffer;
         }
+        try {
+            const res = await requestUrl({ url, method, headers, body });
+            return {
+                url,
+                method,
+                headers: res.headers,
+                body: [new Uint8Array(res.arrayBuffer)],
+                statusCode: res.status,
+                statusMessage: res.text,
+            };
+        } catch (error) {
+            if (typeof error === "object") {
+                const res: GitHttpResponse = {
+                    url,
+                    method,
+                    headers: error.headers,
+                    statusCode: error.status,
+                    statusMessage: error,
+                };
+                return res;
+            }
+        }
 
-        const res = await requestUrl({ url, method, headers, body });
-
-        return {
-            url,
-            method,
-            headers: res.headers,
-            body: [new Uint8Array(res.arrayBuffer)],
-            statusCode: res.status,
-            statusMessage: res.text,
-        };
     }
 };
 
@@ -73,13 +85,10 @@ export class IsomorphicGit extends GitManager {
             fs: new MyAdapter(this.app.vault),
             dir: plugin.settings.basePath,
             onAuth: () => {
-                const res = ({
+                return {
                     username: this.plugin.settings.username,
                     password: localStorage.getItem(this.plugin.manifest.id + ":password")
-                });
-                console.log(res);
-                return res;
-
+                };
             },
             http: myHTTP,
         };
