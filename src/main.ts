@@ -425,13 +425,13 @@ export default class ObsidianGit extends Plugin {
             this.displayMessage("Everything is up-to-date");
         }
 
-        // if (this.gitManager instanceof IsomorphicGit) {
-        //     const status = await this.gitManager.status();
-        //     if (status.conflicted.length > 0) {
-        //         this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
-        //         this.handleConflict(status.conflicted);
-        //     }
-        // }
+        if (this.gitManager instanceof SimpleGit) {
+            const status = await this.gitManager.status();
+            if (status.conflicted.length > 0) {
+                this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
+                this.handleConflict(status.conflicted);
+            }
+        }
 
         dispatchEvent(new CustomEvent('git-refresh'));
         this.lastUpdate = Date.now();
@@ -445,17 +445,17 @@ export default class ObsidianGit extends Plugin {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
             await this.app.vault.delete(file);
         }
-        // if (this.gitManager instanceof IsomorphicGit) {
-        //     const status = await this.gitManager.status();
+        if (this.gitManager instanceof SimpleGit) {
+            const status = await this.gitManager.status();
 
-        //     // check for conflict files on auto backup
-        //     if (fromAutoBackup && status.conflicted.length > 0) {
-        //         this.setState(PluginState.idle);
-        //         this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
-        //         this.handleConflict(status.conflicted);
-        //         return;
-        //     }
-        // }
+            // check for conflict files on auto backup
+            if (fromAutoBackup && status.conflicted.length > 0) {
+                this.setState(PluginState.idle);
+                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
+                this.handleConflict(status.conflicted);
+                return;
+            }
+        }
 
         if (!(await this.commit(fromAutoBackup, requestCustomMessage))) return;
 
