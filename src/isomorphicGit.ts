@@ -112,7 +112,7 @@ export class IsomorphicGit extends GitManager {
             this.plugin.setState(PluginState.commit);
             const status = await this.status();
             const numChangedFiles = status.staged.length;
-            const formatMessage = message ?? await this.formatCommitMessage(this.plugin.settings.commitMessage);
+            const formatMessage = await this.formatCommitMessage(message);
             await git.commit({
                 ...this.getRepo(),
                 message: formatMessage,
