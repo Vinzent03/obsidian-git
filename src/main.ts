@@ -254,6 +254,8 @@ export default class ObsidianGit extends Plugin {
             id: "list-changed-files",
             name: "List changed files",
             callback: async () => {
+                if (!await this.isAllInitialized()) return;
+
                 const status = await this.gitManager.status();
                 this.setState(PluginState.idle);
 
