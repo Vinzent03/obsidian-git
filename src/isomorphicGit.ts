@@ -252,10 +252,11 @@ export class IsomorphicGit extends GitManager {
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
 
-        //TODO: Can be optimized
-        const remoteChangedFiles = await this.getFileChangesCount(currentBranch, trackingBranch);
+        const current = git.resolveRef({ ...this.repo, ref: currentBranch });
+        const tracking = git.resolveRef({ ...this.repo, ref: trackingBranch });
 
-        return remoteChangedFiles !== 0;
+
+        return current != tracking;
     }
 
     async checkRequirements(): Promise<'valid' | 'missing-repo'> {
