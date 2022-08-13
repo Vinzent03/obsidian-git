@@ -17,7 +17,7 @@ export class GeneralModal extends SuggestModal<string> {
     }
 
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
-        if (this.resolve) this.resolve(value);
+        if (this.resolve) this.resolve((this.allowEmpty && value === " ") ? "" : value);
         super.selectSuggestion(value, evt);
     }
 
@@ -28,8 +28,11 @@ export class GeneralModal extends SuggestModal<string> {
     getSuggestions(query: string): string[] {
         if (this.onlySelection) {
             return this.options;
+        } else if (this.allowEmpty) {
+            return [(query.length > 0) ? query : " ", ...this.options];
         } else {
-            return [(this.allowEmpty || query.length > 0) ? query : "...", ...this.options];
+            return [query.length > 0 ? query : "...", ...this.options];
+
         }
     }
 

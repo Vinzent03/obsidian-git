@@ -416,7 +416,7 @@ export default class ObsidianGit extends Plugin {
         const url = await modal.open();
         if (url) {
             let dir = await new GeneralModal(this.app, [], "Enter directory for clone. It needs to be empty or not existent.", this.gitManager instanceof IsomorphicGit).open();
-            if (dir) {
+            if (dir !== undefined) {
                 dir = normalize(dir);
                 new Notice(`Cloning new repo into "${dir}"`);
                 await this.gitManager.clone(url, dir);
