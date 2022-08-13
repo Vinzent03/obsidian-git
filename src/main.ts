@@ -219,6 +219,25 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "delete-repo",
+            name: "CAUTION: Delete repository",
+            callback: async () => {
+                const repoExists = await this.app.vault.adapter.exists(`${this.settings.basePath}/.git`);
+                if (repoExists) {
+                    const modal = new GeneralModal(this.app, ["NO", "YES"], "Do you really want to delete the repository? This action cannot be undone.", false, true);
+                    const shouldDelete = await modal.open() === "YES";
+                    if (shouldDelete) {
+                        await this.app.vault.adapter.rmdir(`${this.settings.basePath}/.git`, true);
+                        new Notice("Successfully deleted repository. Please reload the plugin");
+
+                    }
+                } else {
+                    new Notice("No repository found");
+                }
+            }
+        });
+
+        this.addCommand({
             id: "init-repo",
             name: "Initialize a new repo",
             callback: async () => this.createNewRepo()
