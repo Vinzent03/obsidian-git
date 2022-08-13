@@ -387,7 +387,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName("Username")
+            .setName("Username on your git server. E.g. your username on GitHub")
             .addText(cb => {
                 cb.setValue(plugin.settings.username);
                 cb.onChange((value) => {
@@ -396,15 +396,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             });
 
-        new Setting(containerEl)
-            .setName("Email")
-            .addText(cb => {
-                cb.setValue(plugin.settings.email);
-                cb.onChange((value) => {
-                    plugin.settings.email = value;
-                    plugin.saveSettings();
-                });
-            });
 
         new Setting(containerEl)
             .setName("Password/Personal access token")
@@ -417,6 +408,24 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     plugin.settings.password = value;
                     plugin.saveSettings();
                     new Notice("Saved token");
+                });
+            });
+
+        new Setting(containerEl)
+            .setName("Name for commit")
+            .addText(async cb => {
+                cb.setValue(await plugin.gitManager.getConfig("user.name"));
+                cb.onChange((value) => {
+                    plugin.gitManager.setConfig("user.name", value);
+                });
+            });
+
+        new Setting(containerEl)
+            .setName("Email for commit")
+            .addText(async cb => {
+                cb.setValue(await plugin.gitManager.getConfig("user.email"));
+                cb.onChange((value) => {
+                    plugin.gitManager.setConfig("user.email", value);
                 });
             });
 
