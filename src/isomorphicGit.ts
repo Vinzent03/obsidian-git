@@ -6,7 +6,7 @@ import { Notice, requestUrl } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
-import { Author, BranchInfo, FileStatusResult, PluginState, Status } from "./types";
+import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 
 // TODO: Set to idle, what's a nice way to do this...
 // TODO: Nicer way to display error... I'm doing it multiple times if I call other
@@ -78,10 +78,15 @@ export class IsomorphicGit extends GitManager {
         this.repo = {
             fs: new MyAdapter(this.app.vault),
             dir: plugin.settings.basePath,
-            onAuth: () => ({
-                username: this.plugin.settings.username,
-                password: this.plugin.settings.password
-            }),
+            onAuth: () => {
+                const res = ({
+                    username: this.plugin.settings.username,
+                    password: this.plugin.settings.password
+                });
+                console.log(res);
+                return res;
+
+            },
             http: myHTTP,
         };
     }
@@ -253,15 +258,11 @@ export class IsomorphicGit extends GitManager {
         return true;
     }
 
-    async checkRequirements(): Promise<'valid' | 'missing-repo' | 'missing-git'> {
-        // TODO: I think the user doesn't have to install git themselves with
-        // isomorphic-git so remove "missing-git"?
-        try {
-            await git.listBranches(this.repo);
-        } catch (error) {
-            return "missing-repo";
-        }
-        return "valid";
+    async checkRequirements(): Promise<'valid' | 'missing-repo'> {
+
+        const headExists = await this.plugin.app.vault.adapter.exists(`${this.repo.dir}/.git/HEAD`);
+
+        return headExists ? 'valid' : 'missing-repo';
     }
 
     async branchInfo(): Promise<BranchInfo> {
