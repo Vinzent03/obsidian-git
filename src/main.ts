@@ -418,6 +418,20 @@ export default class ObsidianGit extends Plugin {
             let dir = await new GeneralModal(this.app, [], "Enter directory for clone. It needs to be empty or not existent.", this.gitManager instanceof IsomorphicGit).open();
             if (dir !== undefined) {
                 dir = normalize(dir);
+                if (dir === "" || dir === ".") {
+                    const modal = new GeneralModal(this.app, ["NO", "YES"], `Does your remote repo contain a ${app.vault.configDir} directory at the root?`, false, true);
+                    const containsConflictDir = await modal.open() === "YES";
+                    if (containsConflictDir) {
+                        const modal = new GeneralModal(this.app, ["Abort clone", "DELETE"], `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, false, true);
+                        const shouldDelete = await modal.open() === "DELETE";
+                        if (shouldDelete) {
+                            await this.app.vault.adapter.rmdir(app.vault.configDir, true);
+                        } else {
+                            new Notice("Aborted clone");
+                            return;
+                        }
+                    }
+                }
                 new Notice(`Cloning new repo into "${dir}"`);
                 await this.gitManager.clone(url, dir);
                 new Notice("Cloned new repo");

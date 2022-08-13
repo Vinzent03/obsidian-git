@@ -322,6 +322,7 @@ export class IsomorphicGit extends GitManager {
         try {
             await git.clone({
                 ...this.repo,
+                dir: dir,
                 url: url,
                 onProgress: (progress) => {
                     (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);
