@@ -44,6 +44,8 @@ export interface Status {
     conflicted: string[];
 }
 
+export var ALLOWSIMPLEGIT: boolean;
+
 /**
  * `index` and `working_dir` are each one-character codes, based off the git
  * status short format: git status --short

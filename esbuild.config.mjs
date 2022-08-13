@@ -11,6 +11,7 @@ if you want to view the source visit the plugins github repository (https://gith
 `;
 
 const prod = (process.argv[2] === 'production');
+const allowSimpleGit = (process.argv[3] === "true");
 
 esbuild.build({
     banner: {
@@ -23,9 +24,12 @@ esbuild.build({
     watch: !prod,
     target: 'es2016',
     logLevel: "info",
+    define: {
+        ALLOWSIMPLEGIT : allowSimpleGit,
+    },
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
-    platform: 'browser',
+    platform: allowSimpleGit? 'node' : 'browser',
     plugins: [
         sveltePlugin({
             compileOptions: {

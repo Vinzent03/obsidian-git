@@ -8,6 +8,7 @@ import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants
 import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
+import { SimpleGit } from "./simpleGit";
 import { ALLOWSIMPLEGIT, FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
@@ -291,10 +292,14 @@ export default class ObsidianGit extends Plugin {
 
     async init(): Promise<void> {
         try {
-            this.gitManager = new IsomorphicGit(this);
-            // if (gitManager instanceof SimpleGit) {
-            //     await this.gitManager.setGitInstance();
-            // }
+            if (ALLOWSIMPLEGIT) {
+                this.gitManager = new SimpleGit(this);
+                await (this.gitManager as SimpleGit).setGitInstance();
+
+            } else {
+                this.gitManager = new IsomorphicGit(this);
+            }
+
             const result = await this.gitManager.checkRequirements();
             switch (result) {
                 case "missing-git":
@@ -535,7 +540,7 @@ export default class ObsidianGit extends Plugin {
 
         // Refresh because of pull
         let status: any;
-        if (this.gitManager instanceof IsomorphicGit && (status = await this.gitManager.status()).conflicted.length > 0) {
+        if (this.gitManager instanceof SimpleGit && (status = await this.updateCachedStatus()).conflicted.length > 0) {
             this.displayError(`Cannot push. You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
             this.handleConflict(status.conflicted);
             return false;
