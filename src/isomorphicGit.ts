@@ -447,13 +447,13 @@ export class IsomorphicGit extends GitManager {
                 if (filepath === '.') {
                     return;
                 }
-                if ((await A.type()) === 'tree' || (await B.type()) === 'tree') {
+                if ((await A?.type()) === 'tree' || (await B?.type()) === 'tree') {
                     return;
                 }
 
                 // generate ids
-                const Aoid = await A.oid();
-                const Boid = await B.oid();
+                const Aoid = await A?.oid();
+                const Boid = await B?.oid();
 
                 // determine modification type
                 let type = 'equal';
