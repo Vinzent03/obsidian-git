@@ -229,7 +229,6 @@ export class IsomorphicGit extends GitManager {
         } catch (error) {
             if (error instanceof Errors.MergeConflictError) {
                 this.plugin.handleConflict(error.data.filepaths.map((file) => this.getVaultPath(file)));
-                console.log(error.data);
             }
 
             this.plugin.displayError(error);

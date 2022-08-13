@@ -1,4 +1,4 @@
-import { debounce, Debouncer, EventRef, Notice, Platform, Plugin, TFile } from "obsidian";
+import { debounce, Debouncer, EventRef, Notice, Plugin, TFile } from "obsidian";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -72,24 +72,6 @@ export default class ObsidianGit extends Plugin {
 
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
-
-        if (Platform.isIosApp) {
-            const logFile = `logs.md`;
-            const logs: string[] = [];
-            const logMessages = (prefix: string) => (...messages: unknown[]) => {
-                logs.push(`\n[${prefix}]`);
-                for (const message of messages) {
-                    logs.push(String(message));
-                }
-                this.app.vault.adapter.write(logFile, logs.join(" "),);
-            };
-
-            console.debug = logMessages("debug");
-            console.error = logMessages("error");
-            console.info = logMessages("info");
-            console.log = logMessages("log");
-            console.warn = logMessages("warn");
-        }
 
         await this.loadSettings();
         this.migrateSettings();
