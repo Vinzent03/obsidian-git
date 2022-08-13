@@ -422,8 +422,8 @@ export default class ObsidianGit extends Plugin {
                     const modal = new GeneralModal(this.app, ["NO", "YES"], `Does your remote repo contain a ${app.vault.configDir} directory at the root?`, false, true);
                     const containsConflictDir = await modal.open() === "YES";
                     if (containsConflictDir) {
-                        const modal = new GeneralModal(this.app, ["Abort clone", "DELETE"], `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, false, true);
-                        const shouldDelete = await modal.open() === "DELETE";
+                        const modal = new GeneralModal(this.app, ["Abort clone", "DELETE ALL YOUR LOCAL CONFIG"], `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, false, true);
+                        const shouldDelete = await modal.open() === "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
                         if (shouldDelete) {
                             await this.app.vault.adapter.rmdir(app.vault.configDir, true);
                         } else {
