@@ -1,7 +1,5 @@
 import git, { AuthCallback, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient } from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
-
-
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
@@ -129,7 +127,11 @@ export class IsomorphicGit extends GitManager {
     async stage(filepath: string): Promise<void> {
         try {
             this.plugin.setState(PluginState.add);
-            await git.add({ ...this.getRepo(), filepath: filepath });
+            if (await this.app.vault.adapter.exists(filepath)) {
+                await git.add({ ...this.getRepo(), filepath: filepath });
+            } else {
+                await git.remove({ ...this.getRepo(), filepath: filepath });
+            }
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -138,8 +140,12 @@ export class IsomorphicGit extends GitManager {
 
     async stageAll(): Promise<void> {
         try {
-            // Add all files while respecting .gitignore
-            await this.stage(".");
+            const status = await git.statusMatrix(this.getRepo());
+            await Promise.all(
+                status.map(([filepath, , worktreeStatus]) =>
+                    worktreeStatus ? git.add({ ...this.getRepo(), filepath }) : git.remove({ ...this.getRepo(), filepath })
+                ));
+
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
