@@ -265,7 +265,7 @@ export class SimpleGit extends GitManager {
         if (this.plugin.settings.updateSubmodules === true) {
             return true;
         }
-        const status = await this.git.status((err) => this.onError(err));
+        const status = await this.branchInfo();
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
         const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;

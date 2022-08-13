@@ -254,8 +254,14 @@ export class IsomorphicGit extends GitManager {
     }
 
     async canPush(): Promise<boolean> {
-        // TODO: Submodules support
-        return true;
+        const status = await this.branchInfo();
+        const trackingBranch = status.tracking;
+        const currentBranch = status.current;
+
+        //TODO: Can be optimized
+        const remoteChangedFiles = await this.getFileChangesCount(currentBranch, trackingBranch);
+
+        return remoteChangedFiles !== 0;
     }
 
     async checkRequirements(): Promise<'valid' | 'missing-repo'> {
