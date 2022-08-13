@@ -405,9 +405,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 cb.inputEl.autocomplete = "off";
                 cb.inputEl.spellcheck = false;
                 cb.onChange((value) => {
-                    plugin.settings.password = value;
-                    plugin.saveSettings();
-                    new Notice("Saved token");
+                    localStorage.setItem(plugin.manifest.id + ":password", value);
                 });
             });
 

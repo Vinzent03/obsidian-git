@@ -75,7 +75,7 @@ export class IsomorphicGit extends GitManager {
             onAuth: () => {
                 const res = ({
                     username: this.plugin.settings.username,
-                    password: this.plugin.settings.password
+                    password: localStorage.getItem(this.plugin.manifest.id + ":password")
                 });
                 console.log(res);
                 return res;
