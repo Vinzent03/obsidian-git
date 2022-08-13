@@ -1,4 +1,4 @@
-import git, { AuthCallback, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient } from "isomorphic-git";
+import git, { AuthCallback, Errors, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient } from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
@@ -113,10 +113,21 @@ export class IsomorphicGit extends GitManager {
             const status = await this.status();
             const numChangedFiles = status.staged.length;
             const formatMessage = await this.formatCommitMessage(message);
+            const hadConflict = localStorage.getItem(this.plugin.manifest.id + ":conflict") === "true";
+            let parent: string[] = undefined;
+
+            if (hadConflict) {
+                const branchInfo = await this.branchInfo();
+                parent = [branchInfo.current, branchInfo.tracking];
+            }
+
             await git.commit({
                 ...this.getRepo(),
                 message: formatMessage,
+                parent: parent,
             });
+            localStorage.setItem(this.plugin.manifest.id + ":conflict", "false");
+
             return numChangedFiles;
         } catch (error) {
             this.plugin.displayError(error);
@@ -199,26 +210,28 @@ export class IsomorphicGit extends GitManager {
     }
 
     async pull(): Promise<number> {
-        const progressNotice = new Notice("Initializing pull", this.noticeLength);
-
         try {
             this.plugin.setState(PluginState.pull);
 
             const localCommit = await git.resolveRef({ ...this.getRepo(), ref: "HEAD" });
+            await this.fetch();
+            const branchInfo = await this.branchInfo();
 
-            //TODO: Split into fetch and merge to have more control over merge conflicts
-            await git.pull({
+            await git.merge({
                 ...this.getRepo(),
-                onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Pulling", progress);
-                },
+                ours: localCommit,
+                theirs: branchInfo.tracking,
+                abortOnConflict: false,
             });
-            progressNotice.hide();
             const upstreamCommit = await git.resolveRef({ ...this.getRepo(), ref: "HEAD" });
             this.plugin.lastUpdate = Date.now();
             return await this.getFileChangesCount(localCommit, upstreamCommit);
         } catch (error) {
-            progressNotice.hide();
+            if (error instanceof Errors.MergeConflictError) {
+                this.plugin.handleConflict(error.data.filepaths.map((file) => this.getVaultPath(file)));
+                console.log(error.data);
+            }
+
             this.plugin.displayError(error);
             throw error;
         }
@@ -301,6 +314,18 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
+    async getCurrentRemote(): Promise<string> {
+        const current = await git.currentBranch(this.getRepo()) || "";
+
+
+        const remote = await git.getConfig({
+            ...this.getRepo(),
+            path: `branch.${current}.remote`
+        }) ?? "origin";
+        return remote;
+
+    }
+
     async checkout(branch: string): Promise<void> {
         try {
             return git.checkout({
@@ -374,11 +399,10 @@ export class IsomorphicGit extends GitManager {
                 ...this.getRepo(),
                 onProgress: (progress: GitProgressEvent) => {
                     (progressNotice as any).noticeEl.innerText = this.getProgressText("Fetching", progress);
-                }
+                },
+                remote: remote ?? await this.getCurrentRemote()
             };
-            if (remote) {
-                args.remote = remote;
-            }
+
             await git.fetch(args);
             progressNotice.hide();
         } catch (error) {

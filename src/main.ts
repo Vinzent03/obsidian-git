@@ -753,6 +753,7 @@ export default class ObsidianGit extends Plugin {
 
     async handleConflict(conflicted: string[]): Promise<void> {
         this.setState(PluginState.conflicted);
+        localStorage.setItem(this.manifest.id + ":conflict", "true");
         const lines = [
             "# Conflict files",
             "Please resolve them and commit per command (This file will be deleted before the commit).",
