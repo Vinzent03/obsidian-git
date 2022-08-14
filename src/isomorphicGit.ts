@@ -209,7 +209,7 @@ export class IsomorphicGit extends GitManager {
         return out;
     }
 
-    async pull(): Promise<number> {
+    async pull(): Promise<FileStatusResult[]> {
         try {
             this.plugin.setState(PluginState.pull);
 
@@ -219,13 +219,25 @@ export class IsomorphicGit extends GitManager {
 
             await git.merge({
                 ...this.getRepo(),
-                ours: localCommit,
+                ours: branchInfo.current,
                 theirs: branchInfo.tracking,
                 abortOnConflict: false,
             });
+            await git.checkout({
+                ...this.getRepo(),
+                ref: branchInfo.current,
+                remote: branchInfo.remote,
+            });
+
             const upstreamCommit = await git.resolveRef({ ...this.getRepo(), ref: "HEAD" });
             this.plugin.lastUpdate = Date.now();
-            return await this.getFileChangesCount(localCommit, upstreamCommit);
+            const changedFiles = await this.getFileChangesCount(localCommit, upstreamCommit);
+            return changedFiles.map<FileStatusResult>(file => ({
+                path: file.path,
+                working_dir: "P",
+                index: "P",
+                vault_path: this.getVaultPath(file.path),
+            }));
         } catch (error) {
             if (error instanceof Errors.MergeConflictError) {
                 this.plugin.handleConflict(error.data.filepaths.map((file) => this.getVaultPath(file)));
@@ -246,7 +258,7 @@ export class IsomorphicGit extends GitManager {
             const status = await this.branchInfo();
             const trackingBranch = status.tracking;
             const currentBranch = status.current;
-            const numChangedFiles = await this.getFileChangesCount(currentBranch, trackingBranch);
+            const numChangedFiles = (await this.getFileChangesCount(currentBranch, trackingBranch)).length;
 
             this.plugin.setState(PluginState.push);
 
@@ -283,7 +295,7 @@ export class IsomorphicGit extends GitManager {
         return headExists ? 'valid' : 'missing-repo';
     }
 
-    async branchInfo(): Promise<BranchInfo> {
+    async branchInfo(): Promise<BranchInfo & { remote: string; }> {
         try {
             const current = await git.currentBranch(this.getRepo()) || "";
 
@@ -306,6 +318,7 @@ export class IsomorphicGit extends GitManager {
                 current: current,
                 tracking: tracking,
                 branches: branches,
+                remote: remote,
             };
         } catch (error) {
             this.plugin.displayError(error);
@@ -468,7 +481,10 @@ export class IsomorphicGit extends GitManager {
         return;
     }
 
-    async getFileChangesCount(commitHash1: string, commitHash2: string): Promise<number> {
+    async getFileChangesCount(commitHash1: string, commitHash2: string): Promise<{
+        path: string,
+        type: "modify" | "add" | "remove",
+    }[]> {
         const res = await git.walk({
             ...this.getRepo(),
             trees: [git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })],
@@ -506,12 +522,12 @@ export class IsomorphicGit extends GitManager {
                     return;
                 }
                 return {
-                    path: `/${filepath}`,
+                    path: filepath,
                     type: type,
                 };
             },
         });
-        return res.length;
+        return res;
     }
 
     async getDiffString(filePath: string): Promise<string> {
