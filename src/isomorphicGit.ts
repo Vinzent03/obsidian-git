@@ -135,7 +135,8 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async stage(filepath: string): Promise<void> {
+    async stage(filepath: string, relativeToVault: boolean): Promise<void> {
+        filepath = this.getPath(filepath, relativeToVault);
         try {
             this.plugin.setState(PluginState.add);
             if (await this.app.vault.adapter.exists(filepath)) {
@@ -163,9 +164,10 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async unstage(filepath: string): Promise<void> {
+    async unstage(filepath: string, relativeToVault: boolean): Promise<void> {
         try {
             this.plugin.setState(PluginState.add);
+            filepath = this.getPath(filepath, relativeToVault);
             await git.resetIndex({ ...this.getRepo(), filepath: filepath });
         } catch (error) {
             this.plugin.displayError(error);
@@ -177,7 +179,7 @@ export class IsomorphicGit extends GitManager {
         try {
             const changed = this.plugin.cachedStatus.staged;
             for (const file of changed) {
-                await this.unstage(file.path);
+                await this.unstage(file.path, false);
             }
         } catch (error) {
             this.plugin.displayError(error);

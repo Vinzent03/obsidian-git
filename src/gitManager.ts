@@ -76,6 +76,10 @@ export abstract class GitManager {
         }
     }
 
+    getPath(path: string, relativeToVault: boolean): string {
+        return (relativeToVault && this.plugin.settings.basePath.length > 0) ? path.substring(this.plugin.settings.basePath.length + 1) : path;
+    }
+
     getTreeStructure(children: FileStatusResult[], beginLength: number = 0): TreeItem[] {
         let list: TreeItem[] = [];
         children = [...children];
