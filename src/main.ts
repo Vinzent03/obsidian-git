@@ -207,11 +207,13 @@ export default class ObsidianGit extends Plugin {
             callback: async () => {
                 const repoExists = await this.app.vault.adapter.exists(`${this.settings.basePath}/.git`);
                 if (repoExists) {
-                    const modal = new GeneralModal(this.app, ["NO", "YES"], "Do you really want to delete the repository? This action cannot be undone.", false, true);
+                    const modal = new GeneralModal(this.app, ["NO", "YES"], "Do you really want to delete the repository (.git directory)? This action cannot be undone.", false, true);
                     const shouldDelete = await modal.open() === "YES";
                     if (shouldDelete) {
                         await this.app.vault.adapter.rmdir(`${this.settings.basePath}/.git`, true);
-                        new Notice("Successfully deleted repository. Please reload the plugin");
+                        new Notice("Successfully deleted repository. Reloading plugin...");
+                        this.unloadPlugin();
+                        this.init();
 
                     }
                 } else {
@@ -271,11 +273,12 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async onunload() {
-        (this.app.workspace as any).unregisterHoverLinkSource(GIT_VIEW_CONFIG.type);
-        this.app.workspace.detachLeavesOfType(GIT_VIEW_CONFIG.type);
-        this.app.workspace.detachLeavesOfType(DIFF_VIEW_CONFIG.type);
+    unloadPlugin() {
+        this.gitReady = false;
+        dispatchEvent(new CustomEvent('git-refresh'));
+
         this.clearAutoPull();
+        this.clearAutoPush();
         this.clearAutoBackup();
         removeEventListener("git-refresh", this.refresh.bind(this));
         this.app.metadataCache.offref(this.modifyEvent);
@@ -283,6 +286,14 @@ export default class ObsidianGit extends Plugin {
         this.app.metadataCache.offref(this.createEvent);
         this.app.metadataCache.offref(this.renameEvent);
         this.debRefresh.cancel();
+    }
+
+    async onunload() {
+        (this.app.workspace as any).unregisterHoverLinkSource(GIT_VIEW_CONFIG.type);
+        this.app.workspace.detachLeavesOfType(GIT_VIEW_CONFIG.type);
+        this.app.workspace.detachLeavesOfType(DIFF_VIEW_CONFIG.type);
+
+        this.unloadPlugin();
 
         console.log('unloading ' + this.manifest.name + " plugin");
     }
@@ -329,7 +340,7 @@ export default class ObsidianGit extends Plugin {
                     this.displayError("Cannot run git command");
                     break;
                 case "missing-repo":
-                    new Notice("Can't find a valid git repository. Please create one via the given command.");
+                    new Notice("Can't find a valid git repository. Please create one via the given command or clone an existing repo.");
                     break;
                 case "valid":
                     this.gitReady = true;
@@ -392,6 +403,7 @@ export default class ObsidianGit extends Plugin {
     async createNewRepo() {
         await this.gitManager.init();
         new Notice("Initialized new repo");
+        await this.init();
     }
 
     async cloneNewRepo() {

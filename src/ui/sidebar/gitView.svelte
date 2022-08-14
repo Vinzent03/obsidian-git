@@ -69,10 +69,15 @@
   }
 
   async function refresh() {
+    if (!plugin.gitReady) {
+      status = undefined;
+      return;
+    }
+
     status = plugin.cachedStatus;
     if (plugin.lastPulledFiles && plugin.lastPulledFiles != lastPulledFiles) {
       lastPulledFiles = plugin.lastPulledFiles;
-      
+
       lastPulledFilesHierarchy = {
         title: "",
         children: plugin.gitManager.getTreeStructure(lastPulledFiles),
