@@ -29,7 +29,6 @@ export default class GitView extends ItemView implements HoverParent {
     }
 
     onClose(): Promise<void> {
-        this._view.$destroy();
         return super.onClose();
     }
 

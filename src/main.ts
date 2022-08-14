@@ -12,6 +12,7 @@ import { SimpleGit } from "./simpleGit";
 import { ALLOWSIMPLEGIT, FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
+import { IgnoreModal } from "./ui/modals/ignoreModal";
 import GitView from "./ui/sidebar/sidebarView";
 const normalize = require("path-normalize");
 
@@ -94,6 +95,19 @@ export default class ObsidianGit extends Plugin {
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
+        this.addCommand({
+            id: 'edit-gitignore',
+            name: 'Edit .gitignore',
+            callback: async () => {
+                const content = await this.app.vault.adapter.read(this.gitManager.getVaultPath(".gitignore"));
+                const modal = new IgnoreModal(this.app, content);
+                const res = await modal.open();
+                if (res !== undefined) {
+                    await this.app.vault.adapter.write(this.gitManager.getVaultPath(".gitignore"), res);
+                    this.refresh();
+                }
+            },
+        });
         this.addCommand({
             id: 'open-git-view',
             name: 'Open source control view',
