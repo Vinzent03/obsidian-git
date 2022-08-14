@@ -6,7 +6,7 @@ import * as simple from "simple-git";
 import simpleGit, { DefaultLogFields } from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, PluginState } from "./types";
+import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -39,11 +39,7 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async status(): Promise<{
-        changed: FileStatusResult[];
-        staged: FileStatusResult[];
-        conflicted: string[];
-    }> {
+    async status(): Promise<Status> {
         this.plugin.setState(PluginState.status);
         const status = await this.git.status((err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
@@ -74,14 +70,6 @@ export class SimpleGit extends GitManager {
                 working_dir: undefined
             }).path),
         };
-    }
-
-    getVaultPath(path: string): String {
-        if (this.plugin.settings.basePath) {
-            return this.plugin.settings.basePath + "/" + path;
-        } else {
-            return path;
-        }
     }
 
     //Remove wrong `"` like "My file.md"
@@ -317,6 +305,8 @@ export class SimpleGit extends GitManager {
         return await this.git.remote(["get-url", remote], (err, url) => this.onError(err)) || undefined;
     }
 
+
+    // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
     async log(file?: string, relativeToVault: boolean = true): Promise<ReadonlyArray<DefaultLogFields>> {
         const path = this.getPath(file, relativeToVault);
 

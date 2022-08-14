@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     basePath: "",
     differentIntervalCommitAndPush: false,
     changedFilesInStatusBar: false,
+    username: "",
 };
 
 export const GIT_VIEW_CONFIG = {

@@ -1,13 +1,11 @@
 import { App, SuggestModal } from "obsidian";
 
 export class GeneralModal extends SuggestModal<string> {
-    list: string[];
     resolve: ((value: string | PromiseLike<string>) => void) | null = null;
 
 
-    constructor(app: App, remotes: string[], placeholder: string) {
+    constructor(app: App, private options: string[], placeholder: string, private allowEmpty = false, private onlySelection: boolean = false) {
         super(app);
-        this.list = remotes;
         this.setPlaceholder(placeholder);
     }
 
@@ -19,7 +17,7 @@ export class GeneralModal extends SuggestModal<string> {
     }
 
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
-        if (this.resolve) this.resolve(value);
+        if (this.resolve) this.resolve((this.allowEmpty && value === " ") ? "" : value);
         super.selectSuggestion(value, evt);
     }
 
@@ -28,7 +26,14 @@ export class GeneralModal extends SuggestModal<string> {
     }
 
     getSuggestions(query: string): string[] {
-        return [query.length > 0 ? query : "...", ...this.list];
+        if (this.onlySelection) {
+            return this.options;
+        } else if (this.allowEmpty) {
+            return [(query.length > 0) ? query : " ", ...this.options];
+        } else {
+            return [query.length > 0 ? query : "...", ...this.options];
+
+        }
     }
 
     renderSuggestion(value: string, el: HTMLElement): void {

@@ -1,5 +1,4 @@
 import { debounce, Debouncer, EventRef, Notice, Plugin, TFile } from "obsidian";
-import * as path from "path";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -7,12 +6,14 @@ import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
+import { IsomorphicGit } from "./isomorphicGit";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
-import { FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
+import { ALLOWSIMPLEGIT, FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sidebar/sidebarView";
+const normalize = require("path-normalize");
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -72,6 +73,7 @@ export default class ObsidianGit extends Plugin {
 
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
+
         await this.loadSettings();
         this.migrateSettings();
 
@@ -200,6 +202,25 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "delete-repo",
+            name: "CAUTION: Delete repository",
+            callback: async () => {
+                const repoExists = await this.app.vault.adapter.exists(`${this.settings.basePath}/.git`);
+                if (repoExists) {
+                    const modal = new GeneralModal(this.app, ["NO", "YES"], "Do you really want to delete the repository? This action cannot be undone.", false, true);
+                    const shouldDelete = await modal.open() === "YES";
+                    if (shouldDelete) {
+                        await this.app.vault.adapter.rmdir(`${this.settings.basePath}/.git`, true);
+                        new Notice("Successfully deleted repository. Please reload the plugin");
+
+                    }
+                } else {
+                    new Notice("No repository found");
+                }
+            }
+        });
+
+        this.addCommand({
             id: "init-repo",
             name: "Initialize a new repo",
             callback: async () => this.createNewRepo()
@@ -216,6 +237,8 @@ export default class ObsidianGit extends Plugin {
             id: "list-changed-files",
             name: "List changed files",
             callback: async () => {
+                if (!await this.isAllInitialized()) return;
+
                 const status = await this.gitManager.status();
                 this.setState(PluginState.idle);
 
@@ -259,6 +282,7 @@ export default class ObsidianGit extends Plugin {
         this.app.metadataCache.offref(this.deleteEvent);
         this.app.metadataCache.offref(this.createEvent);
         this.app.metadataCache.offref(this.renameEvent);
+        this.debRefresh.cancel();
 
         console.log('unloading ' + this.manifest.name + " plugin");
     }
@@ -291,9 +315,12 @@ export default class ObsidianGit extends Plugin {
 
     async init(): Promise<void> {
         try {
-            this.gitManager = new SimpleGit(this);
-            if (this.gitManager instanceof SimpleGit) {
-                await this.gitManager.setGitInstance();
+            if (ALLOWSIMPLEGIT) {
+                this.gitManager = new SimpleGit(this);
+                await (this.gitManager as SimpleGit).setGitInstance();
+
+            } else {
+                this.gitManager = new IsomorphicGit(this);
             }
 
             const result = await this.gitManager.checkRequirements();
@@ -371,9 +398,23 @@ export default class ObsidianGit extends Plugin {
         const modal = new GeneralModal(this.app, [], "Enter remote URL");
         const url = await modal.open();
         if (url) {
-            let dir = await new GeneralModal(this.app, [], "Enter directory for clone. It needs to be empty or not existent.").open();
-            if (dir) {
-                dir = path.normalize(dir);
+            let dir = await new GeneralModal(this.app, [], "Enter directory for clone. It needs to be empty or not existent.", this.gitManager instanceof IsomorphicGit).open();
+            if (dir !== undefined) {
+                dir = normalize(dir);
+                if (dir === "" || dir === ".") {
+                    const modal = new GeneralModal(this.app, ["NO", "YES"], `Does your remote repo contain a ${app.vault.configDir} directory at the root?`, false, true);
+                    const containsConflictDir = await modal.open() === "YES";
+                    if (containsConflictDir) {
+                        const modal = new GeneralModal(this.app, ["Abort clone", "DELETE ALL YOUR LOCAL CONFIG"], `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, false, true);
+                        const shouldDelete = await modal.open() === "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
+                        if (shouldDelete) {
+                            await this.app.vault.adapter.rmdir(app.vault.configDir, true);
+                        } else {
+                            new Notice("Aborted clone");
+                            return;
+                        }
+                    }
+                }
                 new Notice(`Cloning new repo into "${dir}"`);
                 await this.gitManager.clone(url, dir);
                 new Notice("Cloned new repo");
@@ -438,22 +479,33 @@ export default class ObsidianGit extends Plugin {
     async commit(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<boolean> {
         if (!await this.isAllInitialized()) return false;
 
-        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+        const hadConflict = localStorage.getItem(this.manifest.id + ":conflict") === "true";
 
-        if (file) await this.app.vault.delete(file);
         let status;
 
         if (this.gitManager instanceof SimpleGit) {
-            status = (await this.gitManager.status()) as Status & { conflicted: string[]; };
+            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+            await this.app.vault.delete(file);
+            status = await this.gitManager.status();
+
             // check for conflict files on auto backup
             if (fromAutoBackup && status.conflicted.length > 0) {
                 this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
                 this.handleConflict(status.conflicted);
                 return;
             }
+        } else if (fromAutoBackup && hadConflict) {
+            this.setState(PluginState.conflicted);
+            this.displayError(`Did not commit, because you have conflict files. Please resolve them and commit per command.`);
+            return;
+        } else if (hadConflict) {
+            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+            await this.app.vault.delete(file);
+            status = await this.updateCachedStatus();
         } else {
-            status = await this.gitManager.status();
+            status = await this.updateCachedStatus();
         }
+
 
         if (await this.hasTooBigFiles([...status.staged, ...status.changed])) {
             this.setState(PluginState.idle);
@@ -462,7 +514,7 @@ export default class ObsidianGit extends Plugin {
 
         const changedFiles = status.changed.length + status.staged.length;
 
-        if (changedFiles !== 0) {
+        if (changedFiles !== 0 || hadConflict) {
             let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
             if ((fromAutoBackup && this.settings.customMessageOnAutoBackup) || requestCustomMessage) {
                 if (!this.settings.disablePopups && fromAutoBackup) {
@@ -516,23 +568,30 @@ export default class ObsidianGit extends Plugin {
     }
 
     async push(): Promise<boolean> {
-        if (!await this.isAllInitialized()) return false;
-        if (!this.remotesAreSet()) {
+        if (! await this.isAllInitialized()) return false;
+        if (! await this.remotesAreSet()) {
             return false;
         }
 
         const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+        const hadConflict = localStorage.getItem(this.manifest.id + ":conflict") === "true";
 
-        if (file) await this.app.vault.delete(file);
+        if (this.gitManager instanceof SimpleGit && file) await this.app.vault.delete(file);
 
         // Refresh because of pull
         let status: any;
-        if (this.gitManager instanceof SimpleGit && (status = await this.gitManager.status()).conflicted.length > 0) {
+        if (this.gitManager instanceof SimpleGit && (status = await this.updateCachedStatus()).conflicted.length > 0) {
             this.displayError(`Cannot push. You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
             this.handleConflict(status.conflicted);
             return false;
-        } else {
+        } else if (this.gitManager instanceof IsomorphicGit && hadConflict) {
+            this.displayError(`Cannot push. You have conflict files`);
+            this.setState(PluginState.conflicted);
+            return false;
+        } {
+            console.log("Pushing....");
             const pushedFiles = await this.gitManager.push();
+            console.log("Pushed!", pushedFiles);
             this.lastUpdate = Date.now();
             if (pushedFiles > 0) {
                 this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
@@ -689,22 +748,26 @@ export default class ObsidianGit extends Plugin {
     }
 
 
-    async handleConflict(conflicted: string[]): Promise<void> {
+    async handleConflict(conflicted?: string[]): Promise<void> {
         this.setState(PluginState.conflicted);
-        const lines = [
-            "# Conflict files",
-            "Please resolve them and commit per command (This file will be deleted before the commit).",
-            ...conflicted.map(e => {
-                const file = this.app.vault.getAbstractFileByPath(e);
-                if (file instanceof TFile) {
-                    const link = this.app.metadataCache.fileToLinktext(file, "/");
-                    return `- [[${link}]]`;
-                } else {
-                    return `- Not a file: ${e}`;
-                }
-            })
-        ];
-        this.writeAndOpenFile(lines.join("\n"));
+        localStorage.setItem(this.manifest.id + ":conflict", "true");
+        let lines: string[];
+        if (conflicted !== undefined) {
+            lines = [
+                "# Conflict files",
+                "Please resolve them and commit per command (This file will be deleted before the commit).",
+                ...conflicted.map(e => {
+                    const file = this.app.vault.getAbstractFileByPath(e);
+                    if (file instanceof TFile) {
+                        const link = this.app.metadataCache.fileToLinktext(file, "/");
+                        return `- [[${link}]]`;
+                    } else {
+                        return `- Not a file: ${e}`;
+                    }
+                })
+            ];
+        }
+        this.writeAndOpenFile(lines?.join("\n"));
     }
 
     async editRemotes(): Promise<string | undefined> {
@@ -760,9 +823,10 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async writeAndOpenFile(text: string) {
-        await this.app.vault.adapter.write(this.conflictOutputFile, text);
-
+    async writeAndOpenFile(text?: string) {
+        if (text !== undefined) {
+            await this.app.vault.adapter.write(this.conflictOutputFile, text);
+        }
         let fileIsAlreadyOpened = false;
         this.app.workspace.iterateAllLeaves(leaf => {
             if (leaf.getDisplayText() != "" && this.conflictOutputFile.startsWith(leaf.getDisplayText())) {

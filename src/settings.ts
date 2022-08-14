@@ -1,5 +1,7 @@
 import { Notice, Platform, PluginSettingTab, Setting } from "obsidian";
+import { IsomorphicGit } from "./isomorphicGit";
 import ObsidianGit from "./main";
+import { SimpleGit } from "./simpleGit";
 import { SyncMethod } from "./types";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
@@ -235,25 +237,26 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.createEl("br");
         containerEl.createEl("h3", { text: "Backup" });
 
-        new Setting(containerEl)
-            .setName("Sync Method")
-            .setDesc(
-                "Selects the method used for handling new changes found in your remote git repository."
-            )
-            .addDropdown((dropdown) => {
-                const options: Record<SyncMethod, string> = {
-                    'merge': 'Merge',
-                    'rebase': 'Rebase',
-                    'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
-                };
-                dropdown.addOptions(options);
-                dropdown.setValue(plugin.settings.syncMethod);
+        if (plugin.gitManager instanceof SimpleGit)
+            new Setting(containerEl)
+                .setName("Sync Method")
+                .setDesc(
+                    "Selects the method used for handling new changes found in your remote git repository."
+                )
+                .addDropdown((dropdown) => {
+                    const options: Record<SyncMethod, string> = {
+                        'merge': 'Merge',
+                        'rebase': 'Rebase',
+                        'reset': 'Other sync service (Only updates the HEAD without touching the working directory)',
+                    };
+                    dropdown.addOptions(options);
+                    dropdown.setValue(plugin.settings.syncMethod);
 
-                dropdown.onChange(async (option: SyncMethod) => {
-                    plugin.settings.syncMethod = option;
-                    plugin.saveSettings();
+                    dropdown.onChange(async (option: SyncMethod) => {
+                        plugin.settings.syncMethod = option;
+                        plugin.saveSettings();
+                    });
                 });
-            });
 
         new Setting(containerEl)
             .setName("Pull updates on startup")
@@ -362,27 +365,72 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.createEl("br");
         containerEl.createEl("h3", { text: "Advanced" });
 
-        new Setting(containerEl)
-            .setName("Update submodules")
-            .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(plugin.settings.updateSubmodules)
-                    .onChange((value) => {
-                        plugin.settings.updateSubmodules = value;
+        if (plugin.gitManager instanceof SimpleGit)
+            new Setting(containerEl)
+                .setName("Update submodules")
+                .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.updateSubmodules)
+                        .onChange((value) => {
+                            plugin.settings.updateSubmodules = value;
+                            plugin.saveSettings();
+                        })
+                );
+
+        if (plugin.gitManager instanceof SimpleGit)
+            new Setting(containerEl)
+                .setName("Custom Git binary path")
+                .addText((cb) => {
+                    cb.setValue(plugin.settings.gitPath);
+                    cb.setPlaceholder("git");
+                    cb.onChange((value) => {
+                        plugin.settings.gitPath = value;
                         plugin.saveSettings();
-                    })
-            );
+                        plugin.gitManager.updateGitPath(value || "git");
+                    });
+                });
+
+        if (plugin.gitManager instanceof IsomorphicGit)
+            new Setting(containerEl)
+                .setName("Username on your git server. E.g. your username on GitHub")
+                .addText(cb => {
+                    cb.setValue(plugin.settings.username);
+                    cb.onChange((value) => {
+                        plugin.settings.username = value;
+                        plugin.saveSettings();
+                    });
+                });
+
+
+        if (plugin.gitManager instanceof IsomorphicGit)
+            new Setting(containerEl)
+                .setName("Password/Personal access token")
+                .setDesc("Type in your password and press on the button to set it. You won't be able to see it again.")
+                .addText(cb => {
+                    cb.inputEl.autocapitalize = "off";
+                    cb.inputEl.autocomplete = "off";
+                    cb.inputEl.spellcheck = false;
+                    cb.onChange((value) => {
+                        localStorage.setItem(plugin.manifest.id + ":password", value);
+                    });
+                });
 
         new Setting(containerEl)
-            .setName("Custom Git binary path")
-            .addText((cb) => {
-                cb.setValue(plugin.settings.gitPath);
-                cb.setPlaceholder("git");
+            .setName("Author name for commit")
+            .addText(async cb => {
+                cb.setValue(await plugin.gitManager.getConfig("user.name"));
                 cb.onChange((value) => {
-                    plugin.settings.gitPath = value;
-                    plugin.saveSettings();
-                    plugin.gitManager.updateGitPath(value || "git");
+                    plugin.gitManager.setConfig("user.name", value);
+                });
+            });
+
+        new Setting(containerEl)
+            .setName("Author email for commit")
+            .addText(async cb => {
+                cb.setValue(await plugin.gitManager.getConfig("user.email"));
+                cb.onChange((value) => {
+                    plugin.gitManager.setConfig("user.email", value);
                 });
             });
 
@@ -401,6 +449,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     plugin.gitManager.updateBasePath(value || "");
                 });
             });
+
         const info = containerEl.createDiv();
         info.setAttr("align", "center");
         info.setText("Debugging and logging:\nYou can always see the logs of this and every other plugin by opening the console with");

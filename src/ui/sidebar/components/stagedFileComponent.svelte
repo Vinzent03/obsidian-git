@@ -1,7 +1,6 @@
 <script lang="ts">
   import { FileView, setIcon, TAbstractFile } from "obsidian";
   import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
-  import { format } from "path";
   import { DIFF_VIEW_CONFIG } from "src/constants";
   import { GitManager } from "src/gitManager";
   import { FileStatusResult } from "src/types";
@@ -14,8 +13,9 @@
   $: formattedPath = change.vault_path;
   $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
-  setImmediate(() =>
-    buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
+  window.setTimeout(
+    () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16)),
+    0
   );
 
   function hover(event: MouseEvent) {
@@ -47,7 +47,7 @@
   function showDiff(event: MouseEvent) {
     const workspace = view.app.workspace;
     const leaf = workspace.getMostRecentLeaf(workspace.rootSplit);
-    
+
     if (
       leaf &&
       !leaf.getViewState().pinned &&
@@ -60,18 +60,16 @@
           staged: true,
         },
       });
-      workspace.setActiveLeaf(leaf,true,true)
+      workspace.setActiveLeaf(leaf, true, true);
     } else {
-      workspace
-        .createLeafInParent(workspace.rootSplit, 0)
-        .setViewState({
-          type: DIFF_VIEW_CONFIG.type,
-          active: true,
-          state: {
-            file: change.path,
-            staged: true,
-          },
-        });
+      workspace.createLeafInParent(workspace.rootSplit, 0).setViewState({
+        type: DIFF_VIEW_CONFIG.type,
+        active: true,
+        state: {
+          file: change.path,
+          staged: true,
+        },
+      });
     }
   }
 

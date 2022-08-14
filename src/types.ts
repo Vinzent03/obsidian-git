@@ -17,6 +17,7 @@ export interface ObsidianGitSettings {
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
+    username: string;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;
 
@@ -34,15 +35,70 @@ export interface Author {
     name: string;
     email: string;
 }
+
 export interface Status {
     changed: FileStatusResult[];
     staged: FileStatusResult[];
+    conflicted: string[];
 }
+
+export var ALLOWSIMPLEGIT: boolean;
+
+/**
+ * `index` and `working_dir` are each one-character codes, based off the git
+ * status short format: git status --short
+ * The following is from: https://www.git-scm.com/docs/git-status#_short_format
+ *
+ * The possible values are:
+ * - ' ': unmodified
+ * - M  : modified
+ * - T  : file type changed
+ * - A  : added
+ * - D  : deleted
+ * - R  : renamed
+ * - C  : copied
+ * - U  : updated but unmerged
+ *
+ *  index            working_dir            Meaning
+ * ------------------------------------------------------------------------
+ *                    [AMD]                 not updated
+ *    M               [ MTD]                updated in index
+ *    T               [ MTD]                type changed in index
+ *    A               [ MTD]                added to index
+ *    D                                     deleted from index
+ *    R               [ MTD]                renamed in index
+ *    C               [ MTD]                copied in index
+ * [MTARC]                                  index and work tree match
+ * [ MTARC]              M                  work tree changed since index
+ * [ MTARC]              T                  type changed in work tree since index
+ * [ MTARC]              D                  deleted in work tree
+ *                       R                  renamed in work tree
+ *                       C                  copied in work tree
+ *    D                  D                  unmerged, both deleted
+ *    A                  U                  unmerged, added by us
+ *    U                  D                  unmerged, deleted by them
+ *    U                  A                  unmerged, added by them
+ *    D                  U                  unmerged, deleted by us
+ *    A                  A                  unmerged, both added
+ *    U                  U                  unmerged, both modified
+ *    ?                  ?                  untracked
+ *    !                  !                  ignored
+ *
+ *
+ * FileStatusResult is based off simple-git's FileStatusResult:
+ * https://github.com/steveukx/git-js/blob/a569868d800a0d872e8fb1534bb0dceccff47a4f/typings/response.d.ts#L267
+ */
 export interface FileStatusResult {
     path: string;
     vault_path: string;
     from?: string;
+
+    // First digit of the status code of the file, e.g. 'M' = modified.
+    // Represents the status of the index if no merge conflicts, otherwise represents
+    // status of one side of the merge.
     index: string;
+    // Second digit of the status code of the file. Represents status of the working directory
+    // if no merge conflicts, otherwise represents status of other side of a merge.
     working_dir: string;
 }
 export interface DiffResult {

@@ -14,8 +14,9 @@
   let buttons: HTMLElement[] = [];
   $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
-  setImmediate(() =>
-    buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16))
+  window.setTimeout(
+    () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16)),
+    0,
   );
 
   function hover(event: MouseEvent) {
