@@ -91,7 +91,7 @@ export class MyAdapter {
     async stat(path: string) {
 
         if (path.endsWith(".git/index")) {
-            if (this.index !== undefined) {
+            if (this.index !== undefined && this.indexctime != undefined && this.indexmtime != undefined) {
                 return {
                     isFile: () => true,
                     isDirectory: () => false,
