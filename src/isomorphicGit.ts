@@ -93,6 +93,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async status(): Promise<Status> {
+        const notice = new Notice("Getting status...", this.noticeLength);
         try {
             this.plugin.setState(PluginState.status);
             const status = (await this.wrapFS(git.statusMatrix({ ...this.getRepo(), }))).map(row => this.getFileStatusResult(row));
@@ -100,8 +101,10 @@ export class IsomorphicGit extends GitManager {
             const changed = status.filter(fileStatus => fileStatus.working_dir !== " ");
             const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "U");
             const conflicted: string[] = [];
+            notice.hide();
             return { changed, staged, conflicted };
         } catch (error) {
+            notice.hide();
             this.plugin.displayError(error);
             throw error;
         }
