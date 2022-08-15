@@ -13,11 +13,11 @@ export abstract class GitManager {
 
     abstract status(): Promise<Status>;
 
-    abstract commitAll(message?: string): Promise<number>;
+    abstract commitAll(message?: string, status?: Status): Promise<number | undefined>;
 
-    abstract commit(message?: string): Promise<number>;
+    abstract commit(message?: string): Promise<number | undefined>;
 
-    abstract stageAll(): Promise<void>;
+    abstract stageAll(status?: Status): Promise<void>;
 
     abstract unstageAll(): Promise<void>;
 

@@ -107,9 +107,9 @@ export class IsomorphicGit extends GitManager {
         }
     };
 
-    async commitAll(message?: string): Promise<number> {
+    async commitAll(message?: string, status?: Status): Promise<number> {
         try {
-            await this.stageAll();
+            await this.stageAll(status);
             return this.commit(message);
         } catch (error) {
             this.plugin.displayError(error);
@@ -117,11 +117,9 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async commit(message?: string): Promise<number> {
+    async commit(message?: string): Promise<undefined> {
         try {
             this.plugin.setState(PluginState.commit);
-            const status = await this.status();
-            const numChangedFiles = status.staged.length;
             const formatMessage = await this.formatCommitMessage(message);
             const hadConflict = localStorage.getItem(this.plugin.manifest.id + ":conflict") === "true";
             let parent: string[] = undefined;
@@ -137,8 +135,7 @@ export class IsomorphicGit extends GitManager {
                 parent: parent,
             }));
             localStorage.setItem(this.plugin.manifest.id + ":conflict", "false");
-
-            return numChangedFiles;
+            return;
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -160,14 +157,20 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async stageAll(): Promise<void> {
+    async stageAll(status?: Status): Promise<void> {
         try {
-            const status = await this.wrapFS(git.statusMatrix(this.getRepo()));
-            await Promise.all(
-                status.map(([filepath, , worktreeStatus]) =>
-                    worktreeStatus ? this.wrapFS(git.add({ ...this.getRepo(), filepath })) : git.remove(({ ...this.getRepo(), filepath }))
-                ));
-
+            if (status) {
+                await Promise.all(
+                    status.changed.map(file =>
+                        (file.working_dir !== "D") ? this.wrapFS(git.add({ ...this.getRepo(), filepath: file.path })) : git.remove(({ ...this.getRepo(), filepath: file.path }))
+                    ));
+            } else {
+                const newStatus = await this.wrapFS(git.statusMatrix(this.getRepo()));
+                await Promise.all(
+                    newStatus.map(([filepath, , worktreeStatus]) =>
+                        worktreeStatus ? this.wrapFS(git.add({ ...this.getRepo(), filepath })) : git.remove(({ ...this.getRepo(), filepath }))
+                    ));
+            }
         } catch (error) {
             this.plugin.displayError(error);
             throw error;

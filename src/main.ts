@@ -539,7 +539,7 @@ export default class ObsidianGit extends Plugin {
         if (this.gitManager instanceof SimpleGit) {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
             await this.app.vault.delete(file);
-            status = await this.gitManager.status();
+            status = await this.updateCachedStatus();
 
             // check for conflict files on auto backup
             if (fromAutoBackup && status.conflicted.length > 0) {
@@ -582,8 +582,12 @@ export default class ObsidianGit extends Plugin {
                     return false;
                 }
             }
-            const committedFiles = await this.gitManager.commitAll(commitMessage);
-            this.displayMessage(`Committed ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
+            let committedFiles = await this.gitManager.commitAll(commitMessage, status);
+            let roughly = false;
+            if (committedFiles === undefined) {
+                committedFiles = status.changed.length + status.staged.length;
+            }
+            this.displayMessage(`Committed${roughly ? " approx." : ""} ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
         } else {
             this.displayMessage("No changes to commit");
         }
