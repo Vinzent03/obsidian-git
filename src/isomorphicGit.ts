@@ -212,7 +212,9 @@ export class IsomorphicGit extends GitManager {
     }
 
     async pull(): Promise<FileStatusResult[]> {
+        const progressNotice = new Notice("Initializing pull", this.noticeLength);
         try {
+
             this.plugin.setState(PluginState.pull);
 
             const localCommit = await git.resolveRef({ ...this.getRepo(), ref: "HEAD" });
@@ -228,8 +230,12 @@ export class IsomorphicGit extends GitManager {
             await git.checkout({
                 ...this.getRepo(),
                 ref: branchInfo.current,
+                onProgress: (progress) => {
+                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Checkout", progress);
+                },
                 remote: branchInfo.remote,
             });
+            progressNotice.hide();
 
             const upstreamCommit = await git.resolveRef({ ...this.getRepo(), ref: "HEAD" });
             this.plugin.lastUpdate = Date.now();
@@ -241,6 +247,7 @@ export class IsomorphicGit extends GitManager {
                 vault_path: this.getVaultPath(file.path),
             }));
         } catch (error) {
+            progressNotice.hide();
             if (error instanceof Errors.MergeConflictError) {
                 this.plugin.handleConflict(error.data.filepaths.map((file) => this.getVaultPath(file)));
             }
