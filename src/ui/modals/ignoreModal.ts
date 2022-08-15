@@ -27,7 +27,7 @@ export class IgnoreModal extends Modal {
         div.createEl("button",
             {
                 cls: ["mod-cta", "obsidian-git-center-button"],
-                text: "Confirm",
+                text: "Save",
             })
             .addEventListener("click", async () => {
                 this.resolve(text.value);

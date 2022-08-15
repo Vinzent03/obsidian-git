@@ -151,6 +151,22 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "add-to-gitignore",
+            name: "Add file to gitignore",
+            checkCallback: (checking) => {
+                const file = app.workspace.getActiveFile();
+                if (checking) {
+                    return file !== undefined;
+                } else {
+                    app.vault.adapter.append(this.gitManager.getVaultPath(".gitignore"), "\n" + this.gitManager.getPath(file.path, true))
+                        .then(() => {
+                            this.refresh();
+                        });
+                }
+            },
+        });
+
+        this.addCommand({
             id: "push",
             name: "Create backup",
             callback: () => this.promiseQueue.addTask(() => this.createBackup(false))
