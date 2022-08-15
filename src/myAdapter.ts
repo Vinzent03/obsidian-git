@@ -103,6 +103,9 @@ export class MyAdapter {
                 };
             } else {
                 const stat = await this.adapter.stat(path);
+                if (stat == undefined) {
+                    throw { "code": "ENOENT" };
+                }
                 this.indexctime = stat.ctime;
                 this.indexmtime = stat.mtime;
                 return {
