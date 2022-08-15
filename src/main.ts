@@ -464,13 +464,13 @@ export default class ObsidianGit extends Plugin {
                 await this.gitManager.clone(url, dir);
                 new Notice("Cloned new repo. Reloading plugin...");
 
-                this.unloadPlugin();
-                await this.init();
-
                 if (dir) {
                     this.settings.basePath = dir;
                     this.saveSettings();
                 }
+                this.unloadPlugin();
+                await this.init();
+
             }
         }
     }
