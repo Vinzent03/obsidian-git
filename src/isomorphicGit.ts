@@ -30,7 +30,7 @@ export class IsomorphicGit extends GitManager {
         "123": "MM"
     };
     private readonly noticeLength = 999_999;
-    private readonly fs = new MyAdapter(this.app.vault);
+    private readonly fs = new MyAdapter(this.app.vault, this.plugin);
 
     constructor(plugin: ObsidianGit) {
         super(plugin);
