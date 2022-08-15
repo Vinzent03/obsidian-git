@@ -838,10 +838,11 @@ export default class ObsidianGit extends Plugin {
         if (remoteName) {
             const urlModal = new GeneralModal(this.app, [], "Enter the remote URL");
             const remoteURL = await urlModal.open();
-            await this.gitManager.setRemote(remoteName, remoteURL);
-            return remoteName;
+            if (remoteURL) {
+                await this.gitManager.setRemote(remoteName, remoteURL);
+                return remoteName;
+            }
         }
-
     }
 
     async selectRemoteBranch(): Promise<string | undefined> {
