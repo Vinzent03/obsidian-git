@@ -257,6 +257,8 @@ export class IsomorphicGit extends GitManager {
             const upstreamCommit = await this.resolveRef("HEAD");
             this.plugin.lastUpdate = Date.now();
             const changedFiles = await this.getFileChangesCount(localCommit, upstreamCommit);
+            new Notice("Finished pull");
+
             return changedFiles.map<FileStatusResult>(file => ({
                 path: file.path,
                 working_dir: "P",

@@ -102,7 +102,7 @@
 
   function stageAll() {
     loading = true;
-    plugin.gitManager.stageAll().finally(triggerRefresh);
+    plugin.gitManager.stageAll(status).finally(triggerRefresh);
   }
   function unstageAll() {
     loading = true;
