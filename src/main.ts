@@ -445,8 +445,11 @@ export default class ObsidianGit extends Plugin {
                 dir = normalize(dir);
                 if (dir === "" || dir === ".") {
                     const modal = new GeneralModal(this.app, ["NO", "YES"], `Does your remote repo contain a ${app.vault.configDir} directory at the root?`, false, true);
-                    const containsConflictDir = await modal.open() === "YES";
-                    if (containsConflictDir) {
+                    const containsConflictDir = await modal.open();
+                    if (containsConflictDir === undefined) {
+                        new Notice("Aborted clone");
+                        return;
+                    } else if (containsConflictDir === "YES") {
                         const modal = new GeneralModal(this.app, ["Abort clone", "DELETE ALL YOUR LOCAL CONFIG"], `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, false, true);
                         const shouldDelete = await modal.open() === "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
                         if (shouldDelete) {
@@ -459,6 +462,10 @@ export default class ObsidianGit extends Plugin {
                 }
                 new Notice(`Cloning new repo into "${dir}"`);
                 await this.gitManager.clone(url, dir);
+                if (dir) {
+                    this.settings.basePath = dir;
+                    this.saveSettings();
+                }
                 new Notice("Cloned new repo");
             }
         }
