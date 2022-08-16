@@ -1,9 +1,9 @@
-import git, { AuthCallback, Errors, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient } from "isomorphic-git";
+import git, { AuthCallback, Errors, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient, Walker } from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
-import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
+import { BranchInfo, FileStatusResult, PluginState, Status, WalkDifference } from "./types";
 
 
 export class IsomorphicGit extends GitManager {
@@ -494,13 +494,15 @@ export class IsomorphicGit extends GitManager {
         return;
     }
 
-    async getFileChangesCount(commitHash1: string, commitHash2: string): Promise<{
-        path: string,
-        type: "modify" | "add" | "remove",
-    }[]> {
-        const res = await git.walk({
+    async getFileChangesCount(commitHash1: string, commitHash2: string): Promise<WalkDifference[]> {
+        return this.walkDifference([git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })]);
+    }
+
+
+    async walkDifference(walker: Walker[]): Promise<WalkDifference[]> {
+        const res = await this.wrapFS(git.walk({
             ...this.getRepo(),
-            trees: [git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })],
+            trees: walker,
             map: async function (filepath, [A, B]) {
                 // ignore directories
                 if (filepath === '.') {
@@ -539,8 +541,13 @@ export class IsomorphicGit extends GitManager {
                     type: type,
                 };
             },
-        });
+        }));
         return res;
+    }
+
+    async getStagedFiles(): Promise<{ vault_path: string; }[]> {
+        const res = await this.walkDifference([git.TREE({ ref: "HEAD" }), git.STAGE()]);
+        return res.map((file) => { return { vault_path: this.getVaultPath(file.path) }; });
     }
 
     async getDiffString(filePath: string): Promise<string> {

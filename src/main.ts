@@ -190,6 +190,18 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "commit-staged",
+            name: "Commit staged",
+            callback: () => this.promiseQueue.addTask(() => this.commit(false, false, true))
+        });
+
+        this.addCommand({
+            id: "commit-staged-specified-message",
+            name: "Commit staged with specific message",
+            callback: () => this.promiseQueue.addTask(() => this.commit(false, true, true))
+        });
+
+        this.addCommand({
             id: "push2",
             name: "Push",
             callback: () => this.promiseQueue.addTask(() => this.push())
@@ -527,12 +539,13 @@ export default class ObsidianGit extends Plugin {
         this.setState(PluginState.idle);
     }
 
-    async commit(fromAutoBackup: boolean, requestCustomMessage: boolean = false): Promise<boolean> {
+    async commit(fromAutoBackup: boolean, requestCustomMessage: boolean = false, onlyStaged: boolean = false): Promise<boolean> {
         if (!await this.isAllInitialized()) return false;
 
         const hadConflict = localStorage.getItem(this.manifest.id + ":conflict") === "true";
 
-        let status;
+        let changedFiles: { vault_path: string; }[];
+        let status: Status | undefined;
 
         if (this.gitManager instanceof SimpleGit) {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
@@ -545,6 +558,7 @@ export default class ObsidianGit extends Plugin {
                 this.handleConflict(status.conflicted);
                 return;
             }
+            changedFiles = [...status.changed, ...status.staged];
         } else if (fromAutoBackup && hadConflict) {
             this.setState(PluginState.conflicted);
             this.displayError(`Did not commit, because you have conflict files. Please resolve them and commit per command.`);
@@ -553,19 +567,24 @@ export default class ObsidianGit extends Plugin {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
             await this.app.vault.delete(file);
             status = await this.updateCachedStatus();
+            changedFiles = [...status.changed, ...status.staged];
         } else {
-            status = await this.updateCachedStatus();
+            if (onlyStaged) {
+                changedFiles = await (this.gitManager as IsomorphicGit).getStagedFiles();
+            } else {
+                status = await this.updateCachedStatus();
+                changedFiles = [...status.changed, ...status.staged];
+            }
         }
 
 
-        if (await this.hasTooBigFiles([...status.staged, ...status.changed])) {
+        if (await this.hasTooBigFiles(changedFiles)) {
             this.setState(PluginState.idle);
             return false;
         }
 
-        const changedFiles = status.changed.length + status.staged.length;
 
-        if (changedFiles !== 0 || hadConflict) {
+        if (changedFiles.length !== 0 || hadConflict) {
             let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
             if ((fromAutoBackup && this.settings.customMessageOnAutoBackup) || requestCustomMessage) {
                 if (!this.settings.disablePopups && fromAutoBackup) {
@@ -580,10 +599,17 @@ export default class ObsidianGit extends Plugin {
                     return false;
                 }
             }
-            let committedFiles = await this.gitManager.commitAll(commitMessage, status);
+            let committedFiles: number | undefined;
+            if (onlyStaged) {
+                committedFiles = await this.gitManager.commit(commitMessage);
+            } else {
+                committedFiles = await this.gitManager.commitAll(commitMessage, status);
+
+            }
             let roughly = false;
             if (committedFiles === undefined) {
-                committedFiles = status.changed.length + status.staged.length;
+                roughly = true;
+                committedFiles = changedFiles.length;
             }
             this.displayMessage(`Committed${roughly ? " approx." : ""} ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
         } else {
@@ -595,7 +621,7 @@ export default class ObsidianGit extends Plugin {
         return true;
     }
 
-    async hasTooBigFiles(files: FileStatusResult[]): Promise<boolean> {
+    async hasTooBigFiles(files: ({ vault_path: string; })[]): Promise<boolean> {
         const branchInfo = await this.gitManager.branchInfo();
         const remote = branchInfo.tracking?.split("/")[0];
 

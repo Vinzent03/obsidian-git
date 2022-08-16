@@ -116,6 +116,11 @@ export enum PluginState {
     conflicted,
 }
 
+export interface WalkDifference {
+    path: string;
+    type: | "modify" | "add" | "remove";
+}
+
 export interface BranchInfo {
     current: string;
     tracking: string;
