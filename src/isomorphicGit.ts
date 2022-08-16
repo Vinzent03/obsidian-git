@@ -144,13 +144,19 @@ export class IsomorphicGit extends GitManager {
     }
 
     async stage(filepath: string, relativeToVault: boolean): Promise<void> {
-        filepath = this.getPath(filepath, relativeToVault);
+        const gitPath = this.getPath(filepath, relativeToVault);
+        let vaultPath: string;
+        if (relativeToVault) {
+            vaultPath = filepath;
+        } else {
+            vaultPath = this.getVaultPath(filepath);
+        }
         try {
             this.plugin.setState(PluginState.add);
-            if (await this.app.vault.adapter.exists(filepath)) {
-                await this.wrapFS(git.add({ ...this.getRepo(), filepath: filepath }));
+            if (await this.app.vault.adapter.exists(vaultPath)) {
+                await this.wrapFS(git.add({ ...this.getRepo(), filepath: gitPath }));
             } else {
-                await this.wrapFS(git.remove({ ...this.getRepo(), filepath: filepath }));
+                await this.wrapFS(git.remove({ ...this.getRepo(), filepath: gitPath }));
             }
         } catch (error) {
             this.plugin.displayError(error);
