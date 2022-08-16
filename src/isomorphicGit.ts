@@ -72,10 +72,8 @@ export class IsomorphicGit extends GitManager {
                         headers: res.headers,
                         body: [new Uint8Array(res.arrayBuffer)],
                         statusCode: res.status,
-                        statusMessage: res.text,
+                        statusMessage: res.status.toString(),
                     };
-
-
                 }
             },
         };
