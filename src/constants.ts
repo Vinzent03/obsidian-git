@@ -1,3 +1,4 @@
+import { Platform } from "obsidian";
 import { ObsidianGitSettings } from "./types";
 
 export const DEFAULT_SETTINGS: ObsidianGitSettings = {
@@ -19,7 +20,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
     treeStructure: false,
-    refreshSourceControl: true,
+    refreshSourceControl: Platform.isDesktopApp,
     basePath: "",
     differentIntervalCommitAndPush: false,
     changedFilesInStatusBar: false,
