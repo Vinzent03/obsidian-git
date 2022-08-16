@@ -1,4 +1,4 @@
-import { debounce, Debouncer, EventRef, Notice, Plugin, TFile } from "obsidian";
+import { debounce, Debouncer, EventRef, Menu, Notice, Plugin, TAbstractFile, TFile } from "obsidian";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -290,6 +290,11 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
+        this.registerEvent(
+            this.app.workspace.on('file-menu', (menu, file, source) => {
+                this.handleFileMenu(menu, file, source);
+            }));
+
 
         if (this.settings.showStatusBar) {
             // init statusBar
@@ -301,6 +306,48 @@ export default class ObsidianGit extends Plugin {
         }
         this.app.workspace.onLayoutReady(() => this.init());
 
+    }
+
+    handleFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
+        if (source !== "file-explorer-context-menu") {
+            return;
+        }
+        if (!file) {
+            return;
+        }
+        if (!this.gitReady) return;
+        menu.addItem((item) => {
+            item
+                .setTitle(`Git: Stage`)
+                .setIcon('plus-circle')
+                .setSection("action")
+                .onClick((_) => {
+                    this.promiseQueue.addTask(async () => {
+                        if (file instanceof TFile) {
+                            await this.gitManager.stage(file.path, true);
+                        } else {
+                            await this.gitManager.stageAll({ dir: this.gitManager.getPath(file.path, true) });
+                        }
+                        this.displayMessage(`Staged ${file.path}`);
+                    });
+                });
+        });
+        menu.addItem((item) => {
+            item
+                .setTitle(`Git: Unstage`)
+                .setIcon('minus-circle')
+                .setSection("action")
+                .onClick((_) => {
+                    this.promiseQueue.addTask(async () => {
+                        if (file instanceof TFile) {
+                            await this.gitManager.unstage(file.path, true);
+                        } else {
+                            await this.gitManager.unstageAll({ dir: this.gitManager.getPath(file.path, true) });
+                        }
+                        this.displayMessage(`Unstaged ${file.path}`);
+                    });
+                });
+        });
     }
 
     migrateSettings(): Promise<void> {

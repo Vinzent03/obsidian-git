@@ -110,7 +110,7 @@ export class IsomorphicGit extends GitManager {
 
     async commitAll(message?: string, status?: Status): Promise<number> {
         try {
-            await this.stageAll(status);
+            await this.stageAll({ status: status });
             return this.commit(message);
         } catch (error) {
             this.plugin.displayError(error);
@@ -164,7 +164,7 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async stageAll(status?: Status): Promise<void> {
+    async stageAll({ dir, status }: { dir?: string, status?: Status; }): Promise<void> {
         try {
             if (status) {
                 await Promise.all(
@@ -172,7 +172,7 @@ export class IsomorphicGit extends GitManager {
                         (file.working_dir !== "D") ? this.wrapFS(git.add({ ...this.getRepo(), filepath: file.path })) : git.remove(({ ...this.getRepo(), filepath: file.path }))
                     ));
             } else {
-                const newStatus = await this.wrapFS(git.statusMatrix(this.getRepo()));
+                const newStatus = await this.wrapFS(git.statusMatrix({ ...this.getRepo(), filepaths: [dir ?? "."] }));
                 await Promise.all(
                     newStatus.map(([filepath, , worktreeStatus]) =>
                         worktreeStatus ? this.wrapFS(git.add({ ...this.getRepo(), filepath })) : git.remove(({ ...this.getRepo(), filepath }))
@@ -195,12 +195,16 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async unstageAll(): Promise<void> {
+    async unstageAll({ dir, status }: { dir?: string, status?: Status; }): Promise<void> {
         try {
-            const changed = this.plugin.cachedStatus.staged;
-            for (const file of changed) {
-                await this.unstage(file.path, false);
+            let staged: string[];
+            if (status) {
+                staged = status.staged.map(file => file.path);
+            } else {
+                const newStatus = await this.wrapFS(git.statusMatrix({ ...this.getRepo(), filepaths: [dir ?? "."] }));
+                staged = newStatus.map(([filepath]) => filepath);
             }
+            await Promise.all(staged.map(file => this.unstage(file, false)));
         } catch (error) {
             this.plugin.displayError(error);
             throw error;

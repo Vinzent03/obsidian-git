@@ -167,10 +167,10 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.idle);
     }
 
-    async stageAll(): Promise<void> {
+    async stageAll({ dir }: { dir?: string; }): Promise<void> {
         this.plugin.setState(PluginState.add);
         await this.git.add(
-            "-A", (err) => this.onError(err)
+            dir ?? "-A", (err) => this.onError(err)
         );
         this.plugin.setState(PluginState.idle);
     }

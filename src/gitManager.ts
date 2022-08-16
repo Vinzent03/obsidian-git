@@ -17,9 +17,9 @@ export abstract class GitManager {
 
     abstract commit(message?: string): Promise<number | undefined>;
 
-    abstract stageAll(status?: Status): Promise<void>;
+    abstract stageAll({ }: { dir?: string, status?: Status; }): Promise<void>;
 
-    abstract unstageAll(): Promise<void>;
+    abstract unstageAll({ }: { dir?: string, status?: Status; }): Promise<void>;
 
     abstract stage(filepath: string, relativeToVault: boolean): Promise<void>;
 

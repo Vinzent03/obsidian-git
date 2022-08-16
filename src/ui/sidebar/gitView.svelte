@@ -102,12 +102,14 @@
 
   function stageAll() {
     loading = true;
-    plugin.gitManager.stageAll(status).finally(triggerRefresh);
+    plugin.gitManager.stageAll({status: status}).finally(triggerRefresh);
   }
+
   function unstageAll() {
     loading = true;
-    plugin.gitManager.unstageAll().finally(triggerRefresh);
+    plugin.gitManager.unstageAll({status:status}).finally(triggerRefresh);
   }
+  
   function push() {
     loading = true;
 
