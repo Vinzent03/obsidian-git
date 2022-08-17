@@ -95,7 +95,7 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async commitAll(message: string): Promise<number> {
+    async commitAll({ message }: { message: string; }): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
 

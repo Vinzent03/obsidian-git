@@ -121,6 +121,11 @@ export interface WalkDifference {
     type: | "modify" | "add" | "remove";
 }
 
+export interface UnstagedFile {
+    filepath: string;
+    deleted: boolean;
+}
+
 export interface BranchInfo {
     current: string;
     tracking: string;

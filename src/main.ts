@@ -9,7 +9,7 @@ import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
-import { ALLOWSIMPLEGIT, FileStatusResult, ObsidianGitSettings, PluginState, Status } from "./types";
+import { ALLOWSIMPLEGIT, FileStatusResult, ObsidianGitSettings, PluginState, Status, UnstagedFile } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
@@ -593,6 +593,7 @@ export default class ObsidianGit extends Plugin {
 
         let changedFiles: { vault_path: string; }[];
         let status: Status | undefined;
+        let unstagedFiles: UnstagedFile[];
 
         if (this.gitManager instanceof SimpleGit) {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
@@ -619,8 +620,8 @@ export default class ObsidianGit extends Plugin {
             if (onlyStaged) {
                 changedFiles = await (this.gitManager as IsomorphicGit).getStagedFiles();
             } else {
-                status = await this.updateCachedStatus();
-                changedFiles = [...status.changed, ...status.staged];
+                unstagedFiles = await (this.gitManager as IsomorphicGit).getUnstagedFiles();
+                changedFiles = unstagedFiles.map(({ filepath }) => ({ vault_path: this.gitManager.getVaultPath(filepath) }));
             }
         }
 
@@ -650,8 +651,7 @@ export default class ObsidianGit extends Plugin {
             if (onlyStaged) {
                 committedFiles = await this.gitManager.commit(commitMessage);
             } else {
-                committedFiles = await this.gitManager.commitAll(commitMessage, status);
-
+                committedFiles = await this.gitManager.commitAll({ message: commitMessage, status, unstagedFiles });
             }
             let roughly = false;
             if (committedFiles === undefined) {

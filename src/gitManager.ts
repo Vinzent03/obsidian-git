@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, Status, TreeItem } from "./types";
+import { BranchInfo, FileStatusResult, Status, TreeItem, UnstagedFile } from "./types";
 
 
 export abstract class GitManager {
@@ -13,7 +13,7 @@ export abstract class GitManager {
 
     abstract status(): Promise<Status>;
 
-    abstract commitAll(message?: string, status?: Status): Promise<number | undefined>;
+    abstract commitAll({ }: { message?: string, status?: Status, unstagedFiles?: UnstagedFile[]; }): Promise<number | undefined>;
 
     abstract commit(message?: string): Promise<number | undefined>;
 

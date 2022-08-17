@@ -3,7 +3,8 @@ import { Notice, requestUrl } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
-import { BranchInfo, FileStatusResult, PluginState, Status, WalkDifference } from "./types";
+import { BranchInfo, FileStatusResult, PluginState, Status, UnstagedFile, WalkDifference } from "./types";
+import { worthWalking } from "./utils";
 
 
 export class IsomorphicGit extends GitManager {
@@ -108,9 +109,9 @@ export class IsomorphicGit extends GitManager {
         }
     };
 
-    async commitAll(message?: string, status?: Status): Promise<number> {
+    async commitAll({ message, status, unstagedFiles }: { message?: string, status?: Status, unstagedFiles?: UnstagedFile[]; }): Promise<number> {
         try {
-            await this.stageAll({ status: status });
+            await this.stageAll({ status, unstagedFiles });
             return this.commit(message);
         } catch (error) {
             this.plugin.displayError(error);
@@ -164,7 +165,7 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async stageAll({ dir, status }: { dir?: string, status?: Status; }): Promise<void> {
+    async stageAll({ dir, status, unstagedFiles }: { dir?: string, status?: Status; unstagedFiles: UnstagedFile[]; }): Promise<void> {
         try {
             if (status) {
                 await Promise.all(
@@ -172,10 +173,10 @@ export class IsomorphicGit extends GitManager {
                         (file.working_dir !== "D") ? this.wrapFS(git.add({ ...this.getRepo(), filepath: file.path })) : git.remove(({ ...this.getRepo(), filepath: file.path }))
                     ));
             } else {
-                const newStatus = await this.wrapFS(git.statusMatrix({ ...this.getRepo(), filepaths: [dir ?? "."] }));
+                const filesToStage = unstagedFiles ?? await this.getUnstagedFiles(dir ?? ".");
                 await Promise.all(
-                    newStatus.map(([filepath, , worktreeStatus]) =>
-                        worktreeStatus ? this.wrapFS(git.add({ ...this.getRepo(), filepath })) : git.remove(({ ...this.getRepo(), filepath }))
+                    filesToStage.map(({ filepath, deleted }) =>
+                        deleted ? git.remove(({ ...this.getRepo(), filepath })) : this.wrapFS(git.add({ ...this.getRepo(), filepath }))
                     ));
             }
         } catch (error) {
@@ -201,8 +202,8 @@ export class IsomorphicGit extends GitManager {
             if (status) {
                 staged = status.staged.map(file => file.path);
             } else {
-                const newStatus = await this.wrapFS(git.statusMatrix({ ...this.getRepo(), filepaths: [dir ?? "."] }));
-                staged = newStatus.map(([filepath]) => filepath);
+                const res = await this.getStagedFiles(dir ?? ".");
+                staged = res.map(({ filepath }) => filepath);
             }
             await Promise.all(staged.map(file => this.unstage(file, false)));
         } catch (error) {
@@ -505,19 +506,20 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getFileChangesCount(commitHash1: string, commitHash2: string): Promise<WalkDifference[]> {
-        return this.walkDifference([git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })]);
+        return this.walkDifference({ walkers: [git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })] });
     }
 
 
-    async walkDifference(walker: Walker[]): Promise<WalkDifference[]> {
+    async walkDifference({ walkers: walker, dir: base }: { walkers: Walker[]; dir?: string; }): Promise<WalkDifference[]> {
         const res = await this.wrapFS(git.walk({
             ...this.getRepo(),
             trees: walker,
             map: async function (filepath, [A, B]) {
-                // ignore directories
-                if (filepath === '.') {
-                    return;
+
+                if (!worthWalking(filepath, base)) {
+                    return null;
                 }
+
                 if ((await A?.type()) === 'tree' || (await B?.type()) === 'tree') {
                     return;
                 }
@@ -555,9 +557,105 @@ export class IsomorphicGit extends GitManager {
         return res;
     }
 
-    async getStagedFiles(): Promise<{ vault_path: string; }[]> {
-        const res = await this.walkDifference([git.TREE({ ref: "HEAD" }), git.STAGE()]);
-        return res.map((file) => { return { vault_path: this.getVaultPath(file.path) }; });
+    async getStagedFiles(dir: string = "."): Promise<{ vault_path: string, filepath: string; }[]> {
+        const res = await this.walkDifference({
+            walkers: [git.TREE({ ref: "HEAD" }), git.STAGE()],
+            dir,
+        });
+        return res.map((file) => {
+            return {
+                vault_path: this.getVaultPath(file.path),
+                filepath: file.path,
+            };
+        });
+    }
+
+    async getUnstagedFiles(base: string = "."): Promise<UnstagedFile[]> {
+        const notice = new Notice("Getting status...", this.noticeLength);
+
+        try {
+            const repo = this.getRepo();
+            const res = await this.wrapFS<Promise<UnstagedFile[]>>(
+                //Modified from `git.statusMatrix`
+                git.walk({
+                    ...repo,
+                    trees: [git.WORKDIR(), git.STAGE()],
+                    map: async function (filepath, [workdir, stage]): Promise<UnstagedFile> {
+                        // Ignore ignored files, but only if they are not already tracked.
+                        if (!stage && workdir) {
+
+                            const isIgnored = await git.isIgnored({
+                                ...repo,
+                                filepath,
+                            });
+                            if (isIgnored) {
+                                return null;
+                            }
+
+                        }
+                        // match against base path
+                        if (!worthWalking(filepath, base)) {
+                            return null;
+                        }
+                        // Late filter against file names
+                        // if (filter) {
+                        //     if (!filter(filepath)) return;
+                        // }
+
+                        const [workdirType, stageType] = await Promise.all([
+                            workdir && workdir.type(),
+                            stage && stage.type(),
+                        ]);
+
+                        const isBlob = [workdirType, stageType].includes('blob');
+
+                        // For now, bail on directories unless the file is also a blob in another tree
+                        if ((workdirType === 'tree' || workdirType === 'special') && !isBlob)
+                            return;
+
+                        if (stageType === 'commit') return null;
+                        if ((stageType === 'tree' || stageType === 'special') && !isBlob) return;
+
+                        // Figure out the oids for files, using the staged oid for the working dir oid if the stats match.
+                        const stageOid = stageType === 'blob' ? await stage.oid() : undefined;
+                        let workdirOid;
+                        if (
+                            workdirType === 'blob' &&
+                            stageType !== 'blob'
+                        ) {
+                            // We don't actually NEED the sha. Any sha will do
+                            workdirOid = '42';
+                        } else if (workdirType === 'blob') {
+                            workdirOid = await workdir.oid();
+                        }
+                        if (!workdirOid) {
+                            return {
+                                filepath: filepath,
+                                deleted: true,
+                            };
+                        }
+
+                        if (workdirOid !== stageOid) {
+                            return {
+                                filepath: filepath,
+                                deleted: false,
+                            };
+                        }
+                        return null;
+                        // const entry = [undefined, headOid, workdirOid, stageOid];
+                        // const result = entry.map(value => entry.indexOf(value));
+                        // result.shift(); // remove leading undefined entry
+                        // return [filepath, ...result];
+                    }
+                }));
+            notice.hide();
+            return res;
+        } catch (error) {
+            notice.hide();
+            this.plugin.displayError(error);
+            throw error;
+        }
+
     }
 
     async getDiffString(filePath: string): Promise<string> {
