@@ -4,7 +4,8 @@
     "description": "Backup your Obsidian (https://obsidian.md) vault with git",
     "main": "main.js",
     "scripts": {
-        "dev": "node esbuild.config.mjs dev false",
+        "devnode": "node esbuild.config.mjs dev true",
+        "devbrowser": "node esbuild.config.mjs dev false",
         "buildnode": "node esbuild.config.mjs production true",
         "buildbrowser": "node esbuild.config.mjs production false",
         "release": "standard-version"
