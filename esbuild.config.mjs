@@ -39,6 +39,6 @@ esbuild.build({
             preprocess: autoPreprocess(),
         }),
     ],
-    inject: (allowSimpleGit || !prod)?[]:["polyfill_buffer.js"],
+    inject: (allowSimpleGit || !prod) ? [] : ["polyfill_buffer.js"],
     outfile: 'main.js',
 }).catch(() => process.exit(1));

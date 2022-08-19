@@ -9,7 +9,7 @@ import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
-import { ALLOWSIMPLEGIT, FileStatusResult, ObsidianGitSettings, PluginState, Status, UnstagedFile } from "./types";
+import { FileStatusResult, ObsidianGitSettings, PluginState, Status, UnstagedFile } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
