@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.29.1](https://github.com/denolehov/obsidian-git/compare/1.29.0...1.29.1) (2022-08-19)
+
+
+### Bug Fixes
+
+* export mock IsomorphicGit.ts ([aa5fa37](https://github.com/denolehov/obsidian-git/commit/aa5fa37579903243f6623fa99592203c76cd5478)), closes [#281](https://github.com/denolehov/obsidian-git/issues/281)
+
 ## [1.29.0](https://github.com/denolehov/obsidian-git/compare/1.28.0...1.29.0) (2022-08-19)
 
 
