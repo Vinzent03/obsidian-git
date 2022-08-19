@@ -45,6 +45,16 @@ body:
       - macOS
   validations:
     required: true
+- type: dropdown
+  id: plugin
+  attributes:
+    label: Plugin variant
+    description: Which plugin are you using?
+    options:
+      - Obsidian Git
+      - Obsidian Git Isomorphic
+  validations:
+    required: true
 - type: input
   id: version
   attributes: 
