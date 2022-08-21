@@ -418,7 +418,7 @@ export class SimpleGit extends GitManager {
 
     private onError(error: Error | null) {
         if (error) {
-            let networkFailure = error.message.contains("Could not resolve host");
+            let networkFailure = error.message.contains("Could not resolve host") || error.message.match(/ssh: connect to host .*? port .*?: Operation timed out/);
             if (!networkFailure) {
                 this.plugin.displayError(error.message);
                 this.plugin.setState(PluginState.idle);
