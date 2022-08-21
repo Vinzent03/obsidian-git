@@ -1,4 +1,4 @@
-import { debounce, Debouncer, EventRef, Menu, Notice, Plugin, TAbstractFile, TFile } from "obsidian";
+import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Plugin, TAbstractFile, TFile } from "obsidian";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -14,7 +14,6 @@ import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import GitView from "./ui/sidebar/sidebarView";
-const normalize = require("path-normalize");
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -496,13 +495,26 @@ export default class ObsidianGit extends Plugin {
     }
 
     async cloneNewRepo() {
+        console.log(normalizePath(""));
+        console.log(normalizePath("."));
+        console.log(normalizePath("/"));
+        console.log(normalizePath("./"));
+
         const modal = new GeneralModal(this.app, [], "Enter remote URL");
         const url = await modal.open();
         if (url) {
-            let dir = await new GeneralModal(this.app, [], "Enter directory for clone. It needs to be empty or not existent.", this.gitManager instanceof IsomorphicGit).open();
+            let dir = await new GeneralModal(this.app, ["Vault root"], "Enter directory for clone. It needs to be empty or not existent.", this.gitManager instanceof IsomorphicGit).open();
             if (dir !== undefined) {
-                dir = normalize(dir);
-                if (dir === "" || dir === ".") {
+                if (dir === "Vault root") {
+                    dir = ".";
+                }
+
+                dir = normalizePath(dir);
+                if (dir === "/") {
+                    dir = ".";
+                }
+
+                if (dir === ".") {
                     const modal = new GeneralModal(this.app, ["NO", "YES"], `Does your remote repo contain a ${app.vault.configDir} directory at the root?`, false, true);
                     const containsConflictDir = await modal.open();
                     if (containsConflictDir === undefined) {
@@ -524,7 +536,7 @@ export default class ObsidianGit extends Plugin {
                 new Notice("Cloned new repo.");
                 new Notice("Please restart Obsidian");
 
-                if (dir) {
+                if (dir && dir !== ".") {
                     this.settings.basePath = dir;
                     this.saveSettings();
                 }

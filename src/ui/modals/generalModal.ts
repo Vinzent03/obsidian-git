@@ -17,7 +17,13 @@ export class GeneralModal extends SuggestModal<string> {
     }
 
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
-        if (this.resolve) this.resolve((this.allowEmpty && value === " ") ? "" : value);
+        if (this.resolve) {
+            let res;
+            if (this.allowEmpty && value === " ") res = "";
+            else if (value === "...") res = undefined;
+            else res = value;
+            this.resolve(res);
+        }
         super.selectSuggestion(value, evt);
     }
 
