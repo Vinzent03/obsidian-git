@@ -495,11 +495,6 @@ export default class ObsidianGit extends Plugin {
     }
 
     async cloneNewRepo() {
-        console.log(normalizePath(""));
-        console.log(normalizePath("."));
-        console.log(normalizePath("/"));
-        console.log(normalizePath("./"));
-
         const modal = new GeneralModal(this.app, [], "Enter remote URL");
         const url = await modal.open();
         if (url) {
