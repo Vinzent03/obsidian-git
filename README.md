@@ -10,6 +10,8 @@ For mobile usage please install the [Obsidian Git Mobile](https://github.com/Vin
 
 ### Installation
 
+⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
+
 See the [installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation) for further instructions.
 
 ### Documentation
