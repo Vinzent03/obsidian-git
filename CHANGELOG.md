@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.29.2](https://github.com/denolehov/obsidian-git/compare/1.29.1...1.29.2) (2022-08-22)
+
+
+### Bug Fixes
+
+* catch ssh network failure ([62e4a6a](https://github.com/denolehov/obsidian-git/commit/62e4a6a255e2ceedd38e4a016fa92f407e052485)), closes [#211](https://github.com/denolehov/obsidian-git/issues/211)
+* diff of new file ([92d24bf](https://github.com/denolehov/obsidian-git/commit/92d24bf8f25749f48ea8646088adec55a1ae2c25)), closes [#277](https://github.com/denolehov/obsidian-git/issues/277)
+* **mobile:** set correct base path after clone ([3a69b79](https://github.com/denolehov/obsidian-git/commit/3a69b79583d3e76b22b36ef5c414fc4b98d1fdb7)), closes [#282](https://github.com/denolehov/obsidian-git/issues/282)
+* require upstream branch for pull ([3fac8ad](https://github.com/denolehov/obsidian-git/commit/3fac8ad86f8885ca322865b6e27f4a43b804a6ce)), closes [#261](https://github.com/denolehov/obsidian-git/issues/261)
+
 ### [1.29.1](https://github.com/denolehov/obsidian-git/compare/1.29.0...1.29.1) (2022-08-19)
 
 
