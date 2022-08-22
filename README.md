@@ -4,7 +4,9 @@ This plugin assumes credentials are set up.
 
 On advantages of backing up your vault with git I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks).
 
-**This plugin does not work on mobile at the moment** See [#57](https://github.com/denolehov/obsidian-git/issues/57) for updates.
+## Mobile support
+
+For mobile usage please install the [Obsidian Git Mobile](https://github.com/Vinzent03/obsidian-git-mobile#readme) plugin instead.
 
 ### Installation
 
