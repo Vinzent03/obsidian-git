@@ -53,19 +53,26 @@ export default class DiffView extends ItemView {
         if (this.state?.file && !this.gettingDiff && this.plugin.gitManager) {
 
             this.gettingDiff = true;
-            const diff = this.parser.parseFromString(
-                html(await this.plugin.gitManager.getDiffString(this.state.file, this.state.staged)),
-                'text/html')
-                .querySelector('.d2h-file-diff');
+            let diff =
+                await this.plugin.gitManager.getDiffString(this.state.file, this.state.staged);
             this.contentEl.empty();
-            if (diff) {
-                this.contentEl.append(diff);
-            } else {
-                const div = this.contentEl.createDiv({ cls: 'diff-err' });
-                div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
-                div.createEl('br');
-                div.createSpan({ text: 'No changes to ' + this.state.file });
+            if (!diff) {
+                const content = await this.app.vault.adapter.read(this.plugin.gitManager.getVaultPath(this.state.file));
+                const header =
+                    `--- /dev/null
++++ ${this.state.file}
+@@ -0,0 +1,${content.split("\n").length} @@`;
+
+                diff = [...header.split("\n"), ...content.split("\n").map((line) => `+${line}`)].join("\n");
             }
+
+            const diffEl = this.parser.parseFromString(html(diff), 'text/html')
+                .querySelector('.d2h-file-diff');
+            this.contentEl.append(diffEl);
+            // const div = this.contentEl.createDiv({ cls: 'diff-err' });
+            // div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
+            // div.createEl('br');
+            // div.createSpan({ text: 'No changes to ' + this.state.file });
             this.gettingDiff = false;
 
         }
