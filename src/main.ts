@@ -498,9 +498,10 @@ export default class ObsidianGit extends Plugin {
         const modal = new GeneralModal(this.app, [], "Enter remote URL");
         const url = await modal.open();
         if (url) {
-            let dir = await new GeneralModal(this.app, ["Vault root"], "Enter directory for clone. It needs to be empty or not existent.", this.gitManager instanceof IsomorphicGit).open();
+            const confirmOption = "Vault Root";
+            let dir = await new GeneralModal(this.app, [confirmOption], "Enter directory for clone. It needs to be empty or not existent.", this.gitManager instanceof IsomorphicGit).open();
             if (dir !== undefined) {
-                if (dir === "Vault root") {
+                if (dir === confirmOption) {
                     dir = ".";
                 }
 
@@ -516,8 +517,9 @@ export default class ObsidianGit extends Plugin {
                         new Notice("Aborted clone");
                         return;
                     } else if (containsConflictDir === "YES") {
-                        const modal = new GeneralModal(this.app, ["Abort clone", "DELETE ALL YOUR LOCAL CONFIG"], `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, false, true);
-                        const shouldDelete = await modal.open() === "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
+                        const confirmOption = "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
+                        const modal = new GeneralModal(this.app, ["Abort clone", confirmOption], `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, false, true);
+                        const shouldDelete = await modal.open() === confirmOption;
                         if (shouldDelete) {
                             await this.app.vault.adapter.rmdir(app.vault.configDir, true);
                         } else {
