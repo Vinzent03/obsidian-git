@@ -743,6 +743,9 @@ export default class ObsidianGit extends Plugin {
     /// Used for internals
     /// Returns whether the pull added a commit or not.
     async pull(): Promise<boolean> {
+        if (! await this.remotesAreSet()) {
+            return false;
+        }
         const pulledFiles = await this.gitManager.pull();
         this.offlineMode = false;
 
@@ -785,7 +788,7 @@ export default class ObsidianGit extends Plugin {
             const remoteBranch = await this.selectRemoteBranch();
 
             if (remoteBranch == undefined) {
-                this.displayError("Did not push. No upstream-branch is set!", 10000);
+                this.displayError("Aborted. No upstream-branch is set!", 10000);
                 this.setState(PluginState.idle);
                 return false;
             } else {
