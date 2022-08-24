@@ -4,12 +4,13 @@ import { GitManager } from "./gitManager";
 export async function openLineInGitHub(editor: Editor, file: TFile, manager: GitManager) {
     const { isGitHub, branch, repo, user } = await getData(manager);
     if (isGitHub) {
+        const path = manager.getPath(file.path, true);
         const from = editor.getCursor("from").line + 1;
         const to = editor.getCursor("to").line + 1;
         if (from === to) {
-            window.open(`https://github.com/${user}/${repo}/blob/${branch}/${file.path}?plain=1#L${from}`);
+            window.open(`https://github.com/${user}/${repo}/blob/${branch}/${path}?plain=1#L${from}`);
         } else {
-            window.open(`https://github.com/${user}/${repo}/blob/${branch}/${file.path}?plain=1#L${from}-L${to}`);
+            window.open(`https://github.com/${user}/${repo}/blob/${branch}/${path}?plain=1#L${from}-L${to}`);
         }
     } else {
         new Notice('It seems like you are not using GitHub');
@@ -18,9 +19,10 @@ export async function openLineInGitHub(editor: Editor, file: TFile, manager: Git
 
 export async function openHistoryInGitHub(file: TFile, manager: GitManager) {
     const { isGitHub, branch, repo, user } = await getData(manager);
+    const path = manager.getPath(file.path, true);
 
     if (isGitHub) {
-        window.open(`https://github.com/${user}/${repo}/commits/${branch}/${file.path}`);
+        window.open(`https://github.com/${user}/${repo}/commits/${branch}/${path}`);
     } else {
         new Notice('It seems like you are not using GitHub');
     }
