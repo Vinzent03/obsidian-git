@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.30.0](https://github.com/denolehov/obsidian-git/compare/1.29.2...1.30.0) (2022-08-24)
+
+
+### Features
+
+* store git binary path in localstorage ([bd8bafc](https://github.com/denolehov/obsidian-git/commit/bd8bafc904e0f14501a9985c0ae490bea98297be)), closes [#283](https://github.com/denolehov/obsidian-git/issues/283)
+
+
+### Bug Fixes
+
+* **mobile:** clone and delete local config dir ([9b0bc8a](https://github.com/denolehov/obsidian-git/commit/9b0bc8afb2f21440382f40a442dfc7b1bd369cca))
+* **mobile:** readdir with empty base path ([1c38b91](https://github.com/denolehov/obsidian-git/commit/1c38b913d15ed6a2410eeb9b0da7ae9675ef3ab3))
+* respect custom base path in open in github ([c4e8acf](https://github.com/denolehov/obsidian-git/commit/c4e8acf62586b477434bd0c7e55c3ea0c0c99e8e)), closes [#284](https://github.com/denolehov/obsidian-git/issues/284)
+* too many changes to display ([c4bf4eb](https://github.com/denolehov/obsidian-git/commit/c4bf4eb8bd7d3e9110b354910eed9e29bafbafa6))
+
 ### [1.29.2](https://github.com/denolehov/obsidian-git/compare/1.29.1...1.29.2) (2022-08-22)
 
 
