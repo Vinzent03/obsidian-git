@@ -723,7 +723,7 @@ export default class ObsidianGit extends Plugin {
         }
 
         const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
-        const hadConflict = this.localStorage.getConflict();
+        const hadConflict = this.localStorage.getConflict() === "true";
         if (this.gitManager instanceof SimpleGit && file) await this.app.vault.delete(file);
 
         // Refresh because of pull
