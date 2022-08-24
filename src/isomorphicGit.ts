@@ -289,10 +289,10 @@ export class IsomorphicGit extends GitManager {
     }
 
     async push(): Promise<number> {
-        const progressNotice = new Notice("Initializing push", this.noticeLength);
         if (! await this.canPush()) {
             return 0;
         }
+        const progressNotice = new Notice("Initializing push", this.noticeLength);
         try {
             this.plugin.setState(PluginState.status);
             const status = await this.branchInfo();
