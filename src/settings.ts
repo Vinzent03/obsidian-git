@@ -213,9 +213,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setDesc('Specify custom hostname for every device.')
                 .addText((text) =>
                     text
-                        .setValue(localStorage.getItem(plugin.manifest.id + ":hostname"))
+                        .setValue(plugin.localStorage.getHostname())
                         .onChange(async (value) => {
-                            localStorage.setItem(plugin.manifest.id + ":hostname", value);
+                            plugin.localStorage.setHostname(value);
                         })
                 );
 
@@ -388,11 +388,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Custom Git binary path")
                 .addText((cb) => {
-                    cb.setValue(plugin.settings.gitPath);
+                    cb.setValue(plugin.localStorage.getGitPath());
                     cb.setPlaceholder("git");
                     cb.onChange((value) => {
-                        plugin.settings.gitPath = value;
-                        plugin.saveSettings();
+                        plugin.localStorage.setGitPath(value);
                         plugin.gitManager.updateGitPath(value || "git");
                     });
                 });
@@ -418,7 +417,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     cb.inputEl.autocomplete = "off";
                     cb.inputEl.spellcheck = false;
                     cb.onChange((value) => {
-                        localStorage.setItem(plugin.manifest.id + ":password", value);
+                        plugin.localStorage.setPassword(value);
                     });
                 });
         if (gitReady)

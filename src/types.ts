@@ -13,7 +13,10 @@ export interface ObsidianGitSettings {
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
     updateSubmodules: boolean;
-    gitPath: string;
+    /**
+    * @deprecated Using `localstorage` instead
+    */
+    gitPath?: string;
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;

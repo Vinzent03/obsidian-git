@@ -32,7 +32,7 @@ export class SimpleGit extends GitManager {
 
             this.git = simpleGit({
                 baseDir: basePath,
-                binary: this.plugin.settings.gitPath || undefined,
+                binary: this.plugin.localStorage.getGitPath() || undefined,
                 config: ["core.quotepath=off"]
             });
             this.git.cwd(await this.git.revparse("--show-toplevel"));
@@ -405,7 +405,7 @@ export class SimpleGit extends GitManager {
 
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
-        const command = spawnSync(this.plugin.settings.gitPath || 'git', ['--version'], {
+        const command = spawnSync(this.plugin.localStorage.getGitPath() || 'git', ['--version'], {
             stdio: 'ignore'
         });
 

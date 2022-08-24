@@ -7,6 +7,7 @@ import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import { DEFAULT_SETTINGS, DIFF_VIEW_CONFIG, GIT_VIEW_CONFIG } from "./constants";
 import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
+import { LocalStorageSettings } from "./localStorageSettings";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
 import { FileStatusResult, ObsidianGitSettings, PluginState, Status, UnstagedFile } from "./types";
@@ -17,6 +18,7 @@ import GitView from "./ui/sidebar/sidebarView";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
+    localStorage: LocalStorageSettings;
     settings: ObsidianGitSettings;
     statusBar: StatusBar;
     state: PluginState;
@@ -73,6 +75,7 @@ export default class ObsidianGit extends Plugin {
 
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
+        this.localStorage = new LocalStorageSettings(this);
 
         await this.loadSettings();
         this.migrateSettings();
@@ -363,6 +366,11 @@ export default class ObsidianGit extends Plugin {
             this.settings.autoCommitMessage = this.settings.commitMessage;
             this.saveSettings();
         }
+        if (this.settings.gitPath != undefined) {
+            this.localStorage.setGitPath(this.settings.gitPath);
+            this.settings.gitPath = undefined;
+            this.saveSettings();
+        }
     }
 
     unloadPlugin() {
@@ -400,19 +408,19 @@ export default class ObsidianGit extends Plugin {
 
     async saveLastAuto(date: Date, mode: "backup" | "pull" | "push") {
         if (mode === "backup") {
-            window.localStorage.setItem(this.manifest.id + ":lastAutoBackup", date.toString());
+            this.localStorage.setLastAutoBackup(date.toString());
         } else if (mode === "pull") {
-            window.localStorage.setItem(this.manifest.id + ":lastAutoPull", date.toString());
+            this.localStorage.setLastAutoPull(date.toString());
         } else if (mode === "push") {
-            window.localStorage.setItem(this.manifest.id + ":lastAutoPush", date.toString());
+            this.localStorage.setLastAutoPush(date.toString());
         }
     }
 
     async loadLastAuto(): Promise<{ "backup": Date, "pull": Date; "push": Date; }> {
         return {
-            "backup": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoBackup") ?? ""),
-            "pull": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPull") ?? ""),
-            "push": new Date(window.localStorage.getItem(this.manifest.id + ":lastAutoPush") ?? ""),
+            "backup": new Date(this.localStorage.getLastAutoBackup() ?? ""),
+            "pull": new Date(this.localStorage.getLastAutoPull() ?? ""),
+            "push": new Date(this.localStorage.getLastAutoPush() ?? ""),
         };
     }
 
@@ -602,7 +610,7 @@ export default class ObsidianGit extends Plugin {
     async commit(fromAutoBackup: boolean, requestCustomMessage: boolean = false, onlyStaged: boolean = false): Promise<boolean> {
         if (!await this.isAllInitialized()) return false;
 
-        const hadConflict = localStorage.getItem(this.manifest.id + ":conflict") === "true";
+        const hadConflict = this.localStorage.getConflict() === "true";
 
         let changedFiles: { vault_path: string; }[];
         let status: Status | undefined;
@@ -715,8 +723,7 @@ export default class ObsidianGit extends Plugin {
         }
 
         const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
-        const hadConflict = localStorage.getItem(this.manifest.id + ":conflict") === "true";
-
+        const hadConflict = this.localStorage.getConflict();
         if (this.gitManager instanceof SimpleGit && file) await this.app.vault.delete(file);
 
         // Refresh because of pull
@@ -894,7 +901,8 @@ export default class ObsidianGit extends Plugin {
 
     async handleConflict(conflicted?: string[]): Promise<void> {
         this.setState(PluginState.conflicted);
-        localStorage.setItem(this.manifest.id + ":conflict", "true");
+
+        this.localStorage.setConflict("true");
         let lines: string[];
         if (conflicted !== undefined) {
             lines = [

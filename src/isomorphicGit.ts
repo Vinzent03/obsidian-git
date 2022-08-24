@@ -49,7 +49,7 @@ export class IsomorphicGit extends GitManager {
             onAuth: () => {
                 return {
                     username: this.plugin.settings.username,
-                    password: localStorage.getItem(this.plugin.manifest.id + ":password")
+                    password: this.plugin.localStorage.getPassword()
                 };
             },
             http: {
@@ -123,7 +123,7 @@ export class IsomorphicGit extends GitManager {
         try {
             this.plugin.setState(PluginState.commit);
             const formatMessage = await this.formatCommitMessage(message);
-            const hadConflict = localStorage.getItem(this.plugin.manifest.id + ":conflict") === "true";
+            const hadConflict = this.plugin.localStorage.getConflict() === "true";
             let parent: string[] = undefined;
 
             if (hadConflict) {
@@ -136,7 +136,7 @@ export class IsomorphicGit extends GitManager {
                 message: formatMessage,
                 parent: parent,
             }));
-            localStorage.setItem(this.plugin.manifest.id + ":conflict", "false");
+            this.plugin.localStorage.setConflict("false");
             return;
         } catch (error) {
             this.plugin.displayError(error);

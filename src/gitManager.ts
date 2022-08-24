@@ -112,7 +112,7 @@ export abstract class GitManager {
             template = template.replace("{{numFiles}}", String(numFiles));
         }
         if (template.includes("{{hostname}}")) {
-            const hostname = localStorage.getItem(this.plugin.manifest.id + ":hostname") || "";
+            const hostname = this.plugin.localStorage.getHostname() || "";
             template = template.replace("{{hostname}}", hostname);
         }
 
