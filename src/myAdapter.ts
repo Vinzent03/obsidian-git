@@ -78,8 +78,12 @@ export class MyAdapter {
             path = "/";
         const res = await this.adapter.list(path);
         const all = [...res.files, ...res.folders];
-        let formattedAll = all.map(e => normalizePath(e.substring(path.length)));
-
+        let formattedAll;
+        if (path !== "/") {
+            formattedAll = all.map(e => normalizePath(e.substring(path.length)));
+        } else {
+            formattedAll = all;
+        }
         return formattedAll;
     }
     async mkdir(path: string) {
