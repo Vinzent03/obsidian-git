@@ -84,14 +84,24 @@
       };
     }
     if (status) {
-      changeHierarchy = {
-        title: "",
-        children: plugin.gitManager.getTreeStructure(status.changed),
-      };
-      stagedHierarchy = {
-        title: "",
-        children: plugin.gitManager.getTreeStructure(status.staged),
-      };
+      if (status.changed.length + status.staged.length > 500) {
+        status = undefined;
+        if (!plugin.loading) {
+          plugin.displayError("Too many changes to display");
+        }
+      } else {
+        changeHierarchy = {
+          title: "",
+          children: plugin.gitManager.getTreeStructure(status.changed),
+        };
+        stagedHierarchy = {
+          title: "",
+          children: plugin.gitManager.getTreeStructure(status.staged),
+        };
+      }
+    } else {
+      changeHierarchy = undefined;
+      stagedHierarchy = undefined;
     }
     loading = plugin.loading;
   }
@@ -102,14 +112,14 @@
 
   function stageAll() {
     loading = true;
-    plugin.gitManager.stageAll({status: status}).finally(triggerRefresh);
+    plugin.gitManager.stageAll({ status: status }).finally(triggerRefresh);
   }
 
   function unstageAll() {
     loading = true;
-    plugin.gitManager.unstageAll({status:status}).finally(triggerRefresh);
+    plugin.gitManager.unstageAll({ status: status }).finally(triggerRefresh);
   }
-  
+
   function push() {
     loading = true;
 
