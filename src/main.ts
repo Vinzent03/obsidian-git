@@ -173,6 +173,16 @@ export default class ObsidianGit extends Plugin {
             name: "Create backup",
             callback: () => this.promiseQueue.addTask(() => this.createBackup(false))
         });
+
+        this.addCommand({
+            id: "backup-and-close",
+            name: "Create backup and close",
+            callback: () => this.promiseQueue.addTask(async () => {
+                await this.createBackup(false);
+                window.close();
+            })
+        });
+
         this.addCommand({
             id: "commit-push-specified-message",
             name: "Create backup with specific message",
