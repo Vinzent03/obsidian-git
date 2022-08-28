@@ -12,9 +12,8 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* don't show push notice on empty push ([9986667](https://github.com/denolehov/obsidian-git/commit/998666778ed07f380b6a4057afc33ca637c472c7))
-* push thought current conflict ([ffc76c2](https://github.com/denolehov/obsidian-git/commit/ffc76c281cf67b4a85bc21d377d79677004025b4))
-* set upstream branch for existing remote branch ([c454b9d](https://github.com/denolehov/obsidian-git/commit/c454b9d7ae3323e5c9f4e758e139e97eb85ec40e)), closes [/github.com/denolehov/obsidian-git/issues/224#issuecomment-1229136511](https://github.com/denolehov//github.com/denolehov/obsidian-git/issues/224/issues/issuecomment-1229136511)
+* **mobile** don't show push notice on empty push ([9986667](https://github.com/denolehov/obsidian-git/commit/998666778ed07f380b6a4057afc33ca637c472c7))
+* set upstream branch for existing remote branch ([c454b9d](https://github.com/denolehov/obsidian-git/commit/c454b9d7ae3323e5c9f4e758e139e97eb85ec40e)), closes [#224](https://github.com/denolehov//github.com/denolehov/obsidian-git/issues/224/issues/issuecomment-1229136511)
 
 ## [1.30.0](https://github.com/denolehov/obsidian-git/compare/1.29.2...1.30.0) (2022-08-24)
 
