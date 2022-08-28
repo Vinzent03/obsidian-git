@@ -380,7 +380,20 @@ export class SimpleGit extends GitManager {
     }
 
     async updateUpstreamBranch(remoteBranch: string) {
-        await this.git.push(["--set-upstream", ...remoteBranch.split("/")], (err) => this.onError(err));
+        try {
+            // git 1.8+
+            await this.git.branch(['--set-upstream-to', remoteBranch]);
+        } catch (e) {
+            console.error(e);
+            try {
+                // git 1.7 - 1.8
+                await this.git.branch(['--set-upstream', remoteBranch]);
+            } catch (e) {
+                console.error(e);
+                // fallback
+                await this.git.push(["--set-upstream", ...remoteBranch.split("/")], (err) => this.onError(err));
+            }
+        }
 
     }
 
