@@ -52,7 +52,7 @@ body:
     description: Which plugin are you using?
     options:
       - Obsidian Git
-      - Obsidian Git Isomorphic
+      - Obsidian Git Mobile
   validations:
     required: true
 - type: input
