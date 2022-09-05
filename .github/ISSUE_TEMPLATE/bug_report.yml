@@ -43,16 +43,10 @@ body:
       - Windows
       - Linux
       - macOS
+      - Android
+      - iOS
   validations:
     required: true
-- type: dropdown
-  id: plugin
-  attributes:
-    label: Plugin variant
-    description: Which plugin are you using?
-    options:
-      - Obsidian Git
-      - Obsidian Git Mobile
   validations:
     required: true
 - type: input

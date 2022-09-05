@@ -1,18 +1,45 @@
 # Obsidian Git
-Simple plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote git repository (e.g. private repo on GitHub).
-This plugin assumes credentials are set up.
+Simple plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
 
 On advantages of backing up your vault with git I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks).
 
-## Mobile support
+# ⚠ Mobile
 
-For mobile usage please install the [Obsidian Git Mobile](https://github.com/Vinzent03/obsidian-git-mobile#readme) plugin instead.
+## Restrictions of the mobile version
 
-### Installation
+I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of git in JavaScript, because you cannot use native git on Android or iOS.
+
+- SSH authentication is not supported ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
+- Repo size is limited, because of memory restrictions
+- Rebase merge strategy is not supported
+- Submodules are not supported
+
+## Performance on **Mobile**
+**Setup:** iPad Pro M1 with a [repo](https://github.com/Vinzent03/obsidian-git-stress-test) of 3000 files reduced from [10000 markdown files](https://github.com/Zettelkasten-Method/10000-markdown-files)
+
+The only really time consuming part is to check the whole working directory for file changes. So checking all files for changes to stage takes 03:40 min. Other commands like pull, push and commit are very fast (1-5 seconds). So the best way is to stage individual directories in which you have worked and commit only staged files after it.
+The initial clone took 00:25 min.
+
+### Installation on Desktop
 
 ⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
 
 See the [installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation) for further instructions.
+
+
+<details>
+<summary>Installation and clone a repo on Mobile</summary>
+
+1. Create new vault
+2. Change config directory in Settings -> About
+3. Install Obsidian Git plugin from community plugins
+5. If cloning private repo, set password/personal access token and username in Settings -> Obsidian Git Mobile
+6. Execute clone repo command
+7. Reload plugin
+</details>
+<br>
+
+# Desktop
 
 ### Documentation
 

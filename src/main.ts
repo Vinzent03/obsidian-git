@@ -1,4 +1,4 @@
-import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Plugin, TAbstractFile, TFile } from "obsidian";
+import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile } from "obsidian";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -436,7 +436,7 @@ export default class ObsidianGit extends Plugin {
 
     async init(): Promise<void> {
         try {
-            if (ALLOWSIMPLEGIT) {
+            if (Platform.isDesktopApp) {
                 this.gitManager = new SimpleGit(this);
                 await (this.gitManager as SimpleGit).setGitInstance();
 
