@@ -411,7 +411,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (plugin.gitManager instanceof IsomorphicGit)
             new Setting(containerEl)
                 .setName("Password/Personal access token")
-                .setDesc("Type in your password and press on the button to set it. You won't be able to see it again.")
+                .setDesc("Type in your password. You won't be able to see it again.")
                 .addText(cb => {
                     cb.inputEl.autocapitalize = "off";
                     cb.inputEl.autocomplete = "off";
