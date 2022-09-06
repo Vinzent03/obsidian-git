@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.3](https://github.com/denolehov/obsidian-git/compare/2.0.2...2.0.3) (2022-09-06)
+
+
+### Bug Fixes
+
+* don't show mobile notice on new installation ([218f002](https://github.com/denolehov/obsidian-git/commit/218f002f433ec3a69f92ebfdf1876c50cd99e85c))
+
 ### [2.0.2](https://github.com/denolehov/obsidian-git/compare/2.0.1...2.0.2) (2022-09-06)
 
 
