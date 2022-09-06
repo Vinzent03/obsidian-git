@@ -326,10 +326,13 @@ export default class ObsidianGit extends Plugin {
 
     async showNotices(): Promise<void> {
         const length = 10000;
-        if (!this.settings.showedMobileNotice) {
+        if (this.manifest.id === "obsidian-git" && !this.settings.showedMobileNotice) {
             new Notice("Obsidian Git is now available on mobile! Please read the plugin's README for more information.", length);
             this.settings.showedMobileNotice = true;
             await this.saveSettings();
+        }
+        if (this.manifest.id === "obsidian-git-isomorphic") {
+            new Notice("Obsidian Git Mobile is now deprecated. Please uninstall it and install Obsidian Git instead.", length);
         }
     }
 
