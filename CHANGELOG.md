@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/denolehov/obsidian-git/compare/1.31.0...2.0.0) (2022-09-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* mobile support
+
+### Features
+
+* mobile support ([9ffda76](https://github.com/denolehov/obsidian-git/commit/9ffda762dbc0cba380942acdeabcb66adce8253d)), closes [#57](https://github.com/denolehov/obsidian-git/issues/57)
+
+
+### Bug Fixes
+
+* password field description ([9dc5f7c](https://github.com/denolehov/obsidian-git/commit/9dc5f7c7bab3a3b1b24d42ae2fadb10e48cbc292)), closes [#293](https://github.com/denolehov/obsidian-git/issues/293)
+
 ## [1.31.0](https://github.com/denolehov/obsidian-git/compare/1.30.0...1.31.0) (2022-08-28)
 
 
