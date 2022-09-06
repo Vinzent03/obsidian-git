@@ -30,7 +30,7 @@ export default class ObsidianGit extends Plugin {
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
     conflictOutputFile = "conflict-files-obsidian-git.md";
-    autoBackupDebouncer: Debouncer<undefined>;
+    autoBackupDebouncer: Debouncer<undefined, void>;
     onFileModifyEventRef: EventRef;
     offlineMode: boolean = false;
     loading = false;

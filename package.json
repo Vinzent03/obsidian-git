@@ -18,7 +18,7 @@
         "@types/node": "^14.14.2",
         "esbuild": "^0.12.26",
         "esbuild-svelte": "^0.5.4",
-        "obsidian": "^0.15.4",
+        "obsidian": "^0.16.0",
         "sass": "^1.39.0",
         "scss": "^0.2.4",
         "standard-version": "^9.0.0",
