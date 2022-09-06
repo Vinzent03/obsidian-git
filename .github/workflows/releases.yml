@@ -21,9 +21,7 @@ jobs:
               id: build
               run: |
                   npm install
-                  rm src/isomorphicGit.ts
-                  mv src/mocks/isomorphicGit.ts src/isomorphicGit.ts
-                  npm run buildnode --if-present
+                  npm run build --if-present
                   mkdir ${{ env.PLUGIN_NAME }}
                   cp main.js manifest.json ${{ env.PLUGIN_NAME }}
                   zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
