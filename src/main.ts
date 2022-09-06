@@ -324,6 +324,15 @@ export default class ObsidianGit extends Plugin {
 
     }
 
+    async showNotices(): Promise<void> {
+        const length = 10000;
+        if (!this.settings.showedMobileNotice) {
+            new Notice("Obsidian Git is now available on mobile! Please read the plugin's README for more information.", length);
+            this.settings.showedMobileNotice = true;
+            await this.saveSettings();
+        }
+    }
+
     handleFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
         if (source !== "file-explorer-context-menu") {
             return;
@@ -435,6 +444,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async init(): Promise<void> {
+        this.showNotices();
+
         try {
             if (Platform.isDesktopApp) {
                 this.gitManager = new SimpleGit(this);

@@ -24,6 +24,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     differentIntervalCommitAndPush: false,
     changedFilesInStatusBar: false,
     username: "",
+    showedMobileNotice: false,
 };
 
 export const GIT_VIEW_CONFIG = {
