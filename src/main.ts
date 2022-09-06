@@ -421,7 +421,12 @@ export default class ObsidianGit extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        let data: ObsidianGitSettings = await this.loadData();
+        //Check for existing settings
+        if (data == undefined) {
+            data = { showedMobileNotice: true };
+        }
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
     }
 
     async saveSettings() {
