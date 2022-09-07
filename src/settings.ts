@@ -456,6 +456,22 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             });
 
+        new Setting(containerEl)
+            .setName("Disable on this device")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.localStorage.getPluginDisabled())
+                    .onChange((value) => {
+                        plugin.localStorage.setPluginDisabled(value);
+                        if (value) {
+                            plugin.unloadPlugin();
+                        } else {
+                            plugin.loadPlugin();
+                        }
+                        new Notice("Obsidian must be restarted for the changes to take affect");
+                    })
+            );
+
 
         new Setting(containerEl)
             .setName('Donate')

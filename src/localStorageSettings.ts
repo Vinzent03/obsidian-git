@@ -61,4 +61,12 @@ export class LocalStorageSettings {
     setGitPath(value: string): void {
         return localStorage.setItem(this.prefix + ":gitPath", value);
     }
+
+    getPluginDisabled(): boolean {
+        return localStorage.getItem(this.prefix + ":pluginDisabled") == "true";
+    }
+
+    setPluginDisabled(value: boolean): void {
+        return localStorage.setItem(this.prefix + ":pluginDisabled", `${value}`);
+    }
 }

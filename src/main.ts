@@ -80,6 +80,14 @@ export default class ObsidianGit extends Plugin {
         await this.loadSettings();
         this.migrateSettings();
 
+        this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
+
+        if (!this.localStorage.getPluginDisabled()) {
+            this.loadPlugin();
+        }
+    }
+
+    async loadPlugin() {
         addEventListener("git-refresh", this.refresh.bind(this));
 
         this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
@@ -95,7 +103,6 @@ export default class ObsidianGit extends Plugin {
             defaultMod: true,
         });
 
-        this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
         this.addCommand({
             id: 'edit-gitignore',
@@ -424,7 +431,7 @@ export default class ObsidianGit extends Plugin {
         let data: ObsidianGitSettings = await this.loadData();
         //Check for existing settings
         if (data == undefined) {
-            data = { showedMobileNotice: true };
+            data = { showedMobileNotice: true } as any;
         }
         this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
     }
