@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     changedFilesInStatusBar: false,
     username: "",
     showedMobileNotice: false,
+    refreshSourceControlTimer: 7000,
 };
 
 export const GIT_VIEW_CONFIG = {

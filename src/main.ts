@@ -40,15 +40,7 @@ export default class ObsidianGit extends Plugin {
     createEvent: EventRef;
     renameEvent: EventRef;
 
-    debRefresh = debounce(
-        () => {
-            if (this.settings.refreshSourceControl) {
-                this.refresh();
-            }
-        },
-        7000,
-        true
-    );
+    debRefresh: Debouncer<undefined, void>;
 
     setState(state: PluginState): void {
         this.state = state;
@@ -103,6 +95,7 @@ export default class ObsidianGit extends Plugin {
             defaultMod: true,
         });
 
+        this.setRefreshDebouncer();
 
         this.addCommand({
             id: 'edit-gitignore',
@@ -329,6 +322,19 @@ export default class ObsidianGit extends Plugin {
         }
         this.app.workspace.onLayoutReady(() => this.init());
 
+    }
+
+    setRefreshDebouncer(): void {
+        this.debRefresh?.cancel();
+        this.debRefresh = debounce(
+            () => {
+                if (this.settings.refreshSourceControl) {
+                    this.refresh();
+                }
+            },
+            this.settings.refreshSourceControlTimer,
+            true
+        );
     }
 
     async showNotices(): Promise<void> {

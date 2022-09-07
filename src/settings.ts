@@ -332,6 +332,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Source Control View refresh interval")
+            .setDesc("Milliseconds two wait after file change before refreshing the Source Control View")
+            .addText((toggle) =>
+                toggle
+                    .setValue(plugin.settings.refreshSourceControlTimer.toString())
+                    .setPlaceholder("7000")
+                    .onChange((value) => {
+                        plugin.settings.refreshSourceControlTimer = Math.max(parseInt(value), 500);
+                        plugin.saveSettings();
+                        plugin.setRefreshDebouncer();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Disable notifications")
             .setDesc(
                 "Disable notifications for git operations to minimize distraction (refer to status bar for updates). Errors are still shown as notifications even if you enable this setting"

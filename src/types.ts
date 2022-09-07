@@ -31,6 +31,7 @@ export interface ObsidianGitSettings {
     refreshSourceControl: boolean;
     basePath: string;
     showedMobileNotice: boolean;
+    refreshSourceControlTimer: number;
 }
 
 export type SyncMethod = 'rebase' | 'merge' | 'reset';
