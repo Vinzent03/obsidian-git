@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/denolehov/obsidian-git/compare/2.0.3...2.1.0) (2022-09-08)
+
+
+### Features
+
+* disable plugin per device ([82b2c1a](https://github.com/denolehov/obsidian-git/commit/82b2c1ad82196927eda16b965094f025a1ed2960)), closes [#301](https://github.com/denolehov/obsidian-git/issues/301)
+* specify source control refresh timer ([a1ecb1b](https://github.com/denolehov/obsidian-git/commit/a1ecb1b39954422de150169a71d0b9da8ee84167)), closes [#199](https://github.com/denolehov/obsidian-git/issues/199)
+
 ### [2.0.3](https://github.com/denolehov/obsidian-git/compare/2.0.2...2.0.3) (2022-09-06)
 
 
