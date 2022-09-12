@@ -98,6 +98,8 @@ export class SimpleGit extends GitManager {
     }
 
     async blame(path: string, trackMovement: LineAuthorFollowMovement): Promise<Blame | "untracked"> {
+        path = this.asRepositoryRelativePath(path, true);
+
         if (!await this.isTracked(path)) return "untracked";
 
         const inSubmodule = await this.getSubmoduleOfFile(path);
@@ -236,6 +238,7 @@ export class SimpleGit extends GitManager {
     async hashObject(filepath: string): Promise<string> {
         // Need to use raw command here to ensure filenames are literally used.
         // Perhaps we could file a PR? https://github.com/steveukx/git-js/blob/main/simple-git/src/lib/tasks/hash-object.ts
+        filepath = this.asRepositoryRelativePath(filepath, true);
         const inSubmodule = await this.getSubmoduleOfFile(filepath);
         const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
         const relativeFilepath = inSubmodule ? inSubmodule.relativeFilepath : filepath;
