@@ -36,6 +36,7 @@
 </script>
 
 <main on:mouseover={hover} on:click|self={open} on:focus>
+  <!-- svelte-ignore a11y-unknown-aria-attribute -->
   <span
     class="path"
     aria-label-position={side}

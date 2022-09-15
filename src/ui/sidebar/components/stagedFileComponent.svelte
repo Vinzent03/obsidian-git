@@ -81,8 +81,9 @@
 </script>
 
 <main on:mouseover={hover} on:focus on:click|self={showDiff}>
+  <!-- svelte-ignore a11y-unknown-aria-attribute -->
   <span
-    class="path"
+  class="path"
     aria-label-position={side}
     aria-label={formattedPath.split("/").last() != formattedPath
       ? formattedPath

@@ -100,6 +100,7 @@
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
 <main on:mouseover={hover} on:click|self={showDiff} on:focus>
+  <!-- svelte-ignore a11y-unknown-aria-attribute -->
   <span
     class="path"
     aria-label-position={side}
