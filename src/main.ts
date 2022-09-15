@@ -15,6 +15,7 @@ import DiffView from "./ui/diff/diffView";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import GitView from "./ui/sidebar/sidebarView";
+import { getNewLeaf } from "./utils";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -130,7 +131,7 @@ export default class ObsidianGit extends Plugin {
             id: 'open-diff-view',
             name: 'Open diff view',
             editorCallback: async (editor, view) => {
-                this.app.workspace.createLeafBySplit(view.leaf).setViewState({ type: DIFF_VIEW_CONFIG.type, state: { staged: false, file: view.file.path } });
+                getNewLeaf().setViewState({ type: DIFF_VIEW_CONFIG.type, state: { staged: false, file: view.file.path } });
             },
         });
 
