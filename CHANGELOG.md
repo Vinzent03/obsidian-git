@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.1.1](https://github.com/denolehov/obsidian-git/compare/2.1.0...2.1.1) (2022-09-15)
+
+
+### Bug Fixes
+
+* open diff in new leaf ([6914830](https://github.com/denolehov/obsidian-git/commit/6914830ce03651b7f9604ba7be81581636a34f5b)), closes [#306](https://github.com/denolehov/obsidian-git/issues/306)
+* retry auth with different credentials ([f8da5f4](https://github.com/denolehov/obsidian-git/commit/f8da5f455a15f27e93e8b317af3bf9dba7dc3d57)), closes [#296](https://github.com/denolehov/obsidian-git/issues/296)
+
 ## [2.1.0](https://github.com/denolehov/obsidian-git/compare/2.0.3...2.1.0) (2022-09-08)
 
 
