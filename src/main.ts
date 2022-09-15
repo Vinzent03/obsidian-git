@@ -1,3 +1,4 @@
+import { Errors } from "isomorphic-git";
 import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile } from "obsidian";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
@@ -1045,6 +1046,10 @@ export default class ObsidianGit extends Plugin {
         console.log(`git obsidian message: ${message}`);
     }
     displayError(message: any, timeout: number = 10 * 1000): void {
+        if (message instanceof Errors.UserCanceledError) {
+            new Notice("Aborted");
+            return;
+        }
         // Some errors might not be of type string
         message = message.toString();
         new Notice(message, timeout);

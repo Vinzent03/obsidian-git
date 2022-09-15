@@ -1,9 +1,10 @@
-import git, { AuthCallback, Errors, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient, Walker } from "isomorphic-git";
+import git, { AuthCallback, AuthFailureCallback, Errors, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient, Walker } from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
 import { BranchInfo, FileStatusResult, PluginState, Status, UnstagedFile, WalkDifference } from "./types";
+import { GeneralModal } from "./ui/modals/generalModal";
 import { worthWalking } from "./utils";
 
 
@@ -41,6 +42,7 @@ export class IsomorphicGit extends GitManager {
         fs: MyAdapter,
         dir: string,
         onAuth: AuthCallback,
+        onAuthFailure: AuthFailureCallback,
         http: HttpClient,
     } {
         return {
@@ -51,6 +53,23 @@ export class IsomorphicGit extends GitManager {
                     username: this.plugin.settings.username,
                     password: this.plugin.localStorage.getPassword()
                 };
+            },
+            onAuthFailure: async () => {
+                new Notice("Authentication failed. Please try with different credentials");
+                const username = await new GeneralModal(app, [], "Specify your username").open();
+                if (username) {
+                    const password = await new GeneralModal(app, [], "Specify your password/personal access token").open();
+                    if (password) {
+                        this.plugin.settings.username = username;
+                        await this.plugin.saveSettings();
+                        this.plugin.localStorage.setPassword(password);
+                        return {
+                            username,
+                            password
+                        };
+                    }
+                }
+                return { cancel: true };
             },
             http: {
                 async request({
