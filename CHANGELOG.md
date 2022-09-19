@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.1.2](https://github.com/denolehov/obsidian-git/compare/2.1.1...2.1.2) (2022-09-19)
+
+
+### Bug Fixes
+
+* respect obsidian default hotkey for open diff ([271ec02](https://github.com/denolehov/obsidian-git/commit/271ec022d4caa91ebf0f4c1d82755bb879525ef6)), closes [#306](https://github.com/denolehov/obsidian-git/issues/306)
+* scroll line number in diff view ([1a01e30](https://github.com/denolehov/obsidian-git/commit/1a01e30357894980d8c5ffc77d2828af57174af7)), closes [#318](https://github.com/denolehov/obsidian-git/issues/318)
+
 ### [2.1.1](https://github.com/denolehov/obsidian-git/compare/2.1.0...2.1.1) (2022-09-15)
 
 
