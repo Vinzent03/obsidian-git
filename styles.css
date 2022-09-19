@@ -298,6 +298,10 @@
   width: 4em;
 }
 
+.workspace-leaf-content[data-type="diff-view"] .d2h-diff-tbody tr {
+  position: relative;
+}
+
 .workspace-leaf-content[data-type="diff-view"] .d2h-code-side-linenumber:after {
   content: "\200b";
 }
