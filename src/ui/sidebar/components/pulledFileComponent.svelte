@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { setIcon, Workspace } from "obsidian";
 	import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
 	import { FileStatusResult } from "src/types";
 	import GitView from "../sidebarView";
