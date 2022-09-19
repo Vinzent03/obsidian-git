@@ -15,7 +15,7 @@
 	$: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
 	window.setTimeout(
-		() => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon"), 16)),
+		() => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!, 16)),
 		0
 	);
 
@@ -28,7 +28,7 @@
 			hoverPreview(
 				event,
 				view as any,
-				change.vault_path.split("/").last().replace(".md", "")
+				change.vault_path.split("/").last()!.replace(".md", "")
 			);
 		}
 	}
@@ -95,7 +95,7 @@
 			: ""}
 		on:click|self={showDiff}
 	>
-		{change.vault_path.split("/").last().replace(".md", "")}
+		{change.vault_path.split("/").last()?.replace(".md", "")}
 	</span>
 	<div class="tools">
 		<div class="buttons">

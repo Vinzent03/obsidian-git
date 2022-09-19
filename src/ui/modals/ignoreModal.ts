@@ -13,7 +13,7 @@ export class IgnoreModal extends Modal {
     }
 
     onOpen() {
-        let { contentEl, titleEl } = this;
+        const { contentEl, titleEl } = this;
         titleEl.setText("Edit .gitignore");
         const div = contentEl.createDiv();
 
@@ -36,7 +36,7 @@ export class IgnoreModal extends Modal {
 
     }
     onClose() {
-        let { contentEl } = this;
+        const { contentEl } = this;
         this.resolve(undefined);
         contentEl.empty();
     }

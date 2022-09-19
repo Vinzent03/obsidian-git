@@ -5,8 +5,8 @@
 		FileStatusResult,
 		FileType,
 		PluginState,
+		RootTreeItem,
 		Status,
-		TreeItem,
 	} from "src/types";
 	import { onDestroy } from "svelte";
 	import { slide } from "svelte/transition";
@@ -19,13 +19,13 @@
 	export let plugin: ObsidianGit;
 	export let view: GitView;
 	let loading: boolean;
-	let status: Status | null;
+	let status: Status | undefined;
 	let lastPulledFiles: FileStatusResult[] = [];
 	let commitMessage = plugin.settings.commitMessage;
 	let buttons: HTMLElement[] = [];
-	let changeHierarchy: TreeItem;
-	let stagedHierarchy: TreeItem;
-	let lastPulledFilesHierarchy: TreeItem;
+	let changeHierarchy: RootTreeItem | undefined;
+	let stagedHierarchy: RootTreeItem | undefined;
+	let lastPulledFilesHierarchy: RootTreeItem;
 	let changesOpen = true;
 	let stagedOpen = true;
 	let lastPulledFilesOpen = true;
@@ -44,7 +44,7 @@
 	plugin.app.workspace.onLayoutReady(() => {
 		window.setTimeout(() => {
 			buttons.forEach((btn) =>
-				setIcon(btn, btn.getAttr("data-icon"), 16)
+				setIcon(btn, btn.getAttr("data-icon")!, 16)
 			);
 			setIcon(layoutBtn, showTree ? "list" : "folder", 16);
 		}, 0);
@@ -55,19 +55,20 @@
 
 	async function commit() {
 		loading = true;
-
-		if (await plugin.hasTooBigFiles(status.staged)) {
-			plugin.setState(PluginState.idle);
-			return false;
+		if (status) {
+			if (await plugin.hasTooBigFiles(status.staged)) {
+				plugin.setState(PluginState.idle);
+				return false;
+			}
+			plugin.gitManager
+				.commit(commitMessage)
+				.then(() => {
+					if (commitMessage !== plugin.settings.commitMessage) {
+						commitMessage = "";
+					}
+				})
+				.finally(triggerRefresh);
 		}
-		plugin.gitManager
-			.commit(commitMessage)
-			.then(() => {
-				if (commitMessage !== plugin.settings.commitMessage) {
-					commitMessage = "";
-				}
-			})
-			.finally(triggerRefresh);
 	}
 
 	async function refresh() {
@@ -131,10 +132,7 @@
 
 	function push() {
 		loading = true;
-
-		if (ready) {
-			plugin.push().finally(triggerRefresh);
-		}
+		plugin.push().finally(triggerRefresh);
 	}
 	function pull() {
 		loading = true;
@@ -224,7 +222,7 @@
 		</div>
 	</div>
 	<div class="git-view-body">
-		{#if status}
+		{#if status && stagedHierarchy && changeHierarchy}
 			<div class="staged">
 				<div
 					class="opener tree-item-self is-clickable"

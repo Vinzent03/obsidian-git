@@ -4,7 +4,7 @@ export class LocalStorageSettings {
     private prefix: string;
     constructor(private readonly plugin: ObsidianGit) {
         this.prefix = this.plugin.manifest.id;
-    };
+    }
 
     getPassword(): string {
         return localStorage.getItem(this.prefix + ":password");

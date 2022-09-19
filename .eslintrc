@@ -1,0 +1,50 @@
+{
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "env": {
+        "node": true
+    },
+    "plugins": [
+        "@typescript-eslint",
+        "svelte3"
+    ],
+    "overrides": [
+        {
+            "files": [
+                "*.svelte"
+            ],
+            "processor": "svelte3/svelte3"
+        }
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parserOptions": {
+        "sourceType": "module",
+        "project": [
+            "./tsconfig.json"
+        ],
+        "tsconfigRootDir": "."
+    },
+    "settings": {
+        "svelte3/typescript": true
+    },
+    "rules": {
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "args": "none"
+            }
+        ],
+        "no-async-promise-executor": "off",
+        "no-case-declarations": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/ban-ts-comment": "off",
+        "no-prototype-builtins": "off",
+        "@typescript-eslint/no-empty-function": "off"
+    }
+}

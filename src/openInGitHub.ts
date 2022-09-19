@@ -26,7 +26,7 @@ export async function openHistoryInGitHub(file: TFile, manager: GitManager) {
     } else {
         new Notice('It seems like you are not using GitHub');
     }
-};
+}
 
 async function getData(manager: GitManager): Promise<{ isGitHub: boolean, user: string, repo: string; branch: string; }> {
     const branchInfo = await manager.branchInfo();

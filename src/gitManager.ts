@@ -13,13 +13,13 @@ export abstract class GitManager {
 
     abstract status(): Promise<Status>;
 
-    abstract commitAll({ }: { message?: string, status?: Status, unstagedFiles?: UnstagedFile[]; }): Promise<number | undefined>;
+    abstract commitAll(_: { message: string, status?: Status, unstagedFiles?: UnstagedFile[]; }): Promise<number | undefined>;
 
     abstract commit(message?: string): Promise<number | undefined>;
 
-    abstract stageAll({ }: { dir?: string, status?: Status; }): Promise<void>;
+    abstract stageAll(_: { dir?: string, status?: Status; }): Promise<void>;
 
-    abstract unstageAll({ }: { dir?: string, status?: Status; }): Promise<void>;
+    abstract unstageAll(_: { dir?: string, status?: Status; }): Promise<void>;
 
     abstract stage(filepath: string, relativeToVault: boolean): Promise<void>;
 
@@ -27,7 +27,7 @@ export abstract class GitManager {
 
     abstract discard(filepath: string): Promise<void>;
 
-    abstract pull(): Promise<FileStatusResult[]>;
+    abstract pull(): Promise<FileStatusResult[] | undefined>;
 
     abstract push(): Promise<number>;
 
@@ -43,7 +43,7 @@ export abstract class GitManager {
 
     abstract clone(url: string, dir: string): Promise<void>;
 
-    abstract setConfig(path: string, value: any): Promise<void>;
+    abstract setConfig(path: string, value: string | number | boolean): Promise<void>;
 
     abstract getConfig(path: string): Promise<any>;
 
@@ -53,7 +53,7 @@ export abstract class GitManager {
 
     abstract getRemotes(): Promise<string[]>;
 
-    abstract getRemoteUrl(remote: string): Promise<string>;
+    abstract getRemoteUrl(remote: string): Promise<string | undefined>;
 
     abstract getRemoteBranches(remote: string): Promise<string[]>;
 
@@ -80,11 +80,11 @@ export abstract class GitManager {
         return (relativeToVault && this.plugin.settings.basePath.length > 0) ? path.substring(this.plugin.settings.basePath.length + 1) : path;
     }
 
-    getTreeStructure(children: FileStatusResult[], beginLength: number = 0): TreeItem[] {
-        let list: TreeItem[] = [];
+    getTreeStructure(children: FileStatusResult[], beginLength = 0): TreeItem[] {
+        const list: TreeItem[] = [];
         children = [...children];
         while (children.length > 0) {
-            const first = children.first();
+            const first = children.first()!;
             const restPath = first.path.substring(beginLength);
             if (restPath.contains("/")) {
                 const title = restPath.substring(0, restPath.indexOf("/"));
@@ -108,7 +108,7 @@ export abstract class GitManager {
         let status: Status | undefined;
         if (template.includes("{{numFiles}}")) {
             status = await this.status();
-            let numFiles = status.staged.length;
+            const numFiles = status.staged.length;
             template = template.replace("{{numFiles}}", String(numFiles));
         }
         if (template.includes("{{hostname}}")) {
@@ -119,7 +119,7 @@ export abstract class GitManager {
         if (template.includes("{{files}}")) {
             status = status ?? await this.status();
 
-            let changeset: { [key: string]: string[]; } = {};
+            const changeset: { [key: string]: string[]; } = {};
             status.staged.forEach((value: FileStatusResult) => {
                 if (value.index in changeset) {
                     changeset[value.index].push(value.path);
@@ -128,17 +128,17 @@ export abstract class GitManager {
                 }
             });
 
-            let chunks = [];
-            for (let [action, files] of Object.entries(changeset)) {
+            const chunks = [];
+            for (const [action, files] of Object.entries(changeset)) {
                 chunks.push(action + " " + files.join(" "));
             }
 
-            let files = chunks.join(", ");
+            const files = chunks.join(", ");
 
             template = template.replace("{{files}}", files);
         }
 
-        let moment = (window as any).moment;
+        const moment = (window as any).moment;
         template = template.replace(
             "{{date}}",
             moment().format(this.plugin.settings.commitDateFormat)

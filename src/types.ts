@@ -131,8 +131,8 @@ export interface UnstagedFile {
 }
 
 export interface BranchInfo {
-    current: string;
-    tracking: string;
+    current?: string;
+    tracking?: string;
     branches: string[];
 }
 
@@ -141,6 +141,8 @@ export interface TreeItem {
     statusResult?: FileStatusResult;
     children?: TreeItem[];
 }
+
+export type RootTreeItem = TreeItem & { children: TreeItem[]; };
 
 export interface DiffViewState {
     staged: boolean,

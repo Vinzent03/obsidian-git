@@ -1,6 +1,6 @@
 import { requireApiVersion, WorkspaceLeaf } from "obsidian";
 
-export const worthWalking = (filepath: string, root: string) => {
+export const worthWalking = (filepath: string, root?: string) => {
     if (filepath === '.' || root == null || root.length === 0 || root === '.') {
         return true;
     }

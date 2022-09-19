@@ -6,7 +6,7 @@ import { SyncMethod } from "./types";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     display(): void {
-        let { containerEl } = this;
+        const { containerEl } = this;
         const plugin: ObsidianGit = (this as any).plugin;
         const commitOrBackup = plugin.settings.differentIntervalCommitAndPush ? "commit" : "backup";
         const gitReady = plugin.gitReady;
@@ -223,7 +223,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setName("Preview commit message")
                 .addButton((button) =>
                     button.setButtonText("Preview").onClick(async () => {
-                        let commitMessagePreview = await plugin.gitManager.formatCommitMessage(plugin.settings.commitMessage);
+                        const commitMessagePreview = await plugin.gitManager.formatCommitMessage(plugin.settings.commitMessage);
                         new Notice(`${commitMessagePreview}`);
                     })
                 );

@@ -1,12 +1,13 @@
+<!-- tslint:disable ts(2345)  -->
 <script lang="ts">
 	import ObsidianGit from "src/main";
-	import { FileType, TreeItem } from "src/types";
+	import { FileType, RootTreeItem } from "src/types";
 	import { slide } from "svelte/transition";
 	import GitView from "../sidebarView";
 	import FileComponent from "./fileComponent.svelte";
 	import PulledFileComponent from "./pulledFileComponent.svelte";
 	import StagedFileComponent from "./stagedFileComponent.svelte";
-	export let hierarchy: TreeItem;
+	export let hierarchy: RootTreeItem;
 	export let plugin: ObsidianGit;
 	export let view: GitView;
 	export let fileType: FileType;

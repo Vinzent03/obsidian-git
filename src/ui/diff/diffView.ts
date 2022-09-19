@@ -7,7 +7,7 @@ import { DiffViewState } from "src/types";
 
 export default class DiffView extends ItemView {
     parser: DOMParser;
-    gettingDiff: boolean = false;
+    gettingDiff = false;
     state: DiffViewState;
 
     constructor(leaf: WorkspaceLeaf, private plugin: ObsidianGit) {

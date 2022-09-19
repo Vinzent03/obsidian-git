@@ -9,13 +9,14 @@
         "noImplicitAny": true,
         "isolatedModules": true,
         "moduleResolution": "node",
+        "strictNullChecks": true,
         "importHelpers": true,
         "lib": [
             "DOM",
             "ES5",
             "ES6",
             "ES7"
-          ]
+        ]
     },
     "include": [
         "**/*.ts"

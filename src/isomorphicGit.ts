@@ -126,9 +126,9 @@ export class IsomorphicGit extends GitManager {
             this.plugin.displayError(error);
             throw error;
         }
-    };
+    }
 
-    async commitAll({ message, status, unstagedFiles }: { message?: string, status?: Status, unstagedFiles?: UnstagedFile[]; }): Promise<number> {
+    async commitAll({ message, status, unstagedFiles }: { message: string, status?: Status, unstagedFiles?: UnstagedFile[]; }): Promise<number | undefined> {
         try {
             await this.stageAll({ status, unstagedFiles });
             return this.commit(message);
@@ -138,16 +138,16 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async commit(message?: string): Promise<undefined> {
+    async commit(message: string): Promise<undefined> {
         try {
             this.plugin.setState(PluginState.commit);
             const formatMessage = await this.formatCommitMessage(message);
             const hadConflict = this.plugin.localStorage.getConflict() === "true";
-            let parent: string[] = undefined;
+            let parent: string[] | undefined = undefined;
 
             if (hadConflict) {
                 const branchInfo = await this.branchInfo();
-                parent = [branchInfo.current, branchInfo.tracking];
+                parent = [branchInfo.current!, branchInfo.tracking!];
             }
 
             await this.wrapFS(git.commit({
@@ -184,7 +184,7 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async stageAll({ dir, status, unstagedFiles }: { dir?: string, status?: Status; unstagedFiles: UnstagedFile[]; }): Promise<void> {
+    async stageAll({ dir, status, unstagedFiles }: { dir?: string, status?: Status; unstagedFiles?: UnstagedFile[]; }): Promise<void> {
         try {
             if (status) {
                 await Promise.all(
@@ -272,7 +272,7 @@ export class IsomorphicGit extends GitManager {
             await this.wrapFS(git.merge({
                 ...this.getRepo(),
                 ours: branchInfo.current,
-                theirs: branchInfo.tracking,
+                theirs: branchInfo.tracking!,
                 abortOnConflict: false,
             }));
             await this.wrapFS(git.checkout({
@@ -317,7 +317,7 @@ export class IsomorphicGit extends GitManager {
             const status = await this.branchInfo();
             const trackingBranch = status.tracking;
             const currentBranch = status.current;
-            const numChangedFiles = (await this.getFileChangesCount(currentBranch, trackingBranch)).length;
+            const numChangedFiles = (await this.getFileChangesCount(currentBranch!, trackingBranch!)).length;
 
             this.plugin.setState(PluginState.push);
 
@@ -341,8 +341,8 @@ export class IsomorphicGit extends GitManager {
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
 
-        const current = await this.resolveRef(currentBranch);
-        const tracking = await this.resolveRef(trackingBranch);
+        const current = await this.resolveRef(currentBranch!);
+        const tracking = await this.resolveRef(trackingBranch!);
 
         return current != tracking;
     }
@@ -365,7 +365,7 @@ export class IsomorphicGit extends GitManager {
             const trackingBranch = (await this.getConfig(`branch.${current}.merge`))?.split("refs/heads")[1];
 
 
-            let tracking = trackingBranch ? remote + trackingBranch : undefined;
+            const tracking = trackingBranch ? remote + trackingBranch : undefined;
 
             return {
                 current: current,
@@ -428,7 +428,7 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async setConfig(path: string, value: any): Promise<void> {
+    async setConfig(path: string, value: string | number | boolean): Promise<void> {
         try {
             return this.wrapFS(git.setConfig({
                 ...this.getRepo(),
@@ -439,7 +439,7 @@ export class IsomorphicGit extends GitManager {
             this.plugin.displayError(error);
             throw error;
         }
-    };
+    }
 
     async getConfig(path: string): Promise<any> {
         try {
@@ -451,7 +451,7 @@ export class IsomorphicGit extends GitManager {
             this.plugin.displayError(error);
             throw error;
         }
-    };
+    }
 
     async fetch(remote?: string): Promise<void> {
         const progressNotice = new Notice("Initializing fetch", this.noticeLength);
@@ -529,10 +529,10 @@ export class IsomorphicGit extends GitManager {
     }
 
 
-    async walkDifference({ walkers: walker, dir: base }: { walkers: Walker[]; dir?: string; }): Promise<WalkDifference[]> {
+    async walkDifference({ walkers, dir: base }: { walkers: Walker[]; dir?: string; }): Promise<WalkDifference[]> {
         const res = await this.wrapFS(git.walk({
             ...this.getRepo(),
-            trees: walker,
+            trees: walkers,
             map: async function (filepath, [A, B]) {
 
                 if (!worthWalking(filepath, base)) {
@@ -576,7 +576,7 @@ export class IsomorphicGit extends GitManager {
         return res;
     }
 
-    async getStagedFiles(dir: string = "."): Promise<{ vault_path: string, filepath: string; }[]> {
+    async getStagedFiles(dir = "."): Promise<{ vault_path: string, filepath: string; }[]> {
         const res = await this.walkDifference({
             walkers: [git.TREE({ ref: "HEAD" }), git.STAGE()],
             dir,
@@ -589,7 +589,7 @@ export class IsomorphicGit extends GitManager {
         });
     }
 
-    async getUnstagedFiles(base: string = "."): Promise<UnstagedFile[]> {
+    async getUnstagedFiles(base = "."): Promise<UnstagedFile[]> {
         const notice = new Notice("Getting status...", this.noticeLength);
 
         try {
@@ -599,7 +599,7 @@ export class IsomorphicGit extends GitManager {
                 git.walk({
                     ...repo,
                     trees: [git.WORKDIR(), git.STAGE()],
-                    map: async function (filepath, [workdir, stage]): Promise<UnstagedFile> {
+                    map: async function (filepath, [workdir, stage]): Promise<UnstagedFile | null | undefined> {
                         // Ignore ignored files, but only if they are not already tracked.
                         if (!stage && workdir) {
 
@@ -636,7 +636,7 @@ export class IsomorphicGit extends GitManager {
                         if ((stageType === 'tree' || stageType === 'special') && !isBlob) return;
 
                         // Figure out the oids for files, using the staged oid for the working dir oid if the stats match.
-                        const stageOid = stageType === 'blob' ? await stage.oid() : undefined;
+                        const stageOid = stageType === 'blob' ? await stage!.oid() : undefined;
                         let workdirOid;
                         if (
                             workdirType === 'blob' &&
@@ -645,7 +645,7 @@ export class IsomorphicGit extends GitManager {
                             // We don't actually NEED the sha. Any sha will do
                             workdirOid = '42';
                         } else if (workdirType === 'blob') {
-                            workdirOid = await workdir.oid();
+                            workdirOid = await workdir!.oid();
                         }
                         if (!workdirOid) {
                             return {
@@ -679,7 +679,7 @@ export class IsomorphicGit extends GitManager {
 
     async getDiffString(filePath: string): Promise<string> {
         throw new Error("Method not implemented.");
-    };
+    }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
 
@@ -692,7 +692,7 @@ export class IsomorphicGit extends GitManager {
             vault_path: this.getVaultPath(row[this.FILE])
         };
 
-    };
+    }
 }
 
 // All because we can't use (for await)...
@@ -730,6 +730,7 @@ function getIterator(iterable: any) {
 
 async function forAwait(iterable: any, cb: any) {
     const iter = getIterator(iterable);
+    //eslint-disable-next-line no-constant-condition
     while (true) {
         const { value, done } = await iter.next();
         if (value) await cb(value);

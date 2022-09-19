@@ -13,7 +13,7 @@ export class DiscardModal extends Modal {
     }
     onOpen() {
 
-        let { contentEl, titleEl } = this;
+        const { contentEl, titleEl } = this;
         titleEl.setText(`${this.deletion ? "Delete" : "Discard"} this file?`);
         contentEl.createEl("h4").setText(`Do you really want to ${this.deletion ? "delete" : "discard the changes of"} "${this.filename}"`);
         const div = contentEl.createDiv();
@@ -42,7 +42,7 @@ export class DiscardModal extends Modal {
     }
 
     onClose() {
-        let { contentEl } = this;
+        const { contentEl } = this;
         contentEl.empty();
     }
 }
