@@ -30,7 +30,6 @@
             change={entity.statusResult}
             manager={plugin.gitManager}
             {view}
-            workspace={plugin.app.workspace}
           />
         {:else if fileType == FileType.pulled}
           <PulledFileComponent change={entity.statusResult} {view} />

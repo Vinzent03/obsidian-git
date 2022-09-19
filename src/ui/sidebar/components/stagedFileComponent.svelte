@@ -46,32 +46,14 @@
 	}
 
 	function showDiff(event: MouseEvent) {
-		const workspace = view.app.workspace;
-		const leaf = workspace.getMostRecentLeaf(workspace.rootSplit);
-
-		if (
-			leaf &&
-			!leaf.getViewState().pinned &&
-			!(event.ctrlKey || event.getModifierState("Meta"))
-		) {
-			leaf.setViewState({
-				type: DIFF_VIEW_CONFIG.type,
-				state: {
-					file: change.path,
-					staged: true,
-				},
-			});
-			workspace.setActiveLeaf(leaf, true, true);
-		} else {
-			getNewLeaf().setViewState({
-				type: DIFF_VIEW_CONFIG.type,
-				active: true,
-				state: {
-					file: change.path,
-					staged: true,
-				},
-			});
-		}
+		getNewLeaf(event).setViewState({
+			type: DIFF_VIEW_CONFIG.type,
+			active: true,
+			state: {
+				file: change.path,
+				staged: true,
+			},
+		});
 	}
 
 	function unstage() {

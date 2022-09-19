@@ -13,8 +13,10 @@ export default class DiffView extends ItemView {
     constructor(leaf: WorkspaceLeaf, private plugin: ObsidianGit) {
         super(leaf);
         this.parser = new DOMParser();
+        this.navigation = true;
         addEventListener('git-refresh', this.refresh.bind(this));
     }
+
 
     getViewType(): string {
         return DIFF_VIEW_CONFIG.type;

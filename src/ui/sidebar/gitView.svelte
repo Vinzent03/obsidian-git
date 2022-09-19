@@ -302,7 +302,6 @@
                   {change}
                   {view}
                   manager={plugin.gitManager}
-                  workspace={plugin.app.workspace}
                   on:git-refresh={triggerRefresh}
                 />
               {/each}

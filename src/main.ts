@@ -131,9 +131,15 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: 'open-diff-view',
             name: 'Open diff view',
-            editorCallback: async (editor, view) => {
-                getNewLeaf().setViewState({ type: DIFF_VIEW_CONFIG.type, state: { staged: false, file: view.file.path } });
-            },
+            checkCallback: (checking) => {
+                const file = this.app.workspace.getActiveFile();
+                if (checking) {
+                    return file !== null;
+                } else {
+                    getNewLeaf().setViewState({ type: DIFF_VIEW_CONFIG.type, state: { staged: false, file: file.path } });
+                }
+            }
+
         });
 
         this.addCommand({

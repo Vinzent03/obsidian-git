@@ -5,7 +5,11 @@
         Workspace,
         WorkspaceLeaf,
     } from "obsidian";
-    import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
+    import {
+        hoverPreview,
+        openOrSwitch,
+        openView,
+    } from "obsidian-community-lib";
     import { DIFF_VIEW_CONFIG } from "src/constants";
     import { GitManager } from "src/gitManager";
     import { FileStatusResult } from "src/types";
@@ -16,7 +20,6 @@
     export let change: FileStatusResult;
     export let view: GitView;
     export let manager: GitManager;
-    export let workspace: Workspace;
     let buttons: HTMLElement[] = [];
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
@@ -58,30 +61,14 @@
     }
 
     function showDiff(event: MouseEvent) {
-        const leaf = workspace.getMostRecentLeaf(workspace.rootSplit);
-        if (
-            leaf &&
-            !leaf.getViewState().pinned &&
-            !(event.ctrlKey || event.getModifierState("Meta"))
-        ) {
-            leaf.setViewState({
-                type: DIFF_VIEW_CONFIG.type,
-                state: {
-                    file: change.path,
-                    staged: false,
-                },
-            });
-        } else {
-           
-            getNewLeaf().setViewState({
-                type: DIFF_VIEW_CONFIG.type,
-                active: true,
-                state: {
-                    file: change.path,
-                    staged: false,
-                },
-            });
-        }
+        getNewLeaf(event).setViewState({
+            type: DIFF_VIEW_CONFIG.type,
+            active: true,
+            state: {
+                file: change.path,
+                staged: false,
+            },
+        });
     }
 
     function discard() {

@@ -12,12 +12,28 @@ export const worthWalking = (filepath: string, root: string) => {
 };
 
 
-export function getNewLeaf(): WorkspaceLeaf {
+export function getNewLeaf(event?: MouseEvent | KeyboardEvent): WorkspaceLeaf {
     let leaf: WorkspaceLeaf;
-    if (requireApiVersion("0.16.0")) {
-        leaf = app.workspace.getLeaf("tab");
+    if (!event) {
+        leaf = app.workspace.getLeaf(false);
     } else {
-        leaf = app.workspace.createLeafInParent(app.workspace.rootSplit, 0);
+        if (requireApiVersion("0.16.0")) {
+            if (event.ctrlKey && event.altKey && event.shiftKey) {
+                leaf = app.workspace.getLeaf("window");
+            } else if (event.ctrlKey && event.altKey) {
+                leaf = app.workspace.getLeaf("split");
+            } else if (event.ctrlKey) {
+                leaf = app.workspace.getLeaf("tab");
+            } else {
+                leaf = app.workspace.getLeaf(false);
+            }
+        } else {
+            if (event.ctrlKey) {
+                leaf = app.workspace.getLeaf(true);
+            } else {
+                leaf = app.workspace.getLeaf(false);
+            }
+        }
     }
     return leaf;
 }
