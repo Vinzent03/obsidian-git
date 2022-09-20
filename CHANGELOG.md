@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.2.1](https://github.com/denolehov/obsidian-git/compare/2.2.0...2.2.1) (2022-09-20)
+
+
+### Bug Fixes
+
+* localstorage migration ([1d9391a](https://github.com/denolehov/obsidian-git/commit/1d9391a970624f03fcc60fb68f3bd8ee450af24b))
+
 ## [2.2.0](https://github.com/denolehov/obsidian-git/compare/2.1.2...2.2.0) (2022-09-20)
 
 
