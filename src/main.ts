@@ -71,8 +71,10 @@ export default class ObsidianGit extends Plugin {
         console.log('loading ' + this.manifest.name + " plugin");
         this.localStorage = new LocalStorageSettings(this);
 
+        this.localStorage.migrate();
         await this.loadSettings();
         this.migrateSettings();
+
 
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 

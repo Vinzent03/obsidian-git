@@ -1,72 +1,84 @@
 import ObsidianGit from "./main";
-
 export class LocalStorageSettings {
     private prefix: string;
     constructor(private readonly plugin: ObsidianGit) {
-        this.prefix = this.plugin.manifest.id;
+        this.prefix = this.plugin.manifest.id + ":";
     }
 
-    getPassword(): string {
-        return localStorage.getItem(this.prefix + ":password");
+    migrate(): void {
+        const keys = ["password", "hostname", "conflict", "lastAutoPull", "lastAutoBackup", "lastAutoPush", "gitPath", "pluginDisabled"];
+        for (const key of keys) {
+            const old = app.loadLocalStorage(this.prefix + key);
+            if (app.loadLocalStorage(key) == null && old != null) {
+                if (old != null) {
+                    app.saveLocalStorage(this.prefix + key, old);
+                    localStorage.removeItem(this.prefix + key);
+                }
+            }
+        }
+    }
+
+    getPassword(): string | null {
+        return app.loadLocalStorage(this.prefix + "password");
     }
 
     setPassword(value: string): void {
-        return localStorage.setItem(this.prefix + ":password", value);
+        return app.saveLocalStorage(this.prefix + "password", value);
     }
 
-    getHostname(): string {
-        return localStorage.getItem(this.prefix + ":hostname");
+    getHostname(): string | null {
+        return app.loadLocalStorage(this.prefix + "hostname");
     }
 
     setHostname(value: string): void {
-        return localStorage.setItem(this.prefix + ":hostname", value);
+        return app.saveLocalStorage(this.prefix + "hostname", value);
     }
 
-    getConflict(): string {
-        return localStorage.getItem(this.prefix + ":conflict");
+    getConflict(): string | null {
+        return app.loadLocalStorage(this.prefix + "conflict");
     }
 
     setConflict(value: string): void {
-        return localStorage.setItem(this.prefix + ":conflict", value);
+        return app.saveLocalStorage(this.prefix + "conflict", value);
     }
 
-    getLastAutoPull(): string {
-        return localStorage.getItem(this.prefix + ":lastAutoPull");
+    getLastAutoPull(): string | null {
+        return app.loadLocalStorage(this.prefix + "lastAutoPull");
     }
 
     setLastAutoPull(value: string): void {
-        return localStorage.setItem(this.prefix + ":lastAutoPull", value);
+        return app.saveLocalStorage(this.prefix + "lastAutoPull", value);
     }
 
-    getLastAutoBackup(): string {
-        return localStorage.getItem(this.prefix + ":lastAutoBackup");
+    getLastAutoBackup(): string | null {
+        return app.loadLocalStorage(this.prefix + "lastAutoBackup");
     }
 
     setLastAutoBackup(value: string): void {
-        return localStorage.setItem(this.prefix + ":lastAutoBackup", value);
+        return app.saveLocalStorage(this.prefix + "lastAutoBackup", value);
     }
 
-    getLastAutoPush(): string {
-        return localStorage.getItem(this.prefix + ":lastAutoPush");
+    getLastAutoPush(): string | null {
+        return app.loadLocalStorage(this.prefix + "lastAutoPush");
     }
 
     setLastAutoPush(value: string): void {
-        return localStorage.setItem(this.prefix + ":lastAutoPush", value);
+        return app.saveLocalStorage(this.prefix + "lastAutoPush", value);
     }
 
-    getGitPath(): string {
-        return localStorage.getItem(this.prefix + ":gitPath");
+    getGitPath(): string | null {
+        return app.loadLocalStorage(this.prefix + "gitPath");
     }
 
     setGitPath(value: string): void {
-        return localStorage.setItem(this.prefix + ":gitPath", value);
+        return app.saveLocalStorage(this.prefix + "gitPath", value);
     }
 
     getPluginDisabled(): boolean {
-        return localStorage.getItem(this.prefix + ":pluginDisabled") == "true";
+        return app.loadLocalStorage(this.prefix + "pluginDisabled") == "true";
     }
 
     setPluginDisabled(value: boolean): void {
-        return localStorage.setItem(this.prefix + ":pluginDisabled", `${value}`);
+        return app.saveLocalStorage(this.prefix + "pluginDisabled", `${value}`);
     }
 }
