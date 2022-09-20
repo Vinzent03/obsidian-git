@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { hoverPreview, openOrSwitch } from "obsidian-community-lib";
+	import { TFile } from "obsidian";
+	import { hoverPreview } from "obsidian-community-lib";
 	import { FileStatusResult } from "src/types";
+	import { getNewLeaf } from "src/utils";
 	import GitView from "../sidebarView";
 
 	export let change: FileStatusResult;
@@ -16,20 +18,15 @@
 			hoverPreview(
 				event,
 				view as any,
-				change.vault_path.split("/").last().replace(".md", "")
+				change.vault_path.split("/").last()!.replace(".md", "")
 			);
 		}
 	}
 
 	function open(event: MouseEvent) {
-		if (
-			!(
-				change.path.startsWith(view.app.vault.configDir) ||
-				change.path.startsWith(".") ||
-				change.working_dir === "D"
-			)
-		) {
-			openOrSwitch(change.vault_path, event);
+		const file = view.app.vault.getAbstractFileByPath(change.vault_path);
+		if (file instanceof TFile) {
+			getNewLeaf(event).openFile(file);
 		}
 	}
 </script>
@@ -44,7 +41,7 @@
 			: ""}
 		on:click|self={open}
 	>
-		{change.vault_path.split("/").last().replace(".md", "")}
+		{change.vault_path.split("/").last()?.replace(".md", "")}
 	</span>
 	<div class="tools">
 		<span class="type" data-type={change.working_dir}
