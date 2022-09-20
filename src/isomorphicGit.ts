@@ -1,4 +1,5 @@
-import git, { AuthCallback, AuthFailureCallback, Errors, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient, Walker } from "isomorphic-git";
+import { createPatch } from "diff";
+import git, { AuthCallback, AuthFailureCallback, Errors, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient, readBlob, Walker, WalkerMap } from "isomorphic-git";
 import { Notice, requestUrl } from 'obsidian';
 import { GitManager } from "./gitManager";
 import ObsidianGit from './main';
@@ -6,7 +7,6 @@ import { MyAdapter } from './myAdapter';
 import { BranchInfo, FileStatusResult, PluginState, Status, UnstagedFile, WalkDifference } from "./types";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { worthWalking } from "./utils";
-
 
 export class IsomorphicGit extends GitManager {
     private readonly FILE = 0;
@@ -677,9 +677,41 @@ export class IsomorphicGit extends GitManager {
 
     }
 
-    async getDiffString(filePath: string): Promise<string> {
-        throw new Error("Method not implemented.");
-    }
+    async getDiffString(filePath: string, stagedChanges = false): Promise<string> {
+        const map: WalkerMap = async (file, [A]) => {
+            if (filePath == file) {
+                const oid = await A!.oid();
+                const contents = await git.readBlob({ ...this.getRepo(), oid: oid });
+                return contents.blob;
+            }
+        };
+
+        const stagedBlob = (await git.walk({
+            ...this.getRepo(),
+            trees: [git.STAGE()],
+            map,
+        })).first();
+        const stagedContent = new TextDecoder().decode(stagedBlob);
+
+        if (stagedChanges) {
+            const headBlob = await readBlob({ ...this.getRepo(), filepath: filePath, oid: await this.resolveRef("HEAD") });
+            const headContent = new TextDecoder().decode(headBlob.blob);
+
+            const diff = createPatch(filePath, headContent, stagedContent);
+            return diff;
+
+        } else {
+            let workdirContent: string;
+            if (await app.vault.adapter.exists(filePath)) {
+                workdirContent = await app.vault.adapter.read(filePath);
+            } else {
+                workdirContent = "";
+            }
+
+            const diff = createPatch(filePath, stagedContent, workdirContent);
+            return diff;
+        }
+    };
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
 

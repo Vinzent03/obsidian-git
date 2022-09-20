@@ -70,7 +70,7 @@ export default class DiffView extends ItemView {
 
             const diffEl = this.parser.parseFromString(html(diff), 'text/html')
                 .querySelector('.d2h-file-diff');
-            this.contentEl.append(diffEl);
+            this.contentEl.append(diffEl!);
             // const div = this.contentEl.createDiv({ cls: 'diff-err' });
             // div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
             // div.createEl('br');
