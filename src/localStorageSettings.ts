@@ -8,8 +8,8 @@ export class LocalStorageSettings {
     migrate(): void {
         const keys = ["password", "hostname", "conflict", "lastAutoPull", "lastAutoBackup", "lastAutoPush", "gitPath", "pluginDisabled"];
         for (const key of keys) {
-            const old = app.loadLocalStorage(this.prefix + key);
-            if (app.loadLocalStorage(key) == null && old != null) {
+            const old = localStorage.getItem(this.prefix + key);
+            if (app.loadLocalStorage(this.prefix + key) == null && old != null) {
                 if (old != null) {
                     app.saveLocalStorage(this.prefix + key, old);
                     localStorage.removeItem(this.prefix + key);
