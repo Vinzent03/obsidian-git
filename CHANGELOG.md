@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0](https://github.com/denolehov/obsidian-git/compare/2.1.2...2.2.0) (2022-09-20)
+
+
+### Features
+
+* diff view on mobile ([86b4d5a](https://github.com/denolehov/obsidian-git/commit/86b4d5ad4be23b420fe0efd0f3dfd989047be23a)), closes [#302](https://github.com/denolehov/obsidian-git/issues/302)
+
+
+### Bug Fixes
+
+* respect obsidian default hotkey for open file ([b8631f4](https://github.com/denolehov/obsidian-git/commit/b8631f4ff0b9a0bdeacc829248195085f4512f1d)), closes [#306](https://github.com/denolehov/obsidian-git/issues/306)
+* save localstorage per vault ([a3c4e4f](https://github.com/denolehov/obsidian-git/commit/a3c4e4f8916b78160de074e72444c5ccd91c32b2))
+
 ### [2.1.2](https://github.com/denolehov/obsidian-git/compare/2.1.1...2.1.2) (2022-09-19)
 
 
