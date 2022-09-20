@@ -39,6 +39,12 @@ export abstract class GitManager {
 
     abstract checkout(branch: string): Promise<void>;
 
+    abstract createBranch(branch: string): Promise<void>;
+
+    abstract deleteBranch(branch: string, force: boolean): Promise<void>;
+
+    abstract branchIsMerged(branch: string): Promise<boolean>;
+
     abstract init(): Promise<void>;
 
     abstract clone(url: string, dir: string): Promise<void>;

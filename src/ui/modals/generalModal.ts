@@ -1,7 +1,7 @@
 import { App, SuggestModal } from "obsidian";
 
 export class GeneralModal extends SuggestModal<string> {
-    resolve: ((value: string | PromiseLike<string>) => void) | null = null;
+    resolve: ((value: string | undefined | PromiseLike<string | undefined>) => void);
 
 
     constructor(app: App, private options: string[], placeholder: string, private allowEmpty = false, private onlySelection: boolean = false) {

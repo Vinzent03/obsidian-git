@@ -318,6 +318,19 @@ export class SimpleGit extends GitManager {
         await this.git.checkout(branch, (err) => this.onError(err));
     }
 
+    async createBranch(branch: string): Promise<void> {
+        await this.git.checkout(["-b", branch], (err) => this.onError(err));
+    }
+
+    async deleteBranch(branch: string, force: boolean): Promise<void> {
+        await this.git.branch([force ? "-D" : "-d", branch], (err) => this.onError(err));
+    }
+
+    async branchIsMerged(branch: string): Promise<boolean> {
+        const notMergedBranches = await this.git.branch(["--no-merged"], (err) => this.onError(err));
+        return !notMergedBranches.all.contains(branch);
+    }
+
     async init(): Promise<void> {
         await this.git.init(false, (err) => this.onError(err));
     }

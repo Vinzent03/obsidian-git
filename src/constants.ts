@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     username: "",
     showedMobileNotice: false,
     refreshSourceControlTimer: 7000,
+    showBranchStatusBar: true
 };
 
 export const GIT_VIEW_CONFIG = {

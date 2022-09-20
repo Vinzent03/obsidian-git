@@ -51,7 +51,7 @@ export class IsomorphicGit extends GitManager {
             onAuth: () => {
                 return {
                     username: this.plugin.settings.username,
-                    password: this.plugin.localStorage.getPassword()
+                    password: this.plugin.localStorage.getPassword() ?? undefined
                 };
             },
             onAuthFailure: async () => {
@@ -398,6 +398,28 @@ export class IsomorphicGit extends GitManager {
             this.plugin.displayError(error);
             throw error;
         }
+    }
+
+    async createBranch(branch: string): Promise<void> {
+        try {
+            await this.wrapFS(git.branch({ ...this.getRepo(), ref: branch, checkout: true }));
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    }
+
+    async deleteBranch(branch: string): Promise<void> {
+        try {
+            await this.wrapFS(git.deleteBranch({ ...this.getRepo(), ref: branch, }));
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    }
+
+    async branchIsMerged(branch: string): Promise<boolean> {
+        return true;
     }
 
     async init(): Promise<void> {

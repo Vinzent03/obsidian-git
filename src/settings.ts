@@ -213,7 +213,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setDesc('Specify custom hostname for every device.')
                 .addText((text) =>
                     text
-                        .setValue(plugin.localStorage.getHostname())
+                        .setValue(plugin.localStorage.getHostname() ?? "")
                         .onChange(async (value) => {
                             plugin.localStorage.setHostname(value);
                         })
@@ -302,23 +302,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.createEl("br");
         containerEl.createEl("h3", { text: "Miscellaneous" });
 
-        if (gitReady)
-            new Setting(containerEl)
-                .setName("Current branch")
-                .setDesc("Switch to a different branch")
-                .addDropdown(async (dropdown) => {
-                    const branchInfo = await plugin.gitManager.branchInfo();
-                    for (const branch of branchInfo.branches) {
-                        dropdown.addOption(branch, branch);
-                    }
-                    dropdown.setValue(branchInfo.current);
-                    dropdown.onChange(async (option) => {
-                        await plugin.gitManager.checkout(option);
-                        new Notice(`Checked out to ${option}`);
-                    });
-                });
-
-
         new Setting(containerEl)
             .setName("Automatically refresh Source Control View on file changes")
             .setDesc("On slower machines this may cause lags. If so, just disable this option")
@@ -372,6 +355,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Show branch status bar")
+            .setDesc("Obsidian must be restarted for the changes to take affect")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.showBranchStatusBar)
+                    .onChange((value) => {
+                        plugin.settings.showBranchStatusBar = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Show changes files count in status bar")
             .addToggle((toggle) =>
                 toggle
@@ -402,7 +397,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Custom Git binary path")
                 .addText((cb) => {
-                    cb.setValue(plugin.localStorage.getGitPath());
+                    cb.setValue(plugin.localStorage.getGitPath() ?? "");
                     cb.setPlaceholder("git");
                     cb.onChange((value) => {
                         plugin.localStorage.setGitPath(value);

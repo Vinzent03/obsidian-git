@@ -13,16 +13,19 @@ import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
 import { FileStatusResult, ObsidianGitSettings, PluginState, Status, UnstagedFile } from "./types";
 import DiffView from "./ui/diff/diffView";
+import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import GitView from "./ui/sidebar/sidebarView";
+import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { getNewLeaf } from "./utils";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
     localStorage: LocalStorageSettings;
     settings: ObsidianGitSettings;
-    statusBar: StatusBar;
+    statusBar?: StatusBar;
+    branchBar?: BranchStatusBar;
     state: PluginState;
     timeoutIDBackup?: number;
     timeoutIDPush?: number;
@@ -319,6 +322,30 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
+        this.addCommand({
+            id: "switch-branch",
+            name: "Switch branch",
+            callback: () => {
+                this.switchBranch();
+            }
+        });
+
+        this.addCommand({
+            id: "create-branch",
+            name: "Create new branch",
+            callback: () => {
+                this.createBranch();
+            }
+        });
+
+        this.addCommand({
+            id: "delete-branch",
+            name: "Delete branch",
+            callback: () => {
+                this.deleteBranch();
+            }
+        });
+
         this.registerEvent(
             this.app.workspace.on('file-menu', (menu, file, source) => {
                 this.handleFileMenu(menu, file, source);
@@ -330,9 +357,19 @@ export default class ObsidianGit extends Plugin {
             const statusBarEl = this.addStatusBarItem();
             this.statusBar = new StatusBar(statusBarEl, this);
             this.registerInterval(
-                window.setInterval(() => this.statusBar.display(), 1000)
+                window.setInterval(() => this.statusBar?.display(), 1000)
             );
         }
+
+
+        if (Platform.isDesktop && this.settings.showBranchStatusBar) {
+            const branchStatusBarEl = this.addStatusBarItem();
+            this.branchBar = new BranchStatusBar(branchStatusBarEl, this);
+            this.registerInterval(
+                window.setInterval(() => this.branchBar?.display(), 60000)
+            );
+        }
+
         this.app.workspace.onLayoutReady(() => this.init());
 
     }
@@ -518,6 +555,8 @@ export default class ObsidianGit extends Plugin {
                     this.registerEvent(this.deleteEvent);
                     this.registerEvent(this.createEvent);
                     this.registerEvent(this.renameEvent);
+
+                    this.branchBar?.display();
 
                     dispatchEvent(new CustomEvent('git-refresh'));
 
@@ -849,6 +888,55 @@ export default class ObsidianGit extends Plugin {
 
         this.setState(PluginState.idle);
         return true;
+    }
+
+    async switchBranch(): Promise<string | undefined> {
+        if (!await this.isAllInitialized()) return;
+
+        const branchInfo = await this.gitManager.branchInfo();
+        const selectedBranch = await new BranchModal(branchInfo.branches).open();
+
+        if (selectedBranch != undefined) {
+            await this.gitManager.checkout(selectedBranch);
+            this.displayMessage(`Switched to ${selectedBranch}`);
+            this.branchBar?.display();
+            return selectedBranch;
+        }
+    }
+
+    async createBranch(): Promise<string | undefined> {
+        if (!await this.isAllInitialized()) return;
+
+        const newBranch = await new GeneralModal(app, [], "Create new branch", false).open();
+        if (newBranch != undefined) {
+            await this.gitManager.createBranch(newBranch);
+            this.displayMessage(`Created new branch ${newBranch}`);
+            this.branchBar?.display();
+            return newBranch;
+        }
+    }
+
+    async deleteBranch(): Promise<string | undefined> {
+        if (!await this.isAllInitialized()) return;
+
+        const branchInfo = await this.gitManager.branchInfo();
+        if (branchInfo.current)
+            branchInfo.branches.remove(branchInfo.current);
+        const branch = await new GeneralModal(app, branchInfo.branches, "Delete branch", false, true).open();
+        if (branch != undefined) {
+            let force = false;
+            if (!await this.gitManager.branchIsMerged(branch)) {
+                const forceAnswer = await new GeneralModal(app, ["YES", "NO"], "This branch isn't merged into HEAD. Force delete?", false, true).open();
+                if (forceAnswer !== "YES") {
+                    return;
+                }
+                force = forceAnswer === "YES";
+            }
+            await this.gitManager.deleteBranch(branch, force);
+            this.displayMessage(`Deleted branch ${branch}`);
+            this.branchBar?.display();
+            return branch;
+        }
     }
 
     async remotesAreSet(): Promise<boolean> {
