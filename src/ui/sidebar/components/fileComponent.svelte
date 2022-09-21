@@ -35,8 +35,10 @@
 
 	function open(event: MouseEvent) {
 		const file = view.app.vault.getAbstractFileByPath(change.vault_path);
+		console.log(event);
+
 		if (file instanceof TFile) {
-			getNewLeaf(event).openFile(file);
+			getNewLeaf(event)?.openFile(file);
 		}
 	}
 
@@ -47,7 +49,7 @@
 	}
 
 	function showDiff(event: MouseEvent) {
-		getNewLeaf(event).setViewState({
+		getNewLeaf(event)?.setViewState({
 			type: DIFF_VIEW_CONFIG.type,
 			active: true,
 			state: {
@@ -89,6 +91,7 @@
 			? change.vault_path
 			: ""}
 		on:click|self={showDiff}
+		on:auxclick|self={showDiff}
 	>
 		{change.vault_path.split("/").last()?.replace(".md", "")}
 	</span>
@@ -99,6 +102,7 @@
 					data-icon="go-to-file"
 					aria-label="Open File"
 					bind:this={buttons[1]}
+					on:auxclick={open}
 					on:click={open}
 				/>
 			{/if}

@@ -26,7 +26,7 @@
 	function open(event: MouseEvent) {
 		const file = view.app.vault.getAbstractFileByPath(change.vault_path);
 		if (file instanceof TFile) {
-			getNewLeaf(event).openFile(file);
+			getNewLeaf(event)?.openFile(file);
 		}
 	}
 </script>
