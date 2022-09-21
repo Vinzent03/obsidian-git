@@ -684,12 +684,16 @@ export default class ObsidianGit extends Plugin {
     async createBackup(fromAutoBackup: boolean, requestCustomMessage = false): Promise<void> {
         if (!await this.isAllInitialized()) return;
 
+        if (this.settings.syncMethod == "reset" && this.settings.pullBeforePush) {
+            await this.pull();
+        }
+
         if (!(await this.commit(fromAutoBackup, requestCustomMessage))) return;
 
         if (!this.settings.disablePush) {
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
             if (await this.gitManager.canPush()) {
-                if (this.settings.pullBeforePush) {
+                if (this.settings.syncMethod != "reset" && this.settings.pullBeforePush) {
                     await this.pull();
                 }
 
