@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0](https://github.com/denolehov/obsidian-git/compare/2.2.1...2.3.0) (2022-09-21)
+
+
+### Features
+
+* branch management ([caaacd1](https://github.com/denolehov/obsidian-git/commit/caaacd11c8634e86b01dc19dfb57b546adedf7e6)), closes [#132](https://github.com/denolehov/obsidian-git/issues/132) [#220](https://github.com/denolehov/obsidian-git/issues/220)
+
+
+### Bug Fixes
+
+* backup with reset sync method ([41a00ff](https://github.com/denolehov/obsidian-git/commit/41a00ff8b17212a23c515d0f19be69a0b8d2f1c1)), closes [#319](https://github.com/denolehov/obsidian-git/issues/319)
+
 ### [2.2.1](https://github.com/denolehov/obsidian-git/compare/2.2.0...2.2.1) (2022-09-20)
 
 
