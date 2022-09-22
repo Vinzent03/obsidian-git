@@ -4,7 +4,7 @@ import { GitManager } from "./gitManager";
 export async function openLineInGitHub(editor: Editor, file: TFile, manager: GitManager) {
     const { isGitHub, branch, repo, user } = await getData(manager);
     if (isGitHub) {
-        const path = manager.getPath(file.path, true);
+        const path = manager.asRepositoryRelativePath(file.path, true);
         const from = editor.getCursor("from").line + 1;
         const to = editor.getCursor("to").line + 1;
         if (from === to) {
@@ -19,7 +19,7 @@ export async function openLineInGitHub(editor: Editor, file: TFile, manager: Git
 
 export async function openHistoryInGitHub(file: TFile, manager: GitManager) {
     const { isGitHub, branch, repo, user } = await getData(manager);
-    const path = manager.getPath(file.path, true);
+    const path = manager.asRepositoryRelativePath(file.path, true);
 
     if (isGitHub) {
         window.open(`https://github.com/${user}/${repo}/commits/${branch}/${path}`);

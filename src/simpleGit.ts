@@ -10,6 +10,7 @@ import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
+
     constructor(plugin: ObsidianGit) {
         super(plugin);
     }
@@ -155,7 +156,7 @@ export class SimpleGit extends GitManager {
     async stage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
 
-        path = this.getPath(path, relativeToVault);
+        path = this.asRepositoryRelativePath(path, relativeToVault);
         await this.git.add(["--", path], (err) => this.onError(err));
 
         this.plugin.setState(PluginState.idle);
@@ -178,7 +179,7 @@ export class SimpleGit extends GitManager {
     async unstage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
 
-        path = this.getPath(path, relativeToVault);
+        path = this.asRepositoryRelativePath(path, relativeToVault);
         await this.git.reset(["--", path], (err) => this.onError(err));
 
         this.plugin.setState(PluginState.idle);
@@ -302,14 +303,14 @@ export class SimpleGit extends GitManager {
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
     async log(file: string, relativeToVault = true): Promise<ReadonlyArray<DefaultLogFields>> {
-        const path = this.getPath(file, relativeToVault);
+        const path = this.asRepositoryRelativePath(file, relativeToVault);
 
         const res = await this.git.log({ file: path, }, (err) => this.onError(err));
         return res.all;
     }
 
     async show(commitHash: string, file: string, relativeToVault = true): Promise<string> {
-        const path = this.getPath(file, relativeToVault);
+        const path = this.asRepositoryRelativePath(file, relativeToVault);
 
         return this.git.show([commitHash + ":" + path], (err) => this.onError(err));
     }

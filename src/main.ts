@@ -174,7 +174,7 @@ export default class ObsidianGit extends Plugin {
                 if (checking) {
                     return file !== null;
                 } else {
-                    app.vault.adapter.append(this.gitManager.getVaultPath(".gitignore"), "\n" + this.gitManager.getPath(file!.path, true))
+                    app.vault.adapter.append(this.gitManager.getVaultPath(".gitignore"), "\n" + this.gitManager.asRepositoryRelativePath(file!.path, true))
                         .then(() => {
                             this.refresh();
                         });
@@ -417,7 +417,7 @@ export default class ObsidianGit extends Plugin {
                         if (file instanceof TFile) {
                             await this.gitManager.stage(file.path, true);
                         } else {
-                            await this.gitManager.stageAll({ dir: this.gitManager.getPath(file.path, true) });
+                            await this.gitManager.stageAll({ dir: this.gitManager.asRepositoryRelativePath(file.path, true) });
                         }
                         this.displayMessage(`Staged ${file.path}`);
                     });
@@ -433,7 +433,7 @@ export default class ObsidianGit extends Plugin {
                         if (file instanceof TFile) {
                             await this.gitManager.unstage(file.path, true);
                         } else {
-                            await this.gitManager.unstageAll({ dir: this.gitManager.getPath(file.path, true) });
+                            await this.gitManager.unstageAll({ dir: this.gitManager.asRepositoryRelativePath(file.path, true) });
                         }
                         this.displayMessage(`Unstaged ${file.path}`);
                     });
@@ -487,7 +487,7 @@ export default class ObsidianGit extends Plugin {
         let data: ObsidianGitSettings = await this.loadData();
         //Check for existing settings
         if (data == undefined) {
-            data = { showedMobileNotice: true } as any;
+            data = <ObsidianGitSettings>{ showedMobileNotice: true };
         }
         this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
     }
@@ -818,8 +818,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async push(): Promise<boolean> {
-        if (! await this.isAllInitialized()) return false;
-        if (! await this.remotesAreSet()) {
+        if (!await this.isAllInitialized()) return false;
+        if (!await this.remotesAreSet()) {
             return false;
         }
 
@@ -857,7 +857,7 @@ export default class ObsidianGit extends Plugin {
     /// Used for internals
     /// Returns whether the pull added a commit or not.
     async pull(): Promise<boolean> {
-        if (! await this.remotesAreSet()) {
+        if (!await this.remotesAreSet()) {
             return false;
         }
         const pulledFiles = (await this.gitManager.pull()) || [];

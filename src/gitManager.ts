@@ -73,7 +73,6 @@ export abstract class GitManager {
 
     abstract getDiffString(filePath: string, stagedChanges: boolean): Promise<string>;
 
-
     getVaultPath(path: string): string {
         if (this.plugin.settings.basePath) {
             return this.plugin.settings.basePath + "/" + path;
@@ -82,7 +81,7 @@ export abstract class GitManager {
         }
     }
 
-    getPath(path: string, relativeToVault: boolean): string {
+    asRepositoryRelativePath(path: string, relativeToVault: boolean): string {
         return (relativeToVault && this.plugin.settings.basePath.length > 0) ? path.substring(this.plugin.settings.basePath.length + 1) : path;
     }
 
