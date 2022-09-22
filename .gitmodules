@@ -1,0 +1,5 @@
+[submodule "test-vault"]
+	path = test-vault
+	url = git@github.com:GollyTicker/obsidian-git-test-vault-online.git
+	branch = main
+
