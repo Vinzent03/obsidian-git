@@ -1,0 +1,30 @@
+# compose definitions of reproducable builds
+# use scripts/restart{dev,prod}.sh to use these
+
+version: "3.9"
+
+services:
+  plugin-watchmode-for-dev:
+    build:
+      dockerfile: docker/Dockerfile
+      context: ..
+    container_name: plugin-runner
+    image: obsidian-git:v1
+    volumes:
+      - ${PWD}:/app
+    network_mode: host
+    command: ./docker/docker-command.sh dev
+    # command: /bin/bash
+    # stdin_open: true # docker run -i
+    # tty: true # docker run -t
+
+  plugin-build-for-prod:
+    build:
+      dockerfile: docker/Dockerfile
+      context: ..
+    container_name: plugin-creator
+    image: obsidian-git:v1
+    volumes:
+      - ${PWD}:/app
+    network_mode: host
+    command: ./docker/docker-command.sh prod
