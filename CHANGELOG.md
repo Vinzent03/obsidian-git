@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.4.0](https://github.com/denolehov/obsidian-git/compare/2.3.0...2.4.0) (2022-09-22)
+
+
+### Features
+
+* prefill edit remote modal ([223193c](https://github.com/denolehov/obsidian-git/commit/223193c51b362788a0682dc598c7d0eefa9ccdf0))
+
+
+### Bug Fixes
+
+* middle click to open file/diff in new tab ([ddb1164](https://github.com/denolehov/obsidian-git/commit/ddb1164b10f5e0d373daaa4cd8ec4d60119cc544))
+
 ## [2.3.0](https://github.com/denolehov/obsidian-git/compare/2.2.1...2.3.0) (2022-09-21)
 
 
