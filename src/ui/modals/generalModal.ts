@@ -1,16 +1,46 @@
-import { App, SuggestModal } from "obsidian";
+import { SuggestModal } from "obsidian";
+
+export interface OptionalGeneralModalConfig {
+    options?: string[];
+    placeholder?: string;
+    allowEmpty?: boolean;
+    onlySelection?: boolean;
+    initialValue?: string;
+}
+interface GeneralModalConfig {
+    options: string[];
+    placeholder: string;
+    allowEmpty: boolean;
+    onlySelection: boolean;
+    initialValue?: string;
+}
+
+const generalModalConfigDefaults: GeneralModalConfig = {
+    options: [],
+    placeholder: "",
+    allowEmpty: false,
+    onlySelection: false,
+    initialValue: undefined,
+};
 
 export class GeneralModal extends SuggestModal<string> {
     resolve: ((value: string | undefined | PromiseLike<string | undefined>) => void);
+    config: GeneralModalConfig;
 
-
-    constructor(app: App, private options: string[], placeholder: string, private allowEmpty = false, private onlySelection: boolean = false) {
+    constructor(config: OptionalGeneralModalConfig) {
         super(app);
-        this.setPlaceholder(placeholder);
+        this.config = { ...generalModalConfigDefaults, ...config };
+        this.setPlaceholder(this.config.placeholder);
     }
 
     open(): Promise<string> {
         super.open();
+
+        if (this.config.initialValue != undefined) {
+            this.inputEl.value = this.config.initialValue;
+            this.inputEl.dispatchEvent(new Event("input"));
+        }
+
         return new Promise((resolve) => {
             this.resolve = resolve;
         });
@@ -19,7 +49,7 @@ export class GeneralModal extends SuggestModal<string> {
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
         if (this.resolve) {
             let res;
-            if (this.allowEmpty && value === " ") res = "";
+            if (this.config.allowEmpty && value === " ") res = "";
             else if (value === "...") res = undefined;
             else res = value;
             this.resolve(res);
@@ -32,20 +62,20 @@ export class GeneralModal extends SuggestModal<string> {
     }
 
     getSuggestions(query: string): string[] {
-        if (this.onlySelection) {
-            return this.options;
-        } else if (this.allowEmpty) {
-            return [(query.length > 0) ? query : " ", ...this.options];
+        if (this.config.onlySelection) {
+            return this.config.options;
+        } else if (this.config.allowEmpty) {
+            return [(query.length > 0) ? query : " ", ...this.config.options];
         } else {
-            return [query.length > 0 ? query : "...", ...this.options];
+            return [query.length > 0 ? query : "...", ...this.config.options];
 
         }
     }
 
     renderSuggestion(value: string, el: HTMLElement): void {
-        el.innerText = value;
+        el.setText(value);
+    };
+
+    onChooseSuggestion(item: string, evt: MouseEvent | KeyboardEvent) {
     }
-
-    onChooseSuggestion(item: string, _: MouseEvent | KeyboardEvent) { }
-
 }

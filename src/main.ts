@@ -290,7 +290,7 @@ export default class ObsidianGit extends Plugin {
             callback: async () => {
                 const repoExists = await this.app.vault.adapter.exists(`${this.settings.basePath}/.git`);
                 if (repoExists) {
-                    const modal = new GeneralModal(this.app, ["NO", "YES"], "Do you really want to delete the repository (.git directory)? This action cannot be undone.", false, true);
+                    const modal = new GeneralModal({ options: ["NO", "YES"], placeholder: "Do you really want to delete the repository (.git directory)? This action cannot be undone.", onlySelection: true });
                     const shouldDelete = await modal.open() === "YES";
                     if (shouldDelete) {
                         await this.app.vault.adapter.rmdir(`${this.settings.basePath}/.git`, true);
@@ -622,11 +622,15 @@ export default class ObsidianGit extends Plugin {
     }
 
     async cloneNewRepo() {
-        const modal = new GeneralModal(this.app, [], "Enter remote URL");
+        const modal = new GeneralModal({ placeholder: "Enter remote URL" });
         const url = await modal.open();
         if (url) {
             const confirmOption = "Vault Root";
-            let dir = await new GeneralModal(this.app, [confirmOption], "Enter directory for clone. It needs to be empty or not existent.", this.gitManager instanceof IsomorphicGit).open();
+            let dir = await new GeneralModal({
+                options: [confirmOption],
+                placeholder: "Enter directory for clone. It needs to be empty or not existent.",
+                allowEmpty: this.gitManager instanceof IsomorphicGit
+            }).open();
             if (dir !== undefined) {
                 if (dir === confirmOption) {
                     dir = ".";
@@ -638,14 +642,14 @@ export default class ObsidianGit extends Plugin {
                 }
 
                 if (dir === ".") {
-                    const modal = new GeneralModal(this.app, ["NO", "YES"], `Does your remote repo contain a ${app.vault.configDir} directory at the root?`, false, true);
+                    const modal = new GeneralModal({ options: ["NO", "YES"], placeholder: `Does your remote repo contain a ${app.vault.configDir} directory at the root?`, onlySelection: true });
                     const containsConflictDir = await modal.open();
                     if (containsConflictDir === undefined) {
                         new Notice("Aborted clone");
                         return;
                     } else if (containsConflictDir === "YES") {
                         const confirmOption = "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
-                        const modal = new GeneralModal(this.app, ["Abort clone", confirmOption], `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, false, true);
+                        const modal = new GeneralModal({ options: ["Abort clone", confirmOption], placeholder: `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`, onlySelection: true });
                         const shouldDelete = await modal.open() === confirmOption;
                         if (shouldDelete) {
                             await this.app.vault.adapter.rmdir(app.vault.configDir, true);
@@ -934,7 +938,7 @@ export default class ObsidianGit extends Plugin {
     async createBranch(): Promise<string | undefined> {
         if (!await this.isAllInitialized()) return;
 
-        const newBranch = await new GeneralModal(app, [], "Create new branch", false).open();
+        const newBranch = await new GeneralModal({ placeholder: "Create new branch" }).open();
         if (newBranch != undefined) {
             await this.gitManager.createBranch(newBranch);
             this.displayMessage(`Created new branch ${newBranch}`);
@@ -949,11 +953,11 @@ export default class ObsidianGit extends Plugin {
         const branchInfo = await this.gitManager.branchInfo();
         if (branchInfo.current)
             branchInfo.branches.remove(branchInfo.current);
-        const branch = await new GeneralModal(app, branchInfo.branches, "Delete branch", false, true).open();
+        const branch = await new GeneralModal({ options: branchInfo.branches, placeholder: "Delete branch", onlySelection: true }).open();
         if (branch != undefined) {
             let force = false;
             if (!await this.gitManager.branchIsMerged(branch)) {
-                const forceAnswer = await new GeneralModal(app, ["YES", "NO"], "This branch isn't merged into HEAD. Force delete?", false, true).open();
+                const forceAnswer = await new GeneralModal({ options: ["YES", "NO"], placeholder: "This branch isn't merged into HEAD. Force delete?", onlySelection: true }).open();
                 if (forceAnswer !== "YES") {
                     return;
                 }
@@ -1097,11 +1101,16 @@ export default class ObsidianGit extends Plugin {
 
         const remotes = await this.gitManager.getRemotes();
 
-        const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote by typing its name and selecting it");
+        const nameModal = new GeneralModal({
+            options: remotes,
+            placeholder: "Select or create a new remote by typing its name and selecting it"
+        });
         const remoteName = await nameModal.open();
 
         if (remoteName) {
-            const urlModal = new GeneralModal(this.app, [], "Enter the remote URL");
+            const oldUrl = await this.gitManager.getRemoteUrl(remoteName);
+            const urlModal = new GeneralModal({ initialValue: oldUrl });
+            // urlModal.inputEl.setText(oldUrl ?? "");
             const remoteURL = await urlModal.open();
             if (remoteURL) {
                 await this.gitManager.setRemote(remoteName, remoteURL);
@@ -1120,14 +1129,14 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
-        const nameModal = new GeneralModal(this.app, remotes, "Select or create a new remote by typing its name and selecting it");
+        const nameModal = new GeneralModal({ options: remotes, placeholder: "Select or create a new remote by typing its name and selecting it" });
         const remoteName = selectedRemote ?? await nameModal.open();
 
         if (remoteName) {
             this.displayMessage("Fetching remote branches");
             await this.gitManager.fetch(remoteName);
             const branches = await this.gitManager.getRemoteBranches(remoteName);
-            const branchModal = new GeneralModal(this.app, branches, "Select or create a new remote branch by typing its name and selecting it");
+            const branchModal = new GeneralModal({ options: branches, placeholder: "Select or create a new remote branch by typing its name and selecting it" });
             return await branchModal.open();
         }
     }
@@ -1138,7 +1147,7 @@ export default class ObsidianGit extends Plugin {
 
         const remotes = await this.gitManager.getRemotes();
 
-        const nameModal = new GeneralModal(this.app, remotes, "Select a remote");
+        const nameModal = new GeneralModal({ options: remotes, placeholder: "Select a remote" });
         const remoteName = await nameModal.open();
 
         if (remoteName) {
