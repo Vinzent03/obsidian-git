@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.4.1](https://github.com/denolehov/obsidian-git/compare/2.4.0...2.4.1) (2022-09-22)
+
+
+### Bug Fixes
+
+* keep git view on unload ([8b846da](https://github.com/denolehov/obsidian-git/commit/8b846da0010a852b5422d64034c1e4b309fa7f35)), closes [#321](https://github.com/denolehov/obsidian-git/issues/321)
+
 ## [2.4.0](https://github.com/denolehov/obsidian-git/compare/2.3.0...2.4.0) (2022-09-22)
 
 
