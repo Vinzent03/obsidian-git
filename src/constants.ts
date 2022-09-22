@@ -1,10 +1,16 @@
 import { Platform } from "obsidian";
 import { ObsidianGitSettings } from "./types";
 
+export const DATE_FORMAT = "YYYY-MM-DD";
+export const DATE_TIME_FORMAT_MINUTES = `${DATE_FORMAT} HH:mm`;
+export const DATE_TIME_FORMAT_SECONDS = `${DATE_FORMAT} HH:mm:ss`;
+
+export const GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH = 40;
+
 export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
-    autoCommitMessage: undefined, // default undefined for settings migration
-    commitDateFormat: "YYYY-MM-DD HH:mm:ss",
+    autoCommitMessage: undefined!, // default undefined for settings migration
+    commitDateFormat: DATE_TIME_FORMAT_SECONDS,
     autoSaveInterval: 0,
     autoPushInterval: 0,
     autoPullInterval: 0,
@@ -26,7 +32,22 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     username: "",
     showedMobileNotice: false,
     refreshSourceControlTimer: 7000,
-    showBranchStatusBar: true
+    showBranchStatusBar: true,
+
+    // Line Author Info
+    showLineAuthorInfo: false,
+    followMovementLineAuthorInfo: "inactive",
+    authorDisplayLineAuthorInfo: "initials",
+    showCommitHashLineAuthorInfo: false,
+    dateTimeFormatOptionsLineAuthorInfo: "date",
+    dateTimeFormatCustomStringLineAuthorInfo: DATE_TIME_FORMAT_MINUTES,
+    dateTimeTimezoneLineAuthorInfo: "local",
+    coloringMaxAgeLineAuthorInfo: "1y",
+    // colors were picked via:
+    // https://color.adobe.com/de/create/color-accessibility
+    colorNewLineAuthorInfo: { r: 255, g: 150, b: 150 },
+    colorOldLineAuthorInfo: { r: 120, g: 160, b: 255 },
+    gutterSpacingFallbackLengthLineAuthorInfo: 5,
 };
 
 export const GIT_VIEW_CONFIG = {

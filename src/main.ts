@@ -1,5 +1,6 @@
 import { Errors } from "isomorphic-git";
 import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile } from "obsidian";
+import { LineAuthoringFeature } from "src/lineAuthoringController";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -44,6 +45,7 @@ export default class ObsidianGit extends Plugin {
     deleteEvent: EventRef;
     createEvent: EventRef;
     renameEvent: EventRef;
+    lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(this);
 
     debRefresh: Debouncer<any, void>;
 
@@ -68,6 +70,14 @@ export default class ObsidianGit extends Plugin {
             this.loading = false;
             dispatchEvent(new CustomEvent("git-view-refresh"));
         }
+
+        // We don't put a line authoring refresh here, as it would force a re-loading
+        // of the line authoring feature - which would lead to a jumpy editor-view in the
+        // ui after every rename event.
+    }
+
+    async refreshUpdatedHead() {
+        this.lineAuthoringFeature.refreshLineAuthorViews();
     }
 
     async onload() {
@@ -78,7 +88,6 @@ export default class ObsidianGit extends Plugin {
         await this.loadSettings();
         this.migrateSettings();
 
-
         this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
 
         if (!this.localStorage.getPluginDisabled()) {
@@ -88,6 +97,7 @@ export default class ObsidianGit extends Plugin {
 
     async loadPlugin() {
         addEventListener("git-refresh", this.refresh.bind(this));
+        addEventListener("git-head-update", this.refreshUpdatedHead.bind(this));
 
         this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
@@ -96,6 +106,8 @@ export default class ObsidianGit extends Plugin {
         this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {
             return new DiffView(leaf, this);
         });
+
+        this.lineAuthoringFeature.onLoadPlugin();
 
         (this.app.workspace as any).registerHoverLinkSource(GIT_VIEW_CONFIG.type, {
             display: 'Git View',
@@ -462,10 +474,12 @@ export default class ObsidianGit extends Plugin {
         this.gitReady = false;
         dispatchEvent(new CustomEvent('git-refresh'));
 
+        this.lineAuthoringFeature.deactivateFeature();
         this.clearAutoPull();
         this.clearAutoPush();
         this.clearAutoBackup();
         removeEventListener("git-refresh", this.refresh.bind(this));
+        removeEventListener("git-head-update", this.refreshUpdatedHead.bind(this));
         this.app.metadataCache.offref(this.modifyEvent);
         this.app.metadataCache.offref(this.deleteEvent);
         this.app.metadataCache.offref(this.createEvent);
@@ -514,11 +528,15 @@ export default class ObsidianGit extends Plugin {
         };
     }
 
+    get useSimpleGit(): boolean {
+        return Platform.isDesktopApp;
+    }
+
     async init(): Promise<void> {
         this.showNotices();
 
         try {
-            if (Platform.isDesktopApp) {
+            if (this.useSimpleGit) {
                 this.gitManager = new SimpleGit(this);
                 await (this.gitManager as SimpleGit).setGitInstance();
 
@@ -557,6 +575,8 @@ export default class ObsidianGit extends Plugin {
                     this.registerEvent(this.renameEvent);
 
                     this.branchBar?.display();
+
+                    this.lineAuthoringFeature.conditionallyActivateBySettings();
 
                     dispatchEvent(new CustomEvent('git-refresh'));
 
@@ -784,6 +804,7 @@ export default class ObsidianGit extends Plugin {
         } else {
             this.displayMessage("No changes to commit");
         }
+        dispatchEvent(new CustomEvent('git-head-update'));
         dispatchEvent(new CustomEvent('git-refresh'));
 
         this.setState(PluginState.idle);
@@ -866,6 +887,7 @@ export default class ObsidianGit extends Plugin {
         if (pulledFiles.length > 0) {
             this.displayMessage(`Pulled ${pulledFiles.length} ${pulledFiles.length > 1 ? 'files' : 'file'} from remote`);
             this.lastPulledFiles = pulledFiles;
+            dispatchEvent(new CustomEvent("git-head-update"));
         }
         return pulledFiles.length != 0;
     }
@@ -1045,7 +1067,6 @@ export default class ObsidianGit extends Plugin {
         }
         return false;
     }
-
 
     async handleConflict(conflicted?: string[]): Promise<void> {
         this.setState(PluginState.conflicted);

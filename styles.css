@@ -467,3 +467,27 @@
 .workspace-leaf-content[data-type="diff-view"] .d2h-moved-tag {
   border: 1px solid #3572b0;
 }
+
+/* ====================== Line Authoring Information ====================== */
+
+.cm-gutterElement.obs-git-blame-gutter {
+  /* Add background color to spacing inbetween and around the gutter for better aesthetics */
+  border-width: 1px 2px 1px 2px;
+  border-style: solid;
+  border-color: var(--background-secondary);
+  background-color: var(--background-secondary);
+}
+
+.cm-gutterElement.obs-git-blame-gutter > div, .line-author-settings-preview {
+  color: var(--text-muted); /* less pronounced text to be similar to line numbers */
+  font-family: monospace;
+  font-weight: 600; /* line info is more important than line number. hence emphasis */
+  height: 100%; /* ensure, that age-based background color occupies entire parent */
+  text-align: right;
+  padding: 0px 4px 0px 4px;
+}
+
+.cm-gutterElement.obs-git-blame-gutter pre {
+  display: inline; /* We only want the aspect of pre, that avoids collaping spaces.
+    Hence, we neutralise the block display here. */
+}

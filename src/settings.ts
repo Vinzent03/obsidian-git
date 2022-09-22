@@ -1,8 +1,13 @@
+import * as moment from "moment";
 import { Notice, Platform, PluginSettingTab, Setting } from "obsidian";
+import { DATE_TIME_FORMAT_SECONDS, GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH } from "src/constants";
+import { previewColor } from "src/ui/editor/lineAuthorInfo/lineAuthorInfoProvider";
+import { settingsFrom } from "src/ui/editor/lineAuthorInfo/model";
+import { convertToRgb, currentMoment, rgbToString } from "src/utils";
 import { IsomorphicGit } from "./isomorphicGit";
 import ObsidianGit from "./main";
 import { SimpleGit } from "./simpleGit";
-import { SyncMethod } from "./types";
+import { LineAuthorDateTimeFormatOptions, LineAuthorDisplay, LineAuthorFollowMovement, LineAuthorTimezoneOption, SyncMethod } from "./types";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     display(): void {
@@ -197,7 +202,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             new Setting(containerEl)
                 .setName("{{date}} placeholder format")
-                .setDesc('Specify custom date format. E.g. "YYYY-MM-DD HH:mm:ss"')
+                .setDesc(`Specify custom date format. E.g. "${DATE_TIME_FORMAT_SECONDS}"`)
                 .addText((text) =>
                     text
                         .setPlaceholder(plugin.settings.commitDateFormat)
@@ -238,6 +243,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.saveSettings();
                         })
                 );
+
             containerEl.createEl("br");
             containerEl.createEl("h3", { text: "Backup" });
 
@@ -297,6 +303,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.saveSettings();
                         })
                 );
+
+            containerEl.createEl("br");
+            containerEl.createEl("h3", { text: "Line author information" });
+
+            this.addLineAuthorInfoSettings(containerEl, plugin);
         }
 
         containerEl.createEl("br");
@@ -501,4 +512,237 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
         }
     }
+
+    private addLineAuthorInfoSettings(containerEl: HTMLElement, plugin: ObsidianGit) {
+        const baseLineAuthorInfoSetting = new Setting(containerEl)
+            .setName("Show commit authoring information next to each line (git-blame)");
+
+        if (!plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform()) {
+            baseLineAuthorInfoSetting
+                .setDesc("Only available on desktop currently.")
+                .setDisabled(true);
+        }
+
+        baseLineAuthorInfoSetting
+            .setDesc("The commit hash, author name and authoring date can all be individually toggled.\nHide everything, to only show the age-colored sidebar.")
+            .addToggle((toggle) => toggle
+                .setValue(plugin.settings.showLineAuthorInfo)
+                .onChange((value) => {
+                    plugin.settings.showLineAuthorInfo = value;
+                    plugin.saveSettings();
+
+                    if (value) plugin.lineAuthoringFeature.activateFeature();
+                    else plugin.lineAuthoringFeature.deactivateFeature();
+
+                    this.display();
+                })
+            );
+
+        if (plugin.settings.showLineAuthorInfo) {
+
+            const trackMovement = new Setting(containerEl)
+                .setName("Follow movement and copies across files and commits")
+                .setDesc("")
+                .addDropdown((dropdown) => {
+                    dropdown.addOptions(<Record<LineAuthorFollowMovement, string>>{
+                        "inactive": "Do not follow (default)",
+                        "same-commit": "Follow within same commit",
+                        "all-commits": "Follow within all commits (maybe slow)",
+                    });
+                    dropdown.setValue(plugin.settings.followMovementLineAuthorInfo);
+                    dropdown.onChange((value: LineAuthorFollowMovement) => {
+                        plugin.settings.followMovementLineAuthorInfo = value;
+                        plugin.saveSettings();
+                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                    });
+                });
+            trackMovement.descEl.innerHTML = `
+                By default (deactivated), each line only shows the newest commit where it was changed.
+                <br/>
+                With <i>same commit</i>, cut-copy-paste-ing of text is followed within the same commit and the original commit of authoring will be shown.
+                <br/>
+                With <i>all commits</i>, cut-copy-paste-ing text inbetween multiple commits will be detected.
+                <br/>
+                It uses <a href="https://git-scm.com/docs/git-blame">git-blame</a> and
+                for matches (at least ${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH} characters) within the same (or all) commit(s), <em>the originating</em> commit's information is shown.`;
+
+            new Setting(containerEl)
+                .setName("Show commit hash")
+                .addToggle((tgl) => {
+                    tgl.setValue(plugin.settings.showCommitHashLineAuthorInfo);
+                    tgl.onChange(async (value: boolean) => {
+                        plugin.settings.showCommitHashLineAuthorInfo = value;
+                        plugin.saveSettings();
+                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                    });
+                });
+
+            new Setting(containerEl)
+                .setName("Author name display")
+                .setDesc("If and how the author is displayed")
+                .addDropdown((dropdown) => {
+                    const options: Record<LineAuthorDisplay, string> = {
+                        'hide': 'Hide',
+                        'initials': 'Initials (default)',
+                        'first name': 'First name',
+                        'last name': 'Last name',
+                        'full': 'Full name',
+                    };
+                    dropdown.addOptions(options);
+                    dropdown.setValue(plugin.settings.authorDisplayLineAuthorInfo);
+
+                    dropdown.onChange(async (option: LineAuthorDisplay) => {
+                        plugin.settings.authorDisplayLineAuthorInfo = option;
+                        plugin.saveSettings();
+                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                    });
+                });
+
+            new Setting(containerEl)
+                .setName("Authoring date display")
+                .setDesc("If and how the date and time of authoring the line is displayed")
+                .addDropdown((dropdown) => {
+                    const options: Record<LineAuthorDateTimeFormatOptions, string> = {
+                        'hide': 'Hide',
+                        'date': 'Date (default)',
+                        'datetime': 'Date and time',
+                        'natural language': 'Natural language',
+                        'custom': 'Custom',
+                    };
+                    dropdown.addOptions(options);
+                    dropdown.setValue(plugin.settings.dateTimeFormatOptionsLineAuthorInfo);
+
+                    dropdown.onChange(async (option: LineAuthorDateTimeFormatOptions) => {
+                        plugin.settings.dateTimeFormatOptionsLineAuthorInfo = option;
+                        plugin.saveSettings();
+                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                        this.display();
+                    });
+                });
+
+            const dateTimeFormatCustomStringSetting = new Setting(containerEl)
+                .setName("Custom authoring date format")
+                .setDisabled(plugin.settings.dateTimeFormatOptionsLineAuthorInfo !== "custom");
+
+            if (plugin.settings.dateTimeFormatOptionsLineAuthorInfo === "custom") {
+                dateTimeFormatCustomStringSetting
+                    .setDesc(this.getQuickPreviewCustomDateTimeDescription(plugin))
+                    .addText((cb) => {
+                        cb.setValue(plugin.settings.dateTimeFormatCustomStringLineAuthorInfo);
+                        cb.setPlaceholder("YYYY-MM-DD HH:mm");
+
+                        cb.onChange((value) => {
+                            plugin.settings.dateTimeFormatCustomStringLineAuthorInfo = value;
+                            dateTimeFormatCustomStringSetting.setDesc(
+                                this.getQuickPreviewCustomDateTimeDescription(plugin)
+                            );
+                            plugin.saveSettings();
+                            if (plugin.settings.dateTimeFormatOptionsLineAuthorInfo === "custom") {
+                                plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                            }
+                        });
+                    });
+            }
+            else {
+                dateTimeFormatCustomStringSetting
+                    .setDesc("Only applicable when authoring date display is \"Custom\"");
+            }
+
+            new Setting(containerEl)
+                .setName("Authoring date display timezone")
+                .setDesc("Show in your local timezone or explicitly display UTC offset")
+                .addDropdown((dropdown) => {
+                    const options: Record<LineAuthorTimezoneOption, string> = {
+                        'local': 'Local (default)',
+                        'utc': 'UTC',
+                    };
+                    dropdown.addOptions(options);
+                    dropdown.setValue(plugin.settings.dateTimeTimezoneLineAuthorInfo);
+
+                    dropdown.onChange(async (option: LineAuthorTimezoneOption) => {
+                        plugin.settings.dateTimeTimezoneLineAuthorInfo = option;
+                        plugin.saveSettings();
+                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                    });
+                });
+
+
+            const oldestAgeSetting = new Setting(containerEl)
+                .setName("Oldest age in coloring")
+                .setDesc(this.getQuickPreviewOldestAgeDescription(plugin));
+
+            oldestAgeSetting
+                .addText((text) => {
+                    text.setPlaceholder("1y");
+                    text.setValue(plugin.settings.coloringMaxAgeLineAuthorInfo);
+                    text.onChange((value) => {
+                        plugin.settings.coloringMaxAgeLineAuthorInfo = value;
+                        oldestAgeSetting.setDesc(this.getQuickPreviewOldestAgeDescription(plugin));
+                        plugin.saveSettings();
+                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                    });
+                });
+
+            this.createColorSetting("recent", containerEl, plugin);
+            this.createColorSetting("older", containerEl, plugin);
+        }
+    }
+
+    private createColorSetting(which: "older" | "recent", containerEl: HTMLElement, plugin: ObsidianGit) {
+        const setting = new Setting(containerEl)
+            .setName(`Color for ${which} commits`)
+            .addText((text) => {
+                const color = which === "recent" ? plugin.settings.colorNewLineAuthorInfo : plugin.settings.colorOldLineAuthorInfo;
+                text.setPlaceholder(rgbToString(color));
+                text.setValue(rgbToString(color));
+                text.onChange((colorNew) => {
+                    const rgb = convertToRgb(colorNew);
+                    if (rgb !== undefined) {
+                        if (which === "recent") {
+                            plugin.settings.colorNewLineAuthorInfo = rgb;
+                        }
+                        else {
+                            plugin.settings.colorOldLineAuthorInfo = rgb;
+                        }
+                        plugin.saveSettings();
+                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                        setting.descEl.innerHTML = this.colorSettingDescHtml(which, plugin);
+                    }
+                });
+            });
+        setting.descEl.innerHTML = this.colorSettingDescHtml(which, plugin);
+    }
+
+    private colorSettingDescHtml(which: "older" | "recent", plugin: ObsidianGit): string {
+        const rgbStr = previewColor(which, settingsFrom(plugin.settings));
+        const today = moment.unix(moment.now() / 1000).format("YYYY-MM-DD");
+
+        const preview = rgbStr ? `<div
+                class="line-author-settings-preview"
+                style="background-color: ${rgbStr}; width: 30ch;">
+                abcdef Author Name ${today}
+            </div>`
+            : "<em>invalid color!</em>";
+
+        return `Supports 'rgb(r,g,b)', 'hsl(h,s,l)', hex (#) and
+            named colors (e.g. 'black', 'purple'). Color preview: ${preview}`;
+    }
+
+    private getQuickPreviewCustomDateTimeDescription(plugin: ObsidianGit) {
+        const format = plugin.settings.dateTimeFormatCustomStringLineAuthorInfo;
+        const formattedDateTime = currentMoment().format(format);
+        return `Format string to display the authoring date.\nCurrently: ${formattedDateTime}`;
+    }
+
+    private getQuickPreviewOldestAgeDescription(plugin: ObsidianGit) {
+        const duration = parseColoringMaxAgeDuration(plugin.settings.coloringMaxAgeLineAuthorInfo);
+        const durationString = duration !== undefined ? `${duration.asDays()} days` : "invalid!";
+        return `The oldest age in the line author coloring. Everything older will have the same color.\nSmallest valid age is "1d".\nCurrently: ${durationString}`;
+    }
+}
+
+export function parseColoringMaxAgeDuration(durationString: string): moment.Duration | undefined {
+    // https://momentjs.com/docs/#/durations/creating/
+    const duration = moment.duration("P" + durationString.toUpperCase());
+    return duration.isValid() && duration.asDays() && duration.asDays() >= 1 ? duration : undefined;
 }

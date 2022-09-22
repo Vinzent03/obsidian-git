@@ -4,9 +4,11 @@ import * as path from "path";
 import { sep } from "path";
 import * as simple from "simple-git";
 import simpleGit, { DefaultLogFields } from "simple-git";
+import { GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH } from "src/constants";
+import { typeCheckedUnreachable } from "src/utils";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
+import { Blame, BlameCommit, BranchInfo, FileStatusResult, LineAuthorFollowMovement, PluginState, Status } from "./types";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -68,6 +70,10 @@ export class SimpleGit extends GitManager {
         };
     }
 
+    async headRevision(): Promise<string> {
+        return this.git.revparse("HEAD");
+    }
+
     //Remove wrong `"` like "My file.md"
     formatPath(path: { from?: string, path: string; }, renamed = false): { path: string, from?: string; } {
         function format(path?: string): string | undefined {
@@ -89,6 +95,40 @@ export class SimpleGit extends GitManager {
                 path: format(path.path)!
             };
         }
+    }
+
+    async blame(path: string, trackMovement: LineAuthorFollowMovement): Promise<Blame | "untracked"> {
+        if (!await this.isTracked(path)) return "untracked";
+
+        const inSubmodule = await this.getSubmoduleOfFile(path);
+        const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
+        const relativePath = inSubmodule ? inSubmodule.relativeFilepath : path;
+
+        args.push("blame", "--porcelain");
+
+        const trackCArg = `-C${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH}`;
+        switch (trackMovement) {
+            case "inactive": break;
+            case "same-commit": args.push("-C", trackCArg); break;
+            case "all-commits": args.push("-C", "-C", trackCArg); break;
+            default:
+                typeCheckedUnreachable(trackMovement);
+        }
+
+        args.push("--", relativePath);
+
+        const rawBlame = await this.git.raw(args, err => err && console.warn("git-blame", err));
+        return parseBlame(rawBlame);
+    }
+
+    async isTracked(path: string): Promise<boolean> {
+        const inSubmodule = await this.getSubmoduleOfFile(path);
+        const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
+        const relativePath = inSubmodule ? inSubmodule.relativeFilepath : path;
+
+        args.push("ls-files", "--", relativePath);
+        return this.git.raw(args, err => err && console.warn("ls-files", err))
+            .then(x => x.trim() !== "");
     }
 
     async commitAll({ message }: { message: string; }): Promise<number> {
@@ -191,6 +231,22 @@ export class SimpleGit extends GitManager {
             ["--", filepath], (err) => this.onError(err)
         );
         this.plugin.setState(PluginState.idle);
+    }
+
+    async hashObject(filepath: string): Promise<string> {
+        // Need to use raw command here to ensure filenames are literally used.
+        // Perhaps we could file a PR? https://github.com/steveukx/git-js/blob/main/simple-git/src/lib/tasks/hash-object.ts
+        const inSubmodule = await this.getSubmoduleOfFile(filepath);
+        const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
+        const relativeFilepath = inSubmodule ? inSubmodule.relativeFilepath : filepath;
+
+        args.push("hash-object", "--", relativeFilepath);
+
+        const revision = this.git.raw(args);
+        revision.catch(err =>
+            err && console.warn("obsidian-git. hash-object failed:", err?.message)
+        );
+        return revision;
     }
 
     async pull(): Promise<FileStatusResult[] | undefined> {
@@ -424,6 +480,32 @@ export class SimpleGit extends GitManager {
         return (await this.git.diff([`${commit1}..${commit2}`, "--", file]));
     }
 
+    private async getSubmoduleOfFile(repositoryRelativeFile: string): Promise<{ submodule: string; relativeFilepath: string; } | undefined> {
+        // git -C <dir-of-file> rev-parse --show-superproject-working-tree
+        // returns the parent git repository, if the file is in a submodule - otherwise empty.
+        // git -C <dir-of-file> rev-parse --show-toplevel
+        // returns the submodules repository root as an absolute path
+        // https://git-scm.com/docs/git-rev-parse#Documentation/git-rev-parse.txt---show-superproject-working-tree
+        let root = await this.git.raw(
+            ["-C", path.dirname(repositoryRelativeFile), "rev-parse", "--show-toplevel"],
+            (err) => err && console.warn("get-submodule-of-file", err?.message));
+        root = root.trim();
+
+        const superProject = await this.git.raw(
+            ["-C", path.dirname(repositoryRelativeFile), "rev-parse", "--show-superproject-working-tree"],
+            (err) => err && console.warn("get-submodule-of-file", err?.message));
+
+        if (superProject.trim() === "") {
+            return undefined; // not in submodule
+        }
+
+        const fsAdapter = this.app.vault.adapter as FileSystemAdapter;
+        const absolutePath = fsAdapter.getFullPath(path.normalize(repositoryRelativeFile));
+        const newRelativePath = path.relative(root, absolutePath);
+
+        return { submodule: root, relativeFilepath: newRelativePath };
+    }
+
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
         const command = spawnSync(this.plugin.localStorage.getGitPath() || 'git', ['--version'], {
@@ -453,4 +535,116 @@ export class SimpleGit extends GitManager {
             }
         }
     }
+}
+
+// Parse git blame porcelain format: https://git-scm.com/docs/git-blame#_the_porcelain_format
+function parseBlame(blameOutputUnnormalized: string): Blame {
+    const blameOutput = blameOutputUnnormalized.replace("\r\n", "\n");
+
+    const blameLines = blameOutput.split("\n");
+
+    const result: Blame = {
+        commits: new Map(),
+        hashPerLine: [undefined!], // one-based indices
+        originalFileLineNrPerLine: [undefined!],
+        finalFileLineNrPerLine: [undefined!],
+        groupSizePerStartingLine: new Map(),
+    };
+
+    let line = 1;
+    for (let bi = 0; bi < blameLines.length;) {
+
+        if (startsWithNonWhitespace(blameLines[bi])) {
+            const lineInfo = blameLines[bi].split(" ");
+
+            const commitHash = parseLineInfoInto(lineInfo, line, result);
+            bi++;
+
+            // parse header values until a tab is encountered
+            for (; startsWithNonWhitespace(blameLines[bi]); bi++) {
+                const spaceSeparatedHeaderValues = blameLines[bi].split(" ");
+                parseHeaderInto(spaceSeparatedHeaderValues, result, line);
+            }
+            finalizeBlameCommitInfo(result.commits.get(commitHash)!);
+
+            // skip tab prefixed line
+            line += 1;
+        } else if (blameLines[bi] === "" && bi === blameLines.length - 1) {
+            // EOF
+        } else {
+            throw Error(`Expected non-whitespace line or EOF, but found: ${blameLines[bi]}`);
+        }
+        bi++;
+    }
+    return result;
+}
+
+function parseLineInfoInto(lineInfo: string[], line: number, result: Blame) {
+    const hash = lineInfo[0];
+    result.hashPerLine.push(hash);
+    result.originalFileLineNrPerLine.push(parseInt(lineInfo[1]));
+    result.finalFileLineNrPerLine.push(parseInt(lineInfo[2]));
+    (lineInfo.length >= 4) && result.groupSizePerStartingLine.set(line, parseInt(lineInfo[3]));
+
+    if (parseInt(lineInfo[2]) !== line) {
+        throw Error(`git-blame output is out of order: ${line} vs ${lineInfo[2]}`);
+    }
+
+    return hash;
+}
+
+function parseHeaderInto(header: string[], out: Blame, line: number) {
+    const key = header[0];
+    const commitHash = out.hashPerLine[line];
+    const commit = out.commits.get(commitHash) ||
+        <BlameCommit>{ hash: commitHash, author: {}, committer: {}, previous: {} };
+
+    switch (key) {
+        case "summary": commit.summary = header.slice(1).join(" "); break;
+
+        case "author": commit.author!.name = header[1]; break;
+        case "author-mail": commit.author!.email = removeEmailBrackets(header[1]); break;
+        case "author-time": commit.author!.epochSeconds = parseInt(header[1]); break;
+        case "author-tz": commit.author!.tz = header[1]; break;
+
+        case "committer": commit.committer!.name = header[1]; break;
+        case "committer-mail": commit.committer!.email = removeEmailBrackets(header[1]); break;
+        case "committer-time": commit.committer!.epochSeconds = parseInt(header[1]); break;
+        case "committer-tz": commit.committer!.tz = header[1]; break;
+
+        case "previous": commit.previous!.commitHash = header[1]; break;
+        case "filename": commit.previous!.filename = header[1]; break;
+    }
+    out.commits.set(commitHash, commit);
+}
+
+function finalizeBlameCommitInfo(commit: BlameCommit) {
+    if (commit.summary === undefined) {
+        throw Error(`Summary not provided for commit: ${commit.hash}`);
+    }
+
+    if (isUndefinedOrEmptyObject(commit.author)) {
+        commit.author = undefined;
+    }
+    if (isUndefinedOrEmptyObject(commit.committer)) {
+        commit.committer = undefined;
+    }
+    if (isUndefinedOrEmptyObject(commit.previous)) {
+        commit.previous = undefined;
+    }
+
+    commit.isZeroCommit = Boolean(commit.hash.match(/^0*$/));
+}
+
+function isUndefinedOrEmptyObject(obj: object | undefined | null): boolean {
+    return !obj || Object.keys(obj).length === 0;
+}
+
+function startsWithNonWhitespace(str: string): boolean {
+    return str.length > 0 && str[0].trim() === str[0];
+}
+
+function removeEmailBrackets(gitEmail: string) {
+    const prefixCleaned = gitEmail.startsWith("<") ? gitEmail.substring(1) : gitEmail;
+    return prefixCleaned.endsWith(">") ? prefixCleaned.substring(0, prefixCleaned.length - 1) : prefixCleaned;
 }

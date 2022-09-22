@@ -1,3 +1,5 @@
+import { RGB } from "obsidian";
+
 export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
@@ -33,7 +35,27 @@ export interface ObsidianGitSettings {
     showedMobileNotice: boolean;
     refreshSourceControlTimer: number;
     showBranchStatusBar: boolean;
+
+    showLineAuthorInfo: boolean;
+    followMovementLineAuthorInfo: LineAuthorFollowMovement;
+    showCommitHashLineAuthorInfo: boolean;
+    authorDisplayLineAuthorInfo: LineAuthorDisplay;
+    dateTimeFormatOptionsLineAuthorInfo: LineAuthorDateTimeFormatOptions;
+    dateTimeFormatCustomStringLineAuthorInfo: string;
+    dateTimeTimezoneLineAuthorInfo: LineAuthorTimezoneOption;
+    coloringMaxAgeLineAuthorInfo: string;
+    colorOldLineAuthorInfo: RGB;
+    colorNewLineAuthorInfo: RGB;
+    gutterSpacingFallbackLengthLineAuthorInfo: number;
 }
+
+export type LineAuthorFollowMovement = "inactive" | "same-commit" | "all-commits"
+
+export type LineAuthorDateTimeFormatOptions = "hide" | "date" | "datetime" | "natural language" | "custom";
+
+export type LineAuthorDisplay = 'hide' | 'full' | 'first name' | 'last name' | 'initials';
+
+export type LineAuthorTimezoneOption = "local" | "utc";
 
 export type SyncMethod = 'rebase' | 'merge' | 'reset';
 
@@ -48,6 +70,52 @@ export interface Status {
     conflicted: string[];
 }
 
+export interface GitTimestamp {
+    epochSeconds: number;
+    tz: string;
+}
+export interface UserEmail {
+    name: string;
+    email: string;
+}
+export interface BlameCommit {
+    hash: string;
+    author?: UserEmail & GitTimestamp;
+    committer?: UserEmail & GitTimestamp;
+    previous?: { commitHash?: string; filename: string; };
+    filename?: string;
+    summary: string;
+    isZeroCommit: boolean; // true, if hash is 000...000
+}
+
+/**
+ * See {@link https://git-scm.com/docs/git-blame#_the_porcelain_format}
+ */
+export interface Blame {
+    commits: Map<string, BlameCommit>;
+    /**
+     * hashPerLine[i] is the commit hash where line i originates from
+     */
+    hashPerLine: string[];
+    /**
+     * originalFileLineNrPerLine[i] contains the original files' line number from where line i originated
+     */
+    originalFileLineNrPerLine: number[];
+    /**
+     * finalFileLineNrPerLine[i] contains the final files' line number from where line i originated
+     */
+    finalFileLineNrPerLine: number[];
+    /**
+     * For each line i, which originates from a different commit than it's previous line,
+     * groupSizePerStartingLine[i] contains the number of lines until either the next
+     * group of lines or EOF is reached.
+     */
+    groupSizePerStartingLine: Map<number, number>;
+}
+
+declare global {
+    let ALLOWSIMPLEGIT: boolean;
+}
 
 /**
  * `index` and `working_dir` are each one-character codes, based off the git
