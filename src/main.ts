@@ -490,8 +490,6 @@ export default class ObsidianGit extends Plugin {
 
     async onunload() {
         (this.app.workspace as any).unregisterHoverLinkSource(GIT_VIEW_CONFIG.type);
-        this.app.workspace.detachLeavesOfType(GIT_VIEW_CONFIG.type);
-        this.app.workspace.detachLeavesOfType(DIFF_VIEW_CONFIG.type);
 
         this.unloadPlugin();
 
