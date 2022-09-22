@@ -56,9 +56,9 @@ export class IsomorphicGit extends GitManager {
             },
             onAuthFailure: async () => {
                 new Notice("Authentication failed. Please try with different credentials");
-                const username = await new GeneralModal(app, [], "Specify your username").open();
+                const username = await new GeneralModal({ placeholder: "Specify your username" }).open();
                 if (username) {
-                    const password = await new GeneralModal(app, [], "Specify your password/personal access token").open();
+                    const password = await new GeneralModal({ placeholder: "Specify your password/personal access token" }).open();
                     if (password) {
                         this.plugin.settings.username = username;
                         await this.plugin.saveSettings();
