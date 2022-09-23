@@ -34,20 +34,21 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     refreshSourceControlTimer: 7000,
     showBranchStatusBar: true,
 
-    // Line Author Info
-    showLineAuthorInfo: false,
-    followMovementLineAuthorInfo: "inactive",
-    authorDisplayLineAuthorInfo: "initials",
-    showCommitHashLineAuthorInfo: false,
-    dateTimeFormatOptionsLineAuthorInfo: "date",
-    dateTimeFormatCustomStringLineAuthorInfo: DATE_TIME_FORMAT_MINUTES,
-    dateTimeTimezoneLineAuthorInfo: "local",
-    coloringMaxAgeLineAuthorInfo: "1y",
-    // colors were picked via:
-    // https://color.adobe.com/de/create/color-accessibility
-    colorNewLineAuthorInfo: { r: 255, g: 150, b: 150 },
-    colorOldLineAuthorInfo: { r: 120, g: 160, b: 255 },
-    gutterSpacingFallbackLengthLineAuthorInfo: 5,
+    lineAuthor: {
+        show: false,
+        followMovement: "inactive",
+        authorDisplay: "initials",
+        showCommitHash: false,
+        dateTimeFormatOptions: "date",
+        dateTimeFormatCustomString: DATE_TIME_FORMAT_MINUTES,
+        dateTimeTimezone: "local",
+        coloringMaxAge: "1y",
+        // colors were picked via:
+        // https://color.adobe.com/de/create/color-accessibility
+        colorNew: { r: 255, g: 150, b: 150 },
+        colorOld: { r: 120, g: 160, b: 255 },
+        gutterSpacingFallbackLength: 5,
+    }
 };
 
 export const GIT_VIEW_CONFIG = {

@@ -1,8 +1,13 @@
 
 import { Editor, MarkdownView, Menu } from "obsidian";
+import { zeroCommit } from "src/simpleGit";
 import { BlameCommit } from "src/types";
-import { LineAuthorGutterContextMenuMetadata, zeroCommit } from "src/ui/editor/lineAuthorInfo/model";
 import { currentMoment } from "src/utils";
+
+type LineAuthorGutterContextMenuMetadata = {
+    creationTime: moment.Moment;
+    commit: BlameCommit;
+};
 
 /**
  * Stores the last clicked line authoring gutter in a global variable.
@@ -21,19 +26,16 @@ import { currentMoment } from "src/utils";
  * The value is initialised with the zero commit for fallback safety.
  */
 export const latestClickedLineAuthorGutter: LineAuthorGutterContextMenuMetadata = {
-    hash: "000000",
     creationTime: currentMoment(),
     commit: zeroCommit
 };
 
 export function registerLastClickedGutterHandler(
-    elt: HTMLElement, hash: string, commit: BlameCommit
+    elt: HTMLElement, commit: BlameCommit
 ) {
     elt.onmousedown = (_e) => {
         const newMetadata: LineAuthorGutterContextMenuMetadata = {
-            hash,
-            commit,
-            creationTime: currentMoment(),
+            commit, creationTime: currentMoment()
         };
         Object.assign(latestClickedLineAuthorGutter, newMetadata);
     };
@@ -64,6 +66,6 @@ function addCopyHashMenuItem(menu: Menu) {
         item
             .setTitle("Copy commit hash")
             .setIcon("copy")
-            .onClick((_e) => navigator.clipboard.writeText(latestClickedLineAuthorGutter.hash))
+            .onClick((_e) => navigator.clipboard.writeText(latestClickedLineAuthorGutter.commit.hash))
     );
 }

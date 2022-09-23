@@ -5,10 +5,11 @@ import { sep } from "path";
 import * as simple from "simple-git";
 import simpleGit, { DefaultLogFields } from "simple-git";
 import { GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH } from "src/constants";
-import { typeCheckedUnreachable } from "src/utils";
+import { LineAuthorFollowMovement } from "src/lineAuthor/model";
+import { impossibleBranch } from "src/utils";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
-import { Blame, BlameCommit, BranchInfo, FileStatusResult, LineAuthorFollowMovement, PluginState, Status } from "./types";
+import { Blame, BlameCommit, BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -70,8 +71,15 @@ export class SimpleGit extends GitManager {
         };
     }
 
-    async headRevision(): Promise<string> {
-        return this.git.revparse("HEAD");
+    async submoduleAwareHeadRevisonInContainingDirectory(filepath: string): Promise<string> {
+        const repoPath = this.asRepositoryRelativePath(filepath, true);
+
+        const containingDirectory = path.dirname(repoPath);
+        const args = ["-C", containingDirectory, "rev-parse", "HEAD"];
+
+        const result = this.git.raw(args);
+        result.catch(err => console.warn("obsidian-git: rev-parse error:", err));
+        return result;
     }
 
     //Remove wrong `"` like "My file.md"
@@ -114,7 +122,7 @@ export class SimpleGit extends GitManager {
             case "same-commit": args.push("-C", trackCArg); break;
             case "all-commits": args.push("-C", "-C", trackCArg); break;
             default:
-                typeCheckedUnreachable(trackMovement);
+                impossibleBranch(trackMovement);
         }
 
         args.push("--", relativePath);
@@ -484,16 +492,17 @@ export class SimpleGit extends GitManager {
     }
 
     private async getSubmoduleOfFile(repositoryRelativeFile: string): Promise<{ submodule: string; relativeFilepath: string; } | undefined> {
-        // git -C <dir-of-file> rev-parse --show-superproject-working-tree
-        // returns the parent git repository, if the file is in a submodule - otherwise empty.
+        // Documentation: https://git-scm.com/docs/git-rev-parse
+
         // git -C <dir-of-file> rev-parse --show-toplevel
         // returns the submodules repository root as an absolute path
-        // https://git-scm.com/docs/git-rev-parse#Documentation/git-rev-parse.txt---show-superproject-working-tree
-        let root = await this.git.raw(
+        let submoduleRoot = await this.git.raw(
             ["-C", path.dirname(repositoryRelativeFile), "rev-parse", "--show-toplevel"],
             (err) => err && console.warn("get-submodule-of-file", err?.message));
-        root = root.trim();
+        submoduleRoot = submoduleRoot.trim();
 
+        // git -C <dir-of-file> rev-parse --show-superproject-working-tree
+        // returns the parent git repository, if the file is in a submodule - otherwise empty.
         const superProject = await this.git.raw(
             ["-C", path.dirname(repositoryRelativeFile), "rev-parse", "--show-superproject-working-tree"],
             (err) => err && console.warn("get-submodule-of-file", err?.message));
@@ -504,9 +513,9 @@ export class SimpleGit extends GitManager {
 
         const fsAdapter = this.app.vault.adapter as FileSystemAdapter;
         const absolutePath = fsAdapter.getFullPath(path.normalize(repositoryRelativeFile));
-        const newRelativePath = path.relative(root, absolutePath);
+        const newRelativePath = path.relative(submoduleRoot, absolutePath);
 
-        return { submodule: root, relativeFilepath: newRelativePath };
+        return { submodule: submoduleRoot, relativeFilepath: newRelativePath };
     }
 
     private isGitInstalled(): boolean {
@@ -539,6 +548,12 @@ export class SimpleGit extends GitManager {
         }
     }
 }
+
+export const zeroCommit: BlameCommit = {
+    hash: "000000",
+    isZeroCommit: true,
+    summary: "",
+};
 
 // Parse git blame porcelain format: https://git-scm.com/docs/git-blame#_the_porcelain_format
 function parseBlame(blameOutputUnnormalized: string): Blame {

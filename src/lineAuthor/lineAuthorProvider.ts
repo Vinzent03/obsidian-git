@@ -1,20 +1,16 @@
 import { Extension, Prec } from "@codemirror/state";
 import { TFile } from "obsidian";
-import ObsidianGit from "src/main";
-import {
-    settingsStateField,
-    subscribeNewEditor
-} from "src/ui/editor/lineAuthorInfo/control";
-import { eventsPerFilePathSingleton } from "src/ui/editor/lineAuthorInfo/eventsPerFilepath";
+import { subscribeNewEditor } from "src/lineAuthor/control";
+import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
 import {
     LineAuthoring,
     lineAuthoringId,
-    LineAuthoringId,
-    LineAuthorSettings,
-    lineAuthorState,
-    settingsFrom
-} from "src/ui/editor/lineAuthorInfo/model";
-import { clearViewCache, lineAuthorGutter, previewColor as previewColor2 } from "src/ui/editor/lineAuthorInfo/view";
+    LineAuthoringId, lineAuthorState
+} from "src/lineAuthor/model";
+import { clearViewCache } from "src/lineAuthor/view/cache";
+import { previewColor as previewColor2 } from "src/lineAuthor/view/gutter/coloring";
+import { lineAuthorGutter } from "src/lineAuthor/view/view";
+import ObsidianGit from "src/main";
 export const previewColor = previewColor2;
 
 /**
@@ -24,7 +20,7 @@ export const previewColor = previewColor2;
  * * notifies computation results and settings to subscribers (editors)
  * * deytroys cache and editor-subscribers when plugin is deactivated
 */
-export class LineAuthorInfoProvider {
+export class LineAuthorProvider {
     /**
      * Saves all computed line authoring results.
      * 
@@ -50,8 +46,6 @@ export class LineAuthorInfoProvider {
             return;
         }
 
-        this.notifySettingsToSubscribers(settingsFrom(this.plugin.settings));
-
         this.computeLineAuthorInfo(file.path);
     }
 
@@ -64,7 +58,8 @@ export class LineAuthorInfoProvider {
     private async computeLineAuthorInfo(filepath: string) {
         const gitManager = this.plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform().gitManager;
 
-        const headRevision = await gitManager.headRevision();
+        const headRevision = await gitManager
+            .submoduleAwareHeadRevisonInContainingDirectory(filepath);
 
         const fileHash = await gitManager.hashObject(filepath);
 
@@ -77,7 +72,7 @@ export class LineAuthorInfoProvider {
         if (this.lineAuthorings.has(key)) {
             // already computed. just tell the editor to update to the key's state
         } else {
-            const gitAuthorResult = await gitManager.blame(filepath, this.plugin.settings.followMovementLineAuthorInfo);
+            const gitAuthorResult = await gitManager.blame(filepath, this.plugin.settings.lineAuthor.followMovement);
             this.lineAuthorings.set(key, gitAuthorResult);
         }
 
@@ -91,17 +86,12 @@ export class LineAuthorInfoProvider {
             )
         );
     }
-
-    private notifySettingsToSubscribers(settings: LineAuthorSettings) {
-        eventsPerFilePathSingleton.forEachSubscriber(async (las) => las.notifySettings(settings));
-    }
 }
 
 // =========================================================
 
 export const enabledLineAuthorInfoExtensions: Extension = Prec.high([
     subscribeNewEditor,
-    settingsStateField,
     lineAuthorState,
     lineAuthorGutter,
 ]);

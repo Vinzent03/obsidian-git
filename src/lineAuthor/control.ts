@@ -1,18 +1,17 @@
 import { EditorState, StateField } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { editorEditorField, editorViewField } from "obsidian";
-import { eventsPerFilePathSingleton } from "src/ui/editor/lineAuthorInfo/eventsPerFilepath";
+import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
 import {
-    getLatestSettings,
     LineAuthoring,
-    LineAuthoringId,
-    LineAuthorSettings,
-    LineAuthorSettingsAvailableType,
-    newComputationResultAsTransaction,
-    newSettingsAsTransaction,
-    updateLatestSettings
-} from "src/ui/editor/lineAuthorInfo/model";
-import { strictDeepEqual } from "src/utils";
+    LineAuthoringId, newComputationResultAsTransaction
+} from "src/lineAuthor/model";
+
+/*
+================== CONTROL ======================
+Contains classes and function responsible for updating the model
+given the changes in the Obsidian UI.
+*/
 
 /** 
  * Subscribes to changes in the files on a specific filepath.
@@ -34,16 +33,6 @@ export class LineAuthoringSubscriber {
         // using "this.state" directly here leads to some problems when closing panes. Hence, "this.view.state"
         const state = this.view.state;
         const transaction = newComputationResultAsTransaction(id, la, state);
-        this.view.dispatch(transaction);
-    }
-
-    public async notifySettings(settings: LineAuthorSettings) {
-        if (this.view === undefined) {
-            console.warn("Obsidian Git: View is not defined for editor cache key. Unforeseen situation.");
-            return;
-        }
-
-        const transaction = newSettingsAsTransaction(settings, this.view.state);
         this.view.dispatch(transaction);
     }
 
@@ -102,16 +91,3 @@ export const subscribeNewEditor: StateField<LineAuthoringSubscriber> =
         compare: (a, b) => a === b,
     });
 
-// ======================================================================
-
-export const settingsStateField: StateField<LineAuthorSettings> =
-    StateField.define<LineAuthorSettings>({
-        // use the most recent encountered settings
-        create: (_state) => getLatestSettings(),
-        update: (v, t) => {
-            const givenSettings = t.annotation<LineAuthorSettings>(LineAuthorSettingsAvailableType);
-            givenSettings && updateLatestSettings(givenSettings);
-            return givenSettings ?? v;
-        },
-        compare: strictDeepEqual,
-    });

@@ -1,6 +1,6 @@
 import { Errors } from "isomorphic-git";
 import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile } from "obsidian";
-import { LineAuthoringFeature } from "src/lineAuthoringController";
+import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -12,7 +12,7 @@ import { IsomorphicGit } from "./isomorphicGit";
 import { LocalStorageSettings } from "./localStorageSettings";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./simpleGit";
-import { FileStatusResult, ObsidianGitSettings, PluginState, Status, UnstagedFile } from "./types";
+import { FileStatusResult, mergeSettingsByPriority, ObsidianGitSettings, PluginState, Status, UnstagedFile } from "./types";
 import DiffView from "./ui/diff/diffView";
 import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
@@ -503,7 +503,7 @@ export default class ObsidianGit extends Plugin {
         if (data == undefined) {
             data = <ObsidianGitSettings>{ showedMobileNotice: true };
         }
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+        this.settings = mergeSettingsByPriority(DEFAULT_SETTINGS, data);
     }
 
     async saveSettings() {

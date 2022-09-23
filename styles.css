@@ -485,9 +485,5 @@
   height: 100%; /* ensure, that age-based background color occupies entire parent */
   text-align: right;
   padding: 0px 4px 0px 4px;
-}
-
-.cm-gutterElement.obs-git-blame-gutter pre {
-  display: inline; /* We only want the aspect of pre, that avoids collaping spaces.
-    Hence, we neutralise the block display here. */
+  white-space: pre; /* Keep spaces and do not collapse them. */
 }

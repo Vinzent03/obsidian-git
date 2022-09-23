@@ -1,4 +1,4 @@
-import { RGB } from "obsidian";
+import { LineAuthorSettings } from "src/lineAuthor/model";
 
 export interface ObsidianGitSettings {
     commitMessage: string;
@@ -36,26 +36,19 @@ export interface ObsidianGitSettings {
     refreshSourceControlTimer: number;
     showBranchStatusBar: boolean;
 
-    showLineAuthorInfo: boolean;
-    followMovementLineAuthorInfo: LineAuthorFollowMovement;
-    showCommitHashLineAuthorInfo: boolean;
-    authorDisplayLineAuthorInfo: LineAuthorDisplay;
-    dateTimeFormatOptionsLineAuthorInfo: LineAuthorDateTimeFormatOptions;
-    dateTimeFormatCustomStringLineAuthorInfo: string;
-    dateTimeTimezoneLineAuthorInfo: LineAuthorTimezoneOption;
-    coloringMaxAgeLineAuthorInfo: string;
-    colorOldLineAuthorInfo: RGB;
-    colorNewLineAuthorInfo: RGB;
-    gutterSpacingFallbackLengthLineAuthorInfo: number;
+    lineAuthor: LineAuthorSettings;
 }
 
-export type LineAuthorFollowMovement = "inactive" | "same-commit" | "all-commits"
-
-export type LineAuthorDateTimeFormatOptions = "hide" | "date" | "datetime" | "natural language" | "custom";
-
-export type LineAuthorDisplay = 'hide' | 'full' | 'first name' | 'last name' | 'initials';
-
-export type LineAuthorTimezoneOption = "local" | "utc";
+/**
+ * Ensures, that nested values objects are correctly merged.
+ */
+export function mergeSettingsByPriority(
+    low: ObsidianGitSettings,
+    high: ObsidianGitSettings
+): ObsidianGitSettings {
+    const lineAuthor = Object.assign({}, low.lineAuthor, high.lineAuthor);
+    return Object.assign({}, low, high, { lineAuthor });
+}
 
 export type SyncMethod = 'rebase' | 'merge' | 'reset';
 
@@ -71,13 +64,22 @@ export interface Status {
 }
 
 export interface GitTimestamp {
+    /**
+     * The number of unix seconds since epoch time (UTC).
+     */
     epochSeconds: number;
+    /**
+     * The time zone, in which the commit was originally created.
+     * This can be used to reconstruct the local time during creating time.
+     */
     tz: string;
 }
+
 export interface UserEmail {
     name: string;
     email: string;
 }
+
 export interface BlameCommit {
     hash: string;
     author?: UserEmail & GitTimestamp;
@@ -89,20 +91,26 @@ export interface BlameCommit {
 }
 
 /**
- * See {@link https://git-scm.com/docs/git-blame#_the_porcelain_format}
+ * See https://git-scm.com/docs/git-blame#_the_porcelain_format
  */
 export interface Blame {
     commits: Map<string, BlameCommit>;
     /**
      * hashPerLine[i] is the commit hash where line i originates from
+     * 
+     * The first element is always `undefined`, since line-numbers are 1-based.
      */
     hashPerLine: string[];
     /**
-     * originalFileLineNrPerLine[i] contains the original files' line number from where line i originated
+     * originalFileLineNrPerLine[i] contains the original files' line number from where line i 
+     * 
+     * The first element is always `undefined`, since line-numbers are 1-based.originated
      */
     originalFileLineNrPerLine: number[];
     /**
      * finalFileLineNrPerLine[i] contains the final files' line number from where line i originated
+     * 
+     * The first element is always `undefined`, since line-numbers are 1-based.
      */
     finalFileLineNrPerLine: number[];
     /**

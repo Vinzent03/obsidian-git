@@ -48,7 +48,7 @@ export function getNewLeaf(event?: MouseEvent | KeyboardEvent): WorkspaceLeaf {
  *
  * During runtime, an error will be thrown, if executed.
  */
-export function typeCheckedUnreachable(x: never): never {
+export function impossibleBranch(x: never): never {
     throw new Error("Impossible branch: " + x);
 }
 
@@ -73,11 +73,21 @@ export function momentToEpochSeconds(instant: Moment): number {
     return instant.diff(moment.unix(0), "seconds");
 }
 
-export function median(array: number[]) {
+export function median(array: number[]): number | undefined {
     if (array.length === 0) return undefined;
     return array.slice().sort()[Math.floor(array.length / 2)];
 }
 
 export function strictDeepEqual<T>(a: T, b: T): boolean {
     return deepEqual.default(a, b, { strict: true });
+}
+
+export function resizeToLength(original: string, desiredLength: number, fillChar: string): string {
+    if (original.length <= desiredLength) {
+        const prefix = new Array(desiredLength - original.length).fill(fillChar).join("");
+        return prefix + original;
+    }
+    else {
+        return original.substring(original.length - desiredLength);
+    }
 }

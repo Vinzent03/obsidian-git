@@ -1,10 +1,10 @@
 import { Extension } from "@codemirror/state";
 import { EventRef, Platform, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
+import { enabledLineAuthorInfoExtensions, LineAuthorProvider } from "src/lineAuthor/lineAuthorProvider";
+import { LineAuthorSettings, provideSettingsAccess } from "src/lineAuthor/model";
+import { handleContextMenu } from "src/lineAuthor/view/contextMenu";
 import ObsidianGit from "src/main";
 import { SimpleGit } from "src/simpleGit";
-import { handleContextMenu } from "src/ui/editor/lineAuthorInfo/contextMenu";
-import { enabledLineAuthorInfoExtensions, LineAuthorInfoProvider } from "src/ui/editor/lineAuthorInfo/lineAuthorInfoProvider";
-import { provideSettingsAccess } from "src/ui/editor/lineAuthorInfo/view";
 
 /**
  * Manages the interaction between Obsidian (file-open event, modification event, etc.)
@@ -13,7 +13,7 @@ import { provideSettingsAccess } from "src/ui/editor/lineAuthorInfo/view";
  */
 export class LineAuthoringFeature {
 
-    private lineAuthorInfoProvider?: LineAuthorInfoProvider;
+    private lineAuthorInfoProvider?: LineAuthorProvider;
     private fileOpenEvent?: EventRef;
     private workspaceLeafChangeEvent?: EventRef;
     private fileModificationEvent?: EventRef;
@@ -30,13 +30,16 @@ export class LineAuthoringFeature {
     public onLoadPlugin() {
         this.plg.registerEditorExtension(this.codeMirrorExtensions);
         provideSettingsAccess(
-            () => this.plg.settings,
-            () => this.plg.saveSettings()
+            () => this.plg.settings.lineAuthor,
+            (laSettings: LineAuthorSettings) => {
+                this.plg.settings.lineAuthor = laSettings;
+                this.plg.saveSettings();
+            }
         );
     }
 
     public conditionallyActivateBySettings() {
-        if (this.plg.settings.showLineAuthorInfo) {
+        if (this.plg.settings.lineAuthor.show) {
             this.activateFeature();
         }
     }
@@ -45,7 +48,7 @@ export class LineAuthoringFeature {
         try {
             if (!this.isAvailableOnCurrentPlatform()) return;
 
-            this.lineAuthorInfoProvider = new LineAuthorInfoProvider(this.plg);
+            this.lineAuthorInfoProvider = new LineAuthorProvider(this.plg);
 
             this.createEventHandlers();
 
@@ -84,7 +87,7 @@ export class LineAuthoringFeature {
     // ========================= REFRESH ==========================
 
     public refreshLineAuthorViews() {
-        if (this.plg.settings.showLineAuthorInfo) {
+        if (this.plg.settings.lineAuthor.show) {
             this.deactivateFeature();
             this.activateFeature();
         }
