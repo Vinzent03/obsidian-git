@@ -134,7 +134,7 @@ export type LineAuthorDisplay = 'hide' | 'full' | 'first name' | 'last name' | '
 
 export type LineAuthorDateTimeFormatOptions = "hide" | "date" | "datetime" | "natural language" | "custom";
 
-export type LineAuthorTimezoneOption = "local" | "utc";
+export type LineAuthorTimezoneOption = "viewer-local" | "author-local" | "utc0000";
 
 // ===============================================================
 

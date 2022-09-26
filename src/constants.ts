@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
         showCommitHash: false,
         dateTimeFormatOptions: "date",
         dateTimeFormatCustomString: DATE_TIME_FORMAT_MINUTES,
-        dateTimeTimezone: "local",
+        dateTimeTimezone: "viewer-local",
         coloringMaxAge: "1y",
         // colors were picked via:
         // https://color.adobe.com/de/create/color-accessibility

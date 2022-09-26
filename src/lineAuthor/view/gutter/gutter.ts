@@ -210,11 +210,15 @@ export class LineAuthoringGutter extends GutterMarker {
         // when we want to show it in the absolute UTC time-zone, we'll need to provide
         // and adapt the utcOffset
         switch (dateTimeTimezone) {
-            case "local": // moment uses local timezone by default.
+            case "viewer-local": // moment uses local timezone by default.
                 break;
-            case "utc":
+            case "author-local":
                 authoringDate = authoringDate.utcOffset(nonZeroCommit.author.tz);
-                dateTimeFormatting += " Z";
+                dateTimeFormatting += " Z"; // add explicit time-zone, as this is not clear now.
+                break;
+            case "utc0000":
+                authoringDate = authoringDate.utc(); // convert to utc
+                dateTimeFormatting += "[Z]"; // add "Z" to indicate, that this is UTC+0000 time.
                 break;
             default:
                 return impossibleBranch(dateTimeTimezone);

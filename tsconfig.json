@@ -19,7 +19,6 @@
             "ES7"
         ],
         "typeRoots": [
-          "src",
           "node_modules/@types"
         ]
     },

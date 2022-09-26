@@ -656,11 +656,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             new Setting(containerEl)
                 .setName("Authoring date display timezone")
-                .setDesc("Show in your local timezone or explicitly display UTC offset")
                 .addDropdown((dropdown) => {
                     const options: Record<LineAuthorTimezoneOption, string> = {
-                        'local': 'Local (default)',
-                        'utc': 'UTC',
+                        'viewer-local': 'My local (default)',
+                        'author-local': 'Author\'s local',
+                        'utc0000': 'UTC+0000/Z',
                     };
                     dropdown.addOptions(options);
                     dropdown.setValue(plugin.settings.lineAuthor.dateTimeTimezone);
@@ -670,7 +670,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.saveSettings();
                         plugin.lineAuthoringFeature.refreshLineAuthorViews();
                     });
-                });
+                })
+                .descEl.innerHTML = `
+                    The time-zone in which the authoring date should be shown.
+                    Either your local time-zone (default),
+                    the author's time-zone during commit creation or
+                    <a href="https://en.wikipedia.org/wiki/UTC%C2%B100:00">UTC±00:00</a>.
+            `;
 
             const oldestAgeSetting = new Setting(containerEl)
                 .setName("Oldest age in coloring")
