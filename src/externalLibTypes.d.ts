@@ -11,5 +11,3 @@ declare module "css-color-converter" {
     }
     function fromString(str: string): Color | null;
 }
-
-declare module 'deep-equal';

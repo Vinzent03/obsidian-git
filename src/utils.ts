@@ -1,8 +1,8 @@
-import { requireApiVersion, WorkspaceLeaf, RGB } from "obsidian";
+import * as cssColorConverter from "css-color-converter";
+import deepEqual from "deep-equal";
 import * as moment from "moment";
 import { Moment } from "moment";
-import * as cssColorConverter from "css-color-converter";
-import * as deepEqual from "deep-equal";
+import { requireApiVersion, RGB, WorkspaceLeaf } from "obsidian";
 
 export const worthWalking = (filepath: string, root?: string) => {
     if (filepath === '.' || root == null || root.length === 0 || root === '.') {
@@ -79,7 +79,7 @@ export function median(array: number[]): number | undefined {
 }
 
 export function strictDeepEqual<T>(a: T, b: T): boolean {
-    return deepEqual.default(a, b, { strict: true });
+    return deepEqual(a, b, { strict: true });
 }
 
 export function resizeToLength(original: string, desiredLength: number, fillChar: string): string {
