@@ -121,10 +121,6 @@ export interface Blame {
     groupSizePerStartingLine: Map<number, number>;
 }
 
-declare global {
-    let ALLOWSIMPLEGIT: boolean;
-}
-
 /**
  * `index` and `working_dir` are each one-character codes, based off the git
  * status short format: git status --short
