@@ -331,7 +331,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Source Control View refresh interval")
-            .setDesc("Milliseconds two wait after file change before refreshing the Source Control View")
+            .setDesc("Milliseconds to wait after file change before refreshing the Source Control View")
             .addText((toggle) =>
                 toggle
                     .setValue(plugin.settings.refreshSourceControlTimer.toString())
