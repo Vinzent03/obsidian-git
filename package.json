@@ -40,7 +40,6 @@
 		"diff": "^5.1.0",
 		"diff2html": "^3.4.13",
 		"css-color-converter": "^2.0.0",
-		"i": "^0.3.7",
 		"isomorphic-git": "^1.19.1",
 		"moment-timezone": "^0.5.34",
 		"obsidian-community-lib": "^2.0.1",
