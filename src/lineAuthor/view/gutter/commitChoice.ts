@@ -1,5 +1,5 @@
-import * as moment from "moment";
 import { Moment } from "moment-timezone";
+import { moment } from "obsidian";
 import { LineAuthoring } from "src/lineAuthor/model";
 import { BlameCommit } from "src/types";
 

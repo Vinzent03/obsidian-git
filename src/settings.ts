@@ -1,5 +1,4 @@
-import * as moment from "moment";
-import { Notice, Platform, PluginSettingTab, RGB, Setting } from "obsidian";
+import { moment, Notice, Platform, PluginSettingTab, RGB, Setting } from "obsidian";
 import { DATE_TIME_FORMAT_SECONDS, GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH } from "src/constants";
 import { previewColor } from "src/lineAuthor/lineAuthorProvider";
 import { LineAuthorDateTimeFormatOptions, LineAuthorDisplay, LineAuthorFollowMovement, LineAuthorSettings, LineAuthorTimezoneOption } from "src/lineAuthor/model";

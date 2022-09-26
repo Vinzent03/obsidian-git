@@ -1,6 +1,6 @@
 import { GutterMarker } from "@codemirror/view";
-import * as moment from "moment";
 import { Moment } from "moment-timezone";
+import { moment } from "obsidian";
 import { DATE_FORMAT, DATE_TIME_FORMAT_MINUTES } from "src/constants";
 import { latestSettings, LineAuthorDateTimeFormatOptions, LineAuthorDisplay, LineAuthoring, LineAuthorSettings, LineAuthorTimezoneOption } from "src/lineAuthor/model";
 import { conditionallyUpdateLongestRenderedGutter, getLongestRenderedGutter } from "src/lineAuthor/view/cache";

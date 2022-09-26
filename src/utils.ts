@@ -1,8 +1,7 @@
 import * as cssColorConverter from "css-color-converter";
 import deepEqual from "deep-equal";
-import * as moment from "moment";
 import { Moment } from "moment";
-import { requireApiVersion, RGB, WorkspaceLeaf } from "obsidian";
+import { moment, requireApiVersion, RGB, WorkspaceLeaf } from "obsidian";
 
 export const worthWalking = (filepath: string, root?: string) => {
     if (filepath === '.' || root == null || root.length === 0 || root === '.') {

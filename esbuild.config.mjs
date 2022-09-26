@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
 import sveltePlugin from "esbuild-svelte";
-import autoPreprocess from "svelte-preprocess";
 import process from "process";
+import autoPreprocess from "svelte-preprocess";
 
 const banner =
     `/*
@@ -24,6 +24,7 @@ esbuild.build({
         'child_process',
         'fs',
         'path',
+        'moment',
         '@codemirror/autocomplete',
         '@codemirror/collab',
         '@codemirror/commands',
@@ -52,6 +53,6 @@ esbuild.build({
             preprocess: autoPreprocess(),
         }),
     ],
-    inject:  ["polyfill_buffer.js"],
+    inject: ["polyfill_buffer.js"],
     outfile: 'main.js',
 }).catch(() => process.exit(1));
