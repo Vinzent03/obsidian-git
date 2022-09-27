@@ -472,7 +472,7 @@
 
 .cm-gutterElement.obs-git-blame-gutter {
   /* Add background color to spacing inbetween and around the gutter for better aesthetics */
-  border-width: 1px 2px 1px 2px;
+  border-width: 0px 2px 1px 2px;
   border-style: solid;
   border-color: var(--background-secondary);
   background-color: var(--background-secondary);
@@ -486,4 +486,6 @@
   text-align: right;
   padding: 0px 4px 0px 4px;
   white-space: pre; /* Keep spaces and do not collapse them. */
+  /* Push the text a bit higher so counter-act the vertical shift due to the above borders. */
+  transform: translateY(-1px);
 }
