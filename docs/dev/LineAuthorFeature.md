@@ -108,30 +108,11 @@ These cases should be tested, when changes to this feature have been made.
 * quick and responsive update of the line authoring gutters without waiting for the file to be saved.
     * this can be done by using the editor-changes (e.g. "add newline and three characters at pos 56") to pro-actively update the line gutter.
     * for instance, if a line was already untracked, then it's simply extended. Otherwise a change makes it extend. The true result which comes a few seconds later will then give the true answer.
+* show / highlight diff when hover/click on gutter
+* show commit info when click/hover on gutter
 * small tooltip widget when hovering/r-clicking on line author gutter with author/hash, etc.
 * use addMomentFormat in settings.ts when configuring the line author date format.
 * main.ts: refreshUpdatedHead(): Detect, if the head has changed from outside of Obsidian git (e.g. script) and run this callback then.
 * Avoid "Uncaught illegal access error" when closing a separate Obsidian window.
     It doesn't seem to have any impact on UX yet though...
 * Unique initials option: [work in progress branch](https://github.com/GollyTicker/obsidian-git/tree/line-author-unique-initials)
-
-<!--
-
-======================== OPEN TASKS ========================
-
-* beta testing with real users
-  * ask company
-  * ask on discord
-* important fixes for now:
-  * adaptive coloring doesn't work in my private larger obsidian vault
-    -> it seems to however work and adapt itself when re-starting Obsidian a second time!
-    * the size should however be decreased. Maybe to 35?
-* create feature summary page with GIFs for devs and users
-    * link to feature page from settings?
-    * send this to cnr for quick feedback
-* review
-* decide, whether to notify users once of this feature
-* add GollyTicker as creator for line authoring feature
-* merge
-
--->
