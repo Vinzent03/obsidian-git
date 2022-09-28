@@ -44,7 +44,9 @@
 					closed[entity.title] = !closed[entity.title];
 				}}
 			>
-				<div>
+				<div
+					style="padding-left: 10px; padding-bottom: 2px; padding-top:2px;"
+				>
 					<div class="tree-item-icon collapse-icon" style="">
 						<svg
 							viewBox="0 0 100 100"
@@ -107,6 +109,6 @@
 	}
 
 	.file-view {
-		margin-left: 5px;
+		margin-left: 9px;
 	}
 </style>

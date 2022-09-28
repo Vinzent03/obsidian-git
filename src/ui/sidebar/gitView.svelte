@@ -141,86 +141,89 @@
 </script>
 
 <main>
-	<div class="nav-buttons-container">
-		<div class="group">
-			<div
-				id="commit-btn"
-				data-icon="check"
-				class="nav-action-button"
-				aria-label="Commit"
-				bind:this={buttons[0]}
-				on:click={commit}
-			/>
-			<div
-				id="stage-all"
-				class="nav-action-button"
-				data-icon="plus-circle"
-				aria-label="Stage all"
-				bind:this={buttons[1]}
-				on:click={stageAll}
-			/>
-			<div
-				id="unstage-all"
-				class="nav-action-button"
-				data-icon="minus-circle"
-				aria-label="Unstage all"
-				bind:this={buttons[2]}
-				on:click={unstageAll}
-			/>
-			<div
-				id="push"
-				class="nav-action-button"
-				data-icon="upload"
-				aria-label="Push"
-				bind:this={buttons[3]}
-				on:click={push}
-			/>
-			<div
-				id="pull"
-				class="nav-action-button"
-				data-icon="download"
-				aria-label="Pull"
-				bind:this={buttons[4]}
-				on:click={pull}
-			/>
-			<div
-				id="layoutChange"
-				class="nav-action-button"
-				aria-label="Change Layout"
-				bind:this={layoutBtn}
-				on:click={() => {
-					showTree = !showTree;
-					plugin.settings.treeStructure = showTree;
-					plugin.saveSettings();
-				}}
-			/>
-		</div>
-		<div
-			id="refresh"
-			class="nav-action-button"
-			class:loading
-			data-icon="refresh-cw"
-			aria-label="Refresh"
-			bind:this={buttons[6]}
-			on:click={triggerRefresh}
-		/>
-		<div class="search-input-container">
-			<textarea
-				class="commit-msg"
-				type="text"
-				spellcheck="true"
-				placeholder="Commit Message"
-				bind:value={commitMessage}
-			/>
-			{#if commitMessage}
+	<div class="nav-header">
+		<div class="nav-buttons-container">
+			<div class="group">
 				<div
-					class="search-input-clear-button"
-					on:click={() => (commitMessage = "")}
-					aria-label={"Clear"}
+					id="commit-btn"
+					data-icon="check"
+					class="clickable-icon nav-action-button"
+					aria-label="Commit"
+					bind:this={buttons[0]}
+					on:click={commit}
 				/>
-			{/if}
+				<div
+					id="stage-all"
+					class="clickable-icon nav-action-button"
+					data-icon="plus-circle"
+					aria-label="Stage all"
+					bind:this={buttons[1]}
+					on:click={stageAll}
+				/>
+				<div
+					id="unstage-all"
+					class="clickable-icon nav-action-button"
+					data-icon="minus-circle"
+					aria-label="Unstage all"
+					bind:this={buttons[2]}
+					on:click={unstageAll}
+				/>
+				<div
+					id="push"
+					class="clickable-icon nav-action-button"
+					data-icon="upload"
+					aria-label="Push"
+					bind:this={buttons[3]}
+					on:click={push}
+				/>
+				<div
+					id="pull"
+					class="clickable-icon nav-action-button"
+					data-icon="download"
+					aria-label="Pull"
+					bind:this={buttons[4]}
+					on:click={pull}
+				/>
+				<div
+					id="layoutChange"
+					class="clickable-icon nav-action-button"
+					aria-label="Change Layout"
+					bind:this={layoutBtn}
+					on:click={() => {
+						showTree = !showTree;
+						plugin.settings.treeStructure = showTree;
+						plugin.saveSettings();
+					}}
+				/>
+			</div>
+			<div
+				id="refresh"
+				class="clickable-icon nav-action-button"
+				class:loading
+				data-icon="refresh-cw"
+				aria-label="Refresh"
+				bind:this={buttons[6]}
+				on:click={triggerRefresh}
+			/>
 		</div>
 	</div>
+	<div class="search-input-container">
+		<textarea
+			class="commit-msg"
+			type="text"
+			spellcheck="true"
+			placeholder="Commit Message"
+			bind:value={commitMessage}
+		/>
+		{#if commitMessage}
+			<div
+				class="search-input-clear-button"
+				on:click={() => (commitMessage = "")}
+				aria-label={"Clear"}
+			/>
+		{/if}
+	</div>
+
 	<div class="git-view-body">
 		{#if status && stagedHierarchy && changeHierarchy}
 			<div class="staged">
@@ -383,25 +386,24 @@
 <style lang="scss">
 	.commit-msg {
 		width: 100%;
-		min-height: 1.9em;
-		height: 1.9em;
+		min-height: 33px;
+		height: 30px;
 		resize: vertical;
-		padding: 2px 5px;
+		padding: 7px 5px;
 		background-color: var(--background-modifier-form-field);
-	}
-
-	.search-input-container {
-		width: 100%;
 	}
 
 	.file-view {
 		margin-left: 5px;
 	}
 	.opener {
+		padding-left: 10px;
+		padding-bottom: 2px;
+		padding-top: 2px;
+
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 0 4px;
 		.collapse-icon::after {
 			content: "\00a0";
 		}

@@ -104,15 +104,19 @@
 
 		.path {
 			color: var(--text-muted);
+			padding-top: 2px;
+			padding-left: 10px;
+			padding-bottom: 2px;
 			white-space: nowrap;
 			max-width: 75%;
 			overflow: hidden;
 			text-overflow: ellipsis;
 		}
 
-		&:hover .path {
-			color: var(--text-normal);
-			transition: all 200ms;
+		&:hover {
+			color: var(--nav-item-color-active);
+			background-color: var(--nav-item-background-active);
+			font-weight: var(--nav-item-weight-active);
 		}
 
 		.tools {
