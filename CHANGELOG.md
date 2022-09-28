@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.5.0](https://github.com/denolehov/obsidian-git/compare/2.4.1...2.5.0) (2022-09-28)
+
+
+### Features
+
+* improve source control view style ([d5647a8](https://github.com/denolehov/obsidian-git/commit/d5647a8e2e49c8a77f28854bb4c276a17f390d55))
+
+
+### Bug Fixes
+
+* reveal source control view ([c88a1b4](https://github.com/denolehov/obsidian-git/commit/c88a1b43633e9964e3a9f60e94c0dc7f8307edc1))
+
 ### [2.4.1](https://github.com/denolehov/obsidian-git/compare/2.4.0...2.4.1) (2022-09-22)
 
 
