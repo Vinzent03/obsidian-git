@@ -248,7 +248,7 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status();
         const trackingBranch = status.tracking!;
         const currentBranch = status.current!;
-        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch], (err) => this.onError(err))).changed;
+        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch, "--"], (err) => this.onError(err))).changed;
 
         this.plugin.setState(PluginState.push);
         if (this.plugin.settings.updateSubmodules) {
@@ -269,7 +269,7 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status((err) => this.onError(err));
         const trackingBranch = status.tracking!;
         const currentBranch = status.current!;
-        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch])).changed;
+        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch, "--"])).changed;
 
         return remoteChangedFiles !== 0;
     }
