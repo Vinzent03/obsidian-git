@@ -54,6 +54,10 @@
 
 <style lang="scss">
 	main {
+		.nav-file-title-content {
+			display: flex;
+			align-items: center;
+		}
 		.tools {
 			display: flex;
 			margin-left: auto;

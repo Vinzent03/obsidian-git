@@ -12,14 +12,24 @@
 	export let view: GitView;
 	export let fileType: FileType;
 	export let topLevel = false;
-
 	const closed: Record<string, boolean> = {};
+
+	function stage(path: string) {
+		plugin.gitManager.stageAll({ dir: path }).finally(() => {
+			dispatchEvent(new CustomEvent("git-refresh"));
+		});
+	}
+	function unstage(path: string) {
+		plugin.gitManager.unstageAll({ dir: path }).finally(() => {
+			dispatchEvent(new CustomEvent("git-refresh"));
+		});
+	}
 </script>
 
 <main class:topLevel>
 	{#each hierarchy.children as entity}
 		{#if entity.statusResult}
-			<div class="file-view">
+			<div>
 				{#if fileType == FileType.staged}
 					<StagedFileComponent
 						change={entity.statusResult}
@@ -39,29 +49,86 @@
 		{:else}
 			<div class="nav-folder" class:is-collapsed={closed[entity.title]}>
 				<div
-					on:click={() =>
+					class="nav-folder-title"
+					on:click|self={() =>
 						(closed[entity.title] = !closed[entity.title])}
 				>
-					<div class="nav-folder-title">
-						<div
-							class="nav-folder-collapse-indicator collapse-icon"
+					<div class="nav-folder-collapse-indicator collapse-icon">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="svg-icon right-triangle"
+							><path d="M3 8L12 17L21 8" /></svg
 						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								class="svg-icon right-triangle"
-								><path d="M3 8L12 17L21 8" /></svg
-							>
-						</div>
-						<div class="nav-folder-title-content">
-							{entity.title}
+					</div>
+					<div class="nav-folder-title-content">
+						{entity.title}
+					</div>
+					<div class="tools">
+						<div class="buttons">
+							{#if fileType == FileType.staged}
+								<div
+									data-icon="minus"
+									aria-label="Unstage"
+									on:click={() => unstage(entity.title)}
+									class="clickable-icon"
+								>
+									<svg
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="svg-icon lucide-minus"
+										><line
+											x1="5"
+											y1="12"
+											x2="19"
+											y2="12"
+										/></svg
+									>
+								</div>
+							{:else}
+								<div
+									data-icon="plus"
+									aria-label="Stage"
+									on:click={() => stage(entity.path)}
+									class="clickable-icon"
+								>
+									<svg
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="svg-icon lucide-plus"
+										><line
+											x1="12"
+											y1="5"
+											x2="12"
+											y2="19"
+										/><line
+											x1="5"
+											y1="12"
+											x2="19"
+											y2="12"
+										/></svg
+									>
+								</div>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -85,34 +152,21 @@
 </main>
 
 <style lang="scss">
-	// main:not(.topLevel) {
-	// 	margin-left: 5px;
-	// }
-
-	// .opener {
-	// 	display: flex;
-	// 	justify-content: space-between;
-	// 	align-items: center;
-	// 	padding: 0 4px;
-	// 	.collapse-icon::after {
-	// 		content: "\00a0";
-	// 	}
-
-	// 	div {
-	// 		display: flex;
-	// 	}
-	// 	svg {
-	// 		transform: rotate(-90deg);
-	// 	}
-	// 	&.open svg {
-	// 		transform: rotate(0);
-	// 	}
-	// 	span {
-	// 		font-size: 0.8rem;
-	// 	}
-	// }
-
-	// .file-view {
-	// 	margin-left: 9px;
-	// }
+	main {
+		.nav-folder-title-content {
+			display: flex;
+			align-items: center;
+		}
+		.tools {
+			display: flex;
+			margin-left: auto;
+			.buttons {
+				display: flex;
+				> * {
+					padding: 0 0;
+					height: auto;
+				}
+			}
+		}
+	}
 </style>

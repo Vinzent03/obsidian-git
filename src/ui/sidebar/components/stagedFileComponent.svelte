@@ -66,7 +66,7 @@
 		aria-label={formattedPath.split("/").last() != formattedPath
 			? formattedPath
 			: ""}
-		on:click={showDiff}
+		on:click|self={showDiff}
 	>
 		<div class="nav-file-title-content">
 			{formattedPath.split("/").last()?.replace(".md", "")}
@@ -96,27 +96,32 @@
 </main>
 
 <style lang="scss">
-	.tools {
-		display: flex;
-		margin-left: auto;
-		.type {
-			padding-left: var(--size-2-1);
+	main {
+		.nav-file-title-content {
 			display: flex;
 			align-items: center;
-			justify-content: center;
-			&[data-type="M"] {
-				color: orange;
-			}
-			&[data-type="D"] {
-				color: red;
-			}
 		}
-		.buttons {
+		.tools {
 			display: flex;
-			> * {
-				padding: var(--size-2-1) var(--size-2-1);
-				border-radius: var(--clickable-icon-radius);
-				height: auto;
+			margin-left: auto;
+			.type {
+				padding-left: var(--size-2-1);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				&[data-type="M"] {
+					color: orange;
+				}
+				&[data-type="D"] {
+					color: red;
+				}
+			}
+			.buttons {
+				display: flex;
+				> * {
+					padding: 0 0;
+					height: auto;
+				}
 			}
 		}
 	}

@@ -100,10 +100,11 @@ export abstract class GitManager {
                 childrenWithSameTitle.forEach((item) => children.remove(item));
                 list.push({
                     title: title,
+                    path: first.path,
                     children: this.getTreeStructure(childrenWithSameTitle, (beginLength > 0 ? (beginLength + title.length) : title.length) + 1)
                 });
             } else {
-                list.push({ title: restPath, statusResult: first });
+                list.push({ title: restPath, statusResult: first, path: first.path });
                 children.remove(first);
             }
         }

@@ -132,6 +132,10 @@
 
 <style lang="scss">
 	main {
+		.nav-file-title-content {
+			display: flex;
+			align-items: center;
+		}
 		.tools {
 			display: flex;
 			margin-left: auto;
@@ -150,8 +154,7 @@
 			.buttons {
 				display: flex;
 				> * {
-					padding: var(--size-2-1) var(--size-2-1);
-					border-radius: var(--clickable-icon-radius);
+					padding: 0 0;
 					height: auto;
 				}
 			}
