@@ -1,7 +1,7 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
 	import ObsidianGit from "src/main";
-	import { FileType, RootTreeItem } from "src/types";
+	import { FileType, RootTreeItem, TreeItem } from "src/types";
 	import { slide } from "svelte/transition";
 	import GitView from "../sidebarView";
 	import FileComponent from "./fileComponent.svelte";
@@ -23,6 +23,9 @@
 		plugin.gitManager.unstageAll({ dir: path }).finally(() => {
 			dispatchEvent(new CustomEvent("git-refresh"));
 		});
+	}
+	function fold(item: TreeItem) {
+		closed[item.title] = !closed[item.title];
 	}
 </script>
 
@@ -50,10 +53,12 @@
 			<div class="nav-folder" class:is-collapsed={closed[entity.title]}>
 				<div
 					class="nav-folder-title"
-					on:click|self={() =>
-						(closed[entity.title] = !closed[entity.title])}
+					on:click|self={() => fold(entity)}
 				>
-					<div class="nav-folder-collapse-indicator collapse-icon">
+					<div
+						class="nav-folder-collapse-indicator collapse-icon"
+						on:click={() => fold(entity)}
+					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="24"
@@ -68,7 +73,10 @@
 							><path d="M3 8L12 17L21 8" /></svg
 						>
 					</div>
-					<div class="nav-folder-title-content">
+					<div
+						on:click={() => fold(entity)}
+						class="nav-folder-title-content"
+					>
 						{entity.title}
 					</div>
 					<div class="tools">

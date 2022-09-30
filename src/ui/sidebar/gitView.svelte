@@ -86,10 +86,19 @@
 
 			lastPulledFilesHierarchy = {
 				title: "",
+				path: "",
 				children: plugin.gitManager.getTreeStructure(lastPulledFiles),
 			};
 		}
 		if (status) {
+			const sort = (a: FileStatusResult, b: FileStatusResult) => {
+				return a.vault_path
+					.split("/")
+					.last()!
+					.localeCompare(b.vault_path.split("/").last()!);
+			};
+			status.changed.sort(sort);
+			status.staged.sort(sort);
 			if (status.changed.length + status.staged.length > 500) {
 				status = undefined;
 				if (!plugin.loading) {
@@ -98,12 +107,14 @@
 			} else {
 				changeHierarchy = {
 					title: "",
+					path: "",
 					children: plugin.gitManager.getTreeStructure(
 						status.changed
 					),
 				};
 				stagedHierarchy = {
 					title: "",
+					path: "",
 					children: plugin.gitManager.getTreeStructure(status.staged),
 				};
 			}

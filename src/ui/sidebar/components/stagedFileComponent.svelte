@@ -68,7 +68,11 @@
 			: ""}
 		on:click|self={showDiff}
 	>
-		<div class="nav-file-title-content">
+		<div
+			on:click={showDiff}
+			on:auxclick={showDiff}
+			class="nav-file-title-content"
+		>
 			{formattedPath.split("/").last()?.replace(".md", "")}
 		</div>
 		<div class="tools">

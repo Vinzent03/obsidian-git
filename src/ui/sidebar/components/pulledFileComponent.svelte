@@ -31,7 +31,7 @@
 	}
 </script>
 
-<main on:mouseover={hover} on:click|self={open} on:focus class="nav-file">
+<main on:mouseover={hover} on:click={open} on:focus class="nav-file">
 	<!-- svelte-ignore a11y-unknown-aria-attribute -->
 	<div
 		class="nav-file-title"
@@ -39,7 +39,6 @@
 		aria-label={change.vault_path.split("/").last() != change.vault_path
 			? change.vault_path
 			: ""}
-		on:click|self={open}
 	>
 		<div class="nav-file-title-content">
 			{change.vault_path.split("/").last()?.replace(".md", "")}
