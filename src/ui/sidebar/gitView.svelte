@@ -224,161 +224,189 @@
 		{/if}
 	</div>
 
-	<div class="git-view-body">
+	<div class="nav-files-container" style="position: relative;">
 		{#if status && stagedHierarchy && changeHierarchy}
-			<div class="staged">
-				<div
-					class="opener tree-item-self is-clickable"
-					class:open={stagedOpen}
-					on:click={() => (stagedOpen = !stagedOpen)}
-				>
-					<div>
-						<div class="tree-item-icon collapse-icon" style="">
-							<svg
-								viewBox="0 0 100 100"
-								class="right-triangle"
-								width="8"
-								height="8"
-								><path
-									fill="currentColor"
-									stroke="currentColor"
-									d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
-								/></svg
+			<div class="nav-folder mod-root">
+				<div class="nav-folder-children">
+					<div
+						class="staged nav-folder"
+						class:is-collapsed={!stagedOpen}
+					>
+						<div
+							class="nav-folder-title"
+							on:click={() => (stagedOpen = !stagedOpen)}
+						>
+							<div
+								class="nav-folder-collapse-indicator collapse-icon"
 							>
-						</div>
-						<span>Staged Changes</span>
-					</div>
-					<span class="tree-item-flair">{status.staged.length}</span>
-				</div>
-				{#if stagedOpen}
-					<div
-						class="file-view"
-						transition:slide|local={{ duration: 150 }}
-					>
-						{#if showTree}
-							<TreeComponent
-								hierarchy={stagedHierarchy}
-								{plugin}
-								{view}
-								fileType={FileType.staged}
-								topLevel={true}
-							/>
-						{:else}
-							{#each status.staged as stagedFile}
-								<StagedFileComponent
-									change={stagedFile}
-									{view}
-									manager={plugin.gitManager}
-								/>
-							{/each}
-						{/if}
-					</div>
-				{/if}
-			</div>
-			<div class="changes">
-				<div
-					class="opener tree-item-self is-clickable"
-					class:open={changesOpen}
-					on:click={() => (changesOpen = !changesOpen)}
-				>
-					<div>
-						<div class="tree-item-icon collapse-icon" style="">
-							<svg
-								viewBox="0 0 100 100"
-								class="right-triangle"
-								width="8"
-								height="8"
-								><path
-									fill="currentColor"
-									stroke="currentColor"
-									d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
-								/></svg
-							>
-						</div>
-						<span>Changes</span>
-					</div>
-					<span class="tree-item-flair">{status.changed.length}</span>
-				</div>
-				{#if changesOpen}
-					<div
-						class="file-view"
-						transition:slide|local={{ duration: 150 }}
-					>
-						{#if showTree}
-							<TreeComponent
-								hierarchy={changeHierarchy}
-								{plugin}
-								{view}
-								fileType={FileType.changed}
-								topLevel={true}
-							/>
-						{:else}
-							{#each status.changed as change}
-								<FileComponent
-									{change}
-									{view}
-									manager={plugin.gitManager}
-									on:git-refresh={triggerRefresh}
-								/>
-							{/each}
-						{/if}
-					</div>
-				{/if}
-			</div>
-			{#if lastPulledFiles.length > 0}
-				<div class="pulled">
-					<div
-						class="opener tree-item-self is-clickable"
-						class:open={lastPulledFilesOpen}
-						on:click={() =>
-							(lastPulledFilesOpen = !lastPulledFilesOpen)}
-					>
-						<div>
-							<div class="tree-item-icon collapse-icon" style="">
 								<svg
-									viewBox="0 0 100 100"
-									class="right-triangle"
-									width="8"
-									height="8"
-									><path
-										fill="currentColor"
-										stroke="currentColor"
-										d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
-									/></svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									class="svg-icon right-triangle"
+									><path d="M3 8L12 17L21 8" /></svg
 								>
 							</div>
-							<span>Recently Pulled Changes</span>
+							<div class="nav-folder-title-content">
+								Staged Changes
+							</div>
+							<span class="tree-item-flair"
+								>{status.staged.length}</span
+							>
 						</div>
-						<span class="tree-item-flair"
-							>{lastPulledFiles.length}</span
-						>
-					</div>
-					{#if lastPulledFilesOpen}
-						<div
-							class="file-view"
-							transition:slide|local={{ duration: 150 }}
-						>
-							{#if showTree}
-								<TreeComponent
-									hierarchy={lastPulledFilesHierarchy}
-									{plugin}
-									{view}
-									fileType={FileType.pulled}
-									topLevel={true}
-								/>
-							{:else}
-								{#each lastPulledFiles as change}
-									<PulledFileComponent
-										{change}
+						{#if stagedOpen}
+							<div
+								class="nav-folder-children"
+								transition:slide|local={{ duration: 150 }}
+							>
+								{#if showTree}
+									<TreeComponent
+										hierarchy={stagedHierarchy}
+										{plugin}
 										{view}
-										on:git-refresh={triggerRefresh}
+										fileType={FileType.staged}
+										topLevel={true}
 									/>
-								{/each}
+								{:else}
+									{#each status.staged as stagedFile}
+										<StagedFileComponent
+											change={stagedFile}
+											{view}
+											manager={plugin.gitManager}
+										/>
+									{/each}
+								{/if}
+							</div>
+						{/if}
+					</div>
+					<div
+						class="changes nav-folder"
+						class:is-collapsed={!changesOpen}
+					>
+						<div
+							on:click={() => (changesOpen = !changesOpen)}
+							class="nav-folder-title"
+						>
+							<div
+								class="nav-folder-collapse-indicator collapse-icon"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									class="svg-icon right-triangle"
+									><path d="M3 8L12 17L21 8" /></svg
+								>
+							</div>
+
+							<div class="nav-folder-title-content">Changes</div>
+							<span class="tree-item-flair"
+								>{status.changed.length}</span
+							>
+						</div>
+						{#if changesOpen}
+							<div
+								class="nav-folder-children"
+								transition:slide|local={{ duration: 150 }}
+							>
+								{#if showTree}
+									<TreeComponent
+										hierarchy={changeHierarchy}
+										{plugin}
+										{view}
+										fileType={FileType.changed}
+										topLevel={true}
+									/>
+								{:else}
+									{#each status.changed as change}
+										<FileComponent
+											{change}
+											{view}
+											manager={plugin.gitManager}
+											on:git-refresh={triggerRefresh}
+										/>
+									{/each}
+								{/if}
+							</div>
+						{/if}
+					</div>
+					{#if lastPulledFiles.length > 0}
+						<div
+							class="pulled nav-folder"
+							class:is-collapsed={!lastPulledFilesOpen}
+						>
+							<div
+								class="nav-folder-title"
+								on:click={() =>
+									(lastPulledFilesOpen =
+										!lastPulledFilesOpen)}
+							>
+								<div
+									class="nav-folder-collapse-indicator collapse-icon"
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="svg-icon right-triangle"
+										><path d="M3 8L12 17L21 8" /></svg
+									>
+								</div>
+
+								<div class="nav-folder-title-content">
+									Recently Pulled Files
+								</div>
+
+								<span class="tree-item-flair"
+									>{lastPulledFiles.length}</span
+								>
+							</div>
+							{#if lastPulledFilesOpen}
+								<div
+									class="nav-folder-children"
+									transition:slide|local={{ duration: 150 }}
+								>
+									{#if showTree}
+										<TreeComponent
+											hierarchy={lastPulledFilesHierarchy}
+											{plugin}
+											{view}
+											fileType={FileType.pulled}
+											topLevel={true}
+										/>
+									{:else}
+										{#each lastPulledFiles as change}
+											<PulledFileComponent
+												{change}
+												{view}
+												on:git-refresh={triggerRefresh}
+											/>
+										{/each}
+									{/if}
+								</div>
 							{/if}
 						</div>
 					{/if}
 				</div>
-			{/if}
+			</div>
 		{/if}
 	</div>
 </main>
@@ -393,46 +421,32 @@
 		background-color: var(--background-modifier-form-field);
 	}
 
-	.file-view {
-		margin-left: 5px;
-	}
-	.opener {
-		padding-left: 10px;
-		padding-bottom: 2px;
-		padding-top: 2px;
+	// .opener {
+	// 	padding-left: 10px;
+	// 	padding-bottom: 2px;
+	// 	padding-top: 2px;
 
-		display: flex;
-		justify-content: space-between;
+	// 	display: flex;
+	// 	justify-content: space-between;
+	// 	align-items: center;
+	// 	.collapse-icon::after {
+	// 		content: "\00a0";
+	// 	}
+
+	// 	div {
+	// 		display: flex;
+	// 	}
+	// 	svg {
+	// 		transform: rotate(-90deg);
+	// 	}
+	// 	&.open svg {
+	// 		transform: rotate(0);
+	// 	}
+	// }
+	.tree-item-flair {
+		margin-left: auto;
 		align-items: center;
-		.collapse-icon::after {
-			content: "\00a0";
-		}
-
-		div {
-			display: flex;
-		}
-		svg {
-			transform: rotate(-90deg);
-		}
-		&.open svg {
-			transform: rotate(0);
-		}
 	}
-	.git-view-body {
-		overflow-y: auto;
-		padding-left: 10px;
-	}
-	main {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		overflow-y: hidden;
-	}
-
-	.nav-buttons-container {
-		justify-content: space-between;
-	}
-
 	.group {
 		display: flex;
 	}

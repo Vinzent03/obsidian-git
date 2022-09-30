@@ -37,78 +37,82 @@
 				{/if}
 			</div>
 		{:else}
-			<div
-				class="opener tree-item-self is-clickable"
-				class:open={!closed[entity.title]}
-				on:click={() => {
-					closed[entity.title] = !closed[entity.title];
-				}}
-			>
+			<div class="nav-folder" class:is-collapsed={closed[entity.title]}>
 				<div
-					style="padding-left: 10px; padding-bottom: 2px; padding-top:2px;"
+					on:click={() =>
+						(closed[entity.title] = !closed[entity.title])}
 				>
-					<div class="tree-item-icon collapse-icon" style="">
-						<svg
-							viewBox="0 0 100 100"
-							class="right-triangle"
-							width="8"
-							height="8"
-							><path
-								fill="currentColor"
-								stroke="currentColor"
-								d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
-							/></svg
+					<div class="nav-folder-title">
+						<div
+							class="nav-folder-collapse-indicator collapse-icon"
 						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								class="svg-icon right-triangle"
+								><path d="M3 8L12 17L21 8" /></svg
+							>
+						</div>
+						<div class="nav-folder-title-content">
+							{entity.title}
+						</div>
 					</div>
-					<span>{entity.title}</span>
 				</div>
+
+				{#if !closed[entity.title]}
+					<div
+						class="nav-folder-children"
+						transition:slide|local={{ duration: 150 }}
+					>
+						<svelte:self
+							hierarchy={entity}
+							{plugin}
+							{view}
+							{fileType}
+						/>
+					</div>
+				{/if}
 			</div>
-			{#if !closed[entity.title]}
-				<div
-					class="file-view"
-					transition:slide|local={{ duration: 75 }}
-				>
-					<svelte:self
-						hierarchy={entity}
-						{plugin}
-						{view}
-						{fileType}
-					/>
-				</div>
-			{/if}
 		{/if}
 	{/each}
 </main>
 
 <style lang="scss">
-	main:not(.topLevel) {
-		margin-left: 5px;
-	}
+	// main:not(.topLevel) {
+	// 	margin-left: 5px;
+	// }
 
-	.opener {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 0 4px;
-		.collapse-icon::after {
-			content: "\00a0";
-		}
+	// .opener {
+	// 	display: flex;
+	// 	justify-content: space-between;
+	// 	align-items: center;
+	// 	padding: 0 4px;
+	// 	.collapse-icon::after {
+	// 		content: "\00a0";
+	// 	}
 
-		div {
-			display: flex;
-		}
-		svg {
-			transform: rotate(-90deg);
-		}
-		&.open svg {
-			transform: rotate(0);
-		}
-		span {
-			font-size: 0.8rem;
-		}
-	}
+	// 	div {
+	// 		display: flex;
+	// 	}
+	// 	svg {
+	// 		transform: rotate(-90deg);
+	// 	}
+	// 	&.open svg {
+	// 		transform: rotate(0);
+	// 	}
+	// 	span {
+	// 		font-size: 0.8rem;
+	// 	}
+	// }
 
-	.file-view {
-		margin-left: 9px;
-	}
+	// .file-view {
+	// 	margin-left: 9px;
+	// }
 </style>

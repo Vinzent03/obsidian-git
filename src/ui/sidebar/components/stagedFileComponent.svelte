@@ -58,106 +58,65 @@
 	}
 </script>
 
-<main on:mouseover={hover} on:focus on:click|self={showDiff}>
+<main on:mouseover={hover} on:focus on:click|self={showDiff} class="nav-file">
 	<!-- svelte-ignore a11y-unknown-aria-attribute -->
-	<span
-		class="path"
+	<div
+		class="nav-file-title"
 		aria-label-position={side}
 		aria-label={formattedPath.split("/").last() != formattedPath
 			? formattedPath
 			: ""}
 		on:click={showDiff}
 	>
-		{formattedPath.split("/").last()?.replace(".md", "")}
-	</span>
-	<div class="tools">
-		<div class="buttons">
-			{#if view.app.vault.getAbstractFileByPath(formattedPath)}
-				<div
-					data-icon="go-to-file"
-					aria-label="Open File"
-					bind:this={buttons[1]}
-					on:click={open}
-				/>
-			{/if}
-			<div
-				data-icon="minus"
-				aria-label="Unstage"
-				bind:this={buttons[0]}
-				on:click={unstage}
-			/>
+		<div class="nav-file-title-content">
+			{formattedPath.split("/").last()?.replace(".md", "")}
 		</div>
-		<span class="type" data-type={change.index}>{change.index}</span>
+		<div class="tools">
+			<div class="buttons">
+				{#if view.app.vault.getAbstractFileByPath(formattedPath)}
+					<div
+						data-icon="go-to-file"
+						aria-label="Open File"
+						bind:this={buttons[1]}
+						on:click={open}
+						class="clickable-icon"
+					/>
+				{/if}
+				<div
+					data-icon="minus"
+					aria-label="Unstage"
+					bind:this={buttons[0]}
+					on:click={unstage}
+					class="clickable-icon"
+				/>
+			</div>
+			<div class="type" data-type={change.index}>{change.index}</div>
+		</div>
 	</div>
 </main>
 
 <style lang="scss">
-	main {
-		cursor: pointer;
-		background-color: var(--background-secondary);
-		border-radius: 4px;
-		width: 98%;
+	.tools {
 		display: flex;
-		justify-content: space-between;
-		font-size: 0.8rem;
-		margin-bottom: 2px;
-
-		.path {
-			color: var(--text-muted);
-			padding-top: 2px;
-			padding-left: 10px;
-			padding-bottom: 2px;
-			white-space: nowrap;
-			max-width: 75%;
-			overflow: hidden;
-			text-overflow: ellipsis;
-		}
-
-		&:hover {
-			color: var(--nav-item-color-active);
-			background-color: var(--nav-item-background-active);
-			font-weight: var(--nav-item-weight-active);
-		}
-
-		.tools {
+		margin-left: auto;
+		.type {
+			padding-left: var(--size-2-1);
 			display: flex;
 			align-items: center;
-
-			.type {
-				height: 16px;
-				width: 16px;
-				margin: 0;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				&[data-type="M"] {
-					color: orange;
-				}
-				&[data-type="D"] {
-					color: red;
-				}
-				&[data-type="A"] {
-					color: yellowgreen;
-				}
-				&[data-type="R"] {
-					color: violet;
-				}
+			justify-content: center;
+			&[data-type="M"] {
+				color: orange;
 			}
-			.buttons {
-				display: flex;
-				> * {
-					color: var(--text-faint);
-					height: 16px;
-					width: 16px;
-					margin: 0;
-					transition: all 0.2s;
-					border-radius: 2px;
-					margin-right: 1px;
-					&:hover {
-						color: var(--text-normal);
-						background-color: var(--interactive-accent);
-					}
-				}
+			&[data-type="D"] {
+				color: red;
+			}
+		}
+		.buttons {
+			display: flex;
+			> * {
+				padding: var(--size-2-1) var(--size-2-1);
+				border-radius: var(--clickable-icon-radius);
+				height: auto;
 			}
 		}
 	}
