@@ -7,6 +7,7 @@ import { currentMoment } from "src/utils";
 type LineAuthorGutterContextMenuMetadata = {
     creationTime: moment.Moment;
     commit: BlameCommit;
+    isDummyCommit: boolean;
 };
 
 /**
@@ -27,15 +28,16 @@ type LineAuthorGutterContextMenuMetadata = {
  */
 export const latestClickedLineAuthorGutter: LineAuthorGutterContextMenuMetadata = {
     creationTime: currentMoment(),
-    commit: zeroCommit
+    commit: zeroCommit,
+    isDummyCommit: false,
 };
 
 export function registerLastClickedGutterHandler(
-    elt: HTMLElement, commit: BlameCommit
+    elt: HTMLElement, commit: BlameCommit, isDummyCommit: boolean
 ) {
     elt.onmousedown = (_e) => {
         const newMetadata: LineAuthorGutterContextMenuMetadata = {
-            commit, creationTime: currentMoment()
+            commit, creationTime: currentMoment(), isDummyCommit
         };
         Object.assign(latestClickedLineAuthorGutter, newMetadata);
     };
@@ -49,8 +51,8 @@ export function handleContextMenu(menu: Menu, editor: Editor, _mdv: MarkdownView
     if (!gutterWasRecentlyClicked())
         return;
 
-    // Deactivate context-menu item for the zero commit
-    if (latestClickedLineAuthorGutter.commit.isZeroCommit)
+    // Deactivate context-menu item for the zero commit and dummy-commit
+    if (latestClickedLineAuthorGutter.commit.isZeroCommit || latestClickedLineAuthorGutter.isDummyCommit)
         return;
 
     addCopyHashMenuItem(menu);

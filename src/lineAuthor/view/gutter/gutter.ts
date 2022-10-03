@@ -80,7 +80,7 @@ export class LineAuthoringGutter extends GutterMarker {
             toBeRenderedText = this.adaptTextForFakeCommit(commit, toBeRenderedText);
         }
 
-        const node = this.createHtmlNode(commit, toBeRenderedText);
+        const node = this.createHtmlNode(commit, toBeRenderedText, this.options === "dummy-commit");
 
         return node;
     }
@@ -89,7 +89,7 @@ export class LineAuthoringGutter extends GutterMarker {
         dom.parentNode?.removeChild(dom);
     }
 
-    private createHtmlNode(commit: BlameCommit, text: string) {
+    private createHtmlNode(commit: BlameCommit, text: string, isDummyCommit: boolean) {
         const node = document.body.createDiv();
 
         node.innerText = text;
@@ -102,7 +102,7 @@ export class LineAuthoringGutter extends GutterMarker {
 
         // save this gutters info on mousedown so that the corresponding
         // right-click / context-menu has access to this commit info.
-        registerLastClickedGutterHandler(node, commit);
+        registerLastClickedGutterHandler(node, commit, isDummyCommit);
 
         return node;
     }
