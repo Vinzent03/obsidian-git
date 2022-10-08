@@ -1,73 +1,112 @@
 
 import { Editor, MarkdownView, Menu } from "obsidian";
-import { zeroCommit } from "src/simpleGit";
+import { DEFAULT_SETTINGS } from "src/constants";
+import { LineAuthorSettings } from "src/lineAuthor/model";
+import { findGutterElementUnderMouse } from "src/lineAuthor/view/gutter/gutterElementSearch";
+import { pluginRef } from "src/pluginGlobalRef";
 import { BlameCommit } from "src/types";
-import { currentMoment } from "src/utils";
+import { impossibleBranch } from "src/utils";
 
-type LineAuthorGutterContextMenuMetadata = {
-    creationTime: moment.Moment;
-    commit: BlameCommit;
-    isDummyCommit: boolean;
-};
+type ContextMenuConfigurableSettingsKeys = "showCommitHash" | "authorDisplay" | "dateTimeFormatOptions";
 
-/**
- * Stores the last clicked line authoring gutter in a global variable.
- * We need this, because no other way was found on how we can access the click-target
- * on an Obsidian "context-menu" event.
- * 
- * With {@link registerLastClickedGutterHandler}, we register each mousedown event
- * on the line authoring gutters and save the commit information for that hash.
- * 
- * When the context menu is handled in {@link handleContextMenu}, we can
- * access this global variable and adapt the context menu based on that.
- * 
- * We also use {@link gutterWasRecentlyClicked} to ensure, that the context-menu shown
- * really corresponds to the mousedown for the same click.
- * 
- * The value is initialised with the zero commit for fallback safety.
- */
-export const latestClickedLineAuthorGutter: LineAuthorGutterContextMenuMetadata = {
-    creationTime: currentMoment(),
-    commit: zeroCommit,
-    isDummyCommit: false,
-};
+type CtxMenuCommitInfo = Pick<BlameCommit, "hash" | "isZeroCommit"> & { isDummy: boolean };
+const COMMIT_ATTR = "data-commit";
 
-export function registerLastClickedGutterHandler(
-    elt: HTMLElement, commit: BlameCommit, isDummyCommit: boolean
-) {
-    elt.onmousedown = (_e) => {
-        const newMetadata: LineAuthorGutterContextMenuMetadata = {
-            commit, creationTime: currentMoment(), isDummyCommit
-        };
-        Object.assign(latestClickedLineAuthorGutter, newMetadata);
-    };
-}
 
 export function handleContextMenu(menu: Menu, editor: Editor, _mdv: MarkdownView) {
     // Click was inside text-editor with active cursor. Don't trigger there.
     if (editor.hasFocus())
         return;
 
-    if (!gutterWasRecentlyClicked())
-        return;
+    const gutterElement = findGutterElementUnderMouse();
+    if (!gutterElement) return;
 
-    // Deactivate context-menu item for the zero commit and dummy-commit
-    if (latestClickedLineAuthorGutter.commit.isZeroCommit || latestClickedLineAuthorGutter.isDummyCommit)
-        return;
+    const info = getCommitInfo(gutterElement);
+    if (!info) return;
 
-    addCopyHashMenuItem(menu);
+    // Zero-commit and dummy-commit must not be copied
+    if (!info.isZeroCommit && !info.isDummy) {
+        addCopyHashMenuItem(info, menu);
+    }
+
+    addConfigurableLineAuthorSettings("showCommitHash", menu);
+    addConfigurableLineAuthorSettings("authorDisplay", menu);
+    addConfigurableLineAuthorSettings("dateTimeFormatOptions", menu);
 }
 
-function gutterWasRecentlyClicked(): boolean {
-    return currentMoment()
-        .diff(latestClickedLineAuthorGutter.creationTime, "milliseconds") <= 300;
-}
 
-function addCopyHashMenuItem(menu: Menu) {
+function addCopyHashMenuItem(commit: CtxMenuCommitInfo, menu: Menu) {
     menu.addItem((item) =>
         item
             .setTitle("Copy commit hash")
             .setIcon("copy")
-            .onClick((_e) => navigator.clipboard.writeText(latestClickedLineAuthorGutter.commit.hash))
+            .setSection("obs-git-line-author-copy")
+            .onClick((_e) =>
+                navigator.clipboard.writeText(commit.hash)
+            )
     );
+}
+
+
+function addConfigurableLineAuthorSettings(
+    key: ContextMenuConfigurableSettingsKeys, menu: Menu
+) {
+    let title: string;
+    let actionNewValue: LineAuthorSettings[typeof key];
+
+    const settings = pluginRef.plugin!.settings.lineAuthor;
+    const currentValue = settings[key];
+    const currentlyShown = typeof currentValue === "boolean" ? currentValue : currentValue !== "hide";
+
+    const defaultValue = DEFAULT_SETTINGS.lineAuthor[key];
+
+    if (key === "showCommitHash") {
+        title = "Show commit hash";
+        actionNewValue = <LineAuthorSettings["showCommitHash"]>!currentValue;
+    }
+    else if (key === "authorDisplay") {
+        const showOption = settings.lastShownAuthorDisplay ?? defaultValue;
+        title = "Show author " + (currentlyShown ? currentValue : showOption);
+        actionNewValue = currentlyShown ? "hide" : showOption
+    }
+    else if (key === "dateTimeFormatOptions") {
+        const showOption = settings.lastShownDateTimeFormatOptions ?? defaultValue;
+        title = "Show " + (currentlyShown ? currentValue : showOption);
+        title += !title.contains("date") ? " date" : "";
+        actionNewValue = currentlyShown ? "hide" : showOption;
+    }
+    else {
+        impossibleBranch(key);
+    }
+
+    menu.addItem((item) =>
+        item.setTitle(title)
+            .setSection("obs-git-line-author-configure") // group settings together
+            .setChecked(currentlyShown)
+            .onClick((_e) =>
+                pluginRef.plugin?.settingsTab
+                    ?.configureLineAuthorSettingAndRefreshViews(key, actionNewValue)
+            )
+    );
+}
+
+
+
+export function enrichCommitInfoForContextMenu(
+    commit: BlameCommit,
+    isDummyCommit: boolean,
+    elt: HTMLElement
+) {
+    elt.setAttr(COMMIT_ATTR, JSON.stringify(
+        <CtxMenuCommitInfo>{
+            hash: commit.hash,
+            isZeroCommit: commit.isZeroCommit,
+            isDummy: isDummyCommit,
+        }
+    ));
+}
+
+function getCommitInfo(elt: HTMLElement): CtxMenuCommitInfo | undefined {
+    const commitInfoStr = elt.getAttr(COMMIT_ATTR);
+    return commitInfoStr ? JSON.parse(commitInfoStr) : undefined;
 }

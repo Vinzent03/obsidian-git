@@ -1,3 +1,5 @@
+import { RangeSet } from "@codemirror/state";
+import { GutterMarker } from "@codemirror/view";
 import { latestSettings } from "src/lineAuthor/model";
 import { LineAuthoringGutter } from "src/lineAuthor/view/gutter/gutter";
 import { median } from "src/utils";
@@ -11,15 +13,21 @@ The caches here are evicted whenever the line author feature is disabled/refresh
 */
 
 /**
- * Clears the cache. This should be called when-ever the settings are changed.
+ * Clears the cache. This should be called whenever the settings are changed.
  * 
  * Currently, the entire feature is re-loaded, which is why it suffices this to be called
  * in the disabler in `lineAuthorIntegration.ts`.
  */
 export function clearViewCache() {
     longestRenderedGutter = undefined;
+
     renderedAgeInDaysForAdaptiveInitialColoring = [];
     ageIdx = 0;
+
+    gutterInstances.clear();
+    gutterMarkersRangeSet.clear();
+
+    attachedGutterElements.clear();
 }
 
 /**
@@ -39,9 +47,10 @@ export const getLongestRenderedGutter = () => longestRenderedGutter;
  * If bigger, then update the global variable and persist the settings via {@link latestSettings.save}
  */
 export function conditionallyUpdateLongestRenderedGutter(gutter: LineAuthoringGutter, text: string) {
-    if (text.length < (longestRenderedGutter?.length ?? 0)) return;
-
     const length = text.length;
+
+    if (length < (longestRenderedGutter?.length ?? 0)) return;
+
     longestRenderedGutter = { gutter, length, text };
 
     const settings = latestSettings.get();
@@ -77,3 +86,23 @@ export function recordRenderedAgeInDays(age: number) {
 export function computeAdaptiveInitialColoringAgeInDays(): number | undefined {
     return median(renderedAgeInDaysForAdaptiveInitialColoring);
 }
+
+
+/**
+ * Caches the {@link LineAuthoringGutter} instances created in `gutter.ts`.
+ */
+export const gutterInstances: Map<string, LineAuthoringGutter> = new Map();
+
+/**
+ * Caches the computation of {@link computeLineAuthoringGutterMarkersRangeSet}.
+ * 
+ * Despite the computation of the document digest and line-blocks, the performance
+ * was measured to be faster with the caching.
+ */
+export const gutterMarkersRangeSet: Map<string, RangeSet<GutterMarker>> = new Map();
+
+/**
+ * Stores all DOM-attached gutter elements so that they can be checked for being
+ * under the mouse during a gutter context-menu event;
+ */
+export const attachedGutterElements: Set<HTMLElement> = new Set();

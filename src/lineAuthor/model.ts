@@ -1,8 +1,7 @@
 import {
     Annotation,
     AnnotationType,
-    EditorState,
-    StateField,
+    EditorState, StateField,
     Transaction
 } from "@codemirror/state";
 import { RGB } from "obsidian";
@@ -119,7 +118,9 @@ export type LineAuthorSettings = {
     showCommitHash: boolean;
     followMovement: LineAuthorFollowMovement;
     authorDisplay: LineAuthorDisplay;
+    lastShownAuthorDisplay?: LineAuthorDisplay;
     dateTimeFormatOptions: LineAuthorDateTimeFormatOptions;
+    lastShownDateTimeFormatOptions?: LineAuthorDateTimeFormatOptions;
     dateTimeFormatCustomString: string;
     dateTimeTimezone: LineAuthorTimezoneOption;
     coloringMaxAge: string;

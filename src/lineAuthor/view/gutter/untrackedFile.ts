@@ -1,5 +1,5 @@
 import { LineAuthorSettings } from "src/lineAuthor/model";
-import { LineAuthoringGutter } from "src/lineAuthor/view/gutter/gutter";
+import { lineAuthoringGutterMarker } from "src/lineAuthor/view/gutter/gutter";
 import { zeroCommit } from "src/simpleGit";
 import { Blame } from "src/types";
 
@@ -11,5 +11,5 @@ export function newUntrackedFileGutter(key: string, settings: LineAuthorSettings
         hashPerLine: [undefined!, "000000"],
         commits: new Map([["000000", zeroCommit]]),
     };
-    return new LineAuthoringGutter(dummyLineAuthoring, 1, 1, key, settings);
+    return lineAuthoringGutterMarker(dummyLineAuthoring, 1, 1, key, settings);
 }

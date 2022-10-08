@@ -1,10 +1,11 @@
-import { gutter } from "@codemirror/view";
-import { Extension } from "@codemirror/state";
+import { Extension, Range, RangeSet, Text } from "@codemirror/state";
+import { EditorView, gutter, GutterMarker } from "@codemirror/view";
+import { sha256 } from "js-sha256";
 import {
-    latestSettings, LineAuthoringWithId, lineAuthorState
+    latestSettings, LineAuthoringWithId, LineAuthorSettings, lineAuthorState
 } from "src/lineAuthor/model";
-import { getLongestRenderedGutter } from "src/lineAuthor/view/cache";
-import { LineAuthoringGutter, TextGutter } from "src/lineAuthor/view/gutter/gutter";
+import { getLongestRenderedGutter, gutterMarkersRangeSet } from "src/lineAuthor/view/cache";
+import { lineAuthoringGutterMarker, TextGutter } from "src/lineAuthor/view/gutter/gutter";
 import { initialLineAuthoringGutter, initialSpacingGutter } from "src/lineAuthor/view/gutter/initial";
 import { newUntrackedFileGutter } from "src/lineAuthor/view/gutter/untrackedFile";
 
@@ -23,27 +24,11 @@ const UNDISPLAYED = new TextGutter("");
 */
 export const lineAuthorGutter: Extension = gutter({
     class: "line-author-gutter-container",
-    lineMarker(view, line, _otherMarkers) {
+    markers(view) {
+        // this is called a few times on every keystroke / cursor-move. Hence, it is efficient
         const lineAuthoring = view.state.field(lineAuthorState, false);
-
-        // We have two line numbers here, because embeds, tables and co. cause
-        // multiple lines to be rendered with a single gutter. Hence, we need to
-        // choose the youngest commit - of which the info will be shown.
-        const startLine = view.state.doc.lineAt(line.from).number;
-        const endLine = view.state.doc.lineAt(line.to).number;
-        const docLastLine = view.state.doc.lines;
-        const isEmptyLine = view.state.doc.iterLines(startLine, endLine + 1).next().value === "";
-
-        return createLineAuthorGutter(
-            startLine,
-            endLine,
-            docLastLine,
-            isEmptyLine,
-            lineAuthoring,
-        );
+        return lineAuthoringGutterMarkersRangeSet(view, lineAuthoring);
     },
-    // Rerender, when we have any state change.
-    // Unfortunately, when the cursor moves, the re-render will happen anyways :/
     lineMarkerChange(update) {
         const newLineAuthoringId = update.state.field(lineAuthorState)?.key;
         const oldLineAuthoringId = update.startState.field(lineAuthorState)?.key;
@@ -54,31 +39,103 @@ export const lineAuthorGutter: Extension = gutter({
     updateSpacer: (_sp, _u) => getLongestRenderedGutter()?.gutter ?? initialSpacingGutter()
 });
 
-function createLineAuthorGutter(
-    startLine: number,
-    endLine: number,
-    docLastLine: number,
-    isEmptyLine: boolean,
-    optLineAuthoring: LineAuthoringWithId | undefined,
-): LineAuthoringGutter | TextGutter {
-    if (startLine === docLastLine && isEmptyLine) {
-        // last empty line has no git-blame defined.
-        return UNDISPLAYED;
+
+/**
+ * Creates the gutter markers as a {@link RangeSet}.
+ * 
+ * The computation result is cached for better performance via a SHA-256 `cacheKey`.
+ * The actual computation happens in {@link computeLineAuthoringGutterMarkersRangeSet}.
+ */
+function lineAuthoringGutterMarkersRangeSet(
+    view: EditorView,
+    optLA?: LineAuthoringWithId
+): RangeSet<GutterMarker> {
+
+    const digest = sha256.create();
+
+    digest.update(`${optLA?.la === "untracked"} ${optLA?.key}`);
+
+    const doc = view.state.doc;
+    // We don't digest this, even though it is used as an argument for the computation
+    // This is because a change in the doc is only reflected in the line authoring
+    // when the doc is saved. But saving changes the line authoring key anyways.
+
+    // Each line is part of a block of 1 or more lines. Within a block only the newest
+    // commit should be shown. Hence, we collect the start and end positions for each block here.
+    const lineBlockEndPos: Map<number, [number, number]> = new Map();
+    for (let line = 1; line <= doc.lines; line++) {
+        const from = doc.line(line).from;
+        const to = view.lineBlockAt(from).to
+        lineBlockEndPos.set(line, [from, to]);
+        digest.update([from, to, 0]);
     }
 
-    const settings = latestSettings.get();
+    const laSettings = latestSettings.get();
+    digest.update("s" + Object.values(latestSettings).join(","));
 
-    if (optLineAuthoring === undefined) {
-        return initialLineAuthoringGutter(settings);
+    const cacheKey = digest.hex();
+
+    const cached = gutterMarkersRangeSet.get(cacheKey);
+    if (cached) return cached;
+
+    // This is called infrequently enough to put the computation there.
+    const result = computeLineAuthoringGutterMarkersRangeSet(doc, lineBlockEndPos, laSettings, optLA);
+    gutterMarkersRangeSet.set(cacheKey, result);
+    return result;
+}
+
+
+function computeLineAuthoringGutterMarkersRangeSet(
+    doc: Text,
+    blocksPerLine: Map<number, [number, number]>,
+    settings: LineAuthorSettings,
+    optLA?: LineAuthoringWithId
+): RangeSet<GutterMarker> {
+
+    const docLastLine = doc.lines;
+
+    const ranges: Range<GutterMarker>[] = [];
+    function add(from: number, to: number | undefined, gutter: GutterMarker) {
+        return ranges.push(gutter.range(from, to));
     }
 
-    const { key, la } = optLineAuthoring;
+    const emptyDoc = doc.length === 0;
 
-    if (la === "untracked") {
-        return newUntrackedFileGutter(key, settings);
+    const lastLineIsEmpty = doc.iterLines(docLastLine, docLastLine + 1).next().value === "";
+
+    for (let startLine = 1; startLine <= docLastLine; startLine++) {
+        const [from, to] = blocksPerLine.get(startLine)!;
+        const endLine = doc.lineAt(to).number;
+
+        if (emptyDoc) {
+            add(from, to, UNDISPLAYED);
+            continue;
+        }
+
+        if (startLine === docLastLine && lastLineIsEmpty) {
+            add(from, to, UNDISPLAYED);
+            continue;
+        }
+
+        if (optLA === undefined) {
+            add(from, to, initialLineAuthoringGutter(settings));
+            continue;
+        }
+
+        const { key, la } = optLA;
+
+        if (la === "untracked") {
+            add(from, to, newUntrackedFileGutter(la, settings));
+            continue;
+        }
+
+        if (endLine >= la.hashPerLine.length) {
+            add(from, to, UNDISPLAYED);
+            continue;
+        }
+
+        add(from, to, lineAuthoringGutterMarker(la, startLine, endLine, key, settings))
     }
 
-    if (endLine >= la.hashPerLine.length) return UNDISPLAYED;
-
-    return new LineAuthoringGutter(la, startLine, endLine, key, settings)
+    return RangeSet.of(ranges, /* sort = */true);
 }

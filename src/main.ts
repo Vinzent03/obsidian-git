@@ -1,6 +1,7 @@
 import { Errors } from "isomorphic-git";
 import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile } from "obsidian";
 import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
+import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -25,6 +26,7 @@ export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
     localStorage: LocalStorageSettings;
     settings: ObsidianGitSettings;
+    settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
     branchBar?: BranchStatusBar;
     state: PluginState;
@@ -82,13 +84,16 @@ export default class ObsidianGit extends Plugin {
 
     async onload() {
         console.log('loading ' + this.manifest.name + " plugin");
+        pluginRef.plugin = this;
+
         this.localStorage = new LocalStorageSettings(this);
 
         this.localStorage.migrate();
         await this.loadSettings();
         this.migrateSettings();
 
-        this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
+        this.settingsTab = new ObsidianGitSettingsTab(this.app, this);
+        this.addSettingTab(this.settingsTab);
 
         if (!this.localStorage.getPluginDisabled()) {
             this.loadPlugin();
@@ -359,6 +364,14 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
+        this.addCommand({
+            id: "toggle-line-author-info",
+            name: "Toggle line author information",
+            callback: () => this
+                .settingsTab?.configureLineAuthorShowStatus(!this.settings.lineAuthor.show)
+            ,
+        });
+
         this.registerEvent(
             this.app.workspace.on('file-menu', (menu, file, source) => {
                 this.handleFileMenu(menu, file, source);
@@ -506,6 +519,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async saveSettings() {
+        this.settingsTab?.beforeSaveSettings();
         await this.saveData(this.settings);
     }
 

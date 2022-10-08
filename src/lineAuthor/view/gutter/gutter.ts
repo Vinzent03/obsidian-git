@@ -1,10 +1,11 @@
 import { GutterMarker } from "@codemirror/view";
+import { sha256 } from "js-sha256";
 import { Moment } from "moment-timezone";
 import { moment } from "obsidian";
 import { DATE_FORMAT, DATE_TIME_FORMAT_MINUTES } from "src/constants";
 import { latestSettings, LineAuthorDateTimeFormatOptions, LineAuthorDisplay, LineAuthoring, LineAuthorSettings, LineAuthorTimezoneOption } from "src/lineAuthor/model";
-import { conditionallyUpdateLongestRenderedGutter, getLongestRenderedGutter } from "src/lineAuthor/view/cache";
-import { registerLastClickedGutterHandler } from "src/lineAuthor/view/contextMenu";
+import { attachedGutterElements, conditionallyUpdateLongestRenderedGutter, getLongestRenderedGutter, gutterInstances } from "src/lineAuthor/view/cache";
+import { enrichCommitInfoForContextMenu } from "src/lineAuthor/view/contextMenu";
 import { coloringBasedOnCommitAge } from "src/lineAuthor/view/gutter/coloring";
 import { chooseNewestCommit } from "src/lineAuthor/view/gutter/commitChoice";
 import { BlameCommit } from "src/types";
@@ -37,6 +38,15 @@ export class TextGutter extends GutterMarker {
  * to {@link endLine}.
  */
 export class LineAuthoringGutter extends GutterMarker {
+    private precomputedDomProvider?: () => HTMLElement;
+    public readonly point = false;
+    public readonly elementClass = "obs-git-blame-gutter";
+
+    /**
+     * **This should only be called {@link lineAuthoringGutterMarker}!**
+     * 
+     * We want to avoid creating the same instance multiple times for improved performance.
+     */
     constructor(
         public readonly lineAuthoring: Exclude<LineAuthoring, "untracked">,
         public readonly startLine: number,
@@ -58,16 +68,33 @@ export class LineAuthoringGutter extends GutterMarker {
         );
     }
 
-    public elementClass = "obs-git-blame-gutter";
-
     /**
      * Renders to a Html node.
      * 
      * It choses the newest commit within the line-range,
      * renders it, makes adjustments for fake-commits and finally warps
      * it into HTML.
+     * 
+     * The DOM is actually precomputed with {@link computeDom},
+     * which provides a finaliser to run before the DOM is handed over to CodeMirror.
+     * This is done, because this method is called frequently. It is called,
+     * whenever a gutter gets into the viewport and needs to be rendered.
      */
     public toDOM() {
+        this.precomputedDomProvider = this.precomputedDomProvider ?? this.computeDom();
+        return this.precomputedDomProvider();
+    }
+
+    public destroy(dom: Node): void {
+        // this is called frequently, when the gutter moves outside of the view.
+        dom.parentNode?.removeChild(dom);
+        attachedGutterElements.delete(dom as HTMLElement);
+    }
+
+    /**
+     * Prepares the DOM for this gutter.
+     */
+    private computeDom() {
         const commit = chooseNewestCommit(this.lineAuthoring, this.startLine, this.endLine);
 
         let toBeRenderedText = commit.isZeroCommit ? "" : this.renderNonZeroCommit(commit);
@@ -80,31 +107,32 @@ export class LineAuthoringGutter extends GutterMarker {
             toBeRenderedText = this.adaptTextForFakeCommit(commit, toBeRenderedText);
         }
 
-        const node = this.createHtmlNode(commit, toBeRenderedText, this.options === "dummy-commit");
+        const domProvider = this.createHtmlNode(commit, toBeRenderedText, this.options === "dummy-commit");
 
-        return node;
-    }
-
-    public destroy(dom: Node): void {
-        dom.parentNode?.removeChild(dom);
+        return domProvider;
     }
 
     private createHtmlNode(commit: BlameCommit, text: string, isDummyCommit: boolean) {
-        const node = document.body.createDiv();
+        const templateElt = window.createDiv();
 
-        node.innerText = text;
+        templateElt.innerText = text;
 
-        node.style.backgroundColor = coloringBasedOnCommitAge(
+        templateElt.style.backgroundColor = coloringBasedOnCommitAge(
             commit?.author?.epochSeconds,
             commit?.isZeroCommit,
             this.settings
         );
 
-        // save this gutters info on mousedown so that the corresponding
-        // right-click / context-menu has access to this commit info.
-        registerLastClickedGutterHandler(node, commit, isDummyCommit);
+        enrichCommitInfoForContextMenu(commit, isDummyCommit, templateElt);
 
-        return node;
+        function prepareForDomAttachment(): HTMLElement {
+            // clone node before attachment, as attached DOMs may get destroyed.
+            const elt = templateElt.cloneNode(true) as HTMLElement;
+            attachedGutterElements.add(elt);
+            return elt;
+        }
+
+        return prepareForDomAttachment;
     }
 
     private renderNonZeroCommit(commit: BlameCommit) {
@@ -254,4 +282,33 @@ export class LineAuthoringGutter extends GutterMarker {
 
         return resizeToLength(toBeRenderedText, desiredLength, fillCharacter);
     }
+}
+
+/**
+ * Creates a {@link LineAuthoringGutter}.
+ * 
+ * This function should be used instead of directly calling the constructor,
+ * as we don't want to re-create the same instance multiple times, whenever the user
+ * scrolls through a document. It simply stores the instances in the cache {@link gutterInstances}.
+ */
+export function lineAuthoringGutterMarker(
+    la: Exclude<LineAuthoring, "untracked">,
+    startLine: number,
+    endLine: number,
+    key: string,
+    settings: LineAuthorSettings,
+    options?: "dummy-commit",
+) {
+    const digest = sha256.create();
+    digest.update(Object.values(settings).join(","));
+    digest.update(`s${startLine}-e${endLine}-k${key}-o${options}`);
+
+    const cacheKey = digest.hex();
+
+    const cached = gutterInstances.get(cacheKey);
+    if (cached) return cached;
+
+    const result = new LineAuthoringGutter(la, startLine, endLine, key, settings, options);
+    gutterInstances.set(cacheKey, result);
+    return result;
 }

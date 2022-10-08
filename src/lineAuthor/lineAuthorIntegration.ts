@@ -3,6 +3,7 @@ import { EventRef, Platform, TAbstractFile, TFile, WorkspaceLeaf } from "obsidia
 import { enabledLineAuthorInfoExtensions, LineAuthorProvider } from "src/lineAuthor/lineAuthorProvider";
 import { LineAuthorSettings, provideSettingsAccess } from "src/lineAuthor/model";
 import { handleContextMenu } from "src/lineAuthor/view/contextMenu";
+import { prepareGutterSearchForContextMenuHandling } from "src/lineAuthor/view/gutter/gutterElementSearch";
 import ObsidianGit from "src/main";
 import { SimpleGit } from "src/simpleGit";
 
@@ -124,6 +125,9 @@ export class LineAuthoringFeature {
         this.refreshOnCssChangeEvent = this.createCssRefreshHandler();
         this.fileRenameEvent = this.createFileRenameEvent();
 
+        prepareGutterSearchForContextMenuHandling();
+
+        this.plg.registerEvent(this.gutterContextMenuEvent);
         this.plg.registerEvent(this.refreshOnCssChangeEvent);
         this.plg.registerEvent(this.fileOpenEvent);
         this.plg.registerEvent(this.workspaceLeafChangeEvent);

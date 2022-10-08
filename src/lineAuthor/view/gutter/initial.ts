@@ -2,14 +2,14 @@ import { Moment } from "moment-timezone";
 import { DEFAULT_SETTINGS } from "src/constants";
 import { latestSettings, LineAuthoring, LineAuthorSettings, maxAgeInDaysFromSettings } from "src/lineAuthor/model";
 import { computeAdaptiveInitialColoringAgeInDays } from "src/lineAuthor/view/cache";
-import { LineAuthoringGutter, TextGutter } from "src/lineAuthor/view/gutter/gutter";
+import { lineAuthoringGutterMarker, TextGutter } from "src/lineAuthor/view/gutter/gutter";
 import { Blame, BlameCommit, GitTimestamp, UserEmail } from "src/types";
 import { currentMoment, momentToEpochSeconds } from "src/utils";
 
 /**
  * The gutter used to reserve the space used for the line authoring before it is loaded.
  * 
- * Until the true length is known, it uses the last saved {@link gutterSpacingFallbackLength}.
+ * Until the true length is known, it uses the last saved `gutterSpacingFallbackLength`.
  */
 export function initialSpacingGutter() {
     const length = latestSettings.get()?.gutterSpacingFallbackLength ?? DEFAULT_SETTINGS.lineAuthor.gutterSpacingFallbackLength;
@@ -21,7 +21,7 @@ export function initialSpacingGutter() {
  */
 export function initialLineAuthoringGutter(settings: LineAuthorSettings) {
     const lineAuthoring = adaptiveInitialColoredDummyLineAuthoring(settings);
-    return new LineAuthoringGutter(lineAuthoring, 1, 1, "undefined", settings, "dummy-commit")
+    return lineAuthoringGutterMarker(lineAuthoring, 1, 1, "undefined", settings, "dummy-commit")
 }
 
 /**

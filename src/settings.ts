@@ -2,7 +2,7 @@ import { moment, Notice, Platform, PluginSettingTab, RGB, Setting } from "obsidi
 import { DATE_TIME_FORMAT_SECONDS, DEFAULT_SETTINGS, GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH } from "src/constants";
 import { previewColor } from "src/lineAuthor/lineAuthorProvider";
 import { LineAuthorDateTimeFormatOptions, LineAuthorDisplay, LineAuthorFollowMovement, LineAuthorSettings, LineAuthorTimezoneOption } from "src/lineAuthor/model";
-import { SyncMethod } from "src/types";
+import { ObsidianGitSettings, SyncMethod } from "src/types";
 import { convertToRgb, currentMoment, rgbToString } from "src/utils";
 import { IsomorphicGit } from "./isomorphicGit";
 import ObsidianGit from "./main";
@@ -14,20 +14,24 @@ const LINE_AUTHOR_FEATURE_WIKI_LINK = "https://github.com/denolehov/obsidian-git
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     lineAuthorColorSettings: Map<"oldest" | "newest", Setting> = new Map();
 
+    declare plugin: ObsidianGit; // narrow type from PluginSettingTab.plugin
+
+    private get settings() {
+        return this.plugin.settings;
+    }
+
     display(): void {
-        const { containerEl } = this;
-        const plugin: ObsidianGit = (this as any).plugin;
+        const { containerEl, plugin } = this;
         const commitOrBackup = plugin.settings.differentIntervalCommitAndPush ? "commit" : "backup";
-        const gitReady = plugin.gitReady;
 
         containerEl.empty();
         containerEl.createEl("h2", { text: "Git Backup settings" });
-        if (!gitReady) {
+        if (!plugin.gitReady) {
             containerEl.createEl("p", { text: "Git is not ready. When all settings are correct you can configure auto backup, etc." });
         }
 
 
-        if (gitReady) {
+        if (plugin.gitReady) {
             containerEl.createEl('br');
             containerEl.createEl("h3", { text: "Automatic" });
             new Setting(containerEl)
@@ -311,7 +315,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             containerEl.createEl("br");
             containerEl.createEl("h3", { "text": "Line author feature" });
 
-            this.addLineAuthorInfoSettings(containerEl, plugin);
+            this.addLineAuthorInfoSettings();
         }
 
         containerEl.createEl("br");
@@ -444,7 +448,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.localStorage.setPassword(value);
                     });
                 });
-        if (gitReady)
+
+        if (plugin.gitReady)
             new Setting(containerEl)
                 .setName("Author name for commit")
                 .addText(async cb => {
@@ -454,7 +459,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
                 });
 
-        if (gitReady)
+        if (plugin.gitReady)
             new Setting(containerEl)
                 .setName("Author email for commit")
                 .addText(async cb => {
@@ -517,11 +522,48 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         }
     }
 
-    private addLineAuthorInfoSettings(containerEl: HTMLElement, plugin: ObsidianGit) {
-        const baseLineAuthorInfoSetting = new Setting(containerEl)
+    public configureLineAuthorShowStatus(show: boolean) {
+        this.settings.lineAuthor.show = show;
+        this.plugin.saveSettings();
+
+        if (show) this.plugin.lineAuthoringFeature.activateFeature();
+        else this.plugin.lineAuthoringFeature.deactivateFeature();
+    }
+
+    /**
+     * Persists the setting {@link key} with value {@link value} and
+     * refreshes the line author info views.
+     */
+    public configureLineAuthorSettingAndRefreshViews
+        <K extends keyof ObsidianGitSettings["lineAuthor"]>(
+            key: K,
+            value: ObsidianGitSettings["lineAuthor"][K]
+        ) {
+        this.settings.lineAuthor[key] = value;
+        this.plugin.saveSettings();
+        this.plugin.lineAuthoringFeature.refreshLineAuthorViews();
+    }
+
+    /**
+     * Ensure, that certain last shown values are persisten in the settings.
+     * 
+     * Necessary for the line author info gutter context menus.
+     */
+    public beforeSaveSettings() {
+        const laSettings = this.settings.lineAuthor;
+        if (laSettings.authorDisplay !== "hide") {
+            laSettings.lastShownAuthorDisplay = laSettings.authorDisplay
+        }
+        if (laSettings.dateTimeFormatOptions !== "hide") {
+            laSettings.lastShownDateTimeFormatOptions = laSettings.dateTimeFormatOptions;
+        }
+    }
+
+    private addLineAuthorInfoSettings() {
+        const baseLineAuthorInfoSetting = new Setting(this.containerEl)
             .setName("Show commit authoring information next to each line");
 
-        if (!plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform()) {
+        if (!this.plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform()) {
             baseLineAuthorInfoSetting
                 .setDesc("Only available on desktop currently.")
                 .setDisabled(true);
@@ -533,21 +575,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         baseLineAuthorInfoSetting
             .addToggle((toggle) => toggle
-                .setValue(plugin.settings.lineAuthor.show)
+                .setValue(this.settings.lineAuthor.show)
                 .onChange((value) => {
-                    plugin.settings.lineAuthor.show = value;
-                    plugin.saveSettings();
-
-                    if (value) plugin.lineAuthoringFeature.activateFeature();
-                    else plugin.lineAuthoringFeature.deactivateFeature();
-
+                    this.configureLineAuthorShowStatus(value);
                     this.display();
                 })
             );
 
-        if (plugin.settings.lineAuthor.show) {
+        if (this.settings.lineAuthor.show) {
 
-            const trackMovement = new Setting(containerEl)
+            const trackMovement = new Setting(this.containerEl)
                 .setName("Follow movement and copies across files and commits")
                 .setDesc("")
                 .addDropdown((dropdown) => {
@@ -556,12 +593,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         "same-commit": "Follow within same commit",
                         "all-commits": "Follow within all commits (maybe slow)",
                     });
-                    dropdown.setValue(plugin.settings.lineAuthor.followMovement);
-                    dropdown.onChange((value: LineAuthorFollowMovement) => {
-                        plugin.settings.lineAuthor.followMovement = value;
-                        plugin.saveSettings();
-                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
-                    });
+                    dropdown.setValue(this.settings.lineAuthor.followMovement);
+                    dropdown.onChange((value: LineAuthorFollowMovement) =>
+                        this.configureLineAuthorSettingAndRefreshViews("followMovement", value)
+                    );
                 });
             trackMovement.descEl.innerHTML = `
                 By default (deactivated), each line only shows the newest commit where it was changed.
@@ -573,18 +608,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 It uses <a href="https://git-scm.com/docs/git-blame">git-blame</a> and
                 for matches (at least ${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH} characters) within the same (or all) commit(s), <em>the originating</em> commit's information is shown.`;
 
-            new Setting(containerEl)
+            new Setting(this.containerEl)
                 .setName("Show commit hash")
                 .addToggle((tgl) => {
-                    tgl.setValue(plugin.settings.lineAuthor.showCommitHash);
-                    tgl.onChange(async (value: boolean) => {
-                        plugin.settings.lineAuthor.showCommitHash = value;
-                        plugin.saveSettings();
-                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
-                    });
+                    tgl.setValue(this.settings.lineAuthor.showCommitHash);
+                    tgl.onChange(async (value: boolean) =>
+                        this.configureLineAuthorSettingAndRefreshViews("showCommitHash", value)
+                    );
                 });
 
-            new Setting(containerEl)
+            new Setting(this.containerEl)
                 .setName("Author name display")
                 .setDesc("If and how the author is displayed")
                 .addDropdown((dropdown) => {
@@ -596,16 +629,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         'full': 'Full name',
                     };
                     dropdown.addOptions(options);
-                    dropdown.setValue(plugin.settings.lineAuthor.authorDisplay);
+                    dropdown.setValue(this.settings.lineAuthor.authorDisplay);
 
-                    dropdown.onChange(async (option: LineAuthorDisplay) => {
-                        plugin.settings.lineAuthor.authorDisplay = option;
-                        plugin.saveSettings();
-                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
-                    });
+                    dropdown.onChange(async (value: LineAuthorDisplay) =>
+                        this.configureLineAuthorSettingAndRefreshViews("authorDisplay", value)
+                    );
                 });
 
-            new Setting(containerEl)
+            new Setting(this.containerEl)
                 .setName("Authoring date display")
                 .setDesc("If and how the date and time of authoring the line is displayed")
                 .addDropdown((dropdown) => {
@@ -617,40 +648,34 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         'custom': 'Custom',
                     };
                     dropdown.addOptions(options);
-                    dropdown.setValue(plugin.settings.lineAuthor.dateTimeFormatOptions);
+                    dropdown.setValue(this.settings.lineAuthor.dateTimeFormatOptions);
 
-                    dropdown.onChange(async (option: LineAuthorDateTimeFormatOptions) => {
-                        plugin.settings.lineAuthor.dateTimeFormatOptions = option;
-                        plugin.saveSettings();
-                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                    dropdown.onChange(async (value: LineAuthorDateTimeFormatOptions) => {
+                        this.configureLineAuthorSettingAndRefreshViews("dateTimeFormatOptions", value);
                         this.display();
                     });
                 });
 
-            const dateTimeFormatCustomStringSetting = new Setting(containerEl)
+            const dateTimeFormatCustomStringSetting = new Setting(this.containerEl)
                 .setName("Custom authoring date format")
-                .setDisabled(plugin.settings.lineAuthor.dateTimeFormatOptions !== "custom");
+                .setDisabled(this.settings.lineAuthor.dateTimeFormatOptions !== "custom");
 
-            if (plugin.settings.lineAuthor.dateTimeFormatOptions === "custom") {
+            if (this.settings.lineAuthor.dateTimeFormatOptions === "custom") {
                 dateTimeFormatCustomStringSetting
                     .addText((cb) => {
-                        cb.setValue(plugin.settings.lineAuthor.dateTimeFormatCustomString);
+                        cb.setValue(this.settings.lineAuthor.dateTimeFormatCustomString);
                         cb.setPlaceholder("YYYY-MM-DD HH:mm");
 
                         cb.onChange((value) => {
-                            plugin.settings.lineAuthor.dateTimeFormatCustomString = value;
+                            this.configureLineAuthorSettingAndRefreshViews("dateTimeFormatCustomString", value);
                             dateTimeFormatCustomStringSetting.descEl.innerHTML =
                                 this.previewCustomDateTimeDescriptionHtml(value);
-                            plugin.saveSettings();
-                            if (plugin.settings.lineAuthor.dateTimeFormatOptions === "custom") {
-                                plugin.lineAuthoringFeature.refreshLineAuthorViews();
-                            }
                         });
                     });
 
                 dateTimeFormatCustomStringSetting.descEl.innerHTML =
                     this.previewCustomDateTimeDescriptionHtml(
-                        plugin.settings.lineAuthor.dateTimeFormatCustomString
+                        this.settings.lineAuthor.dateTimeFormatCustomString
                     );
             }
             else {
@@ -658,7 +683,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setDesc("Only applicable when authoring date display is \"Custom\"");
             }
 
-            new Setting(containerEl)
+            new Setting(this.containerEl)
                 .setName("Authoring date display timezone")
                 .addDropdown((dropdown) => {
                     const options: Record<LineAuthorTimezoneOption, string> = {
@@ -667,13 +692,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         'utc0000': 'UTC+0000/Z',
                     };
                     dropdown.addOptions(options);
-                    dropdown.setValue(plugin.settings.lineAuthor.dateTimeTimezone);
+                    dropdown.setValue(this.settings.lineAuthor.dateTimeTimezone);
 
-                    dropdown.onChange(async (option: LineAuthorTimezoneOption) => {
-                        plugin.settings.lineAuthor.dateTimeTimezone = option;
-                        plugin.saveSettings();
-                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
-                    });
+                    dropdown.onChange(async (value: LineAuthorTimezoneOption) =>
+                        this.configureLineAuthorSettingAndRefreshViews("dateTimeTimezone", value)
+                    );
                 })
                 .descEl.innerHTML = `
                     The time-zone in which the authoring date should be shown.
@@ -682,75 +705,66 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     <a href="https://en.wikipedia.org/wiki/UTC%C2%B100:00">UTC±00:00</a>.
             `;
 
-            const oldestAgeSetting = new Setting(containerEl)
+            const oldestAgeSetting = new Setting(this.containerEl)
                 .setName("Oldest age in coloring");
 
-            oldestAgeSetting.descEl.innerHTML = this.previewOldestAgeDescriptionHtml(plugin.settings.lineAuthor.coloringMaxAge)[0];
+            oldestAgeSetting.descEl.innerHTML = this.previewOldestAgeDescriptionHtml(this.settings.lineAuthor.coloringMaxAge)[0];
 
             oldestAgeSetting
                 .addText((text) => {
                     text.setPlaceholder("1y");
-                    text.setValue(plugin.settings.lineAuthor.coloringMaxAge);
+                    text.setValue(this.settings.lineAuthor.coloringMaxAge);
                     text.onChange((value) => {
                         const [preview, valid] = this.previewOldestAgeDescriptionHtml(value);
                         oldestAgeSetting.descEl.innerHTML = preview;
                         if (valid) {
-                            plugin.settings.lineAuthor.coloringMaxAge = value;
-                            plugin.saveSettings();
-                            this.refreshColorSettingsName("oldest", plugin);
-                            plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                            this.configureLineAuthorSettingAndRefreshViews("coloringMaxAge", value);
+                            this.refreshColorSettingsName("oldest");
                         }
                     });
                 });
 
-            this.createColorSetting("newest", containerEl, plugin);
-            this.createColorSetting("oldest", containerEl, plugin);
+            this.createColorSetting("newest");
+            this.createColorSetting("oldest");
         }
     }
 
-    private createColorSetting(which: "oldest" | "newest", containerEl: HTMLElement, plugin: ObsidianGit) {
-
-        const setting = new Setting(containerEl)
+    private createColorSetting(which: "oldest" | "newest") {
+        const setting = new Setting(this.containerEl)
             .setName("")
             .addText((text) => {
-                const color = pickColor(which, plugin.settings.lineAuthor);
+                const color = pickColor(which, this.settings.lineAuthor);
                 const defaultColor = pickColor(which, DEFAULT_SETTINGS.lineAuthor);
                 text.setPlaceholder(rgbToString(defaultColor));
                 text.setValue(rgbToString(color));
                 text.onChange((colorNew) => {
                     const rgb = convertToRgb(colorNew);
                     if (rgb !== undefined) {
-                        if (which === "newest") {
-                            plugin.settings.lineAuthor.colorNew = rgb;
-                        }
-                        else {
-                            plugin.settings.lineAuthor.colorOld = rgb;
-                        }
-                        plugin.saveSettings();
-                        plugin.lineAuthoringFeature.refreshLineAuthorViews();
+                        const key = which === "newest" ? "colorNew" : "colorOld";
+                        this.configureLineAuthorSettingAndRefreshViews(key, rgb);
                     }
-                    this.refreshColorSettingsDesc(which, plugin, rgb);
+                    this.refreshColorSettingsDesc(which, rgb);
                 });
             });
         this.lineAuthorColorSettings.set(which, setting);
 
-        this.refreshColorSettingsName(which, plugin);
-        this.refreshColorSettingsDesc(which, plugin, pickColor(which, plugin.settings.lineAuthor));
+        this.refreshColorSettingsName(which);
+        this.refreshColorSettingsDesc(which, pickColor(which, this.settings.lineAuthor));
     }
 
-    private refreshColorSettingsName(which: "oldest" | "newest", plugin: ObsidianGit) {
+    private refreshColorSettingsName(which: "oldest" | "newest") {
         const settingsDom = this.lineAuthorColorSettings.get(which);
         if (settingsDom) {
-            const whichDescriber = which === "oldest" ? `oldest (${plugin.settings.lineAuthor.coloringMaxAge} or older)` : "newest";
+            const whichDescriber = which === "oldest" ? `oldest (${this.settings.lineAuthor.coloringMaxAge} or older)` : "newest";
             settingsDom.nameEl.innerText = `Color for ${whichDescriber} commits`;
         }
     }
 
-    private refreshColorSettingsDesc(which: "oldest" | "newest", plugin: ObsidianGit, rgb?: RGB) {
+    private refreshColorSettingsDesc(which: "oldest" | "newest", rgb?: RGB) {
         const settingsDom = this.lineAuthorColorSettings.get(which);
         if (settingsDom) {
             settingsDom.descEl.innerHTML = this.colorSettingPreviewDescHtml(
-                which, plugin.settings.lineAuthor, rgb !== undefined
+                which, this.settings.lineAuthor, rgb !== undefined
             );
         }
     }
