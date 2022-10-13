@@ -15,7 +15,7 @@
 	$: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
 	window.setTimeout(
-		() => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!, 16)),
+		() => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
 		0
 	);
 
@@ -82,10 +82,10 @@
 </script>
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
-<main on:mouseover={hover} on:click|self={showDiff} on:focus>
+<main on:mouseover={hover} on:click|self={showDiff} on:focus class="nav-file">
 	<!-- svelte-ignore a11y-unknown-aria-attribute -->
-	<span
-		class="path"
+	<div
+		class="nav-file-title"
 		aria-label-position={side}
 		aria-label={change.vault_path.split("/").last() != change.vault_path
 			? change.vault_path
@@ -93,70 +93,58 @@
 		on:click|self={showDiff}
 		on:auxclick|self={showDiff}
 	>
-		{change.vault_path.split("/").last()?.replace(".md", "")}
-	</span>
-	<div class="tools">
-		<div class="buttons">
-			{#if view.app.vault.getAbstractFileByPath(change.vault_path)}
-				<div
-					data-icon="go-to-file"
-					aria-label="Open File"
-					bind:this={buttons[1]}
-					on:auxclick={open}
-					on:click={open}
-				/>
-			{/if}
-			<div
-				data-icon="skip-back"
-				aria-label="Discard"
-				bind:this={buttons[0]}
-				on:click={discard}
-			/>
-			<div
-				data-icon="plus"
-				aria-label="Stage"
-				bind:this={buttons[2]}
-				on:click={stage}
-			/>
-		</div>
-		<span class="type" data-type={change.working_dir}
-			>{change.working_dir}</span
+		<div
+			on:click={showDiff}
+			on:auxclick={showDiff}
+			class="nav-file-title-content"
 		>
+			{change.vault_path.split("/").last()?.replace(".md", "")}
+		</div>
+		<div class="tools">
+			<div class="buttons">
+				{#if view.app.vault.getAbstractFileByPath(change.vault_path)}
+					<div
+						data-icon="go-to-file"
+						aria-label="Open File"
+						bind:this={buttons[1]}
+						on:auxclick={open}
+						on:click={open}
+						class="clickable-icon"
+					/>
+				{/if}
+				<div
+					data-icon="skip-back"
+					aria-label="Discard"
+					bind:this={buttons[0]}
+					on:click={discard}
+					class="clickable-icon"
+				/>
+				<div
+					data-icon="plus"
+					aria-label="Stage"
+					bind:this={buttons[2]}
+					on:click={stage}
+					class="clickable-icon"
+				/>
+			</div>
+			<div class="type" data-type={change.working_dir}>
+				{change.working_dir}
+			</div>
+		</div>
 	</div>
 </main>
 
 <style lang="scss">
 	main {
-		cursor: pointer;
-		background-color: var(--background-secondary);
-		border-radius: 4px;
-		width: 98%;
-		display: flex;
-		justify-content: space-between;
-		font-size: 0.8rem;
-		margin-bottom: 2px;
-
-		.path {
-			color: var(--text-muted);
-			white-space: nowrap;
-			max-width: 75%;
-			overflow: hidden;
-			text-overflow: ellipsis;
-		}
-
-		&:hover .path {
-			color: var(--text-normal);
-			transition: all 200ms;
-		}
-
-		.tools {
+		.nav-file-title-content {
 			display: flex;
 			align-items: center;
-
+		}
+		.tools {
+			display: flex;
+			margin-left: auto;
 			.type {
-				height: 16px;
-				width: 16px;
-				margin: 0;
+				padding-left: var(--size-2-1);
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -170,17 +158,8 @@
 			.buttons {
 				display: flex;
 				> * {
-					color: var(--text-faint);
-					height: 16px;
-					width: 16px;
-					margin: 0;
-					transition: all 0.2s;
-					border-radius: 2px;
-					margin-right: 1px;
-					&:hover {
-						color: var(--text-normal);
-						background-color: var(--interactive-accent);
-					}
+					padding: 0 0;
+					height: auto;
 				}
 			}
 		}

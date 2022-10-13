@@ -1,5 +1,5 @@
 import { Errors } from "isomorphic-git";
-import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile } from "obsidian";
+import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
 import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
 import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
@@ -139,12 +139,16 @@ export default class ObsidianGit extends Plugin {
             name: 'Open source control view',
             callback: async () => {
                 const leafs = this.app.workspace.getLeavesOfType(GIT_VIEW_CONFIG.type);
+                let leaf: WorkspaceLeaf;
                 if (leafs.length === 0) {
-                    await this.app.workspace.getRightLeaf(false).setViewState({
+                    leaf = this.app.workspace.getRightLeaf(false);
+                    await leaf.setViewState({
                         type: GIT_VIEW_CONFIG.type,
                     });
+                } else {
+                    leaf = leafs.first()!;
                 }
-                this.app.workspace.revealLeaf(leafs.first()!);
+                this.app.workspace.revealLeaf(leaf);
 
                 dispatchEvent(new CustomEvent("git-refresh"));
 

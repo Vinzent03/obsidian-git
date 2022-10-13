@@ -85,7 +85,7 @@ export abstract class GitManager {
         return (relativeToVault && this.plugin.settings.basePath.length > 0) ? path.substring(this.plugin.settings.basePath.length + 1) : path;
     }
 
-    getTreeStructure(children: FileStatusResult[], beginLength = 0): TreeItem[] {
+    private _getTreeStructure(children: FileStatusResult[], beginLength = 0): TreeItem[] {
         const list: TreeItem[] = [];
         children = [...children];
         while (children.length > 0) {
@@ -99,14 +99,56 @@ export abstract class GitManager {
                 childrenWithSameTitle.forEach((item) => children.remove(item));
                 list.push({
                     title: title,
-                    children: this.getTreeStructure(childrenWithSameTitle, (beginLength > 0 ? (beginLength + title.length) : title.length) + 1)
+                    path: first.path.substring(0, restPath.indexOf("/") + beginLength),
+                    children: this._getTreeStructure(childrenWithSameTitle, (beginLength > 0 ? (beginLength + title.length) : title.length) + 1)
                 });
             } else {
-                list.push({ title: restPath, statusResult: first });
+                list.push({ title: restPath, statusResult: first, path: first.path });
                 children.remove(first);
             }
         }
         return list;
+    }
+
+    /*
+    * Sorts the children and simplifies the title
+    * If a node only contains another subdirectory, that subdirectory is moved up one level and integrated into the parent node
+    */
+    private simplify(tree: TreeItem[]): TreeItem[] {
+        for (const node of tree) {
+            const singleChild = node.children?.length == 1;
+            const singleChildIsDir = node.children?.first()?.statusResult == undefined;
+            if (node.children != undefined && singleChild && singleChildIsDir) {
+                node.title += "/" + node.children.first()!.title;
+                node.path = node.children.first()!.path;
+                node.children = node.children.first()!.children;
+            } else if (node.children != undefined) {
+                this.simplify(node.children);
+            }
+            node.children?.sort((a, b) => {
+                const dirCompare = (b.statusResult == undefined ? 1 : 0) - (a.statusResult == undefined ? 1 : 0);
+                if (dirCompare != 0) {
+                    return dirCompare;
+                } else {
+                    return a.title.localeCompare(b.title);
+                }
+            });
+        }
+        return tree.sort((a, b) => {
+            const dirCompare = (b.statusResult == undefined ? 1 : 0) - (a.statusResult == undefined ? 1 : 0);
+            if (dirCompare != 0) {
+                return dirCompare;
+            } else {
+                return a.title.localeCompare(b.title);
+            }
+        });
+    }
+
+    getTreeStructure(children: FileStatusResult[]): TreeItem[] {
+        const tree = this._getTreeStructure(children);
+
+        const res = this.simplify(tree);
+        return res;
     }
 
     async formatCommitMessage(template: string): Promise<string> {

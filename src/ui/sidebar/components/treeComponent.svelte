@@ -1,7 +1,7 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
 	import ObsidianGit from "src/main";
-	import { FileType, RootTreeItem } from "src/types";
+	import { FileType, RootTreeItem, TreeItem } from "src/types";
 	import { slide } from "svelte/transition";
 	import GitView from "../sidebarView";
 	import FileComponent from "./fileComponent.svelte";
@@ -12,14 +12,27 @@
 	export let view: GitView;
 	export let fileType: FileType;
 	export let topLevel = false;
-
 	const closed: Record<string, boolean> = {};
+
+	function stage(path: string) {
+		plugin.gitManager.stageAll({ dir: path }).finally(() => {
+			dispatchEvent(new CustomEvent("git-refresh"));
+		});
+	}
+	function unstage(path: string) {
+		plugin.gitManager.unstageAll({ dir: path }).finally(() => {
+			dispatchEvent(new CustomEvent("git-refresh"));
+		});
+	}
+	function fold(item: TreeItem) {
+		closed[item.title] = !closed[item.title];
+	}
 </script>
 
 <main class:topLevel>
 	{#each hierarchy.children as entity}
 		{#if entity.statusResult}
-			<div class="file-view">
+			<div>
 				{#if fileType == FileType.staged}
 					<StagedFileComponent
 						change={entity.statusResult}
@@ -37,76 +50,131 @@
 				{/if}
 			</div>
 		{:else}
-			<div
-				class="opener tree-item-self is-clickable"
-				class:open={!closed[entity.title]}
-				on:click={() => {
-					closed[entity.title] = !closed[entity.title];
-				}}
-			>
-				<div>
-					<div class="tree-item-icon collapse-icon" style="">
+			<div class="nav-folder" class:is-collapsed={closed[entity.title]}>
+				<div
+					class="nav-folder-title"
+					on:click|self={() => fold(entity)}
+				>
+					<div
+						class="nav-folder-collapse-indicator collapse-icon"
+						on:click={() => fold(entity)}
+					>
 						<svg
-							viewBox="0 0 100 100"
-							class="right-triangle"
-							width="8"
-							height="8"
-							><path
-								fill="currentColor"
-								stroke="currentColor"
-								d="M94.9,20.8c-1.4-2.5-4.1-4.1-7.1-4.1H12.2c-3,0-5.7,1.6-7.1,4.1c-1.3,2.4-1.2,5.2,0.2,7.6L43.1,88c1.5,2.3,4,3.7,6.9,3.7 s5.4-1.4,6.9-3.7l37.8-59.6C96.1,26,96.2,23.2,94.9,20.8L94.9,20.8z"
-							/></svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="svg-icon right-triangle"
+							><path d="M3 8L12 17L21 8" /></svg
 						>
 					</div>
-					<span>{entity.title}</span>
+					<div
+						on:click={() => fold(entity)}
+						class="nav-folder-title-content"
+					>
+						{entity.title}
+					</div>
+					<div class="tools">
+						<div class="buttons">
+							{#if fileType == FileType.staged}
+								<div
+									data-icon="minus"
+									aria-label="Unstage"
+									on:click={() => unstage(entity.title)}
+									class="clickable-icon"
+								>
+									<svg
+										width="18"
+										height="18"
+										viewBox="0 0 18 18"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="svg-icon lucide-minus"
+										><line
+											x1="4"
+											y1="9"
+											x2="14"
+											y2="9"
+										/></svg
+									>
+								</div>
+							{:else}
+								<div
+									data-icon="plus"
+									aria-label="Stage"
+									on:click={() => stage(entity.path)}
+									class="clickable-icon"
+								>
+									<svg
+										width="18"
+										height="18"
+										viewBox="0 0 18 18"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="svg-icon lucide-plus"
+										><line
+											x1="9"
+											y1="4"
+											x2="9"
+											y2="14"
+										/><line
+											x1="4"
+											y1="9"
+											x2="14"
+											y2="9"
+										/></svg
+									>
+								</div>
+							{/if}
+						</div>
+					</div>
 				</div>
+
+				{#if !closed[entity.title]}
+					<div
+						class="nav-folder-children"
+						transition:slide|local={{ duration: 150 }}
+					>
+						<svelte:self
+							hierarchy={entity}
+							{plugin}
+							{view}
+							{fileType}
+						/>
+					</div>
+				{/if}
 			</div>
-			{#if !closed[entity.title]}
-				<div
-					class="file-view"
-					transition:slide|local={{ duration: 75 }}
-				>
-					<svelte:self
-						hierarchy={entity}
-						{plugin}
-						{view}
-						{fileType}
-					/>
-				</div>
-			{/if}
 		{/if}
 	{/each}
 </main>
 
 <style lang="scss">
-	main:not(.topLevel) {
-		margin-left: 5px;
-	}
-
-	.opener {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 0 4px;
-		.collapse-icon::after {
-			content: "\00a0";
-		}
-
-		div {
+	main {
+		.nav-folder-title-content {
 			display: flex;
+			align-items: center;
 		}
-		svg {
-			transform: rotate(-90deg);
+		.tools {
+			display: flex;
+			margin-left: auto;
+			.buttons {
+				display: flex;
+				> * {
+					padding: 0 0;
+					height: auto;
+				}
+			}
 		}
-		&.open svg {
-			transform: rotate(0);
-		}
-		span {
-			font-size: 0.8rem;
-		}
-	}
-
-	.file-view {
-		margin-left: 5px;
 	}
 </style>

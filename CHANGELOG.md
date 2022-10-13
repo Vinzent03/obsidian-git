@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.6.0](https://github.com/denolehov/obsidian-git/compare/2.5.1...2.6.0) (2022-10-13)
+
+
+### Features
+
+* combine multiple empty directory into one in git view ([4e45e6a](https://github.com/denolehov/obsidian-git/commit/4e45e6accc468402033c5b56d6fb56ec5b461c1e))
+* redesign source control view ([06f3c22](https://github.com/denolehov/obsidian-git/commit/06f3c229cfd199c716401ad1f4e524e2e23bc4f7))
+* stage/unstage directory ([61b3eb3](https://github.com/denolehov/obsidian-git/commit/61b3eb3ac38553ef4cda0512be19b1f4480d613c))
+
+### [2.5.1](https://github.com/denolehov/obsidian-git/compare/2.5.0...2.5.1) (2022-09-29)
+
+
+### Bug Fixes
+
+* push with file named like branch ([2664bfe](https://github.com/denolehov/obsidian-git/commit/2664bfe633e9ea0c76123ed7b0d4ac56aaf05b10)), closes [#171](https://github.com/denolehov/obsidian-git/issues/171)
+
+## [2.5.0](https://github.com/denolehov/obsidian-git/compare/2.4.1...2.5.0) (2022-09-28)
+
+
+### Features
+
+* improve source control view style ([d5647a8](https://github.com/denolehov/obsidian-git/commit/d5647a8e2e49c8a77f28854bb4c276a17f390d55))
+
+
+### Bug Fixes
+
+* reveal source control view ([c88a1b4](https://github.com/denolehov/obsidian-git/commit/c88a1b43633e9964e3a9f60e94c0dc7f8307edc1))
+
 ### [2.4.1](https://github.com/denolehov/obsidian-git/compare/2.4.0...2.4.1) (2022-09-22)
 
 

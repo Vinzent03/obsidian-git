@@ -15,10 +15,3 @@ yarn.lock
 /data.json
 
 .vscode
-
-# local
-*docker*
-scripts
-*.gif
-*.png
-*.zip
