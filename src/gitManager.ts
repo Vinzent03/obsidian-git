@@ -117,13 +117,18 @@ export abstract class GitManager {
     */
     private simplify(tree: TreeItem[]): TreeItem[] {
         for (const node of tree) {
-            const singleChild = node.children?.length == 1;
-            const singleChildIsDir = node.children?.first()?.statusResult == undefined;
-            if (node.children != undefined && singleChild && singleChildIsDir) {
+            while (true) {
+                const singleChild = node.children?.length == 1;
+                const singleChildIsDir = node.children?.first()?.statusResult == undefined;
+
+                if (!(node.children != undefined && singleChild && singleChildIsDir)) break;
+
                 node.title += "/" + node.children.first()!.title;
+                node.statusResult = node.children.first()!.statusResult;
                 node.path = node.children.first()!.path;
                 node.children = node.children.first()!.children;
-            } else if (node.children != undefined) {
+            }
+            if (node.children != undefined) {
                 this.simplify(node.children);
             }
             node.children?.sort((a, b) => {
