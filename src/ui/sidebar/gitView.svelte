@@ -213,6 +213,7 @@
 				class:loading
 				data-icon="refresh-cw"
 				aria-label="Refresh"
+				style="margin: 1px;"
 				bind:this={buttons[6]}
 				on:click={triggerRefresh}
 			/>
