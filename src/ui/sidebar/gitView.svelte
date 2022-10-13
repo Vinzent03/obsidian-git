@@ -154,59 +154,57 @@
 <main>
 	<div class="nav-header">
 		<div class="nav-buttons-container">
-			<div class="group">
-				<div
-					id="commit-btn"
-					data-icon="check"
-					class="clickable-icon nav-action-button"
-					aria-label="Commit"
-					bind:this={buttons[0]}
-					on:click={commit}
-				/>
-				<div
-					id="stage-all"
-					class="clickable-icon nav-action-button"
-					data-icon="plus-circle"
-					aria-label="Stage all"
-					bind:this={buttons[1]}
-					on:click={stageAll}
-				/>
-				<div
-					id="unstage-all"
-					class="clickable-icon nav-action-button"
-					data-icon="minus-circle"
-					aria-label="Unstage all"
-					bind:this={buttons[2]}
-					on:click={unstageAll}
-				/>
-				<div
-					id="push"
-					class="clickable-icon nav-action-button"
-					data-icon="upload"
-					aria-label="Push"
-					bind:this={buttons[3]}
-					on:click={push}
-				/>
-				<div
-					id="pull"
-					class="clickable-icon nav-action-button"
-					data-icon="download"
-					aria-label="Pull"
-					bind:this={buttons[4]}
-					on:click={pull}
-				/>
-				<div
-					id="layoutChange"
-					class="clickable-icon nav-action-button"
-					aria-label="Change Layout"
-					bind:this={layoutBtn}
-					on:click={() => {
-						showTree = !showTree;
-						plugin.settings.treeStructure = showTree;
-						plugin.saveSettings();
-					}}
-				/>
-			</div>
+			<div
+				id="commit-btn"
+				data-icon="check"
+				class="clickable-icon nav-action-button"
+				aria-label="Commit"
+				bind:this={buttons[0]}
+				on:click={commit}
+			/>
+			<div
+				id="stage-all"
+				class="clickable-icon nav-action-button"
+				data-icon="plus-circle"
+				aria-label="Stage all"
+				bind:this={buttons[1]}
+				on:click={stageAll}
+			/>
+			<div
+				id="unstage-all"
+				class="clickable-icon nav-action-button"
+				data-icon="minus-circle"
+				aria-label="Unstage all"
+				bind:this={buttons[2]}
+				on:click={unstageAll}
+			/>
+			<div
+				id="push"
+				class="clickable-icon nav-action-button"
+				data-icon="upload"
+				aria-label="Push"
+				bind:this={buttons[3]}
+				on:click={push}
+			/>
+			<div
+				id="pull"
+				class="clickable-icon nav-action-button"
+				data-icon="download"
+				aria-label="Pull"
+				bind:this={buttons[4]}
+				on:click={pull}
+			/>
+			<div
+				id="layoutChange"
+				class="clickable-icon nav-action-button"
+				aria-label="Change Layout"
+				bind:this={layoutBtn}
+				on:click={() => {
+					showTree = !showTree;
+					plugin.settings.treeStructure = showTree;
+					plugin.saveSettings();
+				}}
+			/>
 			<div
 				id="refresh"
 				class="clickable-icon nav-action-button"
@@ -218,9 +216,9 @@
 			/>
 		</div>
 	</div>
-	<div class="search-input-container">
+	<div class="git-commit-msg">
 		<textarea
-			class="commit-msg"
+			class="commit-msg-input"
 			type="text"
 			spellcheck="true"
 			placeholder="Commit Message"
@@ -228,7 +226,7 @@
 		/>
 		{#if commitMessage}
 			<div
-				class="search-input-clear-button"
+				class="git-commit-msg-clear-button"
 				on:click={() => (commitMessage = "")}
 				aria-label={"Clear"}
 			/>
@@ -423,7 +421,7 @@
 </main>
 
 <style lang="scss">
-	.commit-msg {
+	.commit-msg-input {
 		width: 100%;
 		min-height: 33px;
 		height: 30px;
@@ -432,33 +430,45 @@
 		background-color: var(--background-modifier-form-field);
 	}
 
-	// .opener {
-	// 	padding-left: 10px;
-	// 	padding-bottom: 2px;
-	// 	padding-top: 2px;
+	.git-commit-msg {
+		position: relative;
+		padding: 0;
+		width: calc(100% - var(--size-4-8));
+		margin: 4px auto;
+	}
 
-	// 	display: flex;
-	// 	justify-content: space-between;
-	// 	align-items: center;
-	// 	.collapse-icon::after {
-	// 		content: "\00a0";
-	// 	}
+	.git-commit-msg-clear-button {
+		position: absolute;
+		background: transparent;
+		border-radius: 50%;
+		color: var(--search-clear-button-color);
+		cursor: var(--cursor);
+		top: 0px;
+		right: 2px;
+		bottom: 0px;
+		line-height: 0;
+		height: var(--input-height);
+		width: 28px;
+		margin: auto;
+		padding: 0 0;
+		text-align: center;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		transition: color 0.15s ease-in-out;
+	}
 
-	// 	div {
-	// 		display: flex;
-	// 	}
-	// 	svg {
-	// 		transform: rotate(-90deg);
-	// 	}
-	// 	&.open svg {
-	// 		transform: rotate(0);
-	// 	}
-	// }
+	.git-commit-msg-clear-button:after {
+		content: "";
+		height: var(--search-clear-button-size);
+		width: var(--search-clear-button-size);
+		display: block;
+		background-color: currentColor;
+		-webkit-mask-image: url("data:image/svg+xml,<svg viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M6 12C9.31371 12 12 9.31371 12 6C12 2.68629 9.31371 0 6 0C2.68629 0 0 2.68629 0 6C0 9.31371 2.68629 12 6 12ZM3.8705 3.09766L6.00003 5.22718L8.12955 3.09766L8.9024 3.8705L6.77287 6.00003L8.9024 8.12955L8.12955 8.9024L6.00003 6.77287L3.8705 8.9024L3.09766 8.12955L5.22718 6.00003L3.09766 3.8705L3.8705 3.09766Z' fill='currentColor'/></svg>");
+		-webkit-mask-repeat: no-repeat;
+	}
 	.tree-item-flair {
 		margin-left: auto;
 		align-items: center;
-	}
-	.group {
-		display: flex;
 	}
 </style>
