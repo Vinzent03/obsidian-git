@@ -11,12 +11,6 @@ All notable changes to this project will be documented in this file. See [standa
 * redesign source control view ([06f3c22](https://github.com/denolehov/obsidian-git/commit/06f3c229cfd199c716401ad1f4e524e2e23bc4f7))
 * stage/unstage directory ([61b3eb3](https://github.com/denolehov/obsidian-git/commit/61b3eb3ac38553ef4cda0512be19b1f4480d613c))
 
-
-### Bug Fixes
-
-* remove search symbol from commit message area ([8c58662](https://github.com/denolehov/obsidian-git/commit/8c58662071d10431d77ebbd8ee20b09df9ee913c))
-* stage folders ([b320ecd](https://github.com/denolehov/obsidian-git/commit/b320ecdfe1182d0cc671153808b385662c78c807))
-
 ### [2.5.1](https://github.com/denolehov/obsidian-git/compare/2.5.0...2.5.1) (2022-09-29)
 
 
