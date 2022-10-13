@@ -149,6 +149,8 @@
 		loading = true;
 		plugin.pullChangesFromRemote().finally(triggerRefresh);
 	}
+
+	$: rows = (commitMessage.match(/\n/g) || []).length + 1 || 1;
 </script>
 
 <main>
@@ -218,6 +220,7 @@
 	</div>
 	<div class="git-commit-msg">
 		<textarea
+			{rows}
 			class="commit-msg-input"
 			type="text"
 			spellcheck="true"
@@ -423,9 +426,8 @@
 <style lang="scss">
 	.commit-msg-input {
 		width: 100%;
-		min-height: 33px;
-		height: 30px;
-		resize: vertical;
+		overflow: hidden;
+		resize: none;
 		padding: 7px 5px;
 		background-color: var(--background-modifier-form-field);
 	}
@@ -443,7 +445,7 @@
 		border-radius: 50%;
 		color: var(--search-clear-button-color);
 		cursor: var(--cursor);
-		top: 0px;
+		top: -4px;
 		right: 2px;
 		bottom: 0px;
 		line-height: 0;
