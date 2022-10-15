@@ -5,6 +5,7 @@ import {
     Transaction
 } from "@codemirror/state";
 import { RGB } from "obsidian";
+import { DEFAULT_SETTINGS } from "src/constants";
 import { parseColoringMaxAgeDuration } from "src/settings";
 import {
     Blame
@@ -163,5 +164,6 @@ export function provideSettingsAccess(
 }
 
 export function maxAgeInDaysFromSettings(settings: LineAuthorSettings) {
-    return parseColoringMaxAgeDuration(settings.coloringMaxAge)?.asDays() ?? 356;
+    return parseColoringMaxAgeDuration(settings.coloringMaxAge)?.asDays() ??
+        parseColoringMaxAgeDuration(DEFAULT_SETTINGS.lineAuthor.coloringMaxAge)!.asDays();
 }
