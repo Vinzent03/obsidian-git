@@ -35,8 +35,14 @@ export const lineAuthorGutter: Extension = gutter({
         return oldLineAuthoringId !== newLineAuthoringId;
     },
     renderEmptyElements: true,
-    initialSpacer: (_v) => initialSpacingGutter(),
-    updateSpacer: (_sp, _u) => getLongestRenderedGutter()?.gutter ?? initialSpacingGutter()
+    initialSpacer: (view) => {
+        temporaryWorkaroundGutterSpacingForRenderedLineAuthoring(view);
+        return initialSpacingGutter();
+    },
+    updateSpacer: (_sp, update) => {
+        temporaryWorkaroundGutterSpacingForRenderedLineAuthoring(update.view);
+        return getLongestRenderedGutter()?.gutter ?? initialSpacingGutter();
+    }
 });
 
 
@@ -138,4 +144,31 @@ function computeLineAuthoringGutterMarkersRangeSet(
     }
 
     return RangeSet.of(ranges, /* sort = */true);
+}
+
+/**
+ * This applies a tempoary workaround for custom gutters for Obsidian v1.0.
+ * 
+ * As of writing, the following problem exists:
+ * * When the line authoring is rendered without anything else (i.e. line numbers)
+ *   the spacing is messed up and obscures the text.
+ * * When the line authoring is shown together with the line numbers everything is fine.
+ * 
+ * See the bug report: https://forum.obsidian.md/t/added-editor-gutter-overlaps-and-obscures-editor-content/45217
+ * 
+ * The conclusion of the analysis is, that we want to reset the `margin-left` style
+ * property of the `.cm-gutters` container element **if and only if** the line authoring
+ * is rendered. For this reason, the initialSpacer and updatesSpacer callbacks in
+ * {@link lineAuthorGutter} call this function which reset the corresponding style.
+ * 
+ * TODO: Remove this workaround, when this is fixed within Obsidian itself.
+ */
+function temporaryWorkaroundGutterSpacingForRenderedLineAuthoring(view: EditorView) {
+    const guttersContainers = view.dom.querySelectorAll(".cm-gutters") as NodeListOf<HTMLElement>;
+    guttersContainers.forEach(cont => {
+        if (!cont?.style) return;
+        if (!cont.style.marginLeft) {
+            cont.style.marginLeft = "unset";
+        }
+    });
 }
