@@ -75,7 +75,7 @@ export function conditionallyUpdateLongestRenderedGutter(gutter: LineAuthoringGu
  */
 let renderedAgeInDaysForAdaptiveInitialColoring: number[] = [];
 
-const ADAPTIVE_INITIAL_COLORING_AGE_CACHE_SIZE = 50;
+const ADAPTIVE_INITIAL_COLORING_AGE_CACHE_SIZE = 15;
 
 let ageIdx = 0;
 export function recordRenderedAgeInDays(age: number) {

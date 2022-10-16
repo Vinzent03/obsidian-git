@@ -4,7 +4,7 @@ import { Moment } from "moment-timezone";
 import { moment } from "obsidian";
 import { DATE_FORMAT, DATE_TIME_FORMAT_MINUTES } from "src/constants";
 import { latestSettings, LineAuthorDateTimeFormatOptions, LineAuthorDisplay, LineAuthoring, LineAuthorSettings, LineAuthorTimezoneOption } from "src/lineAuthor/model";
-import { attachedGutterElements, conditionallyUpdateLongestRenderedGutter, getLongestRenderedGutter, gutterInstances } from "src/lineAuthor/view/cache";
+import { attachedGutterElements, conditionallyUpdateLongestRenderedGutter, getLongestRenderedGutter, gutterInstances, recordRenderedAgeInDays } from "src/lineAuthor/view/cache";
 import { enrichCommitInfoForContextMenu } from "src/lineAuthor/view/contextMenu";
 import { coloringBasedOnCommitAge } from "src/lineAuthor/view/gutter/coloring";
 import { chooseNewestCommit } from "src/lineAuthor/view/gutter/commitChoice";
@@ -79,6 +79,8 @@ export class LineAuthoringGutter extends GutterMarker {
      * which provides a finaliser to run before the DOM is handed over to CodeMirror.
      * This is done, because this method is called frequently. It is called,
      * whenever a gutter gets into the viewport and needs to be rendered.
+     * 
+     * The age in days is recorded via {@link recordRenderedAgeInDays} to enable adaptive coloring.
      */
     public toDOM() {
         this.precomputedDomProvider = this.precomputedDomProvider ?? this.computeDom();
@@ -117,11 +119,13 @@ export class LineAuthoringGutter extends GutterMarker {
 
         templateElt.innerText = text;
 
-        templateElt.style.backgroundColor = coloringBasedOnCommitAge(
+        const { color, daysSinceCommit } = coloringBasedOnCommitAge(
             commit?.author?.epochSeconds,
             commit?.isZeroCommit,
             this.settings
         );
+
+        templateElt.style.backgroundColor = color;
 
         enrichCommitInfoForContextMenu(commit, isDummyCommit, templateElt);
 
@@ -129,6 +133,8 @@ export class LineAuthoringGutter extends GutterMarker {
             // clone node before attachment, as attached DOMs may get destroyed.
             const elt = templateElt.cloneNode(true) as HTMLElement;
             attachedGutterElements.add(elt);
+            // only record real dates
+            if (!isDummyCommit) recordRenderedAgeInDays(daysSinceCommit);
             return elt;
         }
 

@@ -18,10 +18,19 @@ export function initialSpacingGutter() {
 
 /**
  * Initial line authoring gutter with adaptive coloring for softer UI updates.
+ * 
+ * **DO NOT CACHE THIS FUNCTION CALL, AS THE ADAPTIVE COLOR NEED TO BE FRESHLY CALCULATED.**
  */
 export function initialLineAuthoringGutter(settings: LineAuthorSettings) {
-    const lineAuthoring = adaptiveInitialColoredDummyLineAuthoring(settings);
-    return lineAuthoringGutterMarker(lineAuthoring, 1, 1, "undefined", settings, "dummy-commit")
+    const { lineAuthoring, ageForInitialRender } = adaptiveInitialColoredDummyLineAuthoring(settings);
+    return lineAuthoringGutterMarker(
+        lineAuthoring,
+        1,
+        1,
+        "initialGutter" + ageForInitialRender, // use a age coloring based cache key
+        settings,
+        "dummy-commit"
+    );
 }
 
 /**
@@ -35,7 +44,7 @@ export function initialLineAuthoringGutter(settings: LineAuthorSettings) {
  * and transform it into unintrusive placeholder characters.
  */
 export function adaptiveInitialColoredDummyLineAuthoring
-    (settings: LineAuthorSettings): Exclude<LineAuthoring, "untracked"> {
+    (settings: LineAuthorSettings): { lineAuthoring: Exclude<LineAuthoring, "untracked">, ageForInitialRender: number } {
 
     const ageForInitialRender: number =
         computeAdaptiveInitialColoringAgeInDays() ?? maxAgeInDaysFromSettings(settings) * 0.25;
@@ -56,9 +65,11 @@ export function adaptiveInitialColoredDummyLineAuthoring
         isZeroCommit: false,
     };
 
-    return <Blame>{
-        hashPerLine: [undefined!, "dummy-commit"],
-        commits: new Map([["dummy-commit", dummyCommit]]),
+    return {
+        lineAuthoring: <Blame>{
+            hashPerLine: [undefined!, "dummy-commit"],
+            commits: new Map([["dummy-commit", dummyCommit]]),
+        }, ageForInitialRender
     };
 }
 

@@ -1,5 +1,4 @@
 import { LineAuthorSettings, maxAgeInDaysFromSettings } from "src/lineAuthor/model";
-import { recordRenderedAgeInDays } from "src/lineAuthor/view/cache";
 import { GitTimestamp } from "src/types";
 
 /**
@@ -8,8 +7,8 @@ import { GitTimestamp } from "src/types";
  */
 export function previewColor(which: "oldest" | "newest", settings: LineAuthorSettings) {
     return which === "oldest" ?
-        coloringBasedOnCommitAge(0 /* epoch time: 1970 */, false, settings) :
-        coloringBasedOnCommitAge(undefined, true, settings)
+        coloringBasedOnCommitAge(0 /* epoch time: 1970 */, false, settings).color :
+        coloringBasedOnCommitAge(undefined, true, settings).color
 }
 
 /**
@@ -21,8 +20,6 @@ export function previewColor(which: "oldest" | "newest", settings: LineAuthorSet
  * 
  * The zero commit gets the age 0.
  * 
- * The age in days is recorded via {@link recordRenderedAgeInDays} to enable adaptive coloring.
- * 
  * The coloring is then linearly interpolated between the two colors provided in the settings.
  * 
  * Additional minor adjustments were made for dark/light mode, transparency, scaling
@@ -32,7 +29,7 @@ export function coloringBasedOnCommitAge(
     commitAuthorEpochSeonds: GitTimestamp["epochSeconds"] | undefined,
     isZeroCommit: boolean,
     settings: LineAuthorSettings
-): string {
+): { color: string, daysSinceCommit: number } {
     const maxAgeInDays = maxAgeInDaysFromSettings(settings);
 
     const epochSecondsNow = Date.now() / 1000;
@@ -43,8 +40,6 @@ export function coloringBasedOnCommitAge(
         : epochSecondsNow - authoringEpochSeconds;
 
     const daysSinceCommit = secondsSinceCommit / 60 / 60 / 24;
-
-    recordRenderedAgeInDays(daysSinceCommit);
 
     // 0 <= x <= 1, larger means older
     // use n-th-root to make recent changes more prnounced
@@ -61,7 +56,7 @@ export function coloringBasedOnCommitAge(
     const b = lin(color0.b, color1.b, x) * scaling;
     const a = dark ? 0.75 : 0.25;
 
-    return `rgba(${r},${g},${b},${a})`;
+    return { color: `rgba(${r},${g},${b},${a})`, daysSinceCommit };
 }
 
 function lin(z0: number, z1: number, x: number): number {

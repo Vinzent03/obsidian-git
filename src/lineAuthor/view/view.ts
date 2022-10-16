@@ -85,8 +85,8 @@ function lineAuthoringGutterMarkersRangeSet(
     if (cached) return cached;
 
     // This is called infrequently enough to put the computation there.
-    const result = computeLineAuthoringGutterMarkersRangeSet(doc, lineBlockEndPos, laSettings, optLA);
-    gutterMarkersRangeSet.set(cacheKey, result);
+    const { result, allowCache } = computeLineAuthoringGutterMarkersRangeSet(doc, lineBlockEndPos, laSettings, optLA);
+    if (allowCache) gutterMarkersRangeSet.set(cacheKey, result);
     return result;
 }
 
@@ -96,7 +96,8 @@ function computeLineAuthoringGutterMarkersRangeSet(
     blocksPerLine: Map<number, [number, number]>,
     settings: LineAuthorSettings,
     optLA?: LineAuthoringWithId
-): RangeSet<GutterMarker> {
+): { result: RangeSet<GutterMarker>, allowCache: boolean } {
+    let allowCache = true; // invocations of initialLineAuthoringGutter shouldn't be cached
 
     const docLastLine = doc.lines;
 
@@ -125,6 +126,7 @@ function computeLineAuthoringGutterMarkersRangeSet(
 
         if (optLA === undefined) {
             add(from, to, initialLineAuthoringGutter(settings));
+            allowCache = false;
             continue;
         }
 
@@ -143,7 +145,7 @@ function computeLineAuthoringGutterMarkersRangeSet(
         add(from, to, lineAuthoringGutterMarker(la, startLine, endLine, key, settings))
     }
 
-    return RangeSet.of(ranges, /* sort = */true);
+    return { result: RangeSet.of(ranges, /* sort = */true), allowCache };
 }
 
 /**
