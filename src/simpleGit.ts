@@ -169,9 +169,9 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.idle);
     }
 
-    async unstageAll(): Promise<void> {
+    async unstageAll({ dir }: { dir?: string; }): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.reset([], (err) => this.onError(err));
+        await this.git.reset(dir != undefined ? ["--", dir] : [], (err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
     }
 
@@ -222,7 +222,7 @@ export class SimpleGit extends GitManager {
             } else if (this.plugin.settings.syncMethod === 'reset') {
                 try {
                     await this.git.raw(['update-ref', `refs/heads/${branchInfo.current}`, upstreamCommit], (err) => this.onError(err));
-                    await this.unstageAll();
+                    await this.unstageAll({});
                 } catch (err) {
                     this.plugin.displayError(`Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`);
                 }
