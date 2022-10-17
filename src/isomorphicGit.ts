@@ -241,6 +241,22 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
+    async discardAll({ dir, status }: { dir: string, status?: Status; }): Promise<void> {
+        let files: string[] = [];
+        if (status) {
+            files = status.changed.filter(file => file.path.startsWith(dir)).map(file => file.path);
+        } else {
+            files = (await this.getUnstagedFiles(dir)).map(({ filepath }) => filepath);
+        }
+
+        try {
+            await this.wrapFS(git.checkout({ ...this.getRepo(), filepaths: files, force: true }));
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    }
+
     getProgressText(action: string, event: GitProgressEvent): string {
         let out = `${action} progress:`;
         if (event.phase) {

@@ -2,6 +2,7 @@
 <script lang="ts">
 	import ObsidianGit from "src/main";
 	import { FileType, RootTreeItem, TreeItem } from "src/types";
+	import { DiscardModal } from "src/ui/modals/discardModal";
 	import { slide } from "svelte/transition";
 	import GitView from "../sidebarView";
 	import FileComponent from "./fileComponent.svelte";
@@ -13,7 +14,6 @@
 	export let fileType: FileType;
 	export let topLevel = false;
 	const closed: Record<string, boolean> = {};
-
 	function stage(path: string) {
 		plugin.gitManager.stageAll({ dir: path }).finally(() => {
 			dispatchEvent(new CustomEvent("git-refresh"));
@@ -23,6 +23,26 @@
 		plugin.gitManager.unstageAll({ dir: path }).finally(() => {
 			dispatchEvent(new CustomEvent("git-refresh"));
 		});
+	}
+	function discard(item: TreeItem) {
+		new DiscardModal(
+			view.app,
+			false,
+			plugin.gitManager.getVaultPath(item.path)
+		)
+			.myOpen()
+			.then((shouldDiscard) => {
+				if (shouldDiscard === true) {
+					plugin.gitManager
+						.discardAll({
+							dir: item.path,
+							status: plugin.cachedStatus,
+						})
+						.finally(() => {
+							dispatchEvent(new CustomEvent("git-refresh"));
+						});
+				}
+			});
 	}
 	function fold(item: TreeItem) {
 		closed[item.title] = !closed[item.title];
@@ -107,6 +127,32 @@
 									>
 								</div>
 							{:else}
+								<div
+									data-icon="skip-back"
+									aria-label="Discard"
+									on:click={() => discard(entity)}
+									class="clickable-icon"
+								>
+									<svg
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="svg-icon lucide-skip-back"
+										><polygon
+											points="19 20 9 12 19 4 19 20"
+										/><line
+											x1="5"
+											y1="19"
+											x2="5"
+											y2="5"
+										/></svg
+									>
+								</div>
 								<div
 									data-icon="plus"
 									aria-label="Stage"

@@ -27,6 +27,8 @@ export abstract class GitManager {
 
     abstract discard(filepath: string): Promise<void>;
 
+    abstract discardAll(_: { dir: string, status?: Status; }): Promise<void>;
+
     abstract pull(): Promise<FileStatusResult[] | undefined>;
 
     abstract push(): Promise<number>;

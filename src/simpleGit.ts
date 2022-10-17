@@ -192,6 +192,10 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.idle);
     }
 
+    async discardAll({ dir }: { dir?: string; }): Promise<void> {
+        return this.discard(dir ?? "");
+    }
+
     async pull(): Promise<FileStatusResult[] | undefined> {
         this.plugin.setState(PluginState.pull);
         if (this.plugin.settings.updateSubmodules)
