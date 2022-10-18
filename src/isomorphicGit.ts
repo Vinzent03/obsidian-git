@@ -224,7 +224,7 @@ export class IsomorphicGit extends GitManager {
                 const res = await this.getStagedFiles(dir ?? ".");
                 staged = res.map(({ filepath }) => filepath);
             }
-            await Promise.all(staged.map(file => this.unstage(file, false)));
+            await this.wrapFS(Promise.all(staged.map(file => git.resetIndex({ ...this.getRepo(), filepath: file }))));
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
