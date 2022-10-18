@@ -110,6 +110,7 @@
 			margin-left: auto;
 			.type {
 				padding-left: var(--size-2-1);
+				width: 11px;
 				display: flex;
 				align-items: center;
 				justify-content: center;

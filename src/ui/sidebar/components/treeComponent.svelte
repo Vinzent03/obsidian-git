@@ -76,6 +76,10 @@
 					on:click|self={() => fold(entity)}
 				>
 					<div
+						data-icon="folder"
+						style="padding-right: 5px; display: flex; "
+					/>
+					<div
 						class="nav-folder-collapse-indicator collapse-icon"
 						on:click={() => fold(entity)}
 					>
@@ -183,6 +187,7 @@
 									>
 								</div>
 							{/if}
+							<div style="width:11px" />
 						</div>
 					</div>
 				</div>
