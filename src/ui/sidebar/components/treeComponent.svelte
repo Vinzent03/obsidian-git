@@ -105,7 +105,7 @@
 								<div
 									data-icon="minus"
 									aria-label="Unstage"
-									on:click={() => unstage(entity.title)}
+									on:click={() => unstage(entity.path)}
 									class="clickable-icon"
 								>
 									<svg
