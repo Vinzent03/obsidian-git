@@ -14,6 +14,8 @@
 	export let fileType: FileType;
 	export let topLevel = false;
 	const closed: Record<string, boolean> = {};
+	$: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
+
 	function stage(path: string) {
 		plugin.gitManager.stageAll({ dir: path }).finally(() => {
 			dispatchEvent(new CustomEvent("git-refresh"));
@@ -25,11 +27,7 @@
 		});
 	}
 	function discard(item: TreeItem) {
-		new DiscardModal(
-			view.app,
-			false,
-			plugin.gitManager.getVaultPath(item.path)
-		)
+		new DiscardModal(view.app, false, item.vaultPath)
 			.myOpen()
 			.then((shouldDiscard) => {
 				if (shouldDiscard === true) {
@@ -73,6 +71,11 @@
 			<div class="nav-folder" class:is-collapsed={closed[entity.title]}>
 				<div
 					class="nav-folder-title"
+					aria-label-position={side}
+					aria-label={entity.vaultPath.split("/").last() !=
+					entity.vaultPath
+						? entity.vaultPath
+						: ""}
 					on:click|self={() => fold(entity)}
 				>
 					<div

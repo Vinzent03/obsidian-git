@@ -100,13 +100,20 @@ export abstract class GitManager {
                     return item.path.substring(beginLength).startsWith(title + "/");
                 });
                 childrenWithSameTitle.forEach((item) => children.remove(item));
+                const path = first.path.substring(0, restPath.indexOf("/") + beginLength);
                 list.push({
                     title: title,
-                    path: first.path.substring(0, restPath.indexOf("/") + beginLength),
+                    path: path,
+                    vaultPath: this.getVaultPath(path),
                     children: this._getTreeStructure(childrenWithSameTitle, (beginLength > 0 ? (beginLength + title.length) : title.length) + 1)
                 });
             } else {
-                list.push({ title: restPath, statusResult: first, path: first.path });
+                list.push({
+                    title: restPath,
+                    statusResult: first,
+                    path: first.path,
+                    vaultPath: this.getVaultPath(first.path)
+                });
                 children.remove(first);
             }
         }
@@ -124,11 +131,12 @@ export abstract class GitManager {
                 const singleChildIsDir = node.children?.first()?.statusResult == undefined;
 
                 if (!(node.children != undefined && singleChild && singleChildIsDir)) break;
-
-                node.title += "/" + node.children.first()!.title;
-                node.statusResult = node.children.first()!.statusResult;
-                node.path = node.children.first()!.path;
-                node.children = node.children.first()!.children;
+                const child = node.children.first()!;
+                node.title += "/" + child.title;
+                node.statusResult = child.statusResult;
+                node.path = child.path;
+                node.vaultPath = child.vaultPath;
+                node.children = child.children;
             }
             if (node.children != undefined) {
                 this.simplify(node.children);

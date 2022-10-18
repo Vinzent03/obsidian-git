@@ -88,6 +88,7 @@
 			lastPulledFilesHierarchy = {
 				title: "",
 				path: "",
+				vaultPath: "",
 				children: plugin.gitManager.getTreeStructure(lastPulledFiles),
 			};
 		}
@@ -109,6 +110,7 @@
 				changeHierarchy = {
 					title: "",
 					path: "",
+					vaultPath: "",
 					children: plugin.gitManager.getTreeStructure(
 						status.changed
 					),
@@ -116,6 +118,7 @@
 				stagedHierarchy = {
 					title: "",
 					path: "",
+					vaultPath: "",
 					children: plugin.gitManager.getTreeStructure(status.staged),
 				};
 			}
