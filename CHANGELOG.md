@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.7.0](https://github.com/denolehov/obsidian-git/compare/2.6.0...2.7.0) (2022-10-18)
+
+
+### Features
+
+* discard all changes ([3461a30](https://github.com/denolehov/obsidian-git/commit/3461a300ee563a316faf5d198473f2ccc323b1e8))
+* discard directories ([149805f](https://github.com/denolehov/obsidian-git/commit/149805f24e310e2b225be904c75094b90d38dd33))
+* stage/unstage button on category ([3373e6d](https://github.com/denolehov/obsidian-git/commit/3373e6d0ee4f2a4d84e7b3513fd7712046b2e889))
+
+
+### Bug Fixes
+
+* correct height for textarea ([b44c900](https://github.com/denolehov/obsidian-git/commit/b44c9008db9b12b1e4f23ef5fc87151618953231))
+* jittering of refresh button ([dbf36b2](https://github.com/denolehov/obsidian-git/commit/dbf36b2a63617b4d937f75326cd007ea08cfb622))
+* sum folder paths in n depth ([e690164](https://github.com/denolehov/obsidian-git/commit/e690164c0ef6bc1749008357299f92b9a244d960))
+* unstage all on mobile ([4507fdb](https://github.com/denolehov/obsidian-git/commit/4507fdb9c6f2f5c890198a18980586d892786d0e))
+* unstage dir ([3d421b7](https://github.com/denolehov/obsidian-git/commit/3d421b70e0611b5dbbd91c23668e8b98df57116a))
+* unstage folder on desktop ([56afe51](https://github.com/denolehov/obsidian-git/commit/56afe510ade79fab52a8a1aa2a9c15739d16a904))
+
 ## [2.6.0](https://github.com/denolehov/obsidian-git/compare/2.5.1...2.6.0) (2022-10-13)
 
 
