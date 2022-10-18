@@ -19,10 +19,13 @@ export class DiscardModal extends Modal {
         const div = contentEl.createDiv();
         div.addClass("obsidian-git-center");
 
-        // div.setAttr("margin-left", "auto");
-        // div.setAttr("margin-right", "auto");
         div
-            .createEl("button", { text: "Cancel" })
+            .createEl("button", {
+                text: "Cancel",
+                attr: {
+                    style: "margin: 0 10px"
+                }
+            })
             .addEventListener("click", () => {
                 if (this.resolve) this.resolve(false);
                 return this.close();
@@ -32,7 +35,10 @@ export class DiscardModal extends Modal {
             .createEl("button",
                 {
                     cls: "mod-cta",
-                    text: "Confirm"
+                    text: "Confirm",
+                    attr: {
+                        style: "margin: 0 10px"
+                    }
                 })
             .addEventListener("click", async () => {
                 if (this.resolve) this.resolve(true);
