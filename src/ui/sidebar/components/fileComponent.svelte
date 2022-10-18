@@ -118,7 +118,7 @@
 					/>
 				{/if}
 				<div
-					data-icon="skip-back"
+					data-icon="undo"
 					aria-label="Discard"
 					bind:this={buttons[0]}
 					on:click={discard}

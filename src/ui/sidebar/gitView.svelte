@@ -387,12 +387,13 @@
 							<div class="tools">
 								<div class="buttons">
 									<div
-										data-icon="skip-back"
+										data-icon="undo"
 										aria-label="Discard"
 										on:click={() => discard()}
 										class="clickable-icon"
 									>
 										<svg
+											xmlns="http://www.w3.org/2000/svg"
 											width="24"
 											height="24"
 											viewBox="0 0 24 24"
@@ -401,14 +402,9 @@
 											stroke-width="2"
 											stroke-linecap="round"
 											stroke-linejoin="round"
-											class="svg-icon lucide-skip-back"
-											><polygon
-												points="19 20 9 12 19 4 19 20"
-											/><line
-												x1="5"
-												y1="19"
-												x2="5"
-												y2="5"
+											class="svg-icon lucide-undo"
+											><path d="M3 7v6h6" /><path
+												d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"
 											/></svg
 										>
 									</div>
