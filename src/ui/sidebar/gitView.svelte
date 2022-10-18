@@ -247,10 +247,11 @@
 					>
 						<div
 							class="nav-folder-title"
-							on:click={() => (stagedOpen = !stagedOpen)}
+							on:click|self={() => (stagedOpen = !stagedOpen)}
 						>
 							<div
 								class="nav-folder-collapse-indicator collapse-icon"
+								on:click={() => (stagedOpen = !stagedOpen)}
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
@@ -266,12 +267,45 @@
 									><path d="M3 8L12 17L21 8" /></svg
 								>
 							</div>
-							<div class="nav-folder-title-content">
+							<div
+								class="nav-folder-title-content"
+								on:click={() => (stagedOpen = !stagedOpen)}
+							>
 								Staged Changes
 							</div>
-							<span class="tree-item-flair"
-								>{status.staged.length}</span
-							>
+
+							<div class="tools">
+								<div class="buttons">
+									<div
+										data-icon="minus"
+										aria-label="Unstage"
+										bind:this={buttons[8]}
+										on:click={unstageAll}
+										class="clickable-icon"
+									>
+										<svg
+											width="18"
+											height="18"
+											viewBox="0 0 18 18"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											class="svg-icon lucide-minus"
+											><line
+												x1="4"
+												y1="9"
+												x2="14"
+												y2="9"
+											/></svg
+										>
+									</div>
+								</div>
+								<div class="files-count">
+									{status.staged.length}
+								</div>
+							</div>
 						</div>
 						{#if stagedOpen}
 							<div
@@ -303,11 +337,12 @@
 						class:is-collapsed={!changesOpen}
 					>
 						<div
-							on:click={() => (changesOpen = !changesOpen)}
+							on:click|self={() => (changesOpen = !changesOpen)}
 							class="nav-folder-title"
 						>
 							<div
 								class="nav-folder-collapse-indicator collapse-icon"
+								on:click={() => (changesOpen = !changesOpen)}
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
@@ -324,10 +359,50 @@
 								>
 							</div>
 
-							<div class="nav-folder-title-content">Changes</div>
-							<span class="tree-item-flair"
-								>{status.changed.length}</span
+							<div
+								class="nav-folder-title-content"
+								on:click={() => (changesOpen = !changesOpen)}
 							>
+								Changes
+							</div>
+							<div class="tools">
+								<div class="buttons">
+									<div
+										data-icon="plus"
+										aria-label="Stage"
+										bind:this={buttons[9]}
+										on:click={stageAll}
+										class="clickable-icon"
+									>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="24"
+											height="24"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											class="svg-icon lucide-plus"
+											><line
+												x1="12"
+												y1="5"
+												x2="12"
+												y2="19"
+											/><line
+												x1="5"
+												y1="12"
+												x2="19"
+												y2="12"
+											/></svg
+										>
+									</div>
+								</div>
+								<div class="files-count">
+									{status.changed.length}
+								</div>
+							</div>
 						</div>
 						{#if changesOpen}
 							<div
@@ -438,6 +513,25 @@
 		padding: 0;
 		width: calc(100% - var(--size-4-8));
 		margin: 4px auto;
+	}
+	main {
+		.tools {
+			display: flex;
+			margin-left: auto;
+			.buttons {
+				display: flex;
+				> * {
+					padding: 0 0;
+					height: auto;
+				}
+			}
+			.files-count {
+				padding-left: var(--size-2-1);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+		}
 	}
 
 	.git-commit-msg-clear-button {
