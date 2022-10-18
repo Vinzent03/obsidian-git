@@ -241,10 +241,14 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async discardAll({ dir, status }: { dir: string, status?: Status; }): Promise<void> {
+    async discardAll({ dir, status }: { dir?: string, status?: Status; }): Promise<void> {
         let files: string[] = [];
         if (status) {
-            files = status.changed.filter(file => file.path.startsWith(dir)).map(file => file.path);
+            if (dir != undefined) {
+                files = status.changed.filter(file => file.path.startsWith(dir)).map(file => file.path);
+            } else {
+                files = status.changed.map(file => file.path);
+            }
         } else {
             files = (await this.getUnstagedFiles(dir)).map(({ filepath }) => filepath);
         }

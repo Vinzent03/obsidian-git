@@ -10,6 +10,7 @@
 	} from "src/types";
 	import { onDestroy } from "svelte";
 	import { slide } from "svelte/transition";
+	import { DiscardModal } from "../modals/discardModal";
 	import FileComponent from "./components/fileComponent.svelte";
 	import PulledFileComponent from "./components/pulledFileComponent.svelte";
 	import StagedFileComponent from "./components/stagedFileComponent.svelte";
@@ -148,6 +149,21 @@
 	function pull() {
 		loading = true;
 		plugin.pullChangesFromRemote().finally(triggerRefresh);
+	}
+	function discard() {
+		new DiscardModal(view.app, false, plugin.gitManager.getVaultPath("/"))
+			.myOpen()
+			.then((shouldDiscard) => {
+				if (shouldDiscard === true) {
+					plugin.gitManager
+						.discardAll({
+							status: plugin.cachedStatus,
+						})
+						.finally(() => {
+							dispatchEvent(new CustomEvent("git-refresh"));
+						});
+				}
+			});
 	}
 
 	$: rows = (commitMessage.match(/\n/g) || []).length + 1 || 1;
@@ -367,6 +383,32 @@
 							</div>
 							<div class="tools">
 								<div class="buttons">
+									<div
+										data-icon="skip-back"
+										aria-label="Discard"
+										on:click={() => discard()}
+										class="clickable-icon"
+									>
+										<svg
+											width="24"
+											height="24"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											class="svg-icon lucide-skip-back"
+											><polygon
+												points="19 20 9 12 19 4 19 20"
+											/><line
+												x1="5"
+												y1="19"
+												x2="5"
+												y2="5"
+											/></svg
+										>
+									</div>
 									<div
 										data-icon="plus"
 										aria-label="Stage"

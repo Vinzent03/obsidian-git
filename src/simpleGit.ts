@@ -193,7 +193,7 @@ export class SimpleGit extends GitManager {
     }
 
     async discardAll({ dir }: { dir?: string; }): Promise<void> {
-        return this.discard(dir ?? "");
+        return this.discard(dir ?? ".");
     }
 
     async pull(): Promise<FileStatusResult[] | undefined> {
