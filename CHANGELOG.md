@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.8.0](https://github.com/denolehov/obsidian-git/compare/2.7.0...2.8.0) (2022-10-18)
+
+
+### Features
+
+* new discard icon ([730e9a6](https://github.com/denolehov/obsidian-git/commit/730e9a6405b4018dc987b29c0a156feb01b583f2))
+
+
+### Bug Fixes
+
+* align buttons ([a09bc4a](https://github.com/denolehov/obsidian-git/commit/a09bc4ac2b5165b11a740230db55a4ef05e3c219))
+* center buttons in discard modal ([79a1e86](https://github.com/denolehov/obsidian-git/commit/79a1e86ce5ba7e039393c49414b0e408e940aaa5))
+* create .gitignore if not exists ([ac8e3ee](https://github.com/denolehov/obsidian-git/commit/ac8e3ee380340fbeedf0dac8e80a4c28aeadffa8))
+* full directory path on hover ([0f2c9d5](https://github.com/denolehov/obsidian-git/commit/0f2c9d56b1733450283af487c740d01908201284))
+
 ## [2.7.0](https://github.com/denolehov/obsidian-git/compare/2.6.0...2.7.0) (2022-10-18)
 
 
