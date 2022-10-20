@@ -313,7 +313,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             containerEl.createEl("br");
-            containerEl.createEl("h3", { "text": "Line author feature" });
+            containerEl.createEl("h3", { "text": "Line author information" });
 
             this.addLineAuthorInfoSettings();
         }
