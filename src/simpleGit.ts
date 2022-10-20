@@ -617,25 +617,26 @@ function parseLineInfoInto(lineInfo: string[], line: number, result: Blame) {
 
 function parseHeaderInto(header: string[], out: Blame, line: number) {
     const key = header[0];
+    const value = header.slice(1).join(" ");
     const commitHash = out.hashPerLine[line];
     const commit = out.commits.get(commitHash) ||
         <BlameCommit>{ hash: commitHash, author: {}, committer: {}, previous: {} };
 
     switch (key) {
-        case "summary": commit.summary = header.slice(1).join(" "); break;
+        case "summary": commit.summary = value; break;
 
-        case "author": commit.author!.name = header[1]; break;
-        case "author-mail": commit.author!.email = removeEmailBrackets(header[1]); break;
-        case "author-time": commit.author!.epochSeconds = parseInt(header[1]); break;
-        case "author-tz": commit.author!.tz = header[1]; break;
+        case "author": commit.author!.name = value; break;
+        case "author-mail": commit.author!.email = removeEmailBrackets(value); break;
+        case "author-time": commit.author!.epochSeconds = parseInt(value); break;
+        case "author-tz": commit.author!.tz = value; break;
 
-        case "committer": commit.committer!.name = header[1]; break;
-        case "committer-mail": commit.committer!.email = removeEmailBrackets(header[1]); break;
-        case "committer-time": commit.committer!.epochSeconds = parseInt(header[1]); break;
-        case "committer-tz": commit.committer!.tz = header[1]; break;
+        case "committer": commit.committer!.name = value; break;
+        case "committer-mail": commit.committer!.email = removeEmailBrackets(value); break;
+        case "committer-time": commit.committer!.epochSeconds = parseInt(value); break;
+        case "committer-tz": commit.committer!.tz = value; break;
 
-        case "previous": commit.previous!.commitHash = header[1]; break;
-        case "filename": commit.previous!.filename = header[1]; break;
+        case "previous": commit.previous!.commitHash = value; break;
+        case "filename": commit.previous!.filename = value; break;
     }
     out.commits.set(commitHash, commit);
 }
