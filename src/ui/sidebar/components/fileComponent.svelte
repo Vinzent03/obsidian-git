@@ -93,6 +93,11 @@
 		on:click|self={showDiff}
 		on:auxclick|self={showDiff}
 	>
+		<!-- <div
+			data-icon="folder"
+			bind:this={buttons[3]}
+			style="padding-right: 5px; display: flex;"
+		/> -->
 		<div
 			on:click={showDiff}
 			on:auxclick={showDiff}
@@ -113,7 +118,7 @@
 					/>
 				{/if}
 				<div
-					data-icon="skip-back"
+					data-icon="undo"
 					aria-label="Discard"
 					bind:this={buttons[0]}
 					on:click={discard}
@@ -145,6 +150,7 @@
 			margin-left: auto;
 			.type {
 				padding-left: var(--size-2-1);
+				width: 11px;
 				display: flex;
 				align-items: center;
 				justify-content: center;

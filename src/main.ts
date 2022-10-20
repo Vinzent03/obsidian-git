@@ -125,11 +125,15 @@ export default class ObsidianGit extends Plugin {
             id: 'edit-gitignore',
             name: 'Edit .gitignore',
             callback: async () => {
-                const content = await this.app.vault.adapter.read(this.gitManager.getVaultPath(".gitignore"));
+                const path = this.gitManager.getVaultPath(".gitignore");
+                if (! await this.app.vault.adapter.exists(path)) {
+                    this.app.vault.adapter.write(path, "");
+                }
+                const content = await this.app.vault.adapter.read(path);
                 const modal = new IgnoreModal(this.app, content);
                 const res = await modal.open();
                 if (res !== undefined) {
-                    await this.app.vault.adapter.write(this.gitManager.getVaultPath(".gitignore"), res);
+                    await this.app.vault.adapter.write(path, res);
                     this.refresh();
                 }
             },

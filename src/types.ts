@@ -212,6 +212,7 @@ export interface BranchInfo {
 export interface TreeItem {
     title: string;
     path: string;
+    vaultPath: string;
     statusResult?: FileStatusResult;
     children?: TreeItem[];
 }

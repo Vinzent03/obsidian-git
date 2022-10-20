@@ -224,7 +224,7 @@ export class IsomorphicGit extends GitManager {
                 const res = await this.getStagedFiles(dir ?? ".");
                 staged = res.map(({ filepath }) => filepath);
             }
-            await Promise.all(staged.map(file => this.unstage(file, false)));
+            await this.wrapFS(Promise.all(staged.map(file => git.resetIndex({ ...this.getRepo(), filepath: file }))));
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -235,6 +235,26 @@ export class IsomorphicGit extends GitManager {
         try {
             this.plugin.setState(PluginState.add);
             await this.wrapFS(git.checkout({ ...this.getRepo(), filepaths: [filepath], force: true }));
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
+        }
+    }
+
+    async discardAll({ dir, status }: { dir?: string, status?: Status; }): Promise<void> {
+        let files: string[] = [];
+        if (status) {
+            if (dir != undefined) {
+                files = status.changed.filter(file => file.path.startsWith(dir)).map(file => file.path);
+            } else {
+                files = status.changed.map(file => file.path);
+            }
+        } else {
+            files = (await this.getUnstagedFiles(dir)).map(({ filepath }) => filepath);
+        }
+
+        try {
+            await this.wrapFS(git.checkout({ ...this.getRepo(), filepaths: files, force: true }));
         } catch (error) {
             this.plugin.displayError(error);
             throw error;

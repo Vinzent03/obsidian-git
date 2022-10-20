@@ -2,6 +2,7 @@
 <script lang="ts">
 	import ObsidianGit from "src/main";
 	import { FileType, RootTreeItem, TreeItem } from "src/types";
+	import { DiscardModal } from "src/ui/modals/discardModal";
 	import { slide } from "svelte/transition";
 	import GitView from "../sidebarView";
 	import FileComponent from "./fileComponent.svelte";
@@ -13,6 +14,7 @@
 	export let fileType: FileType;
 	export let topLevel = false;
 	const closed: Record<string, boolean> = {};
+	$: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
 	function stage(path: string) {
 		plugin.gitManager.stageAll({ dir: path }).finally(() => {
@@ -23,6 +25,22 @@
 		plugin.gitManager.unstageAll({ dir: path }).finally(() => {
 			dispatchEvent(new CustomEvent("git-refresh"));
 		});
+	}
+	function discard(item: TreeItem) {
+		new DiscardModal(view.app, false, item.vaultPath)
+			.myOpen()
+			.then((shouldDiscard) => {
+				if (shouldDiscard === true) {
+					plugin.gitManager
+						.discardAll({
+							dir: item.path,
+							status: plugin.cachedStatus,
+						})
+						.finally(() => {
+							dispatchEvent(new CustomEvent("git-refresh"));
+						});
+				}
+			});
 	}
 	function fold(item: TreeItem) {
 		closed[item.title] = !closed[item.title];
@@ -53,8 +71,17 @@
 			<div class="nav-folder" class:is-collapsed={closed[entity.title]}>
 				<div
 					class="nav-folder-title"
+					aria-label-position={side}
+					aria-label={entity.vaultPath.split("/").last() !=
+					entity.vaultPath
+						? entity.vaultPath
+						: ""}
 					on:click|self={() => fold(entity)}
 				>
+					<div
+						data-icon="folder"
+						style="padding-right: 5px; display: flex; "
+					/>
 					<div
 						class="nav-folder-collapse-indicator collapse-icon"
 						on:click={() => fold(entity)}
@@ -85,7 +112,7 @@
 								<div
 									data-icon="minus"
 									aria-label="Unstage"
-									on:click={() => unstage(entity.title)}
+									on:click={() => unstage(entity.path)}
 									class="clickable-icon"
 								>
 									<svg
@@ -107,6 +134,28 @@
 									>
 								</div>
 							{:else}
+								<div
+									data-icon="undo"
+									aria-label="Discard"
+									on:click={() => discard(entity)}
+									class="clickable-icon"
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="svg-icon lucide-undo"
+										><path d="M3 7v6h6" /><path
+											d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"
+										/></svg
+									>
+								</div>
 								<div
 									data-icon="plus"
 									aria-label="Stage"
@@ -137,6 +186,7 @@
 									>
 								</div>
 							{/if}
+							<div style="width:11px" />
 						</div>
 					</div>
 				</div>

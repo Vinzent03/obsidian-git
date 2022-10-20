@@ -27,6 +27,8 @@ export abstract class GitManager {
 
     abstract discard(filepath: string): Promise<void>;
 
+    abstract discardAll(_: { dir?: string, status?: Status; }): Promise<void>;
+
     abstract pull(): Promise<FileStatusResult[] | undefined>;
 
     abstract push(): Promise<number>;
@@ -97,13 +99,20 @@ export abstract class GitManager {
                     return item.path.substring(beginLength).startsWith(title + "/");
                 });
                 childrenWithSameTitle.forEach((item) => children.remove(item));
+                const path = first.path.substring(0, restPath.indexOf("/") + beginLength);
                 list.push({
                     title: title,
-                    path: first.path.substring(0, restPath.indexOf("/") + beginLength),
+                    path: path,
+                    vaultPath: this.getVaultPath(path),
                     children: this._getTreeStructure(childrenWithSameTitle, (beginLength > 0 ? (beginLength + title.length) : title.length) + 1)
                 });
             } else {
-                list.push({ title: restPath, statusResult: first, path: first.path });
+                list.push({
+                    title: restPath,
+                    statusResult: first,
+                    path: first.path,
+                    vaultPath: this.getVaultPath(first.path)
+                });
                 children.remove(first);
             }
         }
@@ -116,13 +125,19 @@ export abstract class GitManager {
     */
     private simplify(tree: TreeItem[]): TreeItem[] {
         for (const node of tree) {
-            const singleChild = node.children?.length == 1;
-            const singleChildIsDir = node.children?.first()?.statusResult == undefined;
-            if (node.children != undefined && singleChild && singleChildIsDir) {
-                node.title += "/" + node.children.first()!.title;
-                node.path = node.children.first()!.path;
-                node.children = node.children.first()!.children;
-            } else if (node.children != undefined) {
+            while (true) {
+                const singleChild = node.children?.length == 1;
+                const singleChildIsDir = node.children?.first()?.statusResult == undefined;
+
+                if (!(node.children != undefined && singleChild && singleChildIsDir)) break;
+                const child = node.children.first()!;
+                node.title += "/" + child.title;
+                node.statusResult = child.statusResult;
+                node.path = child.path;
+                node.vaultPath = child.vaultPath;
+                node.children = child.children;
+            }
+            if (node.children != undefined) {
                 this.simplify(node.children);
             }
             node.children?.sort((a, b) => {
