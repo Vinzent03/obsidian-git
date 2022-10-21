@@ -105,7 +105,11 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async blame(path: string, trackMovement: LineAuthorFollowMovement): Promise<Blame | "untracked"> {
+    async blame(
+        path: string,
+        trackMovement: LineAuthorFollowMovement,
+        ignoreWhitespace: boolean,
+    ): Promise<Blame | "untracked"> {
         path = this.asRepositoryRelativePath(path, true);
 
         if (!await this.isTracked(path)) return "untracked";
@@ -115,6 +119,8 @@ export class SimpleGit extends GitManager {
         const relativePath = inSubmodule ? inSubmodule.relativeFilepath : path;
 
         args.push("blame", "--porcelain");
+
+        if (ignoreWhitespace) args.push("-w");
 
         const trackCArg = `-C${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH}`;
         switch (trackMovement) {

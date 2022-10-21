@@ -534,7 +534,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
      * Persists the setting {@link key} with value {@link value} and
      * refreshes the line author info views.
      */
-    public configureLineAuthorSettingAndRefreshViews
+    public lineAuthorSettingHandler
         <K extends keyof ObsidianGitSettings["lineAuthor"]>(
             key: K,
             value: ObsidianGitSettings["lineAuthor"][K]
@@ -595,7 +595,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
                     dropdown.setValue(this.settings.lineAuthor.followMovement);
                     dropdown.onChange((value: LineAuthorFollowMovement) =>
-                        this.configureLineAuthorSettingAndRefreshViews("followMovement", value)
+                        this.lineAuthorSettingHandler("followMovement", value)
                     );
                 });
             trackMovement.descEl.innerHTML = `
@@ -613,7 +613,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .addToggle((tgl) => {
                     tgl.setValue(this.settings.lineAuthor.showCommitHash);
                     tgl.onChange(async (value: boolean) =>
-                        this.configureLineAuthorSettingAndRefreshViews("showCommitHash", value)
+                        this.lineAuthorSettingHandler("showCommitHash", value)
                     );
                 });
 
@@ -632,7 +632,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     dropdown.setValue(this.settings.lineAuthor.authorDisplay);
 
                     dropdown.onChange(async (value: LineAuthorDisplay) =>
-                        this.configureLineAuthorSettingAndRefreshViews("authorDisplay", value)
+                        this.lineAuthorSettingHandler("authorDisplay", value)
                     );
                 });
 
@@ -651,7 +651,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     dropdown.setValue(this.settings.lineAuthor.dateTimeFormatOptions);
 
                     dropdown.onChange(async (value: LineAuthorDateTimeFormatOptions) => {
-                        this.configureLineAuthorSettingAndRefreshViews("dateTimeFormatOptions", value);
+                        this.lineAuthorSettingHandler("dateTimeFormatOptions", value);
                         this.display();
                     });
                 });
@@ -667,7 +667,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         cb.setPlaceholder("YYYY-MM-DD HH:mm");
 
                         cb.onChange((value) => {
-                            this.configureLineAuthorSettingAndRefreshViews("dateTimeFormatCustomString", value);
+                            this.lineAuthorSettingHandler("dateTimeFormatCustomString", value);
                             dateTimeFormatCustomStringSetting.descEl.innerHTML =
                                 this.previewCustomDateTimeDescriptionHtml(value);
                         });
@@ -695,7 +695,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     dropdown.setValue(this.settings.lineAuthor.dateTimeTimezone);
 
                     dropdown.onChange(async (value: LineAuthorTimezoneOption) =>
-                        this.configureLineAuthorSettingAndRefreshViews("dateTimeTimezone", value)
+                        this.lineAuthorSettingHandler("dateTimeTimezone", value)
                     );
                 })
                 .descEl.innerHTML = `
@@ -718,7 +718,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         const [preview, valid] = this.previewOldestAgeDescriptionHtml(value);
                         oldestAgeSetting.descEl.innerHTML = preview;
                         if (valid) {
-                            this.configureLineAuthorSettingAndRefreshViews("coloringMaxAge", value);
+                            this.lineAuthorSettingHandler("coloringMaxAge", value);
                             this.refreshColorSettingsName("oldest");
                         }
                     });
@@ -726,6 +726,26 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             this.createColorSetting("newest");
             this.createColorSetting("oldest");
+
+            new Setting(this.containerEl)
+                .setName("Ignore whitespace and newlines in changes")
+                .addToggle((tgl) => {
+                    tgl.setValue(this.settings.lineAuthor.ignoreWhitespace);
+                    tgl.onChange((value) =>
+                        this.lineAuthorSettingHandler("ignoreWhitespace", value))
+                })
+                .descEl.innerHTML = `
+                    Whitespace and newlines are interpreted as
+                    part of the document and in changes
+                    by default (hence not ignored).
+                    This makes the last line being shown as 'changed'
+                    when a new subsequent line is added,
+                    even if the previously last line's text is the same.
+                    <br>
+                    If you don't care about purely-whitespace changes
+                    (e.g. list nesting / quote indentation changes),
+                    then activating this will provide more meaningful change detection.
+                `;
         }
     }
 
@@ -741,7 +761,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     const rgb = convertToRgb(colorNew);
                     if (rgb !== undefined) {
                         const key = which === "newest" ? "colorNew" : "colorOld";
-                        this.configureLineAuthorSettingAndRefreshViews(key, rgb);
+                        this.lineAuthorSettingHandler(key, rgb);
                     }
                     this.refreshColorSettingsDesc(which, rgb);
                 });

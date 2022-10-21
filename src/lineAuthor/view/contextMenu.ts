@@ -85,7 +85,7 @@ function addConfigurableLineAuthorSettings(
             .setChecked(currentlyShown)
             .onClick((_e) =>
                 pluginRef.plugin?.settingsTab
-                    ?.configureLineAuthorSettingAndRefreshViews(key, actionNewValue)
+                    ?.lineAuthorSettingHandler(key, actionNewValue)
             )
     );
 }

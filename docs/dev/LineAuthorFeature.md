@@ -87,6 +87,9 @@ These cases should be tested, when changes to this feature have been made.
 * open multiple files simultanously
 * open same file multiple times - and edit
 * open same files in multiple windows - and edit
+* UI should render correctly regardless of whether line numbers are shown as well or not.
+  * [[see obsidan forum discussion](https://forum.obsidian.md/t/added-editor-gutter-overlaps-and-obscures-editor-content/45217)
+* indentation changes and changes after last line (without trailing newline) with 'Ignored whitespace' enabled/disabled
 * commit file in a different time-zone than the current Obsidian user
     * check that time-zone "local" formatting is correct
     * time-zone "UTC" should always show the same result regardless of the local time-zone

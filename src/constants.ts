@@ -47,6 +47,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
         // https://color.adobe.com/de/create/color-accessibility
         colorNew: { r: 255, g: 150, b: 150 },
         colorOld: { r: 120, g: 160, b: 255 },
+        ignoreWhitespace: false,
         gutterSpacingFallbackLength: 5,
     }
 };

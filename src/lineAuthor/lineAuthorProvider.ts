@@ -72,7 +72,11 @@ export class LineAuthorProvider {
         if (this.lineAuthorings.has(key)) {
             // already computed. just tell the editor to update to the key's state
         } else {
-            const gitAuthorResult = await gitManager.blame(filepath, this.plugin.settings.lineAuthor.followMovement);
+            const gitAuthorResult = await gitManager.blame(
+                filepath,
+                this.plugin.settings.lineAuthor.followMovement,
+                this.plugin.settings.lineAuthor.ignoreWhitespace
+            );
             this.lineAuthorings.set(key, gitAuthorResult);
         }
 
