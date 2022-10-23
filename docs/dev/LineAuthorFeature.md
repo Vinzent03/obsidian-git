@@ -129,11 +129,11 @@ This scenario contains two main cases to test:
 
 ## Potential Future Improvements
 
-* distinguish untracked and changed line (e.g. "~" and "+")
-* show deleted lines
-* show / highlight diff when hover/click on gutter
 * show commit info when click/hover on gutter
+* show / highlight diff when hover/click on gutter
 * small tooltip widget when hovering/right-clicking on line author gutter with author/hash, etc.
+* show deleted lines
+* distinguish untracked and changed line (e.g. "~" and "+")
 * use addMomentFormat in settings.ts when configuring the line author date format.
 * main.ts: refreshUpdatedHead(): Detect, if the head has changed from outside of Obsidian git (e.g. script) and run this callback then.
 * Avoid "Uncaught illegal access error" when closing a separate Obsidian window.
