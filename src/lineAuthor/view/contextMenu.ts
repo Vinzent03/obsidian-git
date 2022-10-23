@@ -9,7 +9,7 @@ import { impossibleBranch } from "src/utils";
 
 type ContextMenuConfigurableSettingsKeys = "showCommitHash" | "authorDisplay" | "dateTimeFormatOptions";
 
-type CtxMenuCommitInfo = Pick<BlameCommit, "hash" | "isZeroCommit"> & { isDummy: boolean };
+type CtxMenuCommitInfo = Pick<BlameCommit, "hash" | "isZeroCommit"> & { isWaitingGutter: boolean };
 const COMMIT_ATTR = "data-commit";
 
 
@@ -24,8 +24,8 @@ export function handleContextMenu(menu: Menu, editor: Editor, _mdv: MarkdownView
     const info = getCommitInfo(gutterElement);
     if (!info) return;
 
-    // Zero-commit and dummy-commit must not be copied
-    if (!info.isZeroCommit && !info.isDummy) {
+    // Zero-commit and waiting-for-result must not be copied
+    if (!info.isZeroCommit && !info.isWaitingGutter) {
         addCopyHashMenuItem(info, menu);
     }
 
@@ -94,14 +94,14 @@ function addConfigurableLineAuthorSettings(
 
 export function enrichCommitInfoForContextMenu(
     commit: BlameCommit,
-    isDummyCommit: boolean,
+    isWaitingGutter: boolean,
     elt: HTMLElement
 ) {
     elt.setAttr(COMMIT_ATTR, JSON.stringify(
         <CtxMenuCommitInfo>{
             hash: commit.hash,
             isZeroCommit: commit.isZeroCommit,
-            isDummy: isDummyCommit,
+            isWaitingGutter,
         }
     ));
 }

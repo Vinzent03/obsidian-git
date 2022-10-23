@@ -22,14 +22,14 @@ export function initialSpacingGutter() {
  * **DO NOT CACHE THIS FUNCTION CALL, AS THE ADAPTIVE COLOR NEED TO BE FRESHLY CALCULATED.**
  */
 export function initialLineAuthoringGutter(settings: LineAuthorSettings) {
-    const { lineAuthoring, ageForInitialRender } = adaptiveInitialColoredDummyLineAuthoring(settings);
+    const { lineAuthoring, ageForInitialRender } = adaptiveInitialColoredWaitingLineAuthoring(settings);
     return lineAuthoringGutterMarker(
         lineAuthoring,
         1,
         1,
         "initialGutter" + ageForInitialRender, // use a age coloring based cache key
         settings,
-        "dummy-commit"
+        "waiting-for-result"
     );
 }
 
@@ -40,10 +40,10 @@ export function initialLineAuthoringGutter(settings: LineAuthorSettings) {
  * e.g. for max age = 100 days, this means it'll use the color for the age of 25 days.
  * This case only happens on each (re-)start of Obsidian.
  * 
- * We use a dummy commit, to have it rendered - so that we can use it's rendered text
+ * We use a waiting-gutter, to have it rendered - so that we can use it's rendered text
  * and transform it into unintrusive placeholder characters.
  */
-export function adaptiveInitialColoredDummyLineAuthoring
+export function adaptiveInitialColoredWaitingLineAuthoring
     (settings: LineAuthorSettings): { lineAuthoring: Exclude<LineAuthoring, "untracked">, ageForInitialRender: number } {
 
     const ageForInitialRender: number =
@@ -59,7 +59,7 @@ export function adaptiveInitialColoredDummyLineAuthoring
     };
 
     const dummyCommit = <BlameCommit>{
-        hash: "dummy-commit",
+        hash: "waiting-for-result",
         author: dummyAuthor,
         committer: dummyAuthor,
         isZeroCommit: false,
@@ -67,8 +67,8 @@ export function adaptiveInitialColoredDummyLineAuthoring
 
     return {
         lineAuthoring: <Blame>{
-            hashPerLine: [undefined!, "dummy-commit"],
-            commits: new Map([["dummy-commit", dummyCommit]]),
+            hashPerLine: [undefined!, "waiting-for-result"],
+            commits: new Map([["waiting-for-result", dummyCommit]]),
         }, ageForInitialRender
     };
 }

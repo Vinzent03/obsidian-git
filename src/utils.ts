@@ -78,3 +78,7 @@ export function resizeToLength(original: string, desiredLength: number, fillChar
         return original.substring(original.length - desiredLength);
     }
 }
+
+export function between(l: number, x: number, r: number) {
+    return l <= x && x <= r;
+}

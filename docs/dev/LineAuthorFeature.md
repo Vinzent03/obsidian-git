@@ -24,6 +24,7 @@ Furthermore, the following concepts are necessary:
 * [Transaction](https://codemirror.net/docs/ref/#state.Transaction)
 * [Creating a transaction](https://codemirror.net/docs/ref/#state.EditorState.update)
 * [Annotation within a transaction](https://codemirror.net/docs/ref/#state.Annotation)
+* [ChangeSet](https://codemirror.net/docs/ref/#state.ChangeSet) (for the unsaved changes gutter update)
 * [Exmaple: Document Changes](https://codemirror.net/examples/change/)
 * [Example: Configuratoin and Extension](https://codemirror.net/examples/config/)
 
@@ -90,6 +91,7 @@ These cases should be tested, when changes to this feature have been made.
 * UI should render correctly regardless of whether line numbers are shown as well or not.
   * [[see obsidan forum discussion](https://forum.obsidian.md/t/added-editor-gutter-overlaps-and-obscures-editor-content/45217)
 * indentation changes and changes after last line (without trailing newline) with 'Ignored whitespace' enabled/disabled
+* [Unsaved Changes Gutter Update Scenario](#unsaved-changes-gutter-update-scenario)
 * commit file in a different time-zone than the current Obsidian user
     * check that time-zone "local" formatting is correct
     * time-zone "UTC" should always show the same result regardless of the local time-zone
@@ -106,14 +108,32 @@ These cases should be tested, when changes to this feature have been made.
       * The current cache key doesn't detect this change and hence the view isn't updated.
       * Reloading Obsidian entirely will evict the cache - and the line authoring will be shown correctly again.
 
+### Unsaved Changes Gutter Update Scenario
+
+This scenario contains two main cases to test:
+
+#### 1. Untracked file
+1. Open an untracked file. It should show +++ everywhere.
+2. Make insertions, deletions and in-line changes. It should always show +++.
+
+#### 2. Tracked file
+1. Open a tracked file with different line author dates and colors
+2. Make insertions, deletions and in-line changes.
+  * It should first show % until the changes are saved and the line authoring is computed.
+  * The % should preserving the color of the changed line and insertions/deletions should shift the
+    line authoring for subsequent lines accordingly
+3. Make multi-line insertions, deletions and in-line changes (e.g. via cut-copy-pasting of blocks of text).
+  * Hint: Use Ctrl+Z as well.
+  * The behavior should be same as above.
+4. Make changes at the intersection of unsaved and saved changes. The result should be consistent with above.
+
 ## Potential Future Improvements
 
-* quick and responsive update of the line authoring gutters without waiting for the file to be saved.
-    * this can be done by using the editor-changes (e.g. "add newline and three characters at pos 56") to pro-actively update the line gutter.
-    * for instance, if a line was already untracked, then it's simply extended. Otherwise a change makes it extend. The true result which comes a few seconds later will then give the true answer.
+* distinguish untracked and changed line (e.g. "~" and "+")
+* show deleted lines
 * show / highlight diff when hover/click on gutter
 * show commit info when click/hover on gutter
-* small tooltip widget when hovering/r-clicking on line author gutter with author/hash, etc.
+* small tooltip widget when hovering/right-clicking on line author gutter with author/hash, etc.
 * use addMomentFormat in settings.ts when configuring the line author date format.
 * main.ts: refreshUpdatedHead(): Detect, if the head has changed from outside of Obsidian git (e.g. script) and run this callback then.
 * Avoid "Uncaught illegal access error" when closing a separate Obsidian window.

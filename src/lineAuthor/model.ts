@@ -4,6 +4,7 @@ import {
     EditorState, StateField,
     Transaction
 } from "@codemirror/state";
+import { Hasher, sha256 } from "js-sha256";
 import { RGB } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
 import { parseColoringMaxAgeDuration } from "src/settings";
@@ -60,7 +61,14 @@ export function lineAuthoringId(
 
 // =================== LineAuthoring inside a Codemirror Transaction =====================
 
-export type LineAuthoringWithId = { la: LineAuthoring; key: LineAuthoringId };
+export type LineAuthoringWithChanges = {
+    la: LineAuthoring;
+    key: LineAuthoringId;
+    /**
+     * See {@link enrichUnsavedChanges}
+     */
+    lineOffsetsFromUnsavedChanges: Map<number, number>;
+};
 
 /**
  * The {@link Annotation} used in Codemirror {@link Transaction}s to
@@ -69,8 +77,8 @@ export type LineAuthoringWithId = { la: LineAuthoring; key: LineAuthoringId };
  * See users of {@link newComputationResultAsTransaction} for the value providers.
  * The {@link StateField} {@link lineAuthorState} hold the value of this transaction.
  */
-const LineAuthoringContainerType: AnnotationType<LineAuthoringWithId> =
-    Annotation.define<LineAuthoringWithId>();
+const LineAuthoringContainerType: AnnotationType<LineAuthoringWithChanges> =
+    Annotation.define<LineAuthoringWithChanges>();
 
 export function newComputationResultAsTransaction(
     key: LineAuthoringId,
@@ -78,11 +86,15 @@ export function newComputationResultAsTransaction(
     state: EditorState
 ): Transaction {
     return state.update({
-        annotations: LineAuthoringContainerType.of({ key, la }),
+        annotations: LineAuthoringContainerType.of({
+            key,
+            la,
+            lineOffsetsFromUnsavedChanges: new Map(),
+        }),
     });
 }
 
-function getLineAuthorAnnotation(tr: Transaction): LineAuthoringWithId | undefined {
+function getLineAuthorAnnotation(tr: Transaction): LineAuthoringWithChanges | undefined {
     return tr.annotation(LineAuthoringContainerType);
 }
 
@@ -98,19 +110,40 @@ function getLineAuthorAnnotation(tr: Transaction): LineAuthoringWithId | undefin
  * appears after a new a recent one, it might happen, that the old and stale one
  * will be shown instead. This is because we only ever show the annotation which
  * was most recently in a transaction - and we do not track any time here.
+ * 
+ * When caching this, please use {@link laStateDigest} to compute the key.
  */
-export const lineAuthorState: StateField<LineAuthoringWithId | undefined> =
-    StateField.define<LineAuthoringWithId | undefined>({
+export const lineAuthorState: StateField<LineAuthoringWithChanges | undefined> =
+    StateField.define<LineAuthoringWithChanges | undefined>({
         create: (_state) => undefined,
-        update(previousValue, transaction) {
-            // We always show the newest thing here. concurrent changes are ignored.
-            return getLineAuthorAnnotation(transaction) ?? previousValue;
-        },
+        /**
+         * The state can be updated from either an annotated transaction containing
+         * the newest line authoring (for the saved document) - or from 
+         * unsaved changes of the document as the user is actively typing in the editor.
+         * 
+         * In the first case, we take the new line authoring and discard anything we had remembered
+         * from unsaved changes. In the second case, we use the unsaved changes in {@link enrichUnsavedChanges} to pre-compute information to immediately update the
+         * line author gutter without needing to wait until the document is saved and the
+         * line authoring is properly computed.
+        */
+        update: (previous, transaction) =>
+            getLineAuthorAnnotation(transaction) ?? enrichUnsavedChanges(transaction, previous),
         // compare cache keys.
         // equality rate is >= 95% :)
         // hence avoids recomputation of views
         compare: (l, r) => l?.key === r?.key,
     });
+
+export function laStateDigest(laState: LineAuthoringWithChanges | undefined): Hasher {
+    const digest = sha256.create();
+    if (!laState) return digest;
+
+    const { la, key, lineOffsetsFromUnsavedChanges } = laState;
+    digest.update(la === "untracked" ? "t" : "f");
+    digest.update(key);
+    for (const [k, v] of lineOffsetsFromUnsavedChanges.entries() ?? []) digest.update([k, v]);
+    return digest;
+}
 
 // =============== Line Authoring Settings =================
 
@@ -167,4 +200,64 @@ export function provideSettingsAccess(
 export function maxAgeInDaysFromSettings(settings: LineAuthorSettings) {
     return parseColoringMaxAgeDuration(settings.coloringMaxAge)?.asDays() ??
         parseColoringMaxAgeDuration(DEFAULT_SETTINGS.lineAuthor.coloringMaxAge)!.asDays();
+}
+
+/**
+ * Given a transaction containing editor changes and the previous line author state,
+ * we want to update the `lineOffsetsFromUnsavedChanges` in {@link LineAuthoringWithChanges}.
+ * 
+ * This property contains for each line `ln` in the new document the following:
+ * * if the line has not been changed, then it is not contained and `<map>.get(ln)` is undefined.
+ * * if the line has been changed and its ChangeSet does not change the number of lines,
+ *   then `<map>.get(ln)` is 0.
+ * * if the line has been changed and its ChangeSet indicates that the number of lines has changed
+ *   (e.g. removed or added lines), then all but the last lines in the ChangeSet will have
+ *   `<map>.get(ln)=0` and the last line will have `<map>.get(ln)=n` where `n` is the number
+ *   of added lines. If `n` is negative, then lines have been removed instead.
+ */
+function enrichUnsavedChanges(tr: Transaction, prev: LineAuthoringWithChanges | undefined)
+    : LineAuthoringWithChanges | undefined {
+    if (!prev) return undefined;
+
+    if (!tr.changes.empty) {
+        tr.changes.iterChanges((fromA, toA, fromB, toB) => {
+            const oldDoc = tr.startState.doc;
+            const { newDoc } = tr;
+
+            const beforeFrom = oldDoc.lineAt(fromA).number;
+            const beforeTo = oldDoc.lineAt(toA).number
+
+            const afterFrom = newDoc.lineAt(fromB).number;
+            const afterTo = newDoc.lineAt(toB).number;
+
+            const beforeLen = beforeTo - beforeFrom + 1;
+            const afterLen = afterTo - afterFrom + 1;
+
+            /*
+            Current change:
+            The lines beforeFrom..beforeTo (containing beforeLen lines) in the old doc
+            have been replaced by
+            the lines afterFrom..afterTo (containing afterLen lines) in the new doc.
+            */
+
+            // The lines afterFrom..afterTo for which we want to
+            // set an offset in lineOffsetsFromUnsavedChanges.
+            for (let afterI = afterFrom; afterI <= afterTo; afterI++) {
+                // Multiple changes can be made from the current transaction
+                // as well as from previous transactions since the last document save.
+                // Hence, we want to cumulate all offsets.
+                let offset = prev.lineOffsetsFromUnsavedChanges.get(afterI) ?? 0;
+
+                const isLastLine = afterTo === afterI;
+
+                // positive = added lines, negative = removed lines.
+                const changeInNumberOfLines = afterLen - beforeLen;
+                if (isLastLine) offset += changeInNumberOfLines;
+
+                prev.lineOffsetsFromUnsavedChanges.set(afterI, offset);
+            }
+        });
+    }
+
+    return prev;
 }

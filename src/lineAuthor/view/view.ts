@@ -1,13 +1,14 @@
 import { Extension, Range, RangeSet, Text } from "@codemirror/state";
 import { EditorView, gutter, GutterMarker } from "@codemirror/view";
-import { sha256 } from "js-sha256";
 import {
-    latestSettings, LineAuthoringWithId, LineAuthorSettings, lineAuthorState
+    laStateDigest,
+    latestSettings, LineAuthoringWithChanges, LineAuthorSettings, lineAuthorState
 } from "src/lineAuthor/model";
 import { getLongestRenderedGutter, gutterMarkersRangeSet } from "src/lineAuthor/view/cache";
 import { lineAuthoringGutterMarker, TextGutter } from "src/lineAuthor/view/gutter/gutter";
 import { initialLineAuthoringGutter, initialSpacingGutter } from "src/lineAuthor/view/gutter/initial";
 import { newUntrackedFileGutter } from "src/lineAuthor/view/gutter/untrackedFile";
+import { between } from "src/utils";
 
 /*
 ================== VIEW ======================
@@ -30,8 +31,8 @@ export const lineAuthorGutter: Extension = gutter({
         return lineAuthoringGutterMarkersRangeSet(view, lineAuthoring);
     },
     lineMarkerChange(update) {
-        const newLineAuthoringId = update.state.field(lineAuthorState)?.key;
-        const oldLineAuthoringId = update.startState.field(lineAuthorState)?.key;
+        const newLineAuthoringId = laStateDigest(update.state.field(lineAuthorState));
+        const oldLineAuthoringId = laStateDigest(update.startState.field(lineAuthorState));
         return oldLineAuthoringId !== newLineAuthoringId;
     },
     renderEmptyElements: true,
@@ -54,12 +55,10 @@ export const lineAuthorGutter: Extension = gutter({
  */
 function lineAuthoringGutterMarkersRangeSet(
     view: EditorView,
-    optLA?: LineAuthoringWithId
+    optLA?: LineAuthoringWithChanges
 ): RangeSet<GutterMarker> {
 
-    const digest = sha256.create();
-
-    digest.update(`${optLA?.la === "untracked"} ${optLA?.key}`);
+    const digest = laStateDigest(optLA);
 
     const doc = view.state.doc;
     // We don't digest this, even though it is used as an argument for the computation
@@ -95,7 +94,7 @@ function computeLineAuthoringGutterMarkersRangeSet(
     doc: Text,
     blocksPerLine: Map<number, [number, number]>,
     settings: LineAuthorSettings,
-    optLA?: LineAuthoringWithId
+    optLA?: LineAuthoringWithChanges
 ): { result: RangeSet<GutterMarker>, allowCache: boolean } {
     let allowCache = true; // invocations of initialLineAuthoringGutter shouldn't be cached
 
@@ -105,6 +104,8 @@ function computeLineAuthoringGutterMarkersRangeSet(
     function add(from: number, to: number | undefined, gutter: GutterMarker) {
         return ranges.push(gutter.range(from, to));
     }
+
+    const lineFrom = computeLineMappingForUnsavedChanges(docLastLine, optLA);
 
     const emptyDoc = doc.length === 0;
 
@@ -137,15 +138,50 @@ function computeLineAuthoringGutterMarkersRangeSet(
             continue;
         }
 
-        if (endLine >= la.hashPerLine.length) {
+        const lastAuthorLine = la.hashPerLine.length - 1;
+
+        const laStartLine = lineFrom[startLine];
+        const laEndLine = lineFrom[endLine];
+
+        if (laEndLine && laEndLine > lastAuthorLine) {
             add(from, to, UNDISPLAYED);
-            continue;
         }
 
-        add(from, to, lineAuthoringGutterMarker(la, startLine, endLine, key, settings))
+        if (laStartLine !== undefined && between(1, laStartLine, lastAuthorLine) &&
+            laEndLine !== undefined && between(1, laEndLine, lastAuthorLine)
+        ) {
+            add(from, to, lineAuthoringGutterMarker(la, laStartLine, laEndLine, key, settings))
+        }
+        else {
+            const start = Math.clamp(laStartLine ?? startLine, 1, lastAuthorLine);
+            const end = Math.clamp(laEndLine ?? endLine, 1, lastAuthorLine);
+            add(from, to,
+                lineAuthoringGutterMarker(la, start, end, key + "computing", settings, "waiting-for-result")
+            );
+        }
     }
 
     return { result: RangeSet.of(ranges, /* sort = */true), allowCache };
+}
+
+// todo. explain.
+function computeLineMappingForUnsavedChanges(docLastLine: number, optLA: LineAuthoringWithChanges | undefined) {
+    if (!optLA?.lineOffsetsFromUnsavedChanges) {
+        return Array.from(new Array(docLastLine + 1), ln => ln);
+    }
+
+    const lineFrom: (number | undefined)[] = [undefined];
+    let cumulativeLineOffset = 0; // may be negative
+
+    for (let ln = 1; ln <= docLastLine; ln++) {
+        const unsavedChanges = optLA.lineOffsetsFromUnsavedChanges.get(ln);
+        cumulativeLineOffset += unsavedChanges ?? 0; // compute cumulative sum of line offsets
+        // if no unsaved changes are there for the current line, then use
+        // the cumulative offset, otherwise return undefined - which will be rendered as 'computing'
+        lineFrom[ln] = unsavedChanges === undefined ? ln - cumulativeLineOffset : undefined;
+    }
+
+    return lineFrom;
 }
 
 /**

@@ -18,7 +18,7 @@ const NEW_COMMIT_CHARACTER = "+";
 const DIFFERING_AUTHOR_COMMITTER_MARKER = "*";
 
 const NON_WHITESPACE_REGEXP = /\S/g;
-const UNINTRUSIVE_CHARACTER_FOR_INITIAL_DUMMY_RENDERING = "%";
+const UNINTRUSIVE_CHARACTER_FOR_WAITING_RENDERING = "%";
 
 /**
  * A simple text gutter used to hold space until the real results are available.
@@ -53,7 +53,7 @@ export class LineAuthoringGutter extends GutterMarker {
         public readonly endLine: number,
         public readonly key: string,
         public readonly settings: LineAuthorSettings,
-        public readonly options?: "dummy-commit",
+        public readonly options?: "waiting-for-result",
     ) {
         super();
     }
@@ -101,20 +101,20 @@ export class LineAuthoringGutter extends GutterMarker {
 
         let toBeRenderedText = commit.isZeroCommit ? "" : this.renderNonZeroCommit(commit);
 
-        const isTrueCommit = !commit.isZeroCommit && this.options !== "dummy-commit";
+        const isTrueCommit = !commit.isZeroCommit && this.options !== "waiting-for-result";
 
         if (isTrueCommit) {
             conditionallyUpdateLongestRenderedGutter(this, toBeRenderedText);
         } else {
-            toBeRenderedText = this.adaptTextForFakeCommit(commit, toBeRenderedText);
+            toBeRenderedText = this.adaptTextForFakeCommit(commit, toBeRenderedText, this.options);
         }
 
-        const domProvider = this.createHtmlNode(commit, toBeRenderedText, this.options === "dummy-commit");
+        const domProvider = this.createHtmlNode(commit, toBeRenderedText, this.options === "waiting-for-result");
 
         return domProvider;
     }
 
-    private createHtmlNode(commit: BlameCommit, text: string, isDummyCommit: boolean) {
+    private createHtmlNode(commit: BlameCommit, text: string, isWaitingGutter: boolean) {
         const templateElt = window.createDiv();
 
         templateElt.innerText = text;
@@ -127,14 +127,14 @@ export class LineAuthoringGutter extends GutterMarker {
 
         templateElt.style.backgroundColor = color;
 
-        enrichCommitInfoForContextMenu(commit, isDummyCommit, templateElt);
+        enrichCommitInfoForContextMenu(commit, isWaitingGutter, templateElt);
 
         function prepareForDomAttachment(): HTMLElement {
             // clone node before attachment, as attached DOMs may get destroyed.
             const elt = templateElt.cloneNode(true) as HTMLElement;
             attachedGutterElements.add(elt);
             // only record real dates
-            if (!isDummyCommit) recordRenderedAgeInDays(daysSinceCommit);
+            if (!isWaitingGutter) recordRenderedAgeInDays(daysSinceCommit);
             return elt;
         }
 
@@ -267,13 +267,20 @@ export class LineAuthoringGutter extends GutterMarker {
         }
     }
 
-    private adaptTextForFakeCommit(commit: BlameCommit, toBeRenderedText: string) {
+    private adaptTextForFakeCommit(
+        commit: BlameCommit,
+        toBeRenderedText: string,
+        options?: "waiting-for-result"
+    ) {
         // attempt to use longest text as template for fake commit.
         const original = getLongestRenderedGutter()?.text ?? toBeRenderedText;
 
-        // replace template with + or % depending on whether its a zero commit or dummy-commit.
+        // replace template with + or % depending on whether its a zero commit or waiting-for-result.
         // the % is used to make the UI update from % to the true characters unintrusive
-        const fillCharacter = commit.isZeroCommit ? NEW_COMMIT_CHARACTER : UNINTRUSIVE_CHARACTER_FOR_INITIAL_DUMMY_RENDERING;
+        // waiting-for-result has higher priority than zero commit
+        const fillCharacter = options !== "waiting-for-result" && commit.isZeroCommit ?
+            NEW_COMMIT_CHARACTER :
+            UNINTRUSIVE_CHARACTER_FOR_WAITING_RENDERING;
         toBeRenderedText = original.replace(
             NON_WHITESPACE_REGEXP,
             fillCharacter
@@ -284,7 +291,9 @@ export class LineAuthoringGutter extends GutterMarker {
         // don't frequently shift the gutter size - which would also cause distracting UI updates.
         let desiredLength = latestSettings.get()?.gutterSpacingFallbackLength ?? toBeRenderedText.length;
 
-        if (commit.isZeroCommit) desiredLength = Math.min(desiredLength, 3);
+        // waiting has higher priority than zero commit
+        if (options !== "waiting-for-result" && commit.isZeroCommit)
+            desiredLength = Math.min(desiredLength, 3);
 
         return resizeToLength(toBeRenderedText, desiredLength, fillCharacter);
     }
@@ -303,7 +312,7 @@ export function lineAuthoringGutterMarker(
     endLine: number,
     key: string,
     settings: LineAuthorSettings,
-    options?: "dummy-commit",
+    options?: "waiting-for-result",
 ) {
     const digest = sha256.create();
     digest.update(Object.values(settings).join(","));
