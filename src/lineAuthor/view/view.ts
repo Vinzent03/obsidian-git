@@ -151,14 +151,23 @@ function computeLineAuthoringGutterMarkersRangeSet(
             laEndLine !== undefined && between(1, laEndLine, lastAuthorLine)
         ) {
             add(from, to, lineAuthoringGutterMarker(la, laStartLine, laEndLine, key, settings))
+            continue;
         }
-        else {
-            const start = Math.clamp(laStartLine ?? startLine, 1, lastAuthorLine);
-            const end = Math.clamp(laEndLine ?? endLine, 1, lastAuthorLine);
-            add(from, to,
-                lineAuthoringGutterMarker(la, start, end, key + "computing", settings, "waiting-for-result")
-            );
+
+        // unsaved changes quick gutter update. scenario 1
+        if (lastAuthorLine < 1) {  // file was empty, but now it's being written
+            add(from, to, initialLineAuthoringGutter(settings));
+            allowCache = false;
+            continue;
         }
+
+        // unsaved changes quick gutter update. scenario 2
+        const start = Math.clamp(laStartLine ?? startLine, 1, lastAuthorLine);
+        const end = Math.clamp(laEndLine ?? endLine, 1, lastAuthorLine);
+
+        add(from, to,
+            lineAuthoringGutterMarker(la, start, end, key + "computing", settings, "waiting-for-result")
+        );
     }
 
     return { result: RangeSet.of(ranges, /* sort = */true), allowCache };

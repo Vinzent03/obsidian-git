@@ -88,6 +88,11 @@ These cases should be tested, when changes to this feature have been made.
 * open multiple files simultanously
 * open same file multiple times - and edit
 * open same files in multiple windows - and edit
+* open empty tracked file and make edits. quick update should respond sensibly
+* open file in a large, complex real-world vault with unknown characteristics
+  (the private vault of the developer GollyTicker suffices) and repeatedly press Enter in a tracked file.
+    * We expect no errors, but after adding the unsaved changed gutter update feature,
+      an early bu was present, where errors would occur during rendering and the view would become messed up.
 * UI should render correctly regardless of whether line numbers are shown as well or not.
   * [[see obsidan forum discussion](https://forum.obsidian.md/t/added-editor-gutter-overlaps-and-obscures-editor-content/45217)
 * indentation changes and changes after last line (without trailing newline) with 'Ignored whitespace' enabled/disabled

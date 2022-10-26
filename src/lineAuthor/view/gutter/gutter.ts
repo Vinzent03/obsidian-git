@@ -30,7 +30,9 @@ export class TextGutter extends GutterMarker {
 
     toDOM() { return document.createTextNode(this.text); }
 
-    destroy(dom: Node): void { dom.parentNode?.removeChild(dom); }
+    destroy(dom: HTMLElement): void {
+        if (!document.body.contains(dom)) dom.remove();
+    }
 }
 
 /**
@@ -87,10 +89,12 @@ export class LineAuthoringGutter extends GutterMarker {
         return this.precomputedDomProvider();
     }
 
-    public destroy(dom: Node): void {
+    public destroy(dom: HTMLElement): void {
         // this is called frequently, when the gutter moves outside of the view.
-        dom.parentNode?.removeChild(dom);
-        attachedGutterElements.delete(dom as HTMLElement);
+        if (!document.body.contains(dom)) {
+            dom.remove();
+            attachedGutterElements.delete(dom);
+        }
     }
 
     /**
@@ -322,6 +326,11 @@ export function lineAuthoringGutterMarker(
 
     const cached = gutterInstances.get(cacheKey);
     if (cached) return cached;
+
+    if (startLine === 0 || endLine === 0) {
+        console.log("zero", startLine, endLine);
+        console.trace();
+    }
 
     const result = new LineAuthoringGutter(la, startLine, endLine, key, settings, options);
     gutterInstances.set(cacheKey, result);
