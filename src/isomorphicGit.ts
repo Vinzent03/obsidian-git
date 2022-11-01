@@ -50,7 +50,7 @@ export class IsomorphicGit extends GitManager {
             dir: this.plugin.settings.basePath,
             onAuth: () => {
                 return {
-                    username: this.plugin.settings.username,
+                    username: this.plugin.localStorage.getUsername() ?? undefined,
                     password: this.plugin.localStorage.getPassword() ?? undefined
                 };
             },
@@ -60,8 +60,7 @@ export class IsomorphicGit extends GitManager {
                 if (username) {
                     const password = await new GeneralModal({ placeholder: "Specify your password/personal access token" }).open();
                     if (password) {
-                        this.plugin.settings.username = username;
-                        await this.plugin.saveSettings();
+                        this.plugin.localStorage.setUsername(username);
                         this.plugin.localStorage.setPassword(password);
                         return {
                             username,

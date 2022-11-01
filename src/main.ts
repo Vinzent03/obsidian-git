@@ -465,6 +465,11 @@ export default class ObsidianGit extends Plugin {
             this.settings.gitPath = undefined;
             await this.saveSettings();
         }
+        if (this.settings.username != undefined) {
+            this.localStorage.setPassword(this.settings.username);
+            this.settings.username = undefined;
+            await this.saveSettings();
+        }
     }
 
     unloadPlugin() {

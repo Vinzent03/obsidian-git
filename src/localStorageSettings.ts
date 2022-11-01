@@ -26,6 +26,14 @@ export class LocalStorageSettings {
         return app.saveLocalStorage(this.prefix + "password", value);
     }
 
+    getUsername(): string | null {
+        return app.loadLocalStorage(this.prefix + "username");
+    }
+
+    setUsername(value: string): void {
+        return app.saveLocalStorage(this.prefix + "username", value);
+    }
+
     getHostname(): string | null {
         return app.loadLocalStorage(this.prefix + "hostname");
     }

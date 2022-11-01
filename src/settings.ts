@@ -431,10 +431,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Username on your git server. E.g. your username on GitHub")
                 .addText(cb => {
-                    cb.setValue(plugin.settings.username);
+                    cb.setValue(plugin.localStorage.getUsername() ?? "");
                     cb.onChange((value) => {
-                        plugin.settings.username = value;
-                        plugin.saveSettings();
+                        plugin.localStorage.setUsername(value);
                     });
                 });
 

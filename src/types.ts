@@ -20,7 +20,10 @@ export interface ObsidianGitSettings {
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
-    username: string;
+    /**
+     * @deprecated Using `localstorage` instead
+     */
+    username?: string;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;
 

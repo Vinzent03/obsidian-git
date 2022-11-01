@@ -23,7 +23,6 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     basePath: "",
     differentIntervalCommitAndPush: false,
     changedFilesInStatusBar: false,
-    username: "",
     showedMobileNotice: false,
     refreshSourceControlTimer: 7000,
     showBranchStatusBar: true
