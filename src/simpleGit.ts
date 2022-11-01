@@ -35,6 +35,10 @@ export class SimpleGit extends GitManager {
                 binary: this.plugin.localStorage.getGitPath() || undefined,
                 config: ["core.quotepath=off"]
             });
+            const env = this.plugin.localStorage.getPATHPaths();
+            if (env) {
+                this.git.env("PATH", process.env["PATH"] + ":" + env.join(":"));
+            }
             this.git.cwd(await this.git.revparse("--show-toplevel"));
         }
     }

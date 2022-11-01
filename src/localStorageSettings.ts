@@ -74,6 +74,14 @@ export class LocalStorageSettings {
         return app.saveLocalStorage(this.prefix + "gitPath", value);
     }
 
+    getPATHPaths(): string[] {
+        return app.loadLocalStorage(this.prefix + "PATHPaths")?.split(":") ?? [];
+    }
+
+    setPATHPaths(value: string[]): void {
+        return app.saveLocalStorage(this.prefix + "PATHPaths", value.join(":"));
+    }
+
     getPluginDisabled(): boolean {
         return app.loadLocalStorage(this.prefix + "pluginDisabled") == "true";
     }

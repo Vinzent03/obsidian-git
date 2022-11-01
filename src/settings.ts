@@ -406,6 +406,27 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
                 });
 
+        if (plugin.gitManager instanceof SimpleGit)
+            new Setting(containerEl)
+                .setName("Additional PATH environment variable paths")
+                .setDesc("Use each line for one path")
+                .addTextArea((cb) => {
+                    cb.setValue(plugin.localStorage.getPATHPaths().join("\n"));
+                    cb.onChange((value) => {
+                        plugin.localStorage.setPATHPaths(value.split("\n"));
+                    });
+                });
+        if (plugin.gitManager instanceof SimpleGit)
+            new Setting(containerEl)
+                .setName("Reload with new PATH environment variable")
+                .addButton(cb => {
+                    cb.setButtonText("Reload");
+                    cb.setCta();
+                    cb.onClick(() => {
+                        (plugin.gitManager as SimpleGit).setGitInstance();
+                    });
+                });
+
         if (plugin.gitManager instanceof IsomorphicGit)
             new Setting(containerEl)
                 .setName("Username on your git server. E.g. your username on GitHub")
