@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.9.0](https://github.com/denolehov/obsidian-git/compare/2.8.0...2.9.0) (2022-11-01)
+
+
+### Features
+
+* custom PATH env paths ([2c42609](https://github.com/denolehov/obsidian-git/commit/2c4260942a738421bf517f1b0d063b536345f8bf))
+
+
+### Bug Fixes
+
+* store username in localstorage ([f3668ac](https://github.com/denolehov/obsidian-git/commit/f3668ac23f13d263e50b7d6b716d91150a11b6c7))
+
 ## [2.8.0](https://github.com/denolehov/obsidian-git/compare/2.7.0...2.8.0) (2022-10-18)
 
 
