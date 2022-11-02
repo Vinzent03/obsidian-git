@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.9.1](https://github.com/denolehov/obsidian-git/compare/2.9.0...2.9.1) (2022-11-02)
+
+
+### Bug Fixes
+
+* set path env var ([8a2ae4d](https://github.com/denolehov/obsidian-git/commit/8a2ae4dfe2ebb0023a351c251845d29a311a9560))
+
 ## [2.9.0](https://github.com/denolehov/obsidian-git/compare/2.8.0...2.9.0) (2022-11-01)
 
 
