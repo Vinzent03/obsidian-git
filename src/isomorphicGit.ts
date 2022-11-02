@@ -781,6 +781,10 @@ export class IsomorphicGit extends GitManager {
             return new Notice(message, this.noticeLength);
         }
     }
+
+    async log(file: string, relativeToVault: boolean): Promise<readonly any[]> {
+        // TODO implement
+    }
 }
 
 // All because we can't use (for await)...

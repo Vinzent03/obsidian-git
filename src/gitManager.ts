@@ -211,4 +211,8 @@ export abstract class GitManager {
         }
         return template;
     }
+
+    // https://github.com/denolehov/obsidian-git/issues/73#issuecomment-1272641543
+    abstract log(file: string, relativeToVault: boolean): Promise<readonly any[]>;
+
 }
