@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.9.2](https://github.com/denolehov/obsidian-git/compare/2.9.1...2.9.2) (2022-11-02)
+
+
+### Bug Fixes
+
+* detect network unreachable ([76b894c](https://github.com/denolehov/obsidian-git/commit/76b894c21085ff99d2f0bbaf1c4f46351e3f19f1)), closes [#211](https://github.com/denolehov/obsidian-git/issues/211)
+* hide notification on mobile ([7d62527](https://github.com/denolehov/obsidian-git/commit/7d6252795ca62f4176fee90d674041659a0a1d9f)), closes [#292](https://github.com/denolehov/obsidian-git/issues/292)
+
 ### [2.9.1](https://github.com/denolehov/obsidian-git/compare/2.9.0...2.9.1) (2022-11-02)
 
 
