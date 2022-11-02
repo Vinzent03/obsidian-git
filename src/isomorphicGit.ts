@@ -110,7 +110,10 @@ export class IsomorphicGit extends GitManager {
     }
 
     async status(): Promise<Status> {
-        const notice = new Notice("Getting status...", this.noticeLength);
+        let notice: Notice | undefined;
+        const timeout = window.setTimeout(function () {
+            notice = new Notice("This takes longer: Getting status", this.noticeLength);
+        }, 20000);
         try {
             this.plugin.setState(PluginState.status);
             const status = (await this.wrapFS(git.statusMatrix({ ...this.getRepo(), }))).map(row => this.getFileStatusResult(row));
@@ -118,10 +121,12 @@ export class IsomorphicGit extends GitManager {
             const changed = status.filter(fileStatus => fileStatus.working_dir !== " ");
             const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "U");
             const conflicted: string[] = [];
-            notice.hide();
+            window.clearTimeout(timeout);
+            notice?.hide();
             return { changed, staged, conflicted };
         } catch (error) {
-            notice.hide();
+            window.clearTimeout(timeout);
+            notice?.hide();
             this.plugin.displayError(error);
             throw error;
         }
@@ -279,7 +284,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async pull(): Promise<FileStatusResult[]> {
-        const progressNotice = new Notice("Initializing pull", this.noticeLength);
+        const progressNotice = this.showNotice("Initializing pull");
         try {
 
             this.plugin.setState(PluginState.pull);
@@ -302,7 +307,7 @@ export class IsomorphicGit extends GitManager {
                 },
                 remote: branchInfo.remote,
             }));
-            progressNotice.hide();
+            progressNotice?.hide();
 
             const upstreamCommit = await this.resolveRef("HEAD");
             this.plugin.lastUpdate = Date.now();
@@ -316,7 +321,7 @@ export class IsomorphicGit extends GitManager {
                 vault_path: this.getVaultPath(file.path),
             }));
         } catch (error) {
-            progressNotice.hide();
+            progressNotice?.hide();
             if (error instanceof Errors.MergeConflictError) {
                 this.plugin.handleConflict(error.data.filepaths.map((file) => this.getVaultPath(file)));
             }
@@ -330,7 +335,7 @@ export class IsomorphicGit extends GitManager {
         if (! await this.canPush()) {
             return 0;
         }
-        const progressNotice = new Notice("Initializing push", this.noticeLength);
+        const progressNotice = this.showNotice("Initializing push");
         try {
             this.plugin.setState(PluginState.status);
             const status = await this.branchInfo();
@@ -346,10 +351,10 @@ export class IsomorphicGit extends GitManager {
                     (progressNotice as any).noticeEl.innerText = this.getProgressText("Pushing", progress);
                 }
             }));
-            progressNotice.hide();
+            progressNotice?.hide();
             return numChangedFiles;
         } catch (error) {
-            progressNotice.hide();
+            progressNotice?.hide();
             this.plugin.displayError(error);
             throw error;
         }
@@ -451,7 +456,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async clone(url: string, dir: string): Promise<void> {
-        const progressNotice = new Notice("Initializing clone", this.noticeLength);
+        const progressNotice = this.showNotice("Initializing clone");
         try {
             await this.wrapFS(git.clone({
                 ...this.getRepo(),
@@ -461,9 +466,9 @@ export class IsomorphicGit extends GitManager {
                     (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);
                 }
             }));
-            progressNotice.hide();
+            progressNotice?.hide();
         } catch (error) {
-            progressNotice.hide();
+            progressNotice?.hide();
             this.plugin.displayError(error);
             throw error;
         }
@@ -495,7 +500,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async fetch(remote?: string): Promise<void> {
-        const progressNotice = new Notice("Initializing fetch", this.noticeLength);
+        const progressNotice = this.showNotice("Initializing fetch");
 
         try {
             const args: any = {
@@ -507,10 +512,10 @@ export class IsomorphicGit extends GitManager {
             };
 
             await this.wrapFS(git.fetch(args));
-            progressNotice.hide();
+            progressNotice?.hide();
         } catch (error) {
             this.plugin.displayError(error);
-            progressNotice.hide();
+            progressNotice?.hide();
             throw error;
         }
     }
@@ -631,8 +636,10 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getUnstagedFiles(base = "."): Promise<UnstagedFile[]> {
-        const notice = new Notice("Getting status...", this.noticeLength);
-
+        let notice: Notice | undefined;
+        const timeout = window.setTimeout(function () {
+            notice = new Notice("This takes longer: Getting status", this.noticeLength);
+        }, 20000);
         try {
             const repo = this.getRepo();
             const res = await this.wrapFS<Promise<UnstagedFile[]>>(
@@ -708,10 +715,12 @@ export class IsomorphicGit extends GitManager {
                         // return [filepath, ...result];
                     }
                 }));
-            notice.hide();
+            window.clearTimeout(timeout);
+            notice?.hide();
             return res;
         } catch (error) {
-            notice.hide();
+            window.clearTimeout(timeout);
+            notice?.hide();
             this.plugin.displayError(error);
             throw error;
         }
@@ -765,6 +774,12 @@ export class IsomorphicGit extends GitManager {
             vault_path: this.getVaultPath(row[this.FILE])
         };
 
+    }
+
+    private showNotice(message: string): Notice | undefined {
+        if (!this.plugin.settings.disablePopups) {
+            return new Notice(message, this.noticeLength);
+        }
     }
 }
 
