@@ -36,10 +36,12 @@ export class SimpleGit extends GitManager {
                 config: ["core.quotepath=off"]
             });
             const env = this.plugin.localStorage.getPATHPaths();
-            if (env) {
-                this.git.env("PATH", process.env["PATH"] + ":" + env.join(":"));
+            if (env.length > 0) {
+                const path = process.env["PATH"] + ":" + env.join(":");
+                process.env["PATH"] = path;
             }
-            this.git.cwd(await this.git.revparse("--show-toplevel"));
+            await this.git.cwd(await this.git.revparse("--show-toplevel"));
+
         }
     }
 
