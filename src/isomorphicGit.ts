@@ -303,7 +303,9 @@ export class IsomorphicGit extends GitManager {
                 ...this.getRepo(),
                 ref: branchInfo.current,
                 onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Checkout", progress);
+                    if (progressNotice !== undefined) {
+                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Checkout", progress);
+                    }
                 },
                 remote: branchInfo.remote,
             }));
@@ -348,7 +350,9 @@ export class IsomorphicGit extends GitManager {
             await this.wrapFS(git.push({
                 ...this.getRepo(),
                 onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Pushing", progress);
+                    if (progressNotice !== undefined) {
+                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Pushing", progress);
+                    }
                 }
             }));
             progressNotice?.hide();
@@ -463,7 +467,9 @@ export class IsomorphicGit extends GitManager {
                 dir: dir,
                 url: url,
                 onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);
+                    if (progressNotice !== undefined) {
+                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);
+                    }
                 }
             }));
             progressNotice?.hide();
@@ -506,7 +512,9 @@ export class IsomorphicGit extends GitManager {
             const args: any = {
                 ...this.getRepo(),
                 onProgress: (progress: GitProgressEvent) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Fetching", progress);
+                    if (progressNotice !== undefined) {
+                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Fetching", progress);
+                    }
                 },
                 remote: remote ?? await this.getCurrentRemote()
             };
