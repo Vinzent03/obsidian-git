@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.9.4](https://github.com/denolehov/obsidian-git/compare/2.9.3...2.9.4) (2022-11-04)
+
+
+### Bug Fixes
+
+* unset config on empty value ([d0f927e](https://github.com/denolehov/obsidian-git/commit/d0f927ecec9aeeae4ee86873511a208bf943e29c))
+
 ### [2.9.3](https://github.com/denolehov/obsidian-git/compare/2.9.2...2.9.3) (2022-11-03)
 
 ### [2.9.2](https://github.com/denolehov/obsidian-git/compare/2.9.1...2.9.2) (2022-11-02)
