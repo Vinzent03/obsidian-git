@@ -58,18 +58,39 @@ The Source Control View allows you to stage and commit individual files. It can 
 ![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
 
 ## Available Commands
-- `Create Backup`: Commits all changes and pushes them depending on your setting whether to push on backup or not
-- `Create Backup with specific message`: Same as above, but with a custom message
-- `Commit all changes`: Only commits all changes without pushing
-- `Commit all changes with specific message`: Same as above, but with a custom message
-- `Push`
-- `Pull`
-- `List changed files`: Lists all changes in a modal
-- `Edit remotes` and `Remove remote`
-- `Initialize` a new repo`
-- `Clone an existing remote repo`
+- Changes
+    - `List changed files`: Lists all changes in a modal
+    - `Open diff view`: Open diff view for the current file
+    - `Stage current file`
+    - `Unstage current file`
+- Commit
+    - `Commit all changes`: Only commits all changes without pushing
+    - `Commit all changes with specific message`: Same as above, but with a custom message
+    - `Commit staged`: Commits only files that have been staged
+    - `Commit staged with specific message`: Same as above, but with a custom message
+- Backup
+    - `Create Backup`: Commits all changes. If "Push on backup" setting is enabled, will also push the commit.
+    - `Create Backup with specific message`: Same as above, but with a custom message
+    - `Create backup and close`: Same as `Create Backup`, but if running on desktop, will close the Obsidian window. Will not exit Obsidian app on mobile.
+- Remote 
+    - `Push`
+    - `Pull`
+    - `Edit remotes`
+    - `Remove remote`
+    - `Clone an existing remote repo`: Opens dialog that will prompt for URL and authentication to clone a remote repo
+    - `Open file on GitHub`: Open the file view of the current file on GitHub in a browser window. Note: only works on desktop
+    - `Open file history on GitHub`: Open the file history of the current file on GitHub in a browser window. Note: only works on desktop
+- Local
+    - `Initialize a new repo`
+    - `Create new branch`
+    - `Delete branch`
+    - `CAUTION: Delete repository`
+- Source Control View
+    - `Open source control view`: Opens side pane displaying [Source control view](#sidebar-view)
+    - `Edit .gitignore`
+    - `Add file to .gitignore`: Add current file to .gitignore
 
-### Contact
+# Contact
 
 If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@Vinadon` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
 
