@@ -1,63 +1,21 @@
 # Obsidian Git
+
 Simple plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
 
-On advantages of backing up your vault with git I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks).
+On advantages of backing up your vault with git, I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks). Note: The article discusses the benefits of backing up your vault, and also describes how to implement it. This plugin will implement it for you, so no need to follow the steps outlined in the article!
 
-# ⚠ Mobile
+Requirements, installation steps, tips and tricks, common issues and more can be found in the [wiki](https://github.com/denolehov/obsidian-git/wiki/).
 
-## Restrictions of the mobile version
-
-I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of git in JavaScript, because you cannot use native git on Android or iOS.
-
-- SSH authentication is not supported ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
-- Repo size is limited, because of memory restrictions
-- Rebase merge strategy is not supported
-- Submodules are not supported
-
-## Performance on **Mobile**
-**Setup:** iPad Pro M1 with a [repo](https://github.com/Vinzent03/obsidian-git-stress-test) of 3000 files reduced from [10000 markdown files](https://github.com/Zettelkasten-Method/10000-markdown-files)
-
-The only really time consuming part is to check the whole working directory for file changes. So checking all files for changes to stage takes 03:40 min. Other commands like pull, push and commit are very fast (1-5 seconds). So the best way is to stage individual directories in which you have worked and commit only staged files after it.
-The initial clone took 00:25 min.
-
-### Installation on Desktop
-
-⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
-
-See the [installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation) for further instructions.
-
-
-<details>
-<summary>Installation and clone a repo on Mobile</summary>
-
-1. Create new vault
-2. Change config directory in Settings -> About
-3. Install Obsidian Git plugin from community plugins
-5. If cloning private repo, set password/personal access token and username in Settings -> Obsidian Git Mobile
-6. Execute clone repo command
-7. Reload plugin
-</details>
-<br>
-
-# Desktop
-
-### Documentation
-
-Requirements, tips and tricks, common issues and more can be found in the [wiki](https://github.com/denolehov/obsidian-git/wiki/)
-
-### Features
+## Highlighted Features
 
 - Automatic vault backup every X minutes
 - Pull changes from remote repository on Obsidian startup
 - Assign hotkeys for pulling/pushing changes to a remote repository
 - Manage different repositories via Git submodules
-
-### Sidebar view
-The Source Control View allows you to stage and commit individual files. It can be opened by the `Open Source Control View` command.
-
-![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
+- Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command. ![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
 
 ## Available Commands
+
 - Changes
     - `List changed files`: Lists all changes in a modal
     - `Open diff view`: Open diff view for the current file
@@ -90,7 +48,63 @@ The Source Control View allows you to stage and commit individual files. It can 
     - `Edit .gitignore`
     - `Add file to .gitignore`: Add current file to .gitignore
 
-# Contact
+## Mobile
+
+### Installation
+
+#### Existing Repo
+
+Follow these instructions for setting up an Obsidian Vault on a mobile device that is already backed up in a remote git repository. 
+
+The instructions assume you are using GitHub, but can be extrapolated to other providers.
+
+1. Make sure any outstanding changes on all devices are pushed and reconciled with the remote repo.
+2. Install Obsidian for Android or iOS.
+3. Create a new vault (or point Obsidian to an empty directory). Do NOT select `Store in iCloud` if you are on iOS.
+4. (Recommended for security) [Create a personal access token on GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Minimal permissions required are "Read access to metadata" and "Read and Write access to code and commit statuses" for the repo you are going to use.
+5. In Obsidian settings, enable community plugins. Browse plugins to install Obsidian Git.
+6. Enable Obsidian Git (on the same screen)
+7. Go to Options for the Obsidian Git plugin (bottom of main settings page, under Community Plugins section)
+8. Under the "Advanced" section, fill in the username on your git server and your password/personal access token. NOTE: If using a personal access token (recommended), use `__token__` as your username, not your actual GitHub username.
+9. Leave the relative path setting empty (for advanced users only).
+10. Exit plugin settings, open command palette, choose "Obsidian Git: Clone existing remote repo".
+11. Fill in repo URL in the text field and press the repo URL button below it.
+12. Follow instructions to determine the folder to place repo in and whether an .obsidian directory already exits.
+13. Clone should start. Popup notifications (if not disabled) will display the progress. Do not exit until a popup appears requesting that you "Restart Obsidian".
+14. Reenter Obsidian and repeat steps 7 and 8. This is required because the clone overwrites the workspace.
+
+#### New Repo
+
+Similar steps as [Existing repo](#existing-repo), except use the `Initialize a new repo` command, followed by `Edit remotes` to add the remote repo to track. This remote repo will need to exist and be empty.
+
+### Restrictions of the mobile version
+
+I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of git in JavaScript, because you cannot use native git on Android or iOS.
+
+- SSH authentication is not supported ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
+- Repo size is limited, because of memory restrictions
+- Rebase merge strategy is not supported
+- Submodules are not supported
+
+### Performance on mobile
+
+**Setup:** iPad Pro M1 with a [repo](https://github.com/Vinzent03/obsidian-git-stress-test) of 3000 files reduced from [10000 markdown files](https://github.com/Zettelkasten-Method/10000-markdown-files)
+
+
+The initial clone took 0m25s. After that, the most time consuming part is to check the whole working directory for file changes. On this setup, checking all files for changes to stage takes 03m40s. Other commands like pull, push and commit are very fast (1-5 seconds). 
+
+The fastest way to work on mobile if you have a large repo/vault is to stage individual files and only commit staged files.
+
+## Desktop
+
+### Installation
+
+See the [installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation) for further instructions.
+
+⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
+
+
+## Contact
 
 If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@Vinadon` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
 
