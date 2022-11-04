@@ -456,7 +456,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .addText(async cb => {
                     cb.setValue(await plugin.gitManager.getConfig("user.name"));
                     cb.onChange((value) => {
-                        plugin.gitManager.setConfig("user.name", value);
+                        plugin.gitManager.setConfig("user.name", value == "" ? undefined : value);
                     });
                 });
 
@@ -466,7 +466,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .addText(async cb => {
                     cb.setValue(await plugin.gitManager.getConfig("user.email"));
                     cb.onChange((value) => {
-                        plugin.gitManager.setConfig("user.email", value);
+                        plugin.gitManager.setConfig("user.email", value == "" ? undefined : value);
                     });
                 });
 

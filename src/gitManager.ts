@@ -51,7 +51,7 @@ export abstract class GitManager {
 
     abstract clone(url: string, dir: string): Promise<void>;
 
-    abstract setConfig(path: string, value: string | number | boolean): Promise<void>;
+    abstract setConfig(path: string, value: string | number | boolean | undefined): Promise<void>;
 
     abstract getConfig(path: string): Promise<any>;
 

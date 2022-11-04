@@ -480,7 +480,7 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async setConfig(path: string, value: string | number | boolean): Promise<void> {
+    async setConfig(path: string, value: string | number | boolean | undefined): Promise<void> {
         try {
             return this.wrapFS(git.setConfig({
                 ...this.getRepo(),
@@ -530,7 +530,7 @@ export class IsomorphicGit extends GitManager {
 
     async setRemote(name: string, url: string): Promise<void> {
         try {
-            await this.wrapFS(git.addRemote({ ...this.getRepo(), remote: name, url: url }));
+            await this.wrapFS(git.addRemote({ ...this.getRepo(), remote: name, url: url, force: true }));
         } catch (error) {
             this.plugin.displayError(error);
             throw error;

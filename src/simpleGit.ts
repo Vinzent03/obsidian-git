@@ -350,11 +350,15 @@ export class SimpleGit extends GitManager {
     }
 
     async setConfig(path: string, value: any): Promise<void> {
-        await this.git.addConfig(path, value, (err) => this.onError(err));
+        if (value == undefined) {
+            await this.git.raw(["config", "--local", "--unset", path]);
+        } else {
+            await this.git.addConfig(path, value, (err) => this.onError(err));
+        }
     }
 
     async getConfig(path: string): Promise<any> {
-        const config = await this.git.listConfig((err) => this.onError(err));
+        const config = await this.git.listConfig("local", (err) => this.onError(err));
         return config.all[path];
     }
 
