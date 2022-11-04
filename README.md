@@ -12,7 +12,9 @@ Requirements, installation steps, tips and tricks, common issues and more can be
 - Pull changes from remote repository on Obsidian startup
 - Assign hotkeys for pulling/pushing changes to a remote repository
 - Manage different repositories via Git submodules
-- Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command. ![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
+- Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command. 
+
+![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
 
 ## Available Commands
 
