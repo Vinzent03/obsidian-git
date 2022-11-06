@@ -63,7 +63,7 @@ The instructions assume you are using GitHub, but can be extrapolated to other p
 1. Make sure any outstanding changes on all devices are pushed and reconciled with the remote repo.
 2. Install Obsidian for Android or iOS.
 3. Create a new vault (or point Obsidian to an empty directory). Do NOT select `Store in iCloud` if you are on iOS.
-4. (Recommended for security) [Create a personal access token on GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Minimal permissions required are "Read access to metadata" and "Read and Write access to code and commit statuses" for the repo you are going to use.
+4. If your repo is hosted on GitHub, [authentication must be done with a personal access token](https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/). Detailed instruction for that process can be found [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Minimal permissions required are "Read access to metadata" and "Read and Write access to code and commit statuses" for the repo you are going to use.
 5. In Obsidian settings, enable community plugins. Browse plugins to install Obsidian Git.
 6. Enable Obsidian Git (on the same screen)
 7. Go to Options for the Obsidian Git plugin (bottom of main settings page, under Community Plugins section)
