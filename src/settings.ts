@@ -379,6 +379,57 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         containerEl.createEl("br");
+        if (plugin.gitManager instanceof IsomorphicGit) {
+            containerEl.createEl("h3", { text: "Authentication/Commit Author" });
+        } else {
+            containerEl.createEl("h3", { text: "Commit Author" });
+        }
+
+        if (plugin.gitManager instanceof IsomorphicGit)
+            new Setting(containerEl)
+                .setName("Username on your git server. E.g. your username on GitHub")
+                .addText(cb => {
+                    cb.setValue(plugin.localStorage.getUsername() ?? "");
+                    cb.onChange((value) => {
+                        plugin.localStorage.setUsername(value);
+                    });
+                });
+
+
+        if (plugin.gitManager instanceof IsomorphicGit)
+            new Setting(containerEl)
+                .setName("Password/Personal access token")
+                .setDesc("Type in your password. You won't be able to see it again.")
+                .addText(cb => {
+                    cb.inputEl.autocapitalize = "off";
+                    cb.inputEl.autocomplete = "off";
+                    cb.inputEl.spellcheck = false;
+                    cb.onChange((value) => {
+                        plugin.localStorage.setPassword(value);
+                    });
+                });
+
+        if (gitReady)
+            new Setting(containerEl)
+                .setName("Author name for commit")
+                .addText(async cb => {
+                    cb.setValue(await plugin.gitManager.getConfig("user.name"));
+                    cb.onChange((value) => {
+                        plugin.gitManager.setConfig("user.name", value == "" ? undefined : value);
+                    });
+                });
+
+        if (gitReady)
+            new Setting(containerEl)
+                .setName("Author email for commit")
+                .addText(async cb => {
+                    cb.setValue(await plugin.gitManager.getConfig("user.email"));
+                    cb.onChange((value) => {
+                        plugin.gitManager.setConfig("user.email", value == "" ? undefined : value);
+                    });
+                });
+
+        containerEl.createEl("br");
         containerEl.createEl("h3", { text: "Advanced" });
 
         if (plugin.gitManager instanceof SimpleGit)
@@ -427,48 +478,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
                 });
 
-        if (plugin.gitManager instanceof IsomorphicGit)
-            new Setting(containerEl)
-                .setName("Username on your git server. E.g. your username on GitHub")
-                .addText(cb => {
-                    cb.setValue(plugin.localStorage.getUsername() ?? "");
-                    cb.onChange((value) => {
-                        plugin.localStorage.setUsername(value);
-                    });
-                });
-
-
-        if (plugin.gitManager instanceof IsomorphicGit)
-            new Setting(containerEl)
-                .setName("Password/Personal access token")
-                .setDesc("Type in your password. You won't be able to see it again.")
-                .addText(cb => {
-                    cb.inputEl.autocapitalize = "off";
-                    cb.inputEl.autocomplete = "off";
-                    cb.inputEl.spellcheck = false;
-                    cb.onChange((value) => {
-                        plugin.localStorage.setPassword(value);
-                    });
-                });
-        if (gitReady)
-            new Setting(containerEl)
-                .setName("Author name for commit")
-                .addText(async cb => {
-                    cb.setValue(await plugin.gitManager.getConfig("user.name"));
-                    cb.onChange((value) => {
-                        plugin.gitManager.setConfig("user.name", value == "" ? undefined : value);
-                    });
-                });
-
-        if (gitReady)
-            new Setting(containerEl)
-                .setName("Author email for commit")
-                .addText(async cb => {
-                    cb.setValue(await plugin.gitManager.getConfig("user.email"));
-                    cb.onChange((value) => {
-                        plugin.gitManager.setConfig("user.email", value == "" ? undefined : value);
-                    });
-                });
 
         new Setting(containerEl)
             .setName("Custom base path (Git repository path)")
