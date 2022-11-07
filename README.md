@@ -73,7 +73,6 @@ The instructions assume you are using GitHub, but can be extrapolated to other p
 11. Fill in repo URL in the text field and press the repo URL button below it.
 12. Follow instructions to determine the folder to place repo in and whether an .obsidian directory already exits.
 13. Clone should start. Popup notifications (if not disabled) will display the progress. Do not exit until a popup appears requesting that you "Restart Obsidian".
-14. Reenter Obsidian and repeat steps 7 and 8. This is required because the clone overwrites the workspace.
 
 #### New Repo
 
