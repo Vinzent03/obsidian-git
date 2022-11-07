@@ -67,7 +67,7 @@ The instructions assume you are using GitHub, but can be extrapolated to other p
 5. In Obsidian settings, enable community plugins. Browse plugins to install Obsidian Git.
 6. Enable Obsidian Git (on the same screen)
 7. Go to Options for the Obsidian Git plugin (bottom of main settings page, under Community Plugins section)
-8. Under the "Advanced" section, fill in the username on your git server and your password/personal access token. NOTE: If using a personal access token (recommended), use `__token__` as your username, not your actual GitHub username.
+8. Under the "Advanced" section, fill in the username on your git server and your password/personal access token. 
 9. Leave the relative path setting empty (for advanced users only).
 10. Exit plugin settings, open command palette, choose "Obsidian Git: Clone existing remote repo".
 11. Fill in repo URL in the text field and press the repo URL button below it.
