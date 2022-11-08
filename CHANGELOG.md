@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.10.0](https://github.com/denolehov/obsidian-git/compare/2.9.4...2.10.0) (2022-11-08)
+
+
+### Features
+
+* log git commands ([a63bb8a](https://github.com/denolehov/obsidian-git/commit/a63bb8a0063b69cc020a0fd0017b42d7ee31ed1e))
+
+
+### Bug Fixes
+
+* reorder settings item ([8d5b596](https://github.com/denolehov/obsidian-git/commit/8d5b59658500329b9f52a68127d619c3f5016906))
+
 ### [2.9.4](https://github.com/denolehov/obsidian-git/compare/2.9.3...2.9.4) (2022-11-04)
 
 
