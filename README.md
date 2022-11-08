@@ -1,11 +1,58 @@
 # Obsidian Git
+
 Simple plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
 
-On advantages of backing up your vault with git I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks).
+On advantages of backing up your vault with git, I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks). Note: The article discusses the benefits of backing up your vault, and also describes how to implement it. This plugin will implement it for you, so no need to follow the steps outlined in the article!
 
-# ⚠ Mobile
+Requirements, installation steps (including setup for mobile), tips and tricks, common issues and more can be found in the [wiki](https://github.com/denolehov/obsidian-git/wiki/).
 
-## Restrictions of the mobile version
+## Highlighted Features
+
+- Automatic vault backup every X minutes
+- Pull changes from remote repository on Obsidian startup
+- Assign hotkeys for pulling/pushing changes to a remote repository
+- Manage different repositories via Git submodules
+- Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command. 
+
+![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
+
+## Available Commands
+
+- Changes
+    - `List changed files`: Lists all changes in a modal
+    - `Open diff view`: Open diff view for the current file
+    - `Stage current file`
+    - `Unstage current file`
+- Commit
+    - `Commit all changes`: Only commits all changes without pushing
+    - `Commit all changes with specific message`: Same as above, but with a custom message
+    - `Commit staged`: Commits only files that have been staged
+    - `Commit staged with specific message`: Same as above, but with a custom message
+- Backup
+    - `Create Backup`: Commits all changes. If "Push on backup" setting is enabled, will also push the commit.
+    - `Create Backup with specific message`: Same as above, but with a custom message
+    - `Create backup and close`: Same as `Create Backup`, but if running on desktop, will close the Obsidian window. Will not exit Obsidian app on mobile.
+- Remote 
+    - `Push`
+    - `Pull`
+    - `Edit remotes`
+    - `Remove remote`
+    - `Clone an existing remote repo`: Opens dialog that will prompt for URL and authentication to clone a remote repo
+    - `Open file on GitHub`: Open the file view of the current file on GitHub in a browser window. Note: only works on desktop
+    - `Open file history on GitHub`: Open the file history of the current file on GitHub in a browser window. Note: only works on desktop
+- Local
+    - `Initialize a new repo`
+    - `Create new branch`
+    - `Delete branch`
+    - `CAUTION: Delete repository`
+- Source Control View
+    - `Open source control view`: Opens side pane displaying [Source control view](#sidebar-view)
+    - `Edit .gitignore`
+    - `Add file to .gitignore`: Add current file to .gitignore
+
+## Mobile
+
+### Restrictions of the mobile version
 
 I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of git in JavaScript, because you cannot use native git on Android or iOS.
 
@@ -14,68 +61,25 @@ I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implemen
 - Rebase merge strategy is not supported
 - Submodules are not supported
 
-## Performance on **Mobile**
+### Performance on mobile
+
 **Setup:** iPad Pro M1 with a [repo](https://github.com/Vinzent03/obsidian-git-stress-test) of 3000 files reduced from [10000 markdown files](https://github.com/Zettelkasten-Method/10000-markdown-files)
 
-The only really time consuming part is to check the whole working directory for file changes. So checking all files for changes to stage takes 03:40 min. Other commands like pull, push and commit are very fast (1-5 seconds). So the best way is to stage individual directories in which you have worked and commit only staged files after it.
-The initial clone took 00:25 min.
 
-### Installation on Desktop
+The initial clone took 0m25s. After that, the most time consuming part is to check the whole working directory for file changes. On this setup, checking all files for changes to stage takes 03m40s. Other commands like pull, push and commit are very fast (1-5 seconds). 
+
+The fastest way to work on mobile if you have a large repo/vault is to stage individual files and only commit staged files.
+
+## Desktop
 
 ⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
 
-See the [installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation) for further instructions.
-
-
-<details>
-<summary>Installation and clone a repo on Mobile</summary>
-
-1. Create new vault
-2. Change config directory in Settings -> About
-3. Install Obsidian Git plugin from community plugins
-5. If cloning private repo, set password/personal access token and username in Settings -> Obsidian Git Mobile
-6. Execute clone repo command
-7. Reload plugin
-</details>
-<br>
-
-# Desktop
-
-### Documentation
-
-Requirements, tips and tricks, common issues and more can be found in the [wiki](https://github.com/denolehov/obsidian-git/wiki/)
-
-### Features
-
-- Automatic vault backup every X minutes
-- Pull changes from remote repository on Obsidian startup
-- Assign hotkeys for pulling/pushing changes to a remote repository
-- Manage different repositories via Git submodules
-
-### Sidebar view
-The Source Control View allows you to stage and commit individual files. It can be opened by the `Open Source Control View` command.
-
-![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
-
-## Available Commands
-- `Create Backup`: Commits all changes and pushes them depending on your setting whether to push on backup or not
-- `Create Backup with specific message`: Same as above, but with a custom message
-- `Commit all changes`: Only commits all changes without pushing
-- `Commit all changes with specific message`: Same as above, but with a custom message
-- `Push`
-- `Pull`
-- `List changed files`: Lists all changes in a modal
-- `Edit remotes` and `Remove remote`
-- `Initialize` a new repo`
-- `Clone an existing remote repo`
-
-### Contact
+## Contact
 
 If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@Vinadon` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
 
 This plugin was initial developed by [denolehov](https://github.com/denolehov). Since March 2021, it is [Vinzent03](https://github.com/Vinzent03) who is developing on this plugin.
 
-> If you want to support me ([Vinzent03](https://github.com/Vinzent03)) you can support me on Ko-fi
-<br>
+If you want to support me ([Vinzent03](https://github.com/Vinzent03)) you can support me on Ko-fi
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F195IQ5)
