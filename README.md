@@ -50,6 +50,10 @@ Requirements, installation steps (including setup for mobile), tips and tricks, 
     - `Edit .gitignore`
     - `Add file to .gitignore`: Add current file to .gitignore
 
+## Desktop
+
+⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
+
 ## Mobile
 
 ### Restrictions of the mobile version
@@ -69,10 +73,6 @@ I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implemen
 The initial clone took 0m25s. After that, the most time consuming part is to check the whole working directory for file changes. On this setup, checking all files for changes to stage takes 03m40s. Other commands like pull, push and commit are very fast (1-5 seconds). 
 
 The fastest way to work on mobile if you have a large repo/vault is to stage individual files and only commit staged files.
-
-## Desktop
-
-⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
 
 ## Contact
 
