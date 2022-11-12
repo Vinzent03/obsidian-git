@@ -556,8 +556,8 @@ export class IsomorphicGit extends GitManager {
         await this.wrapFS(git.deleteRemote({ ...this.getRepo(), remote: remoteName }));
     }
 
-    async getRemoteUrl(remote: string): Promise<string> {
-        return (await this.wrapFS(git.listRemotes({ ...this.getRepo() }))).filter((item) => item.remote == remote)[0].url;
+    async getRemoteUrl(remote: string): Promise<string | undefined> {
+        return (await this.wrapFS(git.listRemotes({ ...this.getRepo() }))).filter((item) => item.remote == remote)[0]?.url;
     }
 
     updateBasePath(basePath: string): void {
