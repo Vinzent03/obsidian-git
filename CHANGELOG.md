@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.10.1](https://github.com/denolehov/obsidian-git/compare/2.10.0...2.10.1) (2022-11-13)
+
+
+### Bug Fixes
+
+* add remote on mobile ([c529a37](https://github.com/denolehov/obsidian-git/commit/c529a377195fea76028b424d5973aae80498670e)), closes [#375](https://github.com/denolehov/obsidian-git/issues/375)
+
 ## [2.10.0](https://github.com/denolehov/obsidian-git/compare/2.9.4...2.10.0) (2022-11-08)
 
 
