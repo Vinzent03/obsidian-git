@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.10.2](https://github.com/denolehov/obsidian-git/compare/2.10.1...2.10.2) (2022-11-17)
+
+
+### Bug Fixes
+
+* focus diff view via command ([e56641c](https://github.com/denolehov/obsidian-git/commit/e56641c25f9672fcffeb0801f09ca7eadf99ede0)), closes [#377](https://github.com/denolehov/obsidian-git/issues/377)
+
 ### [2.10.1](https://github.com/denolehov/obsidian-git/compare/2.10.0...2.10.1) (2022-11-13)
 
 
