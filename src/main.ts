@@ -151,7 +151,14 @@ export default class ObsidianGit extends Plugin {
                     return file !== null;
 
                 } else {
-                    getNewLeaf()?.setViewState({ type: DIFF_VIEW_CONFIG.type, state: { staged: false, file: file!.path } });
+                    getNewLeaf()?.setViewState({
+                        type: DIFF_VIEW_CONFIG.type,
+                        active: true,
+                        state: {
+                            staged: false,
+                            file: file!.path
+                        }
+                    });
                 }
             }
 
