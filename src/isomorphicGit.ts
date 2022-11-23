@@ -314,7 +314,8 @@ export class IsomorphicGit extends GitManager {
             const upstreamCommit = await this.resolveRef("HEAD");
             this.plugin.lastUpdate = Date.now();
             const changedFiles = await this.getFileChangesCount(localCommit, upstreamCommit);
-            new Notice("Finished pull");
+
+            this.showNotice("Finished pull", false);
 
             return changedFiles.map<FileStatusResult>(file => ({
                 path: file.path,
@@ -784,9 +785,9 @@ export class IsomorphicGit extends GitManager {
 
     }
 
-    private showNotice(message: string): Notice | undefined {
+    private showNotice(message: string, infinity = true): Notice | undefined {
         if (!this.plugin.settings.disablePopups) {
-            return new Notice(message, this.noticeLength);
+            return new Notice(message, infinity ? this.noticeLength : undefined);
         }
     }
 }
