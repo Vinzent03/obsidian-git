@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.11.0](https://github.com/denolehov/obsidian-git/compare/2.10.2...2.11.0) (2022-11-26)
+
+
+### Features
+
+* add backup button to source control view ([477b166](https://github.com/denolehov/obsidian-git/commit/477b16644dddd13dce1bde1600aed996b2b8f377)), closes [#374](https://github.com/denolehov/obsidian-git/issues/374)
+
+
+### Bug Fixes
+
+* hide 'finished pull'  notice when hiding notifications ([8ba0e75](https://github.com/denolehov/obsidian-git/commit/8ba0e7526001eaefed71b2978e9f1ab76ab18136)), closes [#292](https://github.com/denolehov/obsidian-git/issues/292)
+
 ### [2.10.2](https://github.com/denolehov/obsidian-git/compare/2.10.1...2.10.2) (2022-11-17)
 
 
