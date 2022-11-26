@@ -6,7 +6,7 @@
 		FileType,
 		PluginState,
 		RootTreeItem,
-		Status,
+		Status
 	} from "src/types";
 	import { onDestroy } from "svelte";
 	import { slide } from "svelte/transition";
@@ -63,6 +63,19 @@
 			}
 			plugin.gitManager
 				.commit(commitMessage)
+				.then(() => {
+					if (commitMessage !== plugin.settings.commitMessage) {
+						commitMessage = "";
+					}
+				})
+				.finally(triggerRefresh);
+		}
+	}
+
+	async function backup() {
+		loading = true;
+		if (status) {
+			plugin.createBackup(false,false,commitMessage)
 				.then(() => {
 					if (commitMessage !== plugin.settings.commitMessage) {
 						commitMessage = "";
@@ -175,6 +188,14 @@
 <main>
 	<div class="nav-header">
 		<div class="nav-buttons-container">
+			<div
+				id="backup-btn"
+				data-icon="arrow-up-circle"
+				class="clickable-icon nav-action-button"
+				aria-label="Backup"
+				bind:this={buttons[5]}
+				on:click={backup}
+			/>
 			<div
 				id="commit-btn"
 				data-icon="check"

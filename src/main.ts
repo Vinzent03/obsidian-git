@@ -222,25 +222,36 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "commit",
             name: "Commit all changes",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false))
+            callback: () => this.promiseQueue.addTask(() => this.commit({ fromAutoBackup: false }))
         });
 
         this.addCommand({
             id: "commit-specified-message",
             name: "Commit all changes with specific message",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false, true))
+            callback: () => this.promiseQueue.addTask(() => this.commit({
+                fromAutoBackup: false,
+                requestCustomMessage: true
+            }))
         });
 
         this.addCommand({
             id: "commit-staged",
             name: "Commit staged",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false, false, true))
+            callback: () => this.promiseQueue.addTask(() => this.commit({
+                fromAutoBackup: false,
+                requestCustomMessage: false,
+                onlyStaged: true
+            }))
         });
 
         this.addCommand({
             id: "commit-staged-specified-message",
             name: "Commit staged with specific message",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false, true, true))
+            callback: () => this.promiseQueue.addTask(() => this.commit({
+                fromAutoBackup: false,
+                requestCustomMessage: true,
+                onlyStaged: true
+            }))
         });
 
         this.addCommand({
@@ -704,14 +715,14 @@ export default class ObsidianGit extends Plugin {
         this.setState(PluginState.idle);
     }
 
-    async createBackup(fromAutoBackup: boolean, requestCustomMessage = false): Promise<void> {
+    async createBackup(fromAutoBackup: boolean, requestCustomMessage = false, commitMessage?: string): Promise<void> {
         if (!await this.isAllInitialized()) return;
 
         if (this.settings.syncMethod == "reset" && this.settings.pullBeforePush) {
             await this.pull();
         }
 
-        if (!(await this.commit(fromAutoBackup, requestCustomMessage))) return;
+        if (!(await this.commit({ fromAutoBackup, requestCustomMessage, commitMessage }))) return;
 
         if (!this.settings.disablePush) {
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
@@ -729,7 +740,17 @@ export default class ObsidianGit extends Plugin {
     }
 
     // Returns true if commit was successfully
-    async commit(fromAutoBackup: boolean, requestCustomMessage = false, onlyStaged = false): Promise<boolean> {
+    async commit({
+        fromAutoBackup,
+        requestCustomMessage = false,
+        onlyStaged = false,
+        commitMessage
+    }: {
+        fromAutoBackup: boolean,
+        requestCustomMessage?: boolean,
+        onlyStaged?: boolean;
+        commitMessage?: string;
+    }): Promise<boolean> {
         if (!await this.isAllInitialized()) return false;
 
         const hadConflict = this.localStorage.getConflict() === "true";
@@ -778,7 +799,7 @@ export default class ObsidianGit extends Plugin {
 
 
         if (changedFiles.length !== 0 || hadConflict) {
-            let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
+            let cmtMessage = commitMessage ??= fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
             if ((fromAutoBackup && this.settings.customMessageOnAutoBackup) || requestCustomMessage) {
                 if (!this.settings.disablePopups && fromAutoBackup) {
                     new Notice("Auto backup: Please enter a custom commit message. Leave empty to abort",);
@@ -786,7 +807,7 @@ export default class ObsidianGit extends Plugin {
                 const tempMessage = await new CustomMessageModal(this, true).open();
 
                 if (tempMessage != undefined && tempMessage != "" && tempMessage != "...") {
-                    commitMessage = tempMessage;
+                    cmtMessage = tempMessage;
                 } else {
                     this.setState(PluginState.idle);
                     return false;
@@ -794,9 +815,9 @@ export default class ObsidianGit extends Plugin {
             }
             let committedFiles: number | undefined;
             if (onlyStaged) {
-                committedFiles = await this.gitManager.commit(commitMessage);
+                committedFiles = await this.gitManager.commit(cmtMessage);
             } else {
-                committedFiles = await this.gitManager.commitAll({ message: commitMessage, status, unstagedFiles });
+                committedFiles = await this.gitManager.commitAll({ message: cmtMessage, status, unstagedFiles });
             }
             let roughly = false;
             if (committedFiles === undefined) {
@@ -1001,7 +1022,7 @@ export default class ObsidianGit extends Plugin {
     doAutoBackup(): void {
         this.promiseQueue.addTask(() => {
             if (this.settings.differentIntervalCommitAndPush) {
-                return this.commit(true);
+                return this.commit({ fromAutoBackup: true });
             } else {
                 return this.createBackup(true);
             }
