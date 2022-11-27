@@ -770,7 +770,15 @@ export class IsomorphicGit extends GitManager {
             const diff = createPatch(filePath, stagedContent, workdirContent);
             return diff;
         }
-    };
+    }
+
+    async getLastCommitTime(): Promise<Date | undefined> {
+        const repo = this.getRepo();
+        const oid = await this.resolveRef("HEAD");
+        const commit = await git.readCommit({ ...repo, oid: oid });
+        const date = commit.commit.committer.timestamp;
+        return new Date(date * 1000);
+    }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
 

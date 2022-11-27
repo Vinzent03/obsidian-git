@@ -69,21 +69,40 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         })
                 );
 
-            new Setting(containerEl)
-                .setName(`Auto Backup after Filechange`)
-                .setDesc(`If turned on, do auto ${commitOrBackup} every ${plugin.settings.autoSaveInterval} minutes after last change. This also prevents auto ${commitOrBackup} while editing a file. If turned off, it's independent from last the change.`)
-                .addToggle((toggle) =>
-                    toggle
-                        .setValue(plugin.settings.autoBackupAfterFileChange)
-                        .onChange((value) => {
-                            plugin.settings.autoBackupAfterFileChange = value;
-                            plugin.saveSettings();
-                            plugin.clearAutoBackup();
-                            if (plugin.settings.autoSaveInterval > 0) {
-                                plugin.startAutoBackup(plugin.settings.autoSaveInterval);
-                            }
-                        })
-                );
+            if (!plugin.settings.setLastSaveToLastCommit)
+                new Setting(containerEl)
+                    .setName(`Auto Backup after file change`)
+                    .setDesc(`If turned on, do auto ${commitOrBackup} every ${plugin.settings.autoSaveInterval} minutes after last change. This also prevents auto ${commitOrBackup} while editing a file. If turned off, it's independent from last the change.`)
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(plugin.settings.autoBackupAfterFileChange)
+                            .onChange((value) => {
+                                plugin.settings.autoBackupAfterFileChange = value;
+                                this.display();
+                                plugin.saveSettings();
+                                plugin.clearAutoBackup();
+                                if (plugin.settings.autoSaveInterval > 0) {
+                                    plugin.startAutoBackup(plugin.settings.autoSaveInterval);
+                                }
+                            })
+                    );
+
+            if (!plugin.settings.autoBackupAfterFileChange)
+                new Setting(containerEl)
+                    .setName(`Auto ${commitOrBackup} after lastest commit`)
+                    .setDesc(`If turned on, set last auto ${commitOrBackup} time to lastest commit`)
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(plugin.settings.setLastSaveToLastCommit)
+                            .onChange(async (value) => {
+                                plugin.settings.setLastSaveToLastCommit = value;
+                                plugin.saveSettings();
+                                this.display();
+                                plugin.clearAutoBackup();
+                                await plugin.setUpAutoBackup();
+                            })
+                    );
+
 
             if (plugin.settings.differentIntervalCommitAndPush) {
                 new Setting(containerEl)

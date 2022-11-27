@@ -67,6 +67,7 @@
 					if (commitMessage !== plugin.settings.commitMessage) {
 						commitMessage = "";
 					}
+                    plugin.setUpAutoBackup();
 				})
 				.finally(triggerRefresh);
 		}

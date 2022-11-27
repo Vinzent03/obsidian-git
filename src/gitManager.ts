@@ -75,6 +75,8 @@ export abstract class GitManager {
 
     abstract getDiffString(filePath: string, stagedChanges: boolean): Promise<string>;
 
+    abstract getLastCommitTime(): Promise<Date | undefined>;
+
 
     getVaultPath(path: string): string {
         if (this.plugin.settings.basePath) {

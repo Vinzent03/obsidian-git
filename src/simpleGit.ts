@@ -440,6 +440,13 @@ export class SimpleGit extends GitManager {
         return (await this.git.diff([`${commit1}..${commit2}`, "--", file]));
     }
 
+    async getLastCommitTime(): Promise<Date | undefined> {
+        const res = await this.git.log({ n: 1 }, (err) => this.onError(err));
+        if (res != null && res.latest != null) {
+            return new Date(res.latest.date);
+        }
+    }
+
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
         const command = spawnSync(this.plugin.localStorage.getGitPath() || 'git', ['--version'], {

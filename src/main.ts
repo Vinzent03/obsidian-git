@@ -548,7 +548,7 @@ export default class ObsidianGit extends Plugin {
         this.showNotices();
 
         try {
-            if (Platform.isDesktopApp) {
+            if (!Platform.isDesktopApp) {
                 this.gitManager = new SimpleGit(this);
                 await (this.gitManager as SimpleGit).setGitInstance();
 
@@ -593,26 +593,7 @@ export default class ObsidianGit extends Plugin {
                     if (this.settings.autoPullOnBoot) {
                         this.promiseQueue.addTask(() => this.pullChangesFromRemote());
                     }
-                    const lastAutos = await this.loadLastAuto();
-
-                    if (this.settings.autoSaveInterval > 0) {
-                        const now = new Date();
-
-                        const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60));
-                        this.startAutoBackup(diff <= 0 ? 0 : diff);
-                    }
-                    if (this.settings.differentIntervalCommitAndPush && this.settings.autoPushInterval > 0) {
-                        const now = new Date();
-
-                        const diff = this.settings.autoPushInterval - (Math.round(((now.getTime() - lastAutos.push.getTime()) / 1000) / 60));
-                        this.startAutoPush(diff <= 0 ? 0 : diff);
-                    }
-                    if (this.settings.autoPullInterval > 0) {
-                        const now = new Date();
-
-                        const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60));
-                        this.startAutoPull(diff <= 0 ? 0 : diff);
-                    }
+                    this.setUpAutos();
                     break;
                 default:
                     console.log("Something weird happened. The 'checkRequirements' result is " + result);
@@ -698,6 +679,7 @@ export default class ObsidianGit extends Plugin {
         if (!await this.isAllInitialized()) return;
 
         const filesUpdated = await this.pull();
+        this.setUpAutoBackup();
         if (!filesUpdated) {
             this.displayMessage("Everything is up-to-date");
         }
@@ -824,6 +806,7 @@ export default class ObsidianGit extends Plugin {
                 roughly = true;
                 committedFiles = changedFiles.length;
             }
+            this.setUpAutoBackup();
             this.displayMessage(`Committed${roughly ? " approx." : ""} ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
         } else {
             this.displayMessage("No changes to commit");
@@ -1002,6 +985,51 @@ export default class ObsidianGit extends Plugin {
             }
         }
         return true;
+    }
+
+    async setUpAutoBackup() {
+        if (this.settings.setLastSaveToLastCommit) {
+            this.clearAutoBackup();
+            const lastCommitDate = await this.gitManager.getLastCommitTime();
+            if (lastCommitDate) {
+                this.localStorage.setLastAutoBackup(lastCommitDate.toString());
+            }
+        }
+
+        if (!this.timeoutIDBackup && !this.onFileModifyEventRef) {
+            const lastAutos = await this.loadLastAuto();
+
+            if (this.settings.autoSaveInterval > 0) {
+                const now = new Date();
+
+                const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60));
+                this.startAutoBackup(diff <= 0 ? 0 : diff);
+            }
+        }
+    }
+
+    async setUpAutos() {
+        this.setUpAutoBackup();
+        const lastAutos = await this.loadLastAuto();
+
+        if (this.settings.differentIntervalCommitAndPush && this.settings.autoPushInterval > 0) {
+            const now = new Date();
+
+            const diff = this.settings.autoPushInterval - (Math.round(((now.getTime() - lastAutos.push.getTime()) / 1000) / 60));
+            this.startAutoPush(diff <= 0 ? 0 : diff);
+        }
+        if (this.settings.autoPullInterval > 0) {
+            const now = new Date();
+
+            const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60));
+            this.startAutoPull(diff <= 0 ? 0 : diff);
+        }
+    }
+
+    clearAutos(): void {
+        this.clearAutoBackup();
+        this.clearAutoPush();
+        this.clearAutoPull();
     }
 
     startAutoBackup(minutes?: number) {
