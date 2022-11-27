@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.12.0](https://github.com/denolehov/obsidian-git/compare/2.11.0...2.12.0) (2022-11-27)
+
+
+### Features
+
+* set last auto backup to last commit ([d8cfbf2](https://github.com/denolehov/obsidian-git/commit/d8cfbf2efe31770f6fd7ac6399bb7563f3caa831)), closes [#73](https://github.com/denolehov/obsidian-git/issues/73)
+
 ## [2.11.0](https://github.com/denolehov/obsidian-git/compare/2.10.2...2.11.0) (2022-11-26)
 
 
