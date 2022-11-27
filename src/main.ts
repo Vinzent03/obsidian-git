@@ -548,7 +548,7 @@ export default class ObsidianGit extends Plugin {
         this.showNotices();
 
         try {
-            if (!Platform.isDesktopApp) {
+            if (Platform.isDesktopApp) {
                 this.gitManager = new SimpleGit(this);
                 await (this.gitManager as SimpleGit).setGitInstance();
 
