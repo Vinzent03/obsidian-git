@@ -687,7 +687,7 @@ export default class ObsidianGit extends Plugin {
         if (this.gitManager instanceof SimpleGit) {
             const status = await this.gitManager.status();
             if (status.conflicted.length > 0) {
-                this.displayError(`You have ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file with a conflict' : 'files with conflicts'}`);
+                this.displayError(`You have conflicts in ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file' : 'files'}`);
                 this.handleConflict(status.conflicted);
             }
         }
@@ -749,14 +749,14 @@ export default class ObsidianGit extends Plugin {
 
             // check for conflict files on auto backup
             if (fromAutoBackup && status.conflicted.length > 0) {
-                this.displayError(`Did not commit, because you have ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file with a conflict' : 'files with conflicts'}. Please resolve them and commit per command.`);
+                this.displayError(`Did not commit, because you have conflicts in ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file' : 'files'}. Please resolve them and commit per command.`);
                 this.handleConflict(status.conflicted);
                 return false;
             }
             changedFiles = [...status.changed, ...status.staged];
         } else if (fromAutoBackup && hadConflict) {
             this.setState(PluginState.conflicted);
-            this.displayError(`Did not commit, because you have conflict files. Please resolve them and commit per command.`);
+            this.displayError(`Did not commit, because you have conflicts. Please resolve them and commit per command.`);
             return false;
         } else if (hadConflict) {
             const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
@@ -857,11 +857,11 @@ export default class ObsidianGit extends Plugin {
         // Refresh because of pull
         let status: any;
         if (this.gitManager instanceof SimpleGit && (status = await this.updateCachedStatus()).conflicted.length > 0) {
-            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict ${status.conflicted.length == 1 ? 'file' : 'files'}`);
+            this.displayError(`Cannot push. You have conflicts in ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file' : 'files'}`);
             this.handleConflict(status.conflicted);
             return false;
         } else if (this.gitManager instanceof IsomorphicGit && hadConflict) {
-            this.displayError(`Cannot push. You have conflict files`);
+            this.displayError(`Cannot push. You have conflicts`);
             this.setState(PluginState.conflicted);
             return false;
         } {
@@ -1126,7 +1126,7 @@ export default class ObsidianGit extends Plugin {
         let lines: string[] | undefined;
         if (conflicted !== undefined) {
             lines = [
-                "# Conflict files",
+                "# Conflicts",
                 "Please resolve them and commit per command (This file will be deleted before the commit).",
                 ...conflicted.map(e => {
                     const file = this.app.vault.getAbstractFileByPath(e);
