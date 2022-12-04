@@ -687,7 +687,7 @@ export default class ObsidianGit extends Plugin {
         if (this.gitManager instanceof SimpleGit) {
             const status = await this.gitManager.status();
             if (status.conflicted.length > 0) {
-                this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
+                this.displayError(`You have ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file with a conflict' : 'files with conflicts'}`);
                 this.handleConflict(status.conflicted);
             }
         }
@@ -749,7 +749,7 @@ export default class ObsidianGit extends Plugin {
 
             // check for conflict files on auto backup
             if (fromAutoBackup && status.conflicted.length > 0) {
-                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
+                this.displayError(`Did not commit, because you have ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file with a conflict' : 'files with conflicts'}. Please resolve them and commit per command.`);
                 this.handleConflict(status.conflicted);
                 return false;
             }
@@ -807,7 +807,7 @@ export default class ObsidianGit extends Plugin {
                 committedFiles = changedFiles.length;
             }
             this.setUpAutoBackup();
-            this.displayMessage(`Committed${roughly ? " approx." : ""} ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
+            this.displayMessage(`Committed${roughly ? " approx." : ""} ${committedFiles} ${committedFiles == 1 ? 'file' : 'files'}`);
         } else {
             this.displayMessage("No changes to commit");
         }
@@ -857,7 +857,7 @@ export default class ObsidianGit extends Plugin {
         // Refresh because of pull
         let status: any;
         if (this.gitManager instanceof SimpleGit && (status = await this.updateCachedStatus()).conflicted.length > 0) {
-            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
+            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict ${status.conflicted.length == 1 ? 'file' : 'files'}`);
             this.handleConflict(status.conflicted);
             return false;
         } else if (this.gitManager instanceof IsomorphicGit && hadConflict) {
@@ -870,7 +870,7 @@ export default class ObsidianGit extends Plugin {
             console.log("Pushed!", pushedFiles);
             this.lastUpdate = Date.now();
             if (pushedFiles > 0) {
-                this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
+                this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles == 1 ? 'file' : 'files'} to remote`);
             } else {
                 this.displayMessage(`No changes to push`);
             }
@@ -891,7 +891,7 @@ export default class ObsidianGit extends Plugin {
         this.offlineMode = false;
 
         if (pulledFiles.length > 0) {
-            this.displayMessage(`Pulled ${pulledFiles.length} ${pulledFiles.length > 1 ? 'files' : 'file'} from remote`);
+            this.displayMessage(`Pulled ${pulledFiles.length} ${pulledFiles.length == 1 ? 'file' : 'files'} from remote`);
             this.lastPulledFiles = pulledFiles;
         }
         return pulledFiles.length != 0;
