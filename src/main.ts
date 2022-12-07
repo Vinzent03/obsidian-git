@@ -156,7 +156,7 @@ export default class ObsidianGit extends Plugin {
                         active: true,
                         state: {
                             staged: false,
-                            file: file!.path
+                            file: this.gitManager.getPath(file!.path, true)
                         }
                     });
                 }
