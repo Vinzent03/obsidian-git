@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.13.0](https://github.com/denolehov/obsidian-git/compare/2.12.1...2.13.0) (2022-12-07)
+
+
+### Features
+
+* add file name to diff view tab name ([8520c2b](https://github.com/denolehov/obsidian-git/commit/8520c2beed20f9fe20e6af830c34f59b1678b36a))
+
+
+### Bug Fixes
+
+* move commit msg setting to correct heading ([88eabc9](https://github.com/denolehov/obsidian-git/commit/88eabc930ca98ea205d366e874a245af964efabd))
+* use correct path for diff view via command ([1150351](https://github.com/denolehov/obsidian-git/commit/1150351e6bdf066e59cd7579e9efc087d4d5a595)), closes [#397](https://github.com/denolehov/obsidian-git/issues/397)
+
 ### [2.12.1](https://github.com/denolehov/obsidian-git/compare/2.12.0...2.12.1) (2022-11-27)
 
 
