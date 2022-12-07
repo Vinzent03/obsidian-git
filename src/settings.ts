@@ -163,26 +163,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             new Setting(containerEl)
-                .setName("Commit message on manual backup/commit")
-                .setDesc(
-                    "Available placeholders: {{date}}" +
-                    " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"
-                )
-                .addText((text) =>
-                    text
-                        .setPlaceholder("vault backup: {{date}}")
-                        .setValue(
-                            plugin.settings.commitMessage
-                                ? plugin.settings.commitMessage
-                                : ""
-                        )
-                        .onChange((value) => {
-                            plugin.settings.commitMessage = value;
-                            plugin.saveSettings();
-                        })
-                );
-
-            new Setting(containerEl)
                 .setName("Specify custom commit message on auto backup")
                 .setDesc("You will get a pop up to specify your message")
                 .addToggle((toggle) =>
@@ -214,6 +194,27 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             containerEl.createEl("br");
             containerEl.createEl("h3", { text: "Commit message" });
+
+            new Setting(containerEl)
+                .setName("Commit message on manual backup/commit")
+                .setDesc(
+                    "Available placeholders: {{date}}" +
+                    " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit)"
+                )
+                .addText((text) =>
+                    text
+                        .setPlaceholder("vault backup: {{date}}")
+                        .setValue(
+                            plugin.settings.commitMessage
+                                ? plugin.settings.commitMessage
+                                : ""
+                        )
+                        .onChange((value) => {
+                            plugin.settings.commitMessage = value;
+                            plugin.saveSettings();
+                        })
+                );
+
 
             new Setting(containerEl)
                 .setName("{{date}} placeholder format")
