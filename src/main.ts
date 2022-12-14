@@ -1,5 +1,5 @@
 import { Errors } from "isomorphic-git";
-import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
+import { debounce, Debouncer, EventRef, MarkdownView, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/settings";
 import { StatusBar } from "src/statusBar";
@@ -742,9 +742,7 @@ export default class ObsidianGit extends Plugin {
         let unstagedFiles: UnstagedFile[] | undefined;
 
         if (this.gitManager instanceof SimpleGit) {
-            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
-            if (file != null)
-                await this.app.vault.delete(file);
+            this.mayDeleteConflictFile();
             status = await this.updateCachedStatus();
 
             // check for conflict files on auto backup
@@ -759,9 +757,7 @@ export default class ObsidianGit extends Plugin {
             this.displayError(`Did not commit, because you have conflicts. Please resolve them and commit per command.`);
             return false;
         } else if (hadConflict) {
-            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
-            if (file != null)
-                await this.app.vault.delete(file);
+            await this.mayDeleteConflictFile();
             status = await this.updateCachedStatus();
             changedFiles = [...status.changed, ...status.staged];
         } else {
@@ -849,10 +845,9 @@ export default class ObsidianGit extends Plugin {
         if (! await this.remotesAreSet()) {
             return false;
         }
-
-        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
         const hadConflict = this.localStorage.getConflict() === "true";
-        if (this.gitManager instanceof SimpleGit && file) await this.app.vault.delete(file);
+        if (this.gitManager instanceof SimpleGit)
+            await this.mayDeleteConflictFile();
 
         // Refresh because of pull
         let status: any;
@@ -895,6 +890,18 @@ export default class ObsidianGit extends Plugin {
             this.lastPulledFiles = pulledFiles;
         }
         return pulledFiles.length != 0;
+    }
+
+    async mayDeleteConflictFile(): Promise<void> {
+        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+        if (file) {
+            this.app.workspace.iterateAllLeaves((leaf) => {
+                if (leaf.view instanceof MarkdownView && leaf.view.file.path == file.path) {
+                    leaf.detach();
+                }
+            });
+            await this.app.vault.delete(file);
+        }
     }
 
     async stageFile(file: TFile): Promise<boolean> {
