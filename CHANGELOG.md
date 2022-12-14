@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.14.0](https://github.com/denolehov/obsidian-git/compare/2.13.0...2.14.0) (2022-12-14)
+
+
+### Features
+
+* add instructions to conflict  file ([50291d3](https://github.com/denolehov/obsidian-git/commit/50291d3b182ba4789dac25164ca66f511ba1ab67)), closes [#402](https://github.com/denolehov/obsidian-git/issues/402)
+
+
+### Bug Fixes
+
+* close empty leaf of deleted conflict file ([cd6027d](https://github.com/denolehov/obsidian-git/commit/cd6027dcb8f3f9c353c9e9f9592b057c06fceb70)), closes [#401](https://github.com/denolehov/obsidian-git/issues/401)
+
 ## [2.13.0](https://github.com/denolehov/obsidian-git/compare/2.12.1...2.13.0) (2022-12-07)
 
 
