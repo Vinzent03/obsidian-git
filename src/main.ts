@@ -1134,7 +1134,10 @@ export default class ObsidianGit extends Plugin {
         if (conflicted !== undefined) {
             lines = [
                 "# Conflicts",
-                "Please resolve them and commit per command (This file will be deleted before the commit).",
+                'Please resolve them and commit them using the commands `Obsidian Git: Commit all changes` followed by `Obsidian Git: Push`',
+                "(This file will automatically be deleted before commit)",
+                "[[#Additional Instructions]] available below file list",
+                "",
                 ...conflicted.map(e => {
                     const file = this.app.vault.getAbstractFileByPath(e);
                     if (file instanceof TFile) {
@@ -1143,7 +1146,18 @@ export default class ObsidianGit extends Plugin {
                     } else {
                         return `- Not a file: ${e}`;
                     }
-                })
+                }),
+                `
+# Additional Instructions
+I strongly recommend to use "Source mode" for viewing the conflicted files. For simple conflicts, in each file listed above replace every occurrence of the following text blocks with the desired text.
+
+\`\`\`diff
+<<<<<<< HEAD
+    File changes in local repository
+=======
+    File changes in remote repository
+>>>>>>> origin/main
+\`\`\``
             ];
         }
         this.writeAndOpenFile(lines?.join("\n"));
