@@ -29,11 +29,9 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     basePath: "",
     differentIntervalCommitAndPush: false,
     changedFilesInStatusBar: false,
-    username: "",
     showedMobileNotice: false,
     refreshSourceControlTimer: 7000,
     showBranchStatusBar: true,
-
     lineAuthor: {
         show: false,
         followMovement: "inactive",
@@ -49,7 +47,8 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
         colorOld: { r: 120, g: 160, b: 255 },
         ignoreWhitespace: false,
         gutterSpacingFallbackLength: 5,
-    }
+    },
+    setLastSaveToLastCommit: false,
 };
 
 export const GIT_VIEW_CONFIG = {

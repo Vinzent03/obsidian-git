@@ -1,5 +1,5 @@
 import { Errors } from "isomorphic-git";
-import { debounce, Debouncer, EventRef, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
+import { debounce, Debouncer, EventRef, MarkdownView, Menu, normalizePath, Notice, Platform, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
 import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
 import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
@@ -168,7 +168,14 @@ export default class ObsidianGit extends Plugin {
                     return file !== null;
 
                 } else {
-                    getNewLeaf()?.setViewState({ type: DIFF_VIEW_CONFIG.type, state: { staged: false, file: file!.path } });
+                    getNewLeaf()?.setViewState({
+                        type: DIFF_VIEW_CONFIG.type,
+                        active: true,
+                        state: {
+                            staged: false,
+                            file: this.gitManager.asRepositoryRelativePath(file!.path, true)
+                        }
+                    });
                 }
             }
 
@@ -232,25 +239,36 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "commit",
             name: "Commit all changes",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false))
+            callback: () => this.promiseQueue.addTask(() => this.commit({ fromAutoBackup: false }))
         });
 
         this.addCommand({
             id: "commit-specified-message",
             name: "Commit all changes with specific message",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false, true))
+            callback: () => this.promiseQueue.addTask(() => this.commit({
+                fromAutoBackup: false,
+                requestCustomMessage: true
+            }))
         });
 
         this.addCommand({
             id: "commit-staged",
             name: "Commit staged",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false, false, true))
+            callback: () => this.promiseQueue.addTask(() => this.commit({
+                fromAutoBackup: false,
+                requestCustomMessage: false,
+                onlyStaged: true
+            }))
         });
 
         this.addCommand({
             id: "commit-staged-specified-message",
             name: "Commit staged with specific message",
-            callback: () => this.promiseQueue.addTask(() => this.commit(false, true, true))
+            callback: () => this.promiseQueue.addTask(() => this.commit({
+                fromAutoBackup: false,
+                requestCustomMessage: true,
+                onlyStaged: true
+            }))
         });
 
         this.addCommand({
@@ -490,6 +508,11 @@ export default class ObsidianGit extends Plugin {
             this.settings.gitPath = undefined;
             await this.saveSettings();
         }
+        if (this.settings.username != undefined) {
+            this.localStorage.setPassword(this.settings.username);
+            this.settings.username = undefined;
+            await this.saveSettings();
+        }
     }
 
     unloadPlugin() {
@@ -604,26 +627,7 @@ export default class ObsidianGit extends Plugin {
                     if (this.settings.autoPullOnBoot) {
                         this.promiseQueue.addTask(() => this.pullChangesFromRemote());
                     }
-                    const lastAutos = await this.loadLastAuto();
-
-                    if (this.settings.autoSaveInterval > 0) {
-                        const now = new Date();
-
-                        const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60));
-                        this.startAutoBackup(diff <= 0 ? 0 : diff);
-                    }
-                    if (this.settings.differentIntervalCommitAndPush && this.settings.autoPushInterval > 0) {
-                        const now = new Date();
-
-                        const diff = this.settings.autoPushInterval - (Math.round(((now.getTime() - lastAutos.push.getTime()) / 1000) / 60));
-                        this.startAutoPush(diff <= 0 ? 0 : diff);
-                    }
-                    if (this.settings.autoPullInterval > 0) {
-                        const now = new Date();
-
-                        const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60));
-                        this.startAutoPull(diff <= 0 ? 0 : diff);
-                    }
+                    this.setUpAutos();
                     break;
                 default:
                     console.log("Something weird happened. The 'checkRequirements' result is " + result);
@@ -709,6 +713,7 @@ export default class ObsidianGit extends Plugin {
         if (!await this.isAllInitialized()) return;
 
         const filesUpdated = await this.pull();
+        this.setUpAutoBackup();
         if (!filesUpdated) {
             this.displayMessage("Everything is up-to-date");
         }
@@ -716,7 +721,7 @@ export default class ObsidianGit extends Plugin {
         if (this.gitManager instanceof SimpleGit) {
             const status = await this.gitManager.status();
             if (status.conflicted.length > 0) {
-                this.displayError(`You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
+                this.displayError(`You have conflicts in ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file' : 'files'}`);
                 this.handleConflict(status.conflicted);
             }
         }
@@ -726,14 +731,14 @@ export default class ObsidianGit extends Plugin {
         this.setState(PluginState.idle);
     }
 
-    async createBackup(fromAutoBackup: boolean, requestCustomMessage = false): Promise<void> {
+    async createBackup(fromAutoBackup: boolean, requestCustomMessage = false, commitMessage?: string): Promise<void> {
         if (!await this.isAllInitialized()) return;
 
         if (this.settings.syncMethod == "reset" && this.settings.pullBeforePush) {
             await this.pull();
         }
 
-        if (!(await this.commit(fromAutoBackup, requestCustomMessage))) return;
+        if (!(await this.commit({ fromAutoBackup, requestCustomMessage, commitMessage }))) return;
 
         if (!this.settings.disablePush) {
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
@@ -751,7 +756,17 @@ export default class ObsidianGit extends Plugin {
     }
 
     // Returns true if commit was successfully
-    async commit(fromAutoBackup: boolean, requestCustomMessage = false, onlyStaged = false): Promise<boolean> {
+    async commit({
+        fromAutoBackup,
+        requestCustomMessage = false,
+        onlyStaged = false,
+        commitMessage
+    }: {
+        fromAutoBackup: boolean,
+        requestCustomMessage?: boolean,
+        onlyStaged?: boolean;
+        commitMessage?: string;
+    }): Promise<boolean> {
         if (!await this.isAllInitialized()) return false;
 
         const hadConflict = this.localStorage.getConflict() === "true";
@@ -761,26 +776,22 @@ export default class ObsidianGit extends Plugin {
         let unstagedFiles: UnstagedFile[] | undefined;
 
         if (this.gitManager instanceof SimpleGit) {
-            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
-            if (file != null)
-                await this.app.vault.delete(file);
+            this.mayDeleteConflictFile();
             status = await this.updateCachedStatus();
 
             // check for conflict files on auto backup
             if (fromAutoBackup && status.conflicted.length > 0) {
-                this.displayError(`Did not commit, because you have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}. Please resolve them and commit per command.`);
+                this.displayError(`Did not commit, because you have conflicts in ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file' : 'files'}. Please resolve them and commit per command.`);
                 this.handleConflict(status.conflicted);
                 return false;
             }
             changedFiles = [...status.changed, ...status.staged];
         } else if (fromAutoBackup && hadConflict) {
             this.setState(PluginState.conflicted);
-            this.displayError(`Did not commit, because you have conflict files. Please resolve them and commit per command.`);
+            this.displayError(`Did not commit, because you have conflicts. Please resolve them and commit per command.`);
             return false;
         } else if (hadConflict) {
-            const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
-            if (file != null)
-                await this.app.vault.delete(file);
+            await this.mayDeleteConflictFile();
             status = await this.updateCachedStatus();
             changedFiles = [...status.changed, ...status.staged];
         } else {
@@ -800,7 +811,7 @@ export default class ObsidianGit extends Plugin {
 
 
         if (changedFiles.length !== 0 || hadConflict) {
-            let commitMessage = fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
+            let cmtMessage = commitMessage ??= fromAutoBackup ? this.settings.autoCommitMessage : this.settings.commitMessage;
             if ((fromAutoBackup && this.settings.customMessageOnAutoBackup) || requestCustomMessage) {
                 if (!this.settings.disablePopups && fromAutoBackup) {
                     new Notice("Auto backup: Please enter a custom commit message. Leave empty to abort",);
@@ -808,7 +819,7 @@ export default class ObsidianGit extends Plugin {
                 const tempMessage = await new CustomMessageModal(this, true).open();
 
                 if (tempMessage != undefined && tempMessage != "" && tempMessage != "...") {
-                    commitMessage = tempMessage;
+                    cmtMessage = tempMessage;
                 } else {
                     this.setState(PluginState.idle);
                     return false;
@@ -816,16 +827,17 @@ export default class ObsidianGit extends Plugin {
             }
             let committedFiles: number | undefined;
             if (onlyStaged) {
-                committedFiles = await this.gitManager.commit(commitMessage);
+                committedFiles = await this.gitManager.commit(cmtMessage);
             } else {
-                committedFiles = await this.gitManager.commitAll({ message: commitMessage, status, unstagedFiles });
+                committedFiles = await this.gitManager.commitAll({ message: cmtMessage, status, unstagedFiles });
             }
             let roughly = false;
             if (committedFiles === undefined) {
                 roughly = true;
                 committedFiles = changedFiles.length;
             }
-            this.displayMessage(`Committed${roughly ? " approx." : ""} ${committedFiles} ${committedFiles > 1 ? 'files' : 'file'}`);
+            this.setUpAutoBackup();
+            this.displayMessage(`Committed${roughly ? " approx." : ""} ${committedFiles} ${committedFiles == 1 ? 'file' : 'files'}`);
         } else {
             this.displayMessage("No changes to commit");
         }
@@ -868,19 +880,18 @@ export default class ObsidianGit extends Plugin {
         if (!await this.remotesAreSet()) {
             return false;
         }
-
-        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
         const hadConflict = this.localStorage.getConflict() === "true";
-        if (this.gitManager instanceof SimpleGit && file) await this.app.vault.delete(file);
+        if (this.gitManager instanceof SimpleGit)
+            await this.mayDeleteConflictFile();
 
         // Refresh because of pull
         let status: any;
         if (this.gitManager instanceof SimpleGit && (status = await this.updateCachedStatus()).conflicted.length > 0) {
-            this.displayError(`Cannot push. You have ${status.conflicted.length} conflict ${status.conflicted.length > 1 ? 'files' : 'file'}`);
+            this.displayError(`Cannot push. You have conflicts in ${status.conflicted.length} ${status.conflicted.length == 1 ? 'file' : 'files'}`);
             this.handleConflict(status.conflicted);
             return false;
         } else if (this.gitManager instanceof IsomorphicGit && hadConflict) {
-            this.displayError(`Cannot push. You have conflict files`);
+            this.displayError(`Cannot push. You have conflicts`);
             this.setState(PluginState.conflicted);
             return false;
         } {
@@ -889,7 +900,7 @@ export default class ObsidianGit extends Plugin {
             console.log("Pushed!", pushedFiles);
             this.lastUpdate = Date.now();
             if (pushedFiles > 0) {
-                this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles > 1 ? 'files' : 'file'} to remote`);
+                this.displayMessage(`Pushed ${pushedFiles} ${pushedFiles == 1 ? 'file' : 'files'} to remote`);
             } else {
                 this.displayMessage(`No changes to push`);
             }
@@ -910,11 +921,23 @@ export default class ObsidianGit extends Plugin {
         this.offlineMode = false;
 
         if (pulledFiles.length > 0) {
-            this.displayMessage(`Pulled ${pulledFiles.length} ${pulledFiles.length > 1 ? 'files' : 'file'} from remote`);
+            this.displayMessage(`Pulled ${pulledFiles.length} ${pulledFiles.length == 1 ? 'file' : 'files'} from remote`);
             this.lastPulledFiles = pulledFiles;
             dispatchEvent(new CustomEvent("git-head-update"));
         }
         return pulledFiles.length != 0;
+    }
+
+    async mayDeleteConflictFile(): Promise<void> {
+        const file = this.app.vault.getAbstractFileByPath(this.conflictOutputFile);
+        if (file) {
+            this.app.workspace.iterateAllLeaves((leaf) => {
+                if (leaf.view instanceof MarkdownView && leaf.view.file.path == file.path) {
+                    leaf.detach();
+                }
+            });
+            await this.app.vault.delete(file);
+        }
     }
 
     async stageFile(file: TFile): Promise<boolean> {
@@ -1007,6 +1030,51 @@ export default class ObsidianGit extends Plugin {
         return true;
     }
 
+    async setUpAutoBackup() {
+        if (this.settings.setLastSaveToLastCommit) {
+            this.clearAutoBackup();
+            const lastCommitDate = await this.gitManager.getLastCommitTime();
+            if (lastCommitDate) {
+                this.localStorage.setLastAutoBackup(lastCommitDate.toString());
+            }
+        }
+
+        if (!this.timeoutIDBackup && !this.onFileModifyEventRef) {
+            const lastAutos = await this.loadLastAuto();
+
+            if (this.settings.autoSaveInterval > 0) {
+                const now = new Date();
+
+                const diff = this.settings.autoSaveInterval - (Math.round(((now.getTime() - lastAutos.backup.getTime()) / 1000) / 60));
+                this.startAutoBackup(diff <= 0 ? 0 : diff);
+            }
+        }
+    }
+
+    async setUpAutos() {
+        this.setUpAutoBackup();
+        const lastAutos = await this.loadLastAuto();
+
+        if (this.settings.differentIntervalCommitAndPush && this.settings.autoPushInterval > 0) {
+            const now = new Date();
+
+            const diff = this.settings.autoPushInterval - (Math.round(((now.getTime() - lastAutos.push.getTime()) / 1000) / 60));
+            this.startAutoPush(diff <= 0 ? 0 : diff);
+        }
+        if (this.settings.autoPullInterval > 0) {
+            const now = new Date();
+
+            const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60));
+            this.startAutoPull(diff <= 0 ? 0 : diff);
+        }
+    }
+
+    clearAutos(): void {
+        this.clearAutoBackup();
+        this.clearAutoPush();
+        this.clearAutoPull();
+    }
+
     startAutoBackup(minutes?: number) {
         const time = (minutes ?? this.settings.autoSaveInterval) * 60000;
         if (this.settings.autoBackupAfterFileChange) {
@@ -1025,7 +1093,7 @@ export default class ObsidianGit extends Plugin {
     doAutoBackup(): void {
         this.promiseQueue.addTask(() => {
             if (this.settings.differentIntervalCommitAndPush) {
-                return this.commit(true);
+                return this.commit({ fromAutoBackup: true });
             } else {
                 return this.createBackup(true);
             }
@@ -1100,8 +1168,11 @@ export default class ObsidianGit extends Plugin {
         let lines: string[] | undefined;
         if (conflicted !== undefined) {
             lines = [
-                "# Conflict files",
-                "Please resolve them and commit per command (This file will be deleted before the commit).",
+                "# Conflicts",
+                'Please resolve them and commit them using the commands `Obsidian Git: Commit all changes` followed by `Obsidian Git: Push`',
+                "(This file will automatically be deleted before commit)",
+                "[[#Additional Instructions]] available below file list",
+                "",
                 ...conflicted.map(e => {
                     const file = this.app.vault.getAbstractFileByPath(e);
                     if (file instanceof TFile) {
@@ -1110,7 +1181,18 @@ export default class ObsidianGit extends Plugin {
                     } else {
                         return `- Not a file: ${e}`;
                     }
-                })
+                }),
+                `
+# Additional Instructions
+I strongly recommend to use "Source mode" for viewing the conflicted files. For simple conflicts, in each file listed above replace every occurrence of the following text blocks with the desired text.
+
+\`\`\`diff
+<<<<<<< HEAD
+    File changes in local repository
+=======
+    File changes in remote repository
+>>>>>>> origin/main
+\`\`\``
             ];
         }
         this.writeAndOpenFile(lines?.join("\n"));

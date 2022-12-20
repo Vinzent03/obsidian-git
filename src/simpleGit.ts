@@ -39,7 +39,16 @@ export class SimpleGit extends GitManager {
                 binary: this.plugin.localStorage.getGitPath() || undefined,
                 config: ["core.quotepath=off"]
             });
-            this.git.cwd(await this.git.revparse("--show-toplevel"));
+            const env = this.plugin.localStorage.getPATHPaths();
+            if (env.length > 0) {
+                const path = process.env["PATH"] + ":" + env.join(":");
+                process.env["PATH"] = path;
+            }
+            const debug = require('debug');
+
+            debug.enable('simple-git');
+            await this.git.cwd(await this.git.revparse("--show-toplevel"));
+
         }
     }
 
@@ -418,11 +427,15 @@ export class SimpleGit extends GitManager {
     }
 
     async setConfig(path: string, value: any): Promise<void> {
-        await this.git.addConfig(path, value, (err) => this.onError(err));
+        if (value == undefined) {
+            await this.git.raw(["config", "--local", "--unset", path]);
+        } else {
+            await this.git.addConfig(path, value, (err) => this.onError(err));
+        }
     }
 
     async getConfig(path: string): Promise<any> {
-        const config = await this.git.listConfig((err) => this.onError(err));
+        const config = await this.git.listConfig("local", (err) => this.onError(err));
         return config.all[path];
     }
 
@@ -528,6 +541,13 @@ export class SimpleGit extends GitManager {
         return { submodule: submoduleRoot, relativeFilepath: newRelativePath };
     }
 
+    async getLastCommitTime(): Promise<Date | undefined> {
+        const res = await this.git.log({ n: 1 }, (err) => this.onError(err));
+        if (res != null && res.latest != null) {
+            return new Date(res.latest.date);
+        }
+    }
+
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
         const command = spawnSync(this.plugin.localStorage.getGitPath() || 'git', ['--version'], {
@@ -543,7 +563,9 @@ export class SimpleGit extends GitManager {
 
     private onError(error: Error | null) {
         if (error) {
-            const networkFailure = error.message.contains("Could not resolve host") || error.message.match(/ssh: connect to host .*? port .*?: Operation timed out/);
+            const networkFailure = error.message.contains("Could not resolve host")
+                || error.message.match(/ssh: connect to host .*? port .*?: Operation timed out/)
+                || error.message.match(/ssh: connect to host .*? port .*?: Network is unreachable/);
             if (!networkFailure) {
                 this.plugin.displayError(error.message);
                 this.plugin.setState(PluginState.idle);

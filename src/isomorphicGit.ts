@@ -50,7 +50,7 @@ export class IsomorphicGit extends GitManager {
             dir: this.plugin.settings.basePath,
             onAuth: () => {
                 return {
-                    username: this.plugin.settings.username,
+                    username: this.plugin.localStorage.getUsername() ?? undefined,
                     password: this.plugin.localStorage.getPassword() ?? undefined
                 };
             },
@@ -60,8 +60,7 @@ export class IsomorphicGit extends GitManager {
                 if (username) {
                     const password = await new GeneralModal({ placeholder: "Specify your password/personal access token" }).open();
                     if (password) {
-                        this.plugin.settings.username = username;
-                        await this.plugin.saveSettings();
+                        this.plugin.localStorage.setUsername(username);
                         this.plugin.localStorage.setPassword(password);
                         return {
                             username,
@@ -111,7 +110,10 @@ export class IsomorphicGit extends GitManager {
     }
 
     async status(): Promise<Status> {
-        const notice = new Notice("Getting status...", this.noticeLength);
+        let notice: Notice | undefined;
+        const timeout = window.setTimeout(function () {
+            notice = new Notice("This takes longer: Getting status", this.noticeLength);
+        }, 20000);
         try {
             this.plugin.setState(PluginState.status);
             const status = (await this.wrapFS(git.statusMatrix({ ...this.getRepo(), }))).map(row => this.getFileStatusResult(row));
@@ -119,10 +121,12 @@ export class IsomorphicGit extends GitManager {
             const changed = status.filter(fileStatus => fileStatus.working_dir !== " ");
             const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "U");
             const conflicted: string[] = [];
-            notice.hide();
+            window.clearTimeout(timeout);
+            notice?.hide();
             return { changed, staged, conflicted };
         } catch (error) {
-            notice.hide();
+            window.clearTimeout(timeout);
+            notice?.hide();
             this.plugin.displayError(error);
             throw error;
         }
@@ -280,7 +284,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async pull(): Promise<FileStatusResult[]> {
-        const progressNotice = new Notice("Initializing pull", this.noticeLength);
+        const progressNotice = this.showNotice("Initializing pull");
         try {
 
             this.plugin.setState(PluginState.pull);
@@ -299,16 +303,19 @@ export class IsomorphicGit extends GitManager {
                 ...this.getRepo(),
                 ref: branchInfo.current,
                 onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Checkout", progress);
+                    if (progressNotice !== undefined) {
+                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Checkout", progress);
+                    }
                 },
                 remote: branchInfo.remote,
             }));
-            progressNotice.hide();
+            progressNotice?.hide();
 
             const upstreamCommit = await this.resolveRef("HEAD");
             this.plugin.lastUpdate = Date.now();
             const changedFiles = await this.getFileChangesCount(localCommit, upstreamCommit);
-            new Notice("Finished pull");
+
+            this.showNotice("Finished pull", false);
 
             return changedFiles.map<FileStatusResult>(file => ({
                 path: file.path,
@@ -317,7 +324,7 @@ export class IsomorphicGit extends GitManager {
                 vault_path: this.getVaultPath(file.path),
             }));
         } catch (error) {
-            progressNotice.hide();
+            progressNotice?.hide();
             if (error instanceof Errors.MergeConflictError) {
                 this.plugin.handleConflict(error.data.filepaths.map((file) => this.getVaultPath(file)));
             }
@@ -331,7 +338,7 @@ export class IsomorphicGit extends GitManager {
         if (! await this.canPush()) {
             return 0;
         }
-        const progressNotice = new Notice("Initializing push", this.noticeLength);
+        const progressNotice = this.showNotice("Initializing push");
         try {
             this.plugin.setState(PluginState.status);
             const status = await this.branchInfo();
@@ -344,13 +351,15 @@ export class IsomorphicGit extends GitManager {
             await this.wrapFS(git.push({
                 ...this.getRepo(),
                 onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Pushing", progress);
+                    if (progressNotice !== undefined) {
+                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Pushing", progress);
+                    }
                 }
             }));
-            progressNotice.hide();
+            progressNotice?.hide();
             return numChangedFiles;
         } catch (error) {
-            progressNotice.hide();
+            progressNotice?.hide();
             this.plugin.displayError(error);
             throw error;
         }
@@ -452,25 +461,27 @@ export class IsomorphicGit extends GitManager {
     }
 
     async clone(url: string, dir: string): Promise<void> {
-        const progressNotice = new Notice("Initializing clone", this.noticeLength);
+        const progressNotice = this.showNotice("Initializing clone");
         try {
             await this.wrapFS(git.clone({
                 ...this.getRepo(),
                 dir: dir,
                 url: url,
                 onProgress: (progress) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);
+                    if (progressNotice !== undefined) {
+                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);
+                    }
                 }
             }));
-            progressNotice.hide();
+            progressNotice?.hide();
         } catch (error) {
-            progressNotice.hide();
+            progressNotice?.hide();
             this.plugin.displayError(error);
             throw error;
         }
     }
 
-    async setConfig(path: string, value: string | number | boolean): Promise<void> {
+    async setConfig(path: string, value: string | number | boolean | undefined): Promise<void> {
         try {
             return this.wrapFS(git.setConfig({
                 ...this.getRepo(),
@@ -496,29 +507,31 @@ export class IsomorphicGit extends GitManager {
     }
 
     async fetch(remote?: string): Promise<void> {
-        const progressNotice = new Notice("Initializing fetch", this.noticeLength);
+        const progressNotice = this.showNotice("Initializing fetch");
 
         try {
             const args: any = {
                 ...this.getRepo(),
                 onProgress: (progress: GitProgressEvent) => {
-                    (progressNotice as any).noticeEl.innerText = this.getProgressText("Fetching", progress);
+                    if (progressNotice !== undefined) {
+                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Fetching", progress);
+                    }
                 },
                 remote: remote ?? await this.getCurrentRemote()
             };
 
             await this.wrapFS(git.fetch(args));
-            progressNotice.hide();
+            progressNotice?.hide();
         } catch (error) {
             this.plugin.displayError(error);
-            progressNotice.hide();
+            progressNotice?.hide();
             throw error;
         }
     }
 
     async setRemote(name: string, url: string): Promise<void> {
         try {
-            await this.wrapFS(git.addRemote({ ...this.getRepo(), remote: name, url: url }));
+            await this.wrapFS(git.addRemote({ ...this.getRepo(), remote: name, url: url, force: true }));
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -544,8 +557,8 @@ export class IsomorphicGit extends GitManager {
         await this.wrapFS(git.deleteRemote({ ...this.getRepo(), remote: remoteName }));
     }
 
-    async getRemoteUrl(remote: string): Promise<string> {
-        return (await this.wrapFS(git.listRemotes({ ...this.getRepo() }))).filter((item) => item.remote == remote)[0].url;
+    async getRemoteUrl(remote: string): Promise<string | undefined> {
+        return (await this.wrapFS(git.listRemotes({ ...this.getRepo() }))).filter((item) => item.remote == remote)[0]?.url;
     }
 
     updateBasePath(basePath: string): void {
@@ -632,8 +645,10 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getUnstagedFiles(base = "."): Promise<UnstagedFile[]> {
-        const notice = new Notice("Getting status...", this.noticeLength);
-
+        let notice: Notice | undefined;
+        const timeout = window.setTimeout(function () {
+            notice = new Notice("This takes longer: Getting status", this.noticeLength);
+        }, 20000);
         try {
             const repo = this.getRepo();
             const res = await this.wrapFS<Promise<UnstagedFile[]>>(
@@ -709,10 +724,12 @@ export class IsomorphicGit extends GitManager {
                         // return [filepath, ...result];
                     }
                 }));
-            notice.hide();
+            window.clearTimeout(timeout);
+            notice?.hide();
             return res;
         } catch (error) {
-            notice.hide();
+            window.clearTimeout(timeout);
+            notice?.hide();
             this.plugin.displayError(error);
             throw error;
         }
@@ -753,7 +770,15 @@ export class IsomorphicGit extends GitManager {
             const diff = createPatch(filePath, stagedContent, workdirContent);
             return diff;
         }
-    };
+    }
+
+    async getLastCommitTime(): Promise<Date | undefined> {
+        const repo = this.getRepo();
+        const oid = await this.resolveRef("HEAD");
+        const commit = await git.readCommit({ ...repo, oid: oid });
+        const date = commit.commit.committer.timestamp;
+        return new Date(date * 1000);
+    }
 
     private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
 
@@ -766,6 +791,12 @@ export class IsomorphicGit extends GitManager {
             vault_path: this.getVaultPath(row[this.FILE])
         };
 
+    }
+
+    private showNotice(message: string, infinity = true): Notice | undefined {
+        if (!this.plugin.settings.disablePopups) {
+            return new Notice(message, infinity ? this.noticeLength : undefined);
+        }
     }
 }
 

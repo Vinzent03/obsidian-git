@@ -26,6 +26,14 @@ export class LocalStorageSettings {
         return app.saveLocalStorage(this.prefix + "password", value);
     }
 
+    getUsername(): string | null {
+        return app.loadLocalStorage(this.prefix + "username");
+    }
+
+    setUsername(value: string): void {
+        return app.saveLocalStorage(this.prefix + "username", value);
+    }
+
     getHostname(): string | null {
         return app.loadLocalStorage(this.prefix + "hostname");
     }
@@ -72,6 +80,14 @@ export class LocalStorageSettings {
 
     setGitPath(value: string): void {
         return app.saveLocalStorage(this.prefix + "gitPath", value);
+    }
+
+    getPATHPaths(): string[] {
+        return app.loadLocalStorage(this.prefix + "PATHPaths")?.split(":") ?? [];
+    }
+
+    setPATHPaths(value: string[]): void {
+        return app.saveLocalStorage(this.prefix + "PATHPaths", value.join(":"));
     }
 
     getPluginDisabled(): boolean {

@@ -51,7 +51,7 @@ export abstract class GitManager {
 
     abstract clone(url: string, dir: string): Promise<void>;
 
-    abstract setConfig(path: string, value: string | number | boolean): Promise<void>;
+    abstract setConfig(path: string, value: string | number | boolean | undefined): Promise<void>;
 
     abstract getConfig(path: string): Promise<any>;
 
@@ -74,6 +74,9 @@ export abstract class GitManager {
     abstract updateBasePath(basePath: string): void;
 
     abstract getDiffString(filePath: string, stagedChanges: boolean): Promise<string>;
+
+    abstract getLastCommitTime(): Promise<Date | undefined>;
+
 
     getVaultPath(path: string): string {
         if (this.plugin.settings.basePath) {

@@ -22,7 +22,10 @@ export interface ObsidianGitSettings {
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
     treeStructure: boolean;
-    username: string;
+    /**
+     * @deprecated Using `localstorage` instead
+     */
+    username?: string;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;
 
@@ -35,8 +38,8 @@ export interface ObsidianGitSettings {
     showedMobileNotice: boolean;
     refreshSourceControlTimer: number;
     showBranchStatusBar: boolean;
-
     lineAuthor: LineAuthorSettings;
+    setLastSaveToLastCommit: boolean;
 }
 
 /**

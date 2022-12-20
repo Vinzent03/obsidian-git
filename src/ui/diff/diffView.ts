@@ -23,6 +23,13 @@ export default class DiffView extends ItemView {
     }
 
     getDisplayText(): string {
+        if (this.state?.file != null) {
+            let fileName = this.state.file.split("/").last();
+            if (fileName?.endsWith(".md"))
+                fileName = fileName.slice(0, -3);
+
+            return DIFF_VIEW_CONFIG.name + ` (${fileName})`;
+        }
         return DIFF_VIEW_CONFIG.name;
     }
 
