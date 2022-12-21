@@ -138,6 +138,8 @@ This scenario contains two main cases to test:
 * show / highlight diff when hover/click on gutter
 * small tooltip widget when hovering/right-clicking on line author gutter with author/hash, etc.
 * show deleted lines
+* interpret new 'newline' at end of line as non-change to make gutter change marking more intuitive.
+  * [one option is to add a setting which switches between compatibility-mode and comfort-mode](https://github.com/denolehov/obsidian-git/pull/288)
 * distinguish untracked and changed line (e.g. "~" and "+")
 * use addMomentFormat in settings.ts when configuring the line author date format.
 * main.ts: refreshUpdatedHead(): Detect, if the head has changed from outside of Obsidian git (e.g. script) and run this callback then.
