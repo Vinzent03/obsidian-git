@@ -160,6 +160,7 @@ export type LineAuthorSettings = {
     coloringMaxAge: string;
     colorOld: RGB;
     colorNew: RGB;
+    textColorCss: string;
     ignoreWhitespace: boolean;
     gutterSpacingFallbackLength: number;
 };

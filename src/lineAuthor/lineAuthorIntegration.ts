@@ -3,6 +3,7 @@ import { EventRef, Platform, TAbstractFile, TFile, WorkspaceLeaf } from "obsidia
 import { enabledLineAuthorInfoExtensions, LineAuthorProvider } from "src/lineAuthor/lineAuthorProvider";
 import { LineAuthorSettings, provideSettingsAccess } from "src/lineAuthor/model";
 import { handleContextMenu } from "src/lineAuthor/view/contextMenu";
+import { setTextColorCssBasedOnSetting } from "src/lineAuthor/view/gutter/coloring";
 import { prepareGutterSearchForContextMenuHandling } from "src/lineAuthor/view/gutter/gutterElementSearch";
 import ObsidianGit from "src/main";
 import { SimpleGit } from "src/simpleGit";
@@ -48,6 +49,8 @@ export class LineAuthoringFeature {
     public activateFeature() {
         try {
             if (!this.isAvailableOnCurrentPlatform()) return;
+
+            setTextColorCssBasedOnSetting(this.plg.settings.lineAuthor);
 
             this.lineAuthorInfoProvider = new LineAuthorProvider(this.plg);
 

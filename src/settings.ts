@@ -777,6 +777,30 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             this.createColorSetting("oldest");
 
             new Setting(this.containerEl)
+                .setName("Text color")
+                .addText((field) => {
+                    field.setValue(this.settings.lineAuthor.textColorCss);
+                    field.onChange((value) => {
+                        this.lineAuthorSettingHandler("textColorCss", value)
+                    })
+                })
+                .descEl.innerHTML = `
+                    The CSS color of the gutter text.<br/>
+                    
+                    It is higly recommended to use
+                    <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties">
+                    CSS variables</a>
+                    defined by themes
+                    (e.g. <pre style="display:inline">var(--text-muted)</pre> or
+                    <pre style="display:inline">var(--text-on-accent)</pre>,
+                    because they automatically adapt to theme changes.<br/>
+
+                    See: <a href="https://github.com/obsidian-community/obsidian-theme-template/blob/main/obsidian.css">
+                    List of available CSS variables in Obsidian
+                    <a/>
+                `;
+
+            new Setting(this.containerEl)
                 .setName("Ignore whitespace and newlines in changes")
                 .addToggle((tgl) => {
                     tgl.setValue(this.settings.lineAuthor.ignoreWhitespace);

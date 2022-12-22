@@ -327,11 +327,6 @@ export function lineAuthoringGutterMarker(
     const cached = gutterInstances.get(cacheKey);
     if (cached) return cached;
 
-    if (startLine === 0 || endLine === 0) {
-        console.log("zero", startLine, endLine);
-        console.trace();
-    }
-
     const result = new LineAuthoringGutter(la, startLine, endLine, key, settings, options);
     gutterInstances.set(cacheKey, result);
     return result;

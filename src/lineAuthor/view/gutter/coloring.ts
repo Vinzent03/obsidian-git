@@ -67,3 +67,11 @@ function isDarkMode() {
     const obsidian = (<any>window)?.app;
     return obsidian?.getTheme() === "obsidian"; // light mode is "moonstone"
 }
+
+/**
+ * Set the CSS variable `--obs-git-gutter-text` based on the configured
+ * value in the line author settings. This is necessary for proper text coloring.
+ */
+export function setTextColorCssBasedOnSetting(settings: LineAuthorSettings) {
+    document.body.style.setProperty("--obs-git-gutter-text", settings.textColorCss);
+}

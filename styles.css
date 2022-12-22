@@ -484,8 +484,8 @@
 }
 
 .cm-gutterElement.obs-git-blame-gutter > div, .line-author-settings-preview {
-    /* more pronounced than line numbers, but less than the content text */
-    color: var(--text-muted); 
+    /* delegate text color to settings */
+    color: var(--obs-git-gutter-text); 
     font-family: monospace;
     height: 100%; /* ensure, that age-based background color occupies entire parent */
     text-align: right;
