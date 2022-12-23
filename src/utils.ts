@@ -79,6 +79,14 @@ export function resizeToLength(original: string, desiredLength: number, fillChar
     }
 }
 
+export function prefixOfLengthAsWhitespace(toBeRenderedText: string, whitespacePrefixLength: number): string {
+    if (whitespacePrefixLength <= 0) return toBeRenderedText;
+
+    const whitespacePrefix = new Array(whitespacePrefixLength).fill(" ").join("");
+    const originalSuffix = toBeRenderedText.substring(whitespacePrefixLength, toBeRenderedText.length);
+    return whitespacePrefix + originalSuffix;
+}
+
 export function between(l: number, x: number, r: number) {
     return l <= x && x <= r;
 }

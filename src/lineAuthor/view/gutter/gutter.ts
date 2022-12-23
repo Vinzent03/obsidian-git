@@ -9,11 +9,12 @@ import { enrichCommitInfoForContextMenu } from "src/lineAuthor/view/contextMenu"
 import { coloringBasedOnCommitAge } from "src/lineAuthor/view/gutter/coloring";
 import { chooseNewestCommit } from "src/lineAuthor/view/gutter/commitChoice";
 import { BlameCommit } from "src/types";
-import { currentMoment, impossibleBranch, resizeToLength, strictDeepEqual } from "src/utils";
+import { currentMoment, impossibleBranch, prefixOfLengthAsWhitespace, resizeToLength, strictDeepEqual } from "src/utils";
 
 const VALUE_NOT_FOUND_FALLBACK = "-";
 
-const NEW_COMMIT_CHARACTER = "+";
+const NEW_CHANGE_CHARACTER = "+";
+const NEW_CHANGE_NUMBER_OF_CHARACTERS = 3;
 
 const DIFFERING_AUTHOR_COMMITTER_MARKER = "*";
 
@@ -283,23 +284,25 @@ export class LineAuthoringGutter extends GutterMarker {
         // the % is used to make the UI update from % to the true characters unintrusive
         // waiting-for-result has higher priority than zero commit
         const fillCharacter = options !== "waiting-for-result" && commit.isZeroCommit ?
-            NEW_COMMIT_CHARACTER :
+            NEW_CHANGE_CHARACTER :
             UNINTRUSIVE_CHARACTER_FOR_WAITING_RENDERING;
-        toBeRenderedText = original.replace(
-            NON_WHITESPACE_REGEXP,
-            fillCharacter
-        );
+
+        toBeRenderedText = original.replace(NON_WHITESPACE_REGEXP, fillCharacter);
 
         // Adapt the text to the same length as previously rendered gutters.
         // This ensures, that the frequent UI updates with differing line author lengths
         // don't frequently shift the gutter size - which would also cause distracting UI updates.
-        let desiredLength = latestSettings.get()?.gutterSpacingFallbackLength ?? toBeRenderedText.length;
+        const desiredTextLength = latestSettings.get()?.gutterSpacingFallbackLength ?? toBeRenderedText.length;
 
-        // waiting has higher priority than zero commit
-        if (options !== "waiting-for-result" && commit.isZeroCommit)
-            desiredLength = Math.min(desiredLength, 3);
+        toBeRenderedText = resizeToLength(toBeRenderedText, desiredTextLength, fillCharacter);
 
-        return resizeToLength(toBeRenderedText, desiredLength, fillCharacter);
+        // For new changes, show only the a few + characters.
+        if (options !== "waiting-for-result" && commit.isZeroCommit) {
+            const numberOfLastCharactersToKeep = Math.min(desiredTextLength, NEW_CHANGE_NUMBER_OF_CHARACTERS);
+            toBeRenderedText = prefixOfLengthAsWhitespace(toBeRenderedText, desiredTextLength - numberOfLastCharactersToKeep);
+        }
+
+        return toBeRenderedText;
     }
 }
 
