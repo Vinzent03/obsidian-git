@@ -329,6 +329,47 @@ export class SimpleGit extends GitManager {
 
     async checkout(branch: string): Promise<void> {
         await this.git.checkout(branch, (err) => this.onError(err));
+        await new Promise<void>(async (resolve, reject) => {
+            if (this.plugin.settings.submoduleRecurseCheckout) {
+                this.git.outputHandler(async (cmd, stdout, stderr, args) => {
+                    // Do not run this handler on other commands
+                    if (!(args.contains('submodule') && args.contains('foreach'))) return;
+
+                    let body = '';
+                    const root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? '/' + this.plugin.settings.basePath : '');
+                    stdout.on('data', (chunk) => {
+                        body += chunk.toString('utf8');
+                    });
+                    stdout.on('end', async () => {
+                        const submods = body.split('\n');
+
+                        // Remove words like `Entering` in front of each line and filter empty lines
+                        const strippedSubmods = submods.map(i => {
+                            const submod = i.match(/'([^']*)'/);
+                            if (submod != undefined) {
+                                return root + '/' + submod[ 1 ] + sep;
+                            }
+                        });
+
+                        strippedSubmods.reverse();
+                        for (const item of strippedSubmods) {
+                            // Catch empty lines
+                            if (item != undefined) {
+                                let branchSummary = await this.git.cwd({ path: item, root: false }).branch();
+                                if (Object.keys(branchSummary.branches).includes(branch)) {
+                                    await this.git.cwd({ path: item, root: false }).checkout(branch, (err) => this.onError(err));
+                                }
+                            }
+                        }
+                        resolve();
+                    });
+                });
+
+                await this.git.subModule(['foreach', '--recursive', '']);
+                this.git.outputHandler(() => {
+                });
+            }
+        });
     }
 
     async createBranch(branch: string): Promise<void> {

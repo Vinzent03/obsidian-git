@@ -13,6 +13,7 @@ export interface ObsidianGitSettings {
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
     updateSubmodules: boolean;
+	submoduleRecurseCheckout: boolean;
     /**
     * @deprecated Using `localstorage` instead
     */
