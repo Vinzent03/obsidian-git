@@ -1,15 +1,16 @@
-import { spawnSync } from "child_process";
-import { FileSystemAdapter, normalizePath, Notice } from "obsidian";
-import * as path from "path";
-import { sep } from "path";
-import * as simple from "simple-git";
-import simpleGit, { DefaultLogFields } from "simple-git";
-import { GitManager } from "./gitManager";
-import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
+import { spawnSync } from 'child_process';
+import { FileSystemAdapter, normalizePath, Notice } from 'obsidian';
+import * as path from 'path';
+import { sep } from 'path';
+import * as simple from 'simple-git';
+import simpleGit, { DefaultLogFields } from 'simple-git';
+import { GitManager } from './gitManager';
+import ObsidianGit from './main';
+import { BranchInfo, FileStatusResult, PluginState, Status } from './types';
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
+
     constructor(plugin: ObsidianGit) {
         super(plugin);
     }
@@ -26,24 +27,27 @@ export class SimpleGit extends GitManager {
                 if (exists) {
                     basePath = path + sep + this.plugin.settings.basePath;
                 } else if (!ignoreError) {
-                    new Notice("ObsidianGit: Base path does not exist");
+                    new Notice('ObsidianGit: Base path does not exist');
                 }
             }
 
             this.git = simpleGit({
                 baseDir: basePath,
                 binary: this.plugin.localStorage.getGitPath() || undefined,
-                config: ["core.quotepath=off"]
+                config: [
+                    'core.quotepath=off',
+                    ...(this.plugin.settings.autoPushBranch ? ['push.default=current'] : [])
+                ]
             });
             const env = this.plugin.localStorage.getPATHPaths();
             if (env.length > 0) {
-                const path = process.env["PATH"] + ":" + env.join(":");
-                process.env["PATH"] = path;
+                const path = process.env[ 'PATH' ] + ':' + env.join(':');
+                process.env[ 'PATH' ] = path;
             }
             const debug = require('debug');
 
             debug.enable('simple-git');
-            await this.git.cwd(await this.git.revparse("--show-toplevel"));
+            await this.git.cwd(await this.git.revparse('--show-toplevel'));
 
         }
     }
@@ -53,18 +57,18 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status((err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
         return {
-            changed: status.files.filter((e) => e.working_dir !== " ").map((e) => {
+            changed: status.files.filter((e) => e.working_dir !== ' ').map((e) => {
                 const res = this.formatPath(e);
 
                 return <FileStatusResult>{
                     path: res.path,
                     from: res.from,
-                    working_dir: e.working_dir === "?" ? "U" : e.working_dir,
+                    working_dir: e.working_dir === '?' ? 'U' : e.working_dir,
                     vault_path: this.getVaultPath(res.path),
                 };
             }),
-            staged: status.files.filter((e) => e.index !== " " && e.index != "?").map((e) => {
-                const res = this.formatPath(e, e.index === "R");
+            staged: status.files.filter((e) => e.index !== ' ' && e.index != '?').map((e) => {
+                const res = this.formatPath(e, e.index === 'R');
                 return <FileStatusResult>{
                     path: res.path,
                     from: res.from,
@@ -125,6 +129,7 @@ export class SimpleGit extends GitManager {
                 return path;
             }
         }
+
         if (renamed) {
             return {
                 from: format(path.from),
@@ -140,15 +145,28 @@ export class SimpleGit extends GitManager {
     async commitAll({ message }: { message: string; }): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
+            const info = await this.branchInfo();
+            const rootBranch = info.current!;
             const submodulePaths = await this.getSubmodulePaths();
             for (const item of submodulePaths) {
-                await this.git.cwd({ path: item, root: false }).add("-A", (err) => this.onError(err));
-                await this.git.cwd({ path: item, root: false }).commit(await this.formatCommitMessage(message), (err) => this.onError(err));
+                debugger
+                const cwdGit = () => this.git.cwd({ path: item, root: false });
+                const submoduleStatus = await cwdGit().status((err) => this.onError(err));
+                if (submoduleStatus.files.length !== 0) {
+                    await cwdGit().branch([rootBranch], (err) => {
+                        // swallow potential existing-branch error
+                    });
+                    await cwdGit().checkout(rootBranch, (err) => this.onError(err));
+                    // await cwdGit().push('origin', rootBranch, ['-u'], (err) => this.onError(err));
+                }
+
+                await cwdGit().add('-A', (err) => this.onError(err));
+                await cwdGit().commit(await this.formatCommitMessage(message), (err) => this.onError(err));
             }
         }
         this.plugin.setState(PluginState.add);
 
-        await this.git.add("-A", (err) => this.onError(err));
+        await this.git.add('-A', (err) => this.onError(err));
 
         this.plugin.setState(PluginState.commit);
 
@@ -168,7 +186,7 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.add);
 
         path = this.getPath(path, relativeToVault);
-        await this.git.add(["--", path], (err) => this.onError(err));
+        await this.git.add(['--', path], (err) => this.onError(err));
 
         this.plugin.setState(PluginState.idle);
     }
@@ -176,14 +194,14 @@ export class SimpleGit extends GitManager {
     async stageAll({ dir }: { dir?: string; }): Promise<void> {
         this.plugin.setState(PluginState.add);
         await this.git.add(
-            dir ?? "-A", (err) => this.onError(err)
+            dir ?? '-A', (err) => this.onError(err)
         );
         this.plugin.setState(PluginState.idle);
     }
 
     async unstageAll({ dir }: { dir?: string; }): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.reset(dir != undefined ? ["--", dir] : [], (err) => this.onError(err));
+        await this.git.reset(dir != undefined ? ['--', dir] : [], (err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
     }
 
@@ -191,7 +209,7 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.add);
 
         path = this.getPath(path, relativeToVault);
-        await this.git.reset(["--", path], (err) => this.onError(err));
+        await this.git.reset(['--', path], (err) => this.onError(err));
 
         this.plugin.setState(PluginState.idle);
     }
@@ -199,19 +217,19 @@ export class SimpleGit extends GitManager {
     async discard(filepath: string): Promise<void> {
         this.plugin.setState(PluginState.add);
         await this.git.checkout(
-            ["--", filepath], (err) => this.onError(err)
+            ['--', filepath], (err) => this.onError(err)
         );
         this.plugin.setState(PluginState.idle);
     }
 
     async discardAll({ dir }: { dir?: string; }): Promise<void> {
-        return this.discard(dir ?? ".");
+        return this.discard(dir ?? '.');
     }
 
     async pull(): Promise<FileStatusResult[] | undefined> {
         this.plugin.setState(PluginState.pull);
         if (this.plugin.settings.updateSubmodules)
-            await this.git.subModule(["update", "--remote", "--merge", "--recursive"], (err) => this.onError(err));
+            await this.git.subModule(['update', '--remote', '--merge', '--recursive'], (err) => this.onError(err));
 
         const branchInfo = await this.branchInfo();
         const localCommit = await this.git.revparse([branchInfo.current!], (err) => this.onError(err));
@@ -264,15 +282,32 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status();
         const trackingBranch = status.tracking!;
         const currentBranch = status.current!;
-        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch, "--"], (err) => this.onError(err))).changed;
+        /**
+         * TODO: Why should a remote branch exist before pushing? (Logs are weird when 0)
+         *  Ideally we would like to find a way to make the code less dependent on the state of the remote,
+         *  and depend more on local state (local changed files, instead of remote comparison)
+         *  When working with multiple teams (that use feature branching), it is much less likely that there will be
+         *  merge conflicts, and if they should occur, they're fairly easy to deal with?
+         */
+        let remoteChangedFiles = 1;
+        if (!this.plugin.settings.autoPushBranch) {
+            remoteChangedFiles = (await this.git.diffSummary(
+                    [currentBranch, trackingBranch, '--'],
+                    (err) => this.onError(err))
+            ).changed;
+        }
 
+        debugger;
         this.plugin.setState(PluginState.push);
         if (this.plugin.settings.updateSubmodules) {
-            await this.git.env({ ...process.env, "OBSIDIAN_GIT": 1 }).subModule(["foreach", "--recursive", `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`], (err) => this.onError(err));
 
+            await this.git.env({
+                ...process.env,
+                'OBSIDIAN_GIT': 1
+            }).subModule(['foreach', '--recursive', `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`],
+                (err) => this.onError(err));
         }
-        await this.git.env({ ...process.env, "OBSIDIAN_GIT": 1 }).push((err) => this.onError(err));
-
+        await this.git.env({ ...process.env, 'OBSIDIAN_GIT': 1 }).push((err) => this.onError(err));
         return remoteChangedFiles;
     }
 
@@ -285,24 +320,24 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status((err) => this.onError(err));
         const trackingBranch = status.tracking!;
         const currentBranch = status.current!;
-        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch, "--"])).changed;
+        const remoteChangedFiles = (await this.git.diffSummary([currentBranch, trackingBranch, '--'])).changed;
 
         return remoteChangedFiles !== 0;
     }
 
-    async checkRequirements(): Promise<"valid" | "missing-repo" | "missing-git"> {
+    async checkRequirements(): Promise<'valid' | 'missing-repo' | 'missing-git'> {
         if (!this.isGitInstalled()) {
-            return "missing-git";
+            return 'missing-git';
         }
         if (!(await this.git.checkIsRepo())) {
-            return "missing-repo";
+            return 'missing-repo';
         }
-        return "valid";
+        return 'valid';
     }
 
     async branchInfo(): Promise<BranchInfo> {
         const status = await this.git.status((err) => this.onError(err));
-        const branches = await this.git.branch(["--no-color"], (err) => this.onError(err));
+        const branches = await this.git.branch(['--no-color'], (err) => this.onError(err));
 
         return {
             current: status.current || undefined,
@@ -312,7 +347,7 @@ export class SimpleGit extends GitManager {
     }
 
     async getRemoteUrl(remote: string): Promise<string | undefined> {
-        return await this.git.remote(["get-url", remote], (err, url) => this.onError(err)) || undefined;
+        return await this.git.remote(['get-url', remote], (err, url) => this.onError(err)) || undefined;
     }
 
 
@@ -327,7 +362,7 @@ export class SimpleGit extends GitManager {
     async show(commitHash: string, file: string, relativeToVault = true): Promise<string> {
         const path = this.getPath(file, relativeToVault);
 
-        return this.git.show([commitHash + ":" + path], (err) => this.onError(err));
+        return this.git.show([commitHash + ':' + path], (err) => this.onError(err));
     }
 
     async checkout(branch: string): Promise<void> {
@@ -344,15 +379,15 @@ export class SimpleGit extends GitManager {
     }
 
     async createBranch(branch: string): Promise<void> {
-        await this.git.checkout(["-b", branch], (err) => this.onError(err));
+        await this.git.checkout(['-b', branch], (err) => this.onError(err));
     }
 
     async deleteBranch(branch: string, force: boolean): Promise<void> {
-        await this.git.branch([force ? "-D" : "-d", branch], (err) => this.onError(err));
+        await this.git.branch([force ? '-D' : '-d', branch], (err) => this.onError(err));
     }
 
     async branchIsMerged(branch: string): Promise<boolean> {
-        const notMergedBranches = await this.git.branch(["--no-merged"], (err) => this.onError(err));
+        const notMergedBranches = await this.git.branch(['--no-merged'], (err) => this.onError(err));
         return !notMergedBranches.all.contains(branch);
     }
 
@@ -366,15 +401,15 @@ export class SimpleGit extends GitManager {
 
     async setConfig(path: string, value: any): Promise<void> {
         if (value == undefined) {
-            await this.git.raw(["config", "--local", "--unset", path]);
+            await this.git.raw(['config', '--local', '--unset', path]);
         } else {
             await this.git.addConfig(path, value, (err) => this.onError(err));
         }
     }
 
     async getConfig(path: string): Promise<any> {
-        const config = await this.git.listConfig("local", (err) => this.onError(err));
-        return config.all[path];
+        const config = await this.git.listConfig('local', (err) => this.onError(err));
+        return config.all[ path ];
     }
 
     async fetch(remote?: string): Promise<void> {
@@ -383,21 +418,21 @@ export class SimpleGit extends GitManager {
 
     async setRemote(name: string, url: string): Promise<void> {
         if ((await this.getRemotes()).includes(name))
-            await this.git.remote(["set-url", name, url], (err) => this.onError(err));
+            await this.git.remote(['set-url', name, url], (err) => this.onError(err));
 
         else {
-            await this.git.remote(["add", name, url], (err) => this.onError(err));
+            await this.git.remote(['add', name, url], (err) => this.onError(err));
         }
     }
 
     async getRemoteBranches(remote: string): Promise<string[]> {
-        const res = await this.git.branch(["-r", "--list", `${remote}*`], (err) => this.onError(err));
+        const res = await this.git.branch(['-r', '--list', `${remote}*`], (err) => this.onError(err));
         console.log(remote);
         console.log(res);
 
         const list = [];
         for (const item in res.branches) {
-            list.push(res.branches[item].name);
+            list.push(res.branches[ item ].name);
         }
         return list;
     }
@@ -405,7 +440,7 @@ export class SimpleGit extends GitManager {
     async getRemotes() {
         const res = await this.git.remote([], (err) => this.onError(err));
         if (res) {
-            return res.trim().split("\n");
+            return res.trim().split('\n');
         } else {
             return [];
         }
@@ -416,6 +451,9 @@ export class SimpleGit extends GitManager {
     }
 
     async updateUpstreamBranch(remoteBranch: string) {
+        if (this.plugin.settings.autoPushBranch) {
+            await this.git.push(remoteBranch);
+        }
         try {
             // git 1.8+
             await this.git.branch(['--set-upstream-to', remoteBranch]);
@@ -427,7 +465,7 @@ export class SimpleGit extends GitManager {
             } catch (e) {
                 console.error(e);
                 // fallback
-                await this.git.push(["--set-upstream", ...remoteBranch.split("/")], (err) => this.onError(err));
+                await this.git.push(['--set-upstream', ...remoteBranch.split('/')], (err) => this.onError(err));
             }
         }
 
@@ -443,13 +481,13 @@ export class SimpleGit extends GitManager {
 
     async getDiffString(filePath: string, stagedChanges = false): Promise<string> {
         if (stagedChanges)
-            return (await this.git.diff(["--cached", "--", filePath]));
+            return (await this.git.diff(['--cached', '--', filePath]));
         else
-            return (await this.git.diff(["--", filePath]));
+            return (await this.git.diff(['--', filePath]));
     }
 
     async diff(file: string, commit1: string, commit2: string): Promise<string> {
-        return (await this.git.diff([`${commit1}..${commit2}`, "--", file]));
+        return (await this.git.diff([`${commit1}..${commit2}`, '--', file]));
     }
 
     async getLastCommitTime(): Promise<Date | undefined> {
@@ -474,14 +512,15 @@ export class SimpleGit extends GitManager {
 
     private onError(error: Error | null) {
         if (error) {
-            const networkFailure = error.message.contains("Could not resolve host")
+            console.trace(error);
+            const networkFailure = error.message.contains('Could not resolve host')
                 || error.message.match(/ssh: connect to host .*? port .*?: Operation timed out/)
                 || error.message.match(/ssh: connect to host .*? port .*?: Network is unreachable/);
             if (!networkFailure) {
                 this.plugin.displayError(error.message);
                 this.plugin.setState(PluginState.idle);
             } else if (!this.plugin.offlineMode) {
-                this.plugin.displayError("Git: Going into offline mode. Future network errors will no longer be displayed.", 2000);
+                this.plugin.displayError('Git: Going into offline mode. Future network errors will no longer be displayed.', 2000);
             }
 
             if (networkFailure) {

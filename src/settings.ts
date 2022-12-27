@@ -476,6 +476,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 plugin.saveSettings();
                             })
                     );
+
+                new Setting(containerEl)
+                    .setName('Match submodule branches to root branch on commit')
+                    .setDesc('Will automatically match the branch name in the submodules to the root repository branch name (if there are changes in the submodule). Creates branch if it does not exist. Use this with push.default=current for easy pushing.')
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(plugin.settings.matchRootBranchName)
+                            .onChange((value) => {
+                                plugin.settings.matchRootBranchName = value;
+                                plugin.settings.autoPushBranch = value;
+                                plugin.saveSettings();
+                            })
+                    );
             }
         }
 

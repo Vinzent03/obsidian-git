@@ -978,6 +978,9 @@ export default class ObsidianGit extends Plugin {
     }
 
     async remotesAreSet(): Promise<boolean> {
+        if(this.settings.autoPushBranch){
+            return true;
+        }
         if (!(await this.gitManager.branchInfo()).tracking) {
             new Notice("No upstream branch is set. Please select one.");
             const remoteBranch = await this.selectRemoteBranch();

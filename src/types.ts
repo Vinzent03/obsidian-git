@@ -15,6 +15,7 @@ export interface ObsidianGitSettings {
     updateSubmodules: boolean;
 	submoduleRecurseCheckout: boolean;
 	matchRootBranchName: boolean;
+    autoPushBranch: boolean;
 	/**
     * @deprecated Using `localstorage` instead
     */
