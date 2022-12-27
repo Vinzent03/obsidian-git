@@ -82,7 +82,6 @@ export class SimpleGit extends GitManager {
                 this.git.outputHandler(async (cmd, stdout, stderr, args) => {
                     // Do not run this handler on other commands
                     if (!(args.contains('submodule') && args.contains('foreach'))) {
-                        resolve([]);
                         return;
                     }
 
