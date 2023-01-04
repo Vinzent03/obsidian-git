@@ -17,11 +17,14 @@ jobs:
               uses: actions/setup-node@v1
               with:
                   node-version: "14.x"
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: 6.0.2
             - name: Build
               id: build
               run: |
-                  npm install
-                  npm run build --if-present
+                  pnpm install
+                  pnpm run build --if-present
                   mkdir ${{ env.PLUGIN_NAME }}
                   cp main.js manifest.json ${{ env.PLUGIN_NAME }}
                   zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
