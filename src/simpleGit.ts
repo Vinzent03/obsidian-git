@@ -97,7 +97,7 @@ export class SimpleGit extends GitManager {
                         const strippedSubmods: string[] = submods.map(i => {
                             const submod = i.match(/'([^']*)'/);
                             if (submod != undefined) {
-                                return root + '/' + submod[ 1 ] + sep;
+                                return root + '/' + submod[1] + sep;
                             }
                         }).filter((i): i is string => !!i);
 

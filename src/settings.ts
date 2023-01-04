@@ -452,7 +452,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.createEl("br");
         containerEl.createEl("h3", { text: "Advanced" });
 
-		if (plugin.gitManager instanceof SimpleGit) {
+        if (plugin.gitManager instanceof SimpleGit) {
             new Setting(containerEl)
                 .setName("Update submodules")
                 .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
