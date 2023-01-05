@@ -78,38 +78,36 @@ export class SimpleGit extends GitManager {
 
     async getSubmodulePaths(): Promise<string[]> {
         return new Promise<string[]>(async (resolve) => {
-            if (this.plugin.settings.submoduleRecurseCheckout) {
-                this.git.outputHandler(async (cmd, stdout, stderr, args) => {
-                    // Do not run this handler on other commands
-                    if (!(args.contains('submodule') && args.contains('foreach'))) {
-                        return;
-                    }
+            this.git.outputHandler(async (cmd, stdout, stderr, args) => {
+                // Do not run this handler on other commands
+                if (!(args.contains('submodule') && args.contains('foreach'))) {
+                    return;
+                }
 
-                    let body = '';
-                    const root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? '/' + this.plugin.settings.basePath : '');
-                    stdout.on('data', (chunk) => {
-                        body += chunk.toString('utf8');
-                    });
-                    stdout.on('end', async () => {
-                        const submods = body.split('\n');
-
-                        // Remove words like `Entering` in front of each line and filter empty lines
-                        const strippedSubmods: string[] = submods.map(i => {
-                            const submod = i.match(/'([^']*)'/);
-                            if (submod != undefined) {
-                                return root + '/' + submod[1] + sep;
-                            }
-                        }).filter((i): i is string => !!i);
-
-                        strippedSubmods.reverse();
-                        resolve(strippedSubmods);
-                    });
+                let body = '';
+                const root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? '/' + this.plugin.settings.basePath : '');
+                stdout.on('data', (chunk) => {
+                    body += chunk.toString('utf8');
                 });
+                stdout.on('end', async () => {
+                    const submods = body.split('\n');
 
-                await this.git.subModule(['foreach', '--recursive', '']);
-                this.git.outputHandler(() => {
+                    // Remove words like `Entering` in front of each line and filter empty lines
+                    const strippedSubmods: string[] = submods.map(i => {
+                        const submod = i.match(/'([^']*)'/);
+                        if (submod != undefined) {
+                            return root + '/' + submod[ 1 ] + sep;
+                        }
+                    }).filter((i): i is string => !!i);
+
+                    strippedSubmods.reverse();
+                    resolve(strippedSubmods);
                 });
-            }
+            });
+
+            await this.git.subModule(['foreach', '--recursive', '']);
+            this.git.outputHandler(() => {
+            });
         });
     }
 
