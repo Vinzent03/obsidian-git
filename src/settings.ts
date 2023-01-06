@@ -452,7 +452,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.createEl("br");
         containerEl.createEl("h3", { text: "Advanced" });
 
-        if (plugin.gitManager instanceof SimpleGit)
+        if (plugin.gitManager instanceof SimpleGit) {
             new Setting(containerEl)
                 .setName("Update submodules")
                 .setDesc('"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule')
@@ -464,6 +464,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.saveSettings();
                         })
                 );
+            if (plugin.settings.updateSubmodules) {
+                new Setting(containerEl)
+                    .setName('Submodule recurse checkout/switch')
+                    .setDesc('Whenever a checkout happens on the root repository, recurse the checkout on the submodules (if the branches exist).')
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(plugin.settings.submoduleRecurseCheckout)
+                            .onChange((value) => {
+                                plugin.settings.submoduleRecurseCheckout = value;
+                                plugin.saveSettings();
+                            })
+                    );
+            }
+        }
+
 
         if (plugin.gitManager instanceof SimpleGit)
             new Setting(containerEl)

@@ -76,6 +76,42 @@ export class SimpleGit extends GitManager {
         };
     }
 
+    async getSubmodulePaths(): Promise<string[]> {
+        return new Promise<string[]>(async (resolve) => {
+            this.git.outputHandler(async (cmd, stdout, stderr, args) => {
+                // Do not run this handler on other commands
+                if (!(args.contains('submodule') && args.contains('foreach'))) {
+                    return;
+                }
+
+                let body = '';
+                const root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? '/' + this.plugin.settings.basePath : '');
+                stdout.on('data', (chunk) => {
+                    body += chunk.toString('utf8');
+                });
+                stdout.on('end', async () => {
+                    const submods = body.split('\n');
+
+                    // Remove words like `Entering` in front of each line and filter empty lines
+                    const strippedSubmods: string[] = submods.map(i => {
+                        const submod = i.match(/'([^']*)'/);
+                        if (submod != undefined) {
+                            return root + '/' + submod[ 1 ] + sep;
+                        }
+                    }).filter((i): i is string => !!i);
+
+                    strippedSubmods.reverse();
+                    resolve(strippedSubmods);
+                });
+            });
+
+            await this.git.subModule(['foreach', '--recursive', '']);
+            this.git.outputHandler(() => {
+            });
+        });
+    }
+
+
     //Remove wrong `"` like "My file.md"
     formatPath(path: { from?: string, path: string; }, renamed = false): { path: string, from?: string; } {
         function format(path?: string): string | undefined {
@@ -102,46 +138,11 @@ export class SimpleGit extends GitManager {
     async commitAll({ message }: { message: string; }): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
-            await new Promise<void>(async (resolve, reject) => {
-
-                this.git.outputHandler(async (cmd, stdout, stderr, args) => {
-
-                    // Do not run this handler on other commands
-                    if (!(args.contains("submodule") && args.contains("foreach"))) return;
-
-                    let body = "";
-                    const root = (this.app.vault.adapter as FileSystemAdapter).getBasePath() + (this.plugin.settings.basePath ? "/" + this.plugin.settings.basePath : "");
-                    stdout.on('data', (chunk) => {
-                        body += chunk.toString('utf8');
-                    });
-                    stdout.on('end', async () => {
-                        const submods = body.split('\n');
-
-                        // Remove words like `Entering` in front of each line and filter empty lines
-                        const strippedSubmods = submods.map(i => {
-                            const submod = i.match(/'([^']*)'/);
-                            if (submod != undefined) {
-                                return root + "/" + submod[1] + sep;
-                            }
-                        });
-
-                        strippedSubmods.reverse();
-                        for (const item of strippedSubmods) {
-                            // Catch empty lines
-                            if (item != undefined) {
-                                await this.git.cwd({ path: item, root: false }).add("-A", (err) => this.onError(err));
-                                await this.git.cwd({ path: item, root: false }).commit(await this.formatCommitMessage(message), (err) => this.onError(err));
-                            }
-                        }
-                        resolve();
-                    });
-                });
-
-
-                await this.git.subModule(["foreach", "--recursive", '']);
-                this.git.outputHandler(() => { });
-            });
-
+            const submodulePaths = await this.getSubmodulePaths();
+            for (const item of submodulePaths) {
+                await this.git.cwd({ path: item, root: false }).add("-A", (err) => this.onError(err));
+                await this.git.cwd({ path: item, root: false }).commit(await this.formatCommitMessage(message), (err) => this.onError(err));
+            }
         }
         this.plugin.setState(PluginState.add);
 
@@ -329,6 +330,15 @@ export class SimpleGit extends GitManager {
 
     async checkout(branch: string): Promise<void> {
         await this.git.checkout(branch, (err) => this.onError(err));
+        if (this.plugin.settings.submoduleRecurseCheckout) {
+            const submodulePaths = await this.getSubmodulePaths();
+            for (const submodulePath of submodulePaths) {
+                let branchSummary = await this.git.cwd({ path: submodulePath, root: false }).branch();
+                if (Object.keys(branchSummary.branches).includes(branch)) {
+                    await this.git.cwd({ path: submodulePath, root: false }).checkout(branch, (err) => this.onError(err));
+                }
+            }
+        }
     }
 
     async createBranch(branch: string): Promise<void> {
