@@ -1,11 +1,10 @@
 # Obsidian Git
 
-Simple plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
-
-On advantages of backing up your vault with git, I suggest reading this [amazing article](https://medium.com/analytics-vidhya/how-i-put-my-mind-under-version-control-24caea37b8a5) by [@tallguyjenks](https://github.com/tallguyjenks). Note: The article discusses the benefits of backing up your vault, and also describes how to implement it. This plugin will implement it for you, so no need to follow the steps outlined in the article!
+Plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
 
 Requirements, installation steps (including setup for mobile), tips and tricks, common issues and more can be found in the [wiki](https://github.com/denolehov/obsidian-git/wiki/).
 
+For mobile users see [Mobile](#mobile) section below.
 ## Highlighted Features
 
 - Automatic vault backup every X minutes
@@ -66,6 +65,9 @@ I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implemen
 - Submodules are not supported
 
 ### Performance on mobile
+
+> **Warning**
+> In cases where your device is low on RAM, Obsidian can crash on clone/pull. I don't know how to fix this. If that's the case for you, I have to admit this plugin won't work for you.
 
 **Setup:** iPad Pro M1 with a [repo](https://github.com/Vinzent03/obsidian-git-stress-test) of 3000 files reduced from [10000 markdown files](https://github.com/Zettelkasten-Method/10000-markdown-files)
 
