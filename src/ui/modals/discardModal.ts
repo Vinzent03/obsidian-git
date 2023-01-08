@@ -15,36 +15,37 @@ export class DiscardModal extends Modal {
 
         const { contentEl, titleEl } = this;
         titleEl.setText(`${this.deletion ? "Delete" : "Discard"} this file?`);
-        contentEl.createEl("h4").setText(`Do you really want to ${this.deletion ? "delete" : "discard the changes of"} "${this.filename}"`);
-        const div = contentEl.createDiv();
-        div.addClass("obsidian-git-center");
+        contentEl.createEl("p").setText(`Do you really want to ${this.deletion ? "delete" : "discard the changes of"} "${this.filename}"`);
+        const div = contentEl.createDiv({ cls: "modal-button-container" });
 
-        div
-            .createEl("button", {
-                text: "Cancel",
-                attr: {
-                    style: "margin: 0 10px"
-                }
-            })
-            .addEventListener("click", () => {
-                if (this.resolve) this.resolve(false);
-                return this.close();
-            });
 
-        div
+        const discard = div
             .createEl("button",
                 {
-                    cls: "mod-cta",
-                    text: "Confirm",
-                    attr: {
-                        style: "margin: 0 10px"
-                    }
-                })
-            .addEventListener("click", async () => {
-                if (this.resolve) this.resolve(true);
-                this.close();
-            });
+                    cls: "mod-warning",
+                    text: this.deletion ? "Delete" : "Discard",
+                });
+        discard.addEventListener("click", async () => {
+            if (this.resolve) this.resolve(true);
+            this.close();
+        });
+        discard.addEventListener("keypress", async () => {
+            if (this.resolve) this.resolve(true);
+            this.close();
+        });
 
+        const close = div
+            .createEl("button", {
+                text: "Cancel",
+            });
+        close.addEventListener("click", () => {
+            if (this.resolve) this.resolve(false);
+            return this.close();
+        });
+        close.addEventListener("keypress", () => {
+            if (this.resolve) this.resolve(false);
+            return this.close();
+        });
     }
 
     onClose() {

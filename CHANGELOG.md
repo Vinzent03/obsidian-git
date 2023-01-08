@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.15.0](https://github.com/denolehov/obsidian-git/compare/2.14.0...2.15.0) (2023-01-06)
+
+
+### Features
+
+* improve discard modal ([872fc18](https://github.com/denolehov/obsidian-git/commit/872fc182743df108a42ae244699bb2d2b03d7c69))
+
 ## [2.14.0](https://github.com/denolehov/obsidian-git/compare/2.13.0...2.14.0) (2022-12-14)
 
 
