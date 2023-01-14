@@ -494,6 +494,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         if (plugin.gitManager instanceof SimpleGit)
             new Setting(containerEl)
+                .setName("Additional environment variables")
+                .setDesc("Use each line for a new environment variable in the format KEY=VALUE")
+                .addTextArea((cb) => {
+                    cb.setPlaceholder("GIT_DIR=/path/to/git/dir");
+                    cb.setValue(plugin.localStorage.getEnvVars().join("\n"));
+                    cb.onChange((value) => {
+                        plugin.localStorage.setEnvVars(value.split("\n"));
+                    });
+                });
+
+        if (plugin.gitManager instanceof SimpleGit)
+            new Setting(containerEl)
                 .setName("Additional PATH environment variable paths")
                 .setDesc("Use each line for one path")
                 .addTextArea((cb) => {
@@ -504,7 +516,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
         if (plugin.gitManager instanceof SimpleGit)
             new Setting(containerEl)
-                .setName("Reload with new PATH environment variable")
+                .setName("Reload with new environment variables")
                 .addButton(cb => {
                     cb.setButtonText("Reload");
                     cb.setCta();
