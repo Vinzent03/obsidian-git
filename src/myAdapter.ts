@@ -35,7 +35,7 @@ export class MyAdapter {
                 return this.adapter.read(path);
             }
         } else {
-            if (path.endsWith(".git/index")) {
+            if (path.endsWith(this.gitDir + "/index")) {
                 return this.index ?? this.adapter.readBinary(path);
             }
             const file = this.vault.getAbstractFileByPath(path);
@@ -59,7 +59,7 @@ export class MyAdapter {
                 return this.adapter.write(path, data);
             }
         } else {
-            if (path.endsWith(".git/index")) {
+            if (path.endsWith(this.gitDir + "/index")) {
                 this.index = data;
                 this.indexmtime = Date.now();
                 // this.adapter.writeBinary(path, data);
@@ -94,7 +94,7 @@ export class MyAdapter {
     }
     async stat(path: string) {
 
-        if (path.endsWith(".git/index")) {
+        if (path.endsWith(this.gitDir + "/index")) {
             if (this.index !== undefined && this.indexctime != undefined && this.indexmtime != undefined) {
                 return {
                     isFile: () => true,
@@ -172,7 +172,7 @@ export class MyAdapter {
     async saveAndClear(): Promise<void> {
         if (this.index !== undefined) {
             await this.adapter.writeBinary(
-                this.plugin.gitManager.getVaultPath(".git/index"),
+                this.plugin.gitManager.getVaultPath(this.gitDir + "/index"),
                 this.index,
                 {
                     ctime: this.indexctime,
@@ -182,6 +182,10 @@ export class MyAdapter {
         this.index = undefined;
         this.indexctime = undefined;
         this.indexmtime = undefined;
+    }
+
+    private get gitDir(): string {
+        return (this.plugin.settings.gitDir ?? ".git");
     }
 
     private maybeLog(text: string) {

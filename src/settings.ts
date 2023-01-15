@@ -517,6 +517,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (plugin.gitManager instanceof SimpleGit)
             new Setting(containerEl)
                 .setName("Reload with new environment variables")
+                .setDesc("Removing previously added environment variables will not take effect until Obsidian is restarted.")
                 .addButton(cb => {
                     cb.setButtonText("Reload");
                     cb.setCta();
@@ -539,6 +540,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     plugin.settings.basePath = value;
                     plugin.saveSettings();
                     plugin.gitManager.updateBasePath(value || "");
+                });
+            });
+
+        new Setting(containerEl)
+            .setName("Custom Git directory path (Instead of '.git')")
+            .setDesc(`Requires restart of Obsidian to take effect. Use "\\" instead of "/" on Windows.`)
+            .addText((cb) => {
+                cb.setValue(plugin.settings.gitDir);
+                cb.setPlaceholder(".git");
+                cb.onChange((value) => {
+                    plugin.settings.gitDir = value;
+                    plugin.saveSettings();
+
                 });
             });
 
