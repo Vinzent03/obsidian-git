@@ -183,6 +183,12 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "switch-to-remote-branch",
+            name: "Switch to remote branch",
+            callback: () => this.promiseQueue.addTask(() => this.switchRemoteBranch()),
+        });
+
+        this.addCommand({
             id: "add-to-gitignore",
             name: "Add file to gitignore",
             checkCallback: (checking) => {
@@ -370,6 +376,14 @@ export default class ObsidianGit extends Plugin {
             name: "Delete branch",
             callback: () => {
                 this.deleteBranch();
+            }
+        });
+
+        this.addCommand({
+            id: "force-delete-branch",
+            name: "Force delete branch",
+            callback: () => {
+                this.deleteBranch(true);
             }
         });
 
@@ -942,6 +956,21 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
+    async switchRemoteBranch(): Promise<string | undefined> {
+        if (!await this.isAllInitialized()) return;
+
+        const selectedBranch = await this.selectRemoteBranch() || '';
+
+        const [remote, branch] = selectedBranch.split("/");
+
+        if (branch != undefined && remote != undefined) {
+            await this.gitManager.checkout(branch, remote);
+            this.displayMessage(`Switched to ${selectedBranch}`);
+            this.branchBar?.display();
+            return selectedBranch;
+        }
+    }
+
     async createBranch(): Promise<string | undefined> {
         if (!await this.isAllInitialized()) return;
 
@@ -954,7 +983,7 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async deleteBranch(): Promise<string | undefined> {
+    async deleteBranch(externalForce = false): Promise<string | undefined> {
         if (!await this.isAllInitialized()) return;
 
         const branchInfo = await this.gitManager.branchInfo();
@@ -963,14 +992,14 @@ export default class ObsidianGit extends Plugin {
         const branch = await new GeneralModal({ options: branchInfo.branches, placeholder: "Delete branch", onlySelection: true }).open();
         if (branch != undefined) {
             let force = false;
-            if (!await this.gitManager.branchIsMerged(branch)) {
+            if (!externalForce && !await this.gitManager.branchIsMerged(branch)) {
                 const forceAnswer = await new GeneralModal({ options: ["YES", "NO"], placeholder: "This branch isn't merged into HEAD. Force delete?", onlySelection: true }).open();
                 if (forceAnswer !== "YES") {
                     return;
                 }
                 force = forceAnswer === "YES";
             }
-            await this.gitManager.deleteBranch(branch, force);
+            await this.gitManager.deleteBranch(branch, force || externalForce);
             this.displayMessage(`Deleted branch ${branch}`);
             this.branchBar?.display();
             return branch;

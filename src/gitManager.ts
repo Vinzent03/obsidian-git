@@ -39,7 +39,7 @@ export abstract class GitManager {
 
     abstract branchInfo(): Promise<BranchInfo>;
 
-    abstract checkout(branch: string): Promise<void>;
+    abstract checkout(branch: string, remote?: string): Promise<void>;
 
     abstract createBranch(branch: string): Promise<void>;
 

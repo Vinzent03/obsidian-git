@@ -417,11 +417,13 @@ export class IsomorphicGit extends GitManager {
 
     }
 
-    async checkout(branch: string): Promise<void> {
+    async checkout(branch: string, remote?: string): Promise<void> {
         try {
             return this.wrapFS(git.checkout({
                 ...this.getRepo(),
                 ref: branch,
+                force: !!remote,
+                remote,
             }));
         } catch (error) {
             this.plugin.displayError(error);
