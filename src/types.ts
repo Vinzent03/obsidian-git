@@ -15,8 +15,8 @@ export interface ObsidianGitSettings {
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
     updateSubmodules: boolean;
-	submoduleRecurseCheckout: boolean;
-	/**
+    submoduleRecurseCheckout: boolean;
+    /**
     * @deprecated Using `localstorage` instead
     */
     gitPath?: string;
@@ -41,6 +41,7 @@ export interface ObsidianGitSettings {
     showBranchStatusBar: boolean;
     lineAuthor: LineAuthorSettings;
     setLastSaveToLastCommit: boolean;
+    gitDir: string;
 }
 
 /**

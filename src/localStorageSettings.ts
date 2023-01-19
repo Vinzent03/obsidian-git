@@ -90,6 +90,14 @@ export class LocalStorageSettings {
         return app.saveLocalStorage(this.prefix + "PATHPaths", value.join(":"));
     }
 
+    getEnvVars(): string[] {
+        return JSON.parse(app.loadLocalStorage(this.prefix + "envVars") ?? "[]");
+    }
+
+    setEnvVars(value: string[]): void {
+        return app.saveLocalStorage(this.prefix + "envVars", JSON.stringify(value));
+    }
+
     getPluginDisabled(): boolean {
         return app.loadLocalStorage(this.prefix + "pluginDisabled") == "true";
     }

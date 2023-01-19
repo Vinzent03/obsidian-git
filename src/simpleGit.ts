@@ -39,11 +39,21 @@ export class SimpleGit extends GitManager {
                 binary: this.plugin.localStorage.getGitPath() || undefined,
                 config: ["core.quotepath=off"]
             });
-            const env = this.plugin.localStorage.getPATHPaths();
-            if (env.length > 0) {
-                const path = process.env["PATH"] + ":" + env.join(":");
+            const pathPaths = this.plugin.localStorage.getPATHPaths();
+            const envVars = this.plugin.localStorage.getEnvVars();
+            const gitDir = this.plugin.settings.gitDir;
+            if (pathPaths.length > 0) {
+                const path = process.env["PATH"] + ":" + pathPaths.join(":");
                 process.env["PATH"] = path;
             }
+            if (gitDir) {
+                process.env["GIT_DIR"] = gitDir;
+            }
+            for (const envVar of envVars) {
+                const [key, value] = envVar.split("=");
+                process.env[key] = value;
+            }
+
             const debug = require('debug');
 
             debug.enable('simple-git');
