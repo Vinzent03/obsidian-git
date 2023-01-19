@@ -746,12 +746,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
                 });
 
-            const dateTimeFormatCustomStringSetting = new Setting(this.containerEl)
-                .setName("Custom authoring date format")
-                .setDisabled(this.settings.lineAuthor.dateTimeFormatOptions !== "custom");
-
             if (this.settings.lineAuthor.dateTimeFormatOptions === "custom") {
+                const dateTimeFormatCustomStringSetting = new Setting(this.containerEl);
+
                 dateTimeFormatCustomStringSetting
+                    .setName("Custom authoring date format")
                     .addText((cb) => {
                         cb.setValue(this.settings.lineAuthor.dateTimeFormatCustomString);
                         cb.setPlaceholder("YYYY-MM-DD HH:mm");
@@ -767,10 +766,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     this.previewCustomDateTimeDescriptionHtml(
                         this.settings.lineAuthor.dateTimeFormatCustomString
                     );
-            }
-            else {
-                dateTimeFormatCustomStringSetting
-                    .setDesc("Only applicable when authoring date display is \"Custom\"");
             }
 
             new Setting(this.containerEl)
