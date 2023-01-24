@@ -41,6 +41,7 @@ export class IsomorphicGit extends GitManager {
     getRepo(): {
         fs: MyAdapter,
         dir: string,
+        gitdir?: string,
         onAuth: AuthCallback,
         onAuthFailure: AuthFailureCallback,
         http: HttpClient,
@@ -48,6 +49,7 @@ export class IsomorphicGit extends GitManager {
         return {
             fs: this.fs,
             dir: this.plugin.settings.basePath,
+            gitdir: this.plugin.settings.gitDir ?? undefined,
             onAuth: () => {
                 return {
                     username: this.plugin.localStorage.getUsername() ?? undefined,

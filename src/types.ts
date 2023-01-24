@@ -13,8 +13,8 @@ export interface ObsidianGitSettings {
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
     updateSubmodules: boolean;
-	submoduleRecurseCheckout: boolean;
-	/**
+    submoduleRecurseCheckout: boolean;
+    /**
     * @deprecated Using `localstorage` instead
     */
     gitPath?: string;
@@ -38,6 +38,7 @@ export interface ObsidianGitSettings {
     refreshSourceControlTimer: number;
     showBranchStatusBar: boolean;
     setLastSaveToLastCommit: boolean;
+    gitDir: string;
 }
 
 export type SyncMethod = 'rebase' | 'merge' | 'reset';

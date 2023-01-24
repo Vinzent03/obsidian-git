@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.16.0](https://github.com/denolehov/obsidian-git/compare/2.15.0...2.16.0) (2023-01-16)
+
+
+### Features
+
+* additional environment variables ([f9b1bca](https://github.com/denolehov/obsidian-git/commit/f9b1bca38c6db23f05abfb211933f7ce4f69db7f)), closes [#414](https://github.com/denolehov/obsidian-git/issues/414)
+* custom GIT_DIR ([978453e](https://github.com/denolehov/obsidian-git/commit/978453ebb1cf0df1c70bd169665709cd512264dd))
+
 ## [2.15.0](https://github.com/denolehov/obsidian-git/compare/2.14.0...2.15.0) (2023-01-06)
 
 
