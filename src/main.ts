@@ -379,14 +379,6 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
-        this.addCommand({
-            id: "force-delete-branch",
-            name: "Force delete branch",
-            callback: () => {
-                this.deleteBranch(true);
-            }
-        });
-
         this.registerEvent(
             this.app.workspace.on('file-menu', (menu, file, source) => {
                 this.handleFileMenu(menu, file, source);
@@ -983,7 +975,7 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async deleteBranch(externalForce = false): Promise<string | undefined> {
+    async deleteBranch(): Promise<string | undefined> {
         if (!await this.isAllInitialized()) return;
 
         const branchInfo = await this.gitManager.branchInfo();
@@ -992,14 +984,16 @@ export default class ObsidianGit extends Plugin {
         const branch = await new GeneralModal({ options: branchInfo.branches, placeholder: "Delete branch", onlySelection: true }).open();
         if (branch != undefined) {
             let force = false;
-            if (!externalForce && !await this.gitManager.branchIsMerged(branch)) {
+            const merged = await this.gitManager.branchIsMerged(branch);
+            // Using await inside IF throws exception
+            if (!merged) {
                 const forceAnswer = await new GeneralModal({ options: ["YES", "NO"], placeholder: "This branch isn't merged into HEAD. Force delete?", onlySelection: true }).open();
                 if (forceAnswer !== "YES") {
                     return;
                 }
                 force = forceAnswer === "YES";
             }
-            await this.gitManager.deleteBranch(branch, force || externalForce);
+            await this.gitManager.deleteBranch(branch, force);
             this.displayMessage(`Deleted branch ${branch}`);
             this.branchBar?.display();
             return branch;
