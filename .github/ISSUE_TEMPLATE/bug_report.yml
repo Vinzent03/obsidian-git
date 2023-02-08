@@ -47,8 +47,18 @@ body:
       - iOS
   validations:
     required: true
+- type: dropdown
+  id: installation-method
+  attributes:
+    label: Installation Method
+    description: Only necessary on Linux
+    options:
+      - Flatpak
+      - AppImage
+      - Snap
+      - Other
   validations:
-    required: true
+    required: false
 - type: input
   id: version
   attributes: 
