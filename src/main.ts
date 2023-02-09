@@ -183,6 +183,12 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "switch-to-remote-branch",
+            name: "Switch to remote branch",
+            callback: () => this.promiseQueue.addTask(() => this.switchRemoteBranch()),
+        });
+
+        this.addCommand({
             id: "add-to-gitignore",
             name: "Add file to gitignore",
             checkCallback: (checking) => {
@@ -942,6 +948,21 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
+    async switchRemoteBranch(): Promise<string | undefined> {
+        if (!await this.isAllInitialized()) return;
+
+        const selectedBranch = await this.selectRemoteBranch() || '';
+
+        const [remote, branch] = selectedBranch.split("/");
+
+        if (branch != undefined && remote != undefined) {
+            await this.gitManager.checkout(branch, remote);
+            this.displayMessage(`Switched to ${selectedBranch}`);
+            this.branchBar?.display();
+            return selectedBranch;
+        }
+    }
+
     async createBranch(): Promise<string | undefined> {
         if (!await this.isAllInitialized()) return;
 
@@ -963,7 +984,9 @@ export default class ObsidianGit extends Plugin {
         const branch = await new GeneralModal({ options: branchInfo.branches, placeholder: "Delete branch", onlySelection: true }).open();
         if (branch != undefined) {
             let force = false;
-            if (!await this.gitManager.branchIsMerged(branch)) {
+            const merged = await this.gitManager.branchIsMerged(branch);
+            // Using await inside IF throws exception
+            if (!merged) {
                 const forceAnswer = await new GeneralModal({ options: ["YES", "NO"], placeholder: "This branch isn't merged into HEAD. Force delete?", onlySelection: true }).open();
                 if (forceAnswer !== "YES") {
                     return;
