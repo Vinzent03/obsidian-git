@@ -40,7 +40,7 @@ export function impossibleBranch(x: never): never {
 }
 
 export function currentMoment(): Moment {
-    return moment.unix(Date.now() / 1000);
+    return moment();
 }
 
 export function rgbToString(rgb: RGB): string {
