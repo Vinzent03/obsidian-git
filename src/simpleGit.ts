@@ -338,7 +338,10 @@ export class SimpleGit extends GitManager {
         return this.git.show([commitHash + ":" + path], (err) => this.onError(err));
     }
 
-    async checkout(branch: string): Promise<void> {
+    async checkout(branch: string, remote?: string): Promise<void> {
+        if (remote) {
+            branch = `${remote}/${branch}`;
+        }
         await this.git.checkout(branch, (err) => this.onError(err));
         if (this.plugin.settings.submoduleRecurseCheckout) {
             const submodulePaths = await this.getSubmodulePaths();
