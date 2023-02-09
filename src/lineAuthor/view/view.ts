@@ -70,7 +70,7 @@ function lineAuthoringGutterMarkersRangeSet(
     const lineBlockEndPos: Map<number, [number, number]> = new Map();
     for (let line = 1; line <= doc.lines; line++) {
         const from = doc.line(line).from;
-        const to = view.lineBlockAt(from).to
+        const to = view.lineBlockAt(from).to;
         lineBlockEndPos.set(line, [from, to]);
         digest.update([from, to, 0]);
     }
@@ -95,7 +95,7 @@ function computeLineAuthoringGutterMarkersRangeSet(
     blocksPerLine: Map<number, [number, number]>,
     settings: LineAuthorSettings,
     optLA?: LineAuthoringWithChanges
-): { result: RangeSet<GutterMarker>, allowCache: boolean } {
+): { result: RangeSet<GutterMarker>, allowCache: boolean; } {
     let allowCache = true; // invocations of initialLineAuthoringGutter shouldn't be cached
 
     const docLastLine = doc.lines;
@@ -150,7 +150,7 @@ function computeLineAuthoringGutterMarkersRangeSet(
         if (laStartLine !== undefined && between(1, laStartLine, lastAuthorLine) &&
             laEndLine !== undefined && between(1, laEndLine, lastAuthorLine)
         ) {
-            add(from, to, lineAuthoringGutterMarker(la, laStartLine, laEndLine, key, settings))
+            add(from, to, lineAuthoringGutterMarker(la, laStartLine, laEndLine, key, settings));
             continue;
         }
 

@@ -8,7 +8,7 @@ import { GitTimestamp } from "src/types";
 export function previewColor(which: "oldest" | "newest", settings: LineAuthorSettings) {
     return which === "oldest" ?
         coloringBasedOnCommitAge(0 /* epoch time: 1970 */, false, settings).color :
-        coloringBasedOnCommitAge(undefined, true, settings).color
+        coloringBasedOnCommitAge(undefined, true, settings).color;
 }
 
 /**
@@ -29,7 +29,7 @@ export function coloringBasedOnCommitAge(
     commitAuthorEpochSeonds: GitTimestamp["epochSeconds"] | undefined,
     isZeroCommit: boolean,
     settings: LineAuthorSettings
-): { color: string, daysSinceCommit: number } {
+): { color: string, daysSinceCommit: number; } {
     const maxAgeInDays = maxAgeInDaysFromSettings(settings);
 
     const epochSecondsNow = Date.now() / 1000;
