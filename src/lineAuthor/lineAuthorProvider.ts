@@ -8,11 +8,10 @@ import {
     LineAuthoringId, lineAuthorState
 } from "src/lineAuthor/model";
 import { clearViewCache } from "src/lineAuthor/view/cache";
-import { previewColor as previewColor2 } from "src/lineAuthor/view/gutter/coloring";
 import { lineAuthorGutter } from "src/lineAuthor/view/view";
 import ObsidianGit from "src/main";
-export const previewColor = previewColor2;
 
+export { previewColor } from "src/lineAuthor/view/gutter/coloring";
 /**
  * * handles changes in git head, filesystem, etc. by initiating computation
  * * Initiates the line authoring computation via
