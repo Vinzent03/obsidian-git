@@ -89,8 +89,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             if (!plugin.settings.autoBackupAfterFileChange)
                 new Setting(containerEl)
-                    .setName(`Auto ${commitOrBackup} after lastest commit`)
-                    .setDesc(`If turned on, set last auto ${commitOrBackup} time to lastest commit`)
+                    .setName(`Auto ${commitOrBackup} after latest commit`)
+                    .setDesc(`If turned on, set last auto ${commitOrBackup} time to latest commit`)
                     .addToggle((toggle) =>
                         toggle
                             .setValue(plugin.settings.setLastSaveToLastCommit)
