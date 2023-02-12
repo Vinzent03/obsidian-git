@@ -51,7 +51,12 @@ For mobile users see [Mobile](#mobile) section below.
 
 ## Desktop
 
-⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
+### Obsidian on Linux
+
+- ⚠ Snap is not supported.
+- ⚠ Flatpak is not recommended, because it doesn't have access to all system files. 
+
+Please use AppImage instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
 
 ## Mobile
 
