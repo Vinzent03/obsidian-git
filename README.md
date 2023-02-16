@@ -51,6 +51,10 @@ For mobile users see [Mobile](#mobile) section below.
 
 ## Desktop
 
+## Authentication
+
+Authentication may require additional setup. See more in the [Authentication documentation](https://github.com/denolehov/obsidian-git/wiki/Authentication)
+
 ### Obsidian on Linux
 
 - ⚠ Snap is not supported.
