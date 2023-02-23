@@ -25,3 +25,8 @@ export function getNewLeaf(event?: MouseEvent): WorkspaceLeaf | undefined {
     }
     return leaf;
 }
+
+export function splitRemoteBranch(remoteBranch: string): readonly [string, string] {
+    const [remote, ...branch] = remoteBranch.split("/")
+    return [remote, branch.join("/")]
+}

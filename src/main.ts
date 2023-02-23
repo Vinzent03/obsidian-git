@@ -18,7 +18,7 @@ import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import GitView from "./ui/sidebar/sidebarView";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
-import { getNewLeaf } from "./utils";
+import { getNewLeaf, splitRemoteBranch } from "./utils";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -821,7 +821,7 @@ export default class ObsidianGit extends Plugin {
 
     async hasTooBigFiles(files: ({ vault_path: string; })[]): Promise<boolean> {
         const branchInfo = await this.gitManager.branchInfo();
-        const remote = branchInfo.tracking?.split("/")[0];
+        const remote = branchInfo.tracking ? splitRemoteBranch(branchInfo.tracking)[0] : null;
 
         if (remote) {
             const remoteUrl = await this.gitManager.getRemoteUrl(remote);
@@ -953,7 +953,7 @@ export default class ObsidianGit extends Plugin {
 
         const selectedBranch = await this.selectRemoteBranch() || '';
 
-        const [remote, branch] = selectedBranch.split("/");
+        const [remote, branch] = splitRemoteBranch(selectedBranch);
 
         if (branch != undefined && remote != undefined) {
             await this.gitManager.checkout(branch, remote);

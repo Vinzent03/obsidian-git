@@ -6,7 +6,7 @@ import ObsidianGit from './main';
 import { MyAdapter } from './myAdapter';
 import { BranchInfo, FileStatusResult, PluginState, Status, UnstagedFile, WalkDifference } from "./types";
 import { GeneralModal } from "./ui/modals/generalModal";
-import { worthWalking } from "./utils";
+import { splitRemoteBranch, worthWalking } from "./utils";
 
 export class IsomorphicGit extends GitManager {
     private readonly FILE = 0;
@@ -570,7 +570,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async updateUpstreamBranch(remoteBranch: string): Promise<void> {
-        const [remote, branch] = remoteBranch.split("/");
+        const [remote, branch] = splitRemoteBranch(remoteBranch);
         const branchInfo = await this.branchInfo();
 
         await this.setConfig(`branch.${branchInfo.current}.merge`, `refs/heads/${branch}`);
