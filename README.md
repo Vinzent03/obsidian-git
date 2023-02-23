@@ -10,7 +10,7 @@ For mobile users see [Mobile](#mobile) section below.
 - Automatic vault backup every X minutes
 - Pull changes from remote repository on Obsidian startup
 - Assign hotkeys for pulling/pushing changes to a remote repository
-- Manage different repositories via Git submodules
+- Manage different repositories via Git submodules (after enabling this feature in settings)
 - Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command. 
 
 ![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
