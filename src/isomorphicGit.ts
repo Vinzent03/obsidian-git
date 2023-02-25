@@ -464,13 +464,14 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async clone(url: string, dir: string): Promise<void> {
+    async clone(url: string, dir: string, depth?: number): Promise<void> {
         const progressNotice = this.showNotice("Initializing clone");
         try {
             await this.wrapFS(git.clone({
                 ...this.getRepo(),
                 dir: dir,
                 url: url,
+                depth: depth,
                 onProgress: (progress) => {
                     if (progressNotice !== undefined) {
                         (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);

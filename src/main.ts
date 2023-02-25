@@ -655,8 +655,20 @@ export default class ObsidianGit extends Plugin {
                         }
                     }
                 }
+                const depth = await new GeneralModal({
+                    placeholder: "Specify depth of clone. Leave empty for full clone.",
+                    allowEmpty: true,
+                }).open();
+                let depthInt = undefined;
+                if (depth !== "") {
+                    depthInt = parseInt(depth);
+                    if (isNaN(depthInt)) {
+                        new Notice("Invalid depth. Aborting clone.");
+                        return;
+                    }
+                }
                 new Notice(`Cloning new repo into "${dir}"`);
-                await this.gitManager.clone(url, dir);
+                await this.gitManager.clone(url, dir, depthInt);
                 new Notice("Cloned new repo.");
                 new Notice("Please restart Obsidian");
 

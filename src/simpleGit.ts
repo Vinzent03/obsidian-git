@@ -372,8 +372,8 @@ export class SimpleGit extends GitManager {
         await this.git.init(false, (err) => this.onError(err));
     }
 
-    async clone(url: string, dir: string): Promise<void> {
-        await this.git.clone(url, path.join((this.app.vault.adapter as FileSystemAdapter).getBasePath(), dir), [], (err) => this.onError(err));
+    async clone(url: string, dir: string, depth?: number): Promise<void> {
+        await this.git.clone(url, path.join((this.app.vault.adapter as FileSystemAdapter).getBasePath(), dir), depth ? ["--depth", `${depth}`] : [], (err) => this.onError(err));
     }
 
     async setConfig(path: string, value: any): Promise<void> {
