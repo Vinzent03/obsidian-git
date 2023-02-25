@@ -387,7 +387,7 @@ export default class ObsidianGit extends Plugin {
                 if (repoExists) {
                     const modal = new GeneralModal({
                         options: ["NO", "YES"],
-                        placeholder: "Do you want to reset all changed files to the last commit? You will lose all changes to tracked files.",
+                        placeholder: "Do you want to reset all changed files to the last commit? You will lose all changes to those files.",
                         onlySelection: true
                     });
                     const shouldResetHard = await modal.open() === "YES";
