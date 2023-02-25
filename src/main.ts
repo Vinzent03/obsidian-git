@@ -383,8 +383,7 @@ export default class ObsidianGit extends Plugin {
             id: "discard-all",
             name: "CAUTION: Discard all changes",
             callback: async () => {
-                const repoExists = await this.app.vault.adapter.exists(`${this.settings.basePath}/.git`);
-                if (repoExists) {
+                if (! await this.isAllInitialized()) return false;
                     const modal = new GeneralModal({
                         options: ["NO", "YES"],
                         placeholder: "Do you want to discard all changes to tracked files? This action cannot be undone.",
@@ -394,10 +393,6 @@ export default class ObsidianGit extends Plugin {
                     if (shouldDiscardAll) {
                         this.promiseQueue.addTask(() => this.discardAll());
                     }
-
-                } else {
-                    new Notice("No repository found");
-                }
             }
         });
 
@@ -1080,7 +1075,6 @@ export default class ObsidianGit extends Plugin {
 
     async discardAll() {
         await this.gitManager.discardAll({
-            dir: '/',
             status: this.cachedStatus
         })
         new Notice('All local changes have been discarded. New files remain untouched.');
