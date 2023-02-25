@@ -49,7 +49,7 @@ export class IsomorphicGit extends GitManager {
         return {
             fs: this.fs,
             dir: this.plugin.settings.basePath,
-            gitdir: this.plugin.settings.gitDir ?? undefined,
+            gitdir: this.plugin.settings.gitDir || undefined,
             onAuth: () => {
                 return {
                     username: this.plugin.localStorage.getUsername() ?? undefined,
