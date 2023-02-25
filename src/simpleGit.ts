@@ -2,8 +2,7 @@ import { spawnSync } from "child_process";
 import { FileSystemAdapter, normalizePath, Notice } from "obsidian";
 import * as path from "path";
 import { sep } from "path";
-import * as simple from "simple-git";
-import simpleGit, { DefaultLogFields } from "simple-git";
+import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
@@ -326,11 +325,14 @@ export class SimpleGit extends GitManager {
 
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
-    async log(file: string, relativeToVault = true): Promise<ReadonlyArray<DefaultLogFields>> {
+    async log(file: string, relativeToVault = true): Promise<readonly (simple.DefaultLogFields & simple.ListLogLine & { fileName?: string; })[]> {
         const path = this.getPath(file, relativeToVault);
 
-        const res = await this.git.log({ file: path, }, (err) => this.onError(err));
-        return res.all;
+        const res = await this.git.log({ file: path, "--name-only": null }, (err) => this.onError(err));
+        return res.all.map(e => ({
+            ...e,
+            fileName: e.diff?.files.first()?.file
+        }));
     }
 
     async show(commitHash: string, file: string, relativeToVault = true): Promise<string> {
