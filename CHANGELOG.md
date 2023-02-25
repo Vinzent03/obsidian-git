@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.17.0](https://github.com/denolehov/obsidian-git/compare/2.16.0...2.17.0) (2023-02-25)
+
+
+### Features
+
+* include old file name in log ([fa34fb5](https://github.com/denolehov/obsidian-git/commit/fa34fb5c87c9d9d6b294ef3fe28f5c7538df21ac))
+* specify depth on clone ([cf81f0c](https://github.com/denolehov/obsidian-git/commit/cf81f0c1ea72931b2274265e32ab4db2d11d0c82)), closes [#307](https://github.com/denolehov/obsidian-git/issues/307)
+
+
+### Bug Fixes
+
+* correct git dir for clone on mobile ([0b06487](https://github.com/denolehov/obsidian-git/commit/0b0648716f790e2676509b77dee444a72ef06814))
+* handle github link errors ([#445](https://github.com/denolehov/obsidian-git/issues/445)) ([fd294cc](https://github.com/denolehov/obsidian-git/commit/fd294ccf50237c24000559d0d99cff4758e43b1a))
+
 ## [2.16.0](https://github.com/denolehov/obsidian-git/compare/2.15.0...2.16.0) (2023-01-16)
 
 
