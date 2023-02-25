@@ -380,19 +380,19 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
-            id: "reset-hard",
-            name: "CAUTION: Reset hard",
+            id: "discard-all",
+            name: "CAUTION: Discard all changes",
             callback: async () => {
                 const repoExists = await this.app.vault.adapter.exists(`${this.settings.basePath}/.git`);
                 if (repoExists) {
                     const modal = new GeneralModal({
                         options: ["NO", "YES"],
-                        placeholder: "Do you want to reset all changed files to the last commit? You will lose all changes to those files.",
+                        placeholder: "Do you want to discard all changes to tracked files? This action cannot be undone.",
                         onlySelection: true
                     });
-                    const shouldResetHard = await modal.open() === "YES";
-                    if (shouldResetHard) {
-                        this.promiseQueue.addTask(() => this.resetHard());
+                    const shouldDiscardAll = await modal.open() === "YES";
+                    if (shouldDiscardAll) {
+                        this.promiseQueue.addTask(() => this.discardAll());
                     }
 
                 } else {
@@ -1078,10 +1078,10 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async resetHard() {
+    async discardAll() {
         await this.gitManager.discardAll({
-            dir: '.',
-            status: await this.gitManager.status()
+            dir: '/',
+            status: this.cachedStatus
         })
         new Notice('All local changes have been discarded. New files remain untouched.');
     }
