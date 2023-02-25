@@ -7,6 +7,7 @@ import simpleGit, { DefaultLogFields } from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
+import { splitRemoteBranch } from "./utils";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -438,7 +439,7 @@ export class SimpleGit extends GitManager {
             } catch (e) {
                 console.error(e);
                 // fallback
-                await this.git.push(["--set-upstream", ...remoteBranch.split("/")], (err) => this.onError(err));
+                await this.git.push(["--set-upstream", ...splitRemoteBranch(remoteBranch)], (err) => this.onError(err));
             }
         }
 
