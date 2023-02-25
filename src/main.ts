@@ -379,6 +379,28 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
+        this.addCommand({
+            id: "reset-hard",
+            name: "CAUTION: Reset hard",
+            callback: async () => {
+                const repoExists = await this.app.vault.adapter.exists(`${this.settings.basePath}/.git`);
+                if (repoExists) {
+                    const modal = new GeneralModal({
+                        options: ["NO", "YES"],
+                        placeholder: "Do you want to reset all changed files to the last commit? You will lose all changes to tracked files.",
+                        onlySelection: true
+                    });
+                    const shouldResetHard = await modal.open() === "YES";
+                    if (shouldResetHard) {
+                        this.promiseQueue.addTask(() => this.resetHard());
+                    }
+
+                } else {
+                    new Notice("No repository found");
+                }
+            }
+        });
+
         this.registerEvent(
             this.app.workspace.on('file-menu', (menu, file, source) => {
                 this.handleFileMenu(menu, file, source);
@@ -1054,6 +1076,14 @@ export default class ObsidianGit extends Plugin {
             const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60));
             this.startAutoPull(diff <= 0 ? 0 : diff);
         }
+    }
+
+    async resetHard() {
+        await this.gitManager.discardAll({
+            dir: '.',
+            status: await this.gitManager.status()
+        })
+        new Notice('All local changes have been discarded. New files remain untouched.');
     }
 
     clearAutos(): void {
