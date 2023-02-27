@@ -742,9 +742,9 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getDiffString(filePath: string): Promise<string> {
-        const workdirContent: string | undefined = await app.vault.adapter.exists(filePath)
+        const workdirContent: string = await app.vault.adapter.exists(filePath)
             ? await app.vault.adapter.read(filePath)
-            : undefined;
+            : "";
         const headContent: string | undefined = await readBlob({
                 ...this.getRepo(),
                 filepath: filePath,
@@ -756,7 +756,7 @@ export class IsomorphicGit extends GitManager {
                 throw err;
             });
 
-        return createPatch(filePath, headContent ?? "", workdirContent ?? "");
+        return createPatch(filePath, headContent ?? "", workdirContent);
     }
 
     async getLastCommitTime(): Promise<Date | undefined> {
