@@ -741,40 +741,22 @@ export class IsomorphicGit extends GitManager {
 
     }
 
-    async getDiffString(filePath: string, stagedChanges = false): Promise<string> {
-        const map: WalkerMap = async (file, [A]) => {
-            if (filePath == file) {
-                const oid = await A!.oid();
-                const contents = await git.readBlob({ ...this.getRepo(), oid: oid });
-                return contents.blob;
-            }
-        };
+    async getDiffString(filePath: string): Promise<string> {
+        const workdirContent: string = await app.vault.adapter.exists(filePath)
+            ? await app.vault.adapter.read(filePath)
+            : "";
+        const headContent: string | undefined = await readBlob({
+                ...this.getRepo(),
+                filepath: filePath,
+                oid: await this.resolveRef("HEAD"),
+            })
+            .then((headBlob) => new TextDecoder().decode(headBlob.blob))
+            .catch((err) => {
+                if (err instanceof git.Errors.NotFoundError) return undefined;
+                throw err;
+            });
 
-        const stagedBlob = (await git.walk({
-            ...this.getRepo(),
-            trees: [git.STAGE()],
-            map,
-        })).first();
-        const stagedContent = new TextDecoder().decode(stagedBlob);
-
-        if (stagedChanges) {
-            const headBlob = await readBlob({ ...this.getRepo(), filepath: filePath, oid: await this.resolveRef("HEAD") });
-            const headContent = new TextDecoder().decode(headBlob.blob);
-
-            const diff = createPatch(filePath, headContent, stagedContent);
-            return diff;
-
-        } else {
-            let workdirContent: string;
-            if (await app.vault.adapter.exists(filePath)) {
-                workdirContent = await app.vault.adapter.read(filePath);
-            } else {
-                workdirContent = "";
-            }
-
-            const diff = createPatch(filePath, stagedContent, workdirContent);
-            return diff;
-        }
+        return createPatch(filePath, headContent ?? "", workdirContent);
     }
 
     async getLastCommitTime(): Promise<Date | undefined> {
