@@ -349,7 +349,7 @@ export class SimpleGit extends GitManager {
         if (this.plugin.settings.submoduleRecurseCheckout) {
             const submodulePaths = await this.getSubmodulePaths();
             for (const submodulePath of submodulePaths) {
-                let branchSummary = await this.git.cwd({ path: submodulePath, root: false }).branch();
+                const branchSummary = await this.git.cwd({ path: submodulePath, root: false }).branch();
                 if (Object.keys(branchSummary.branches).includes(branch)) {
                     await this.git.cwd({ path: submodulePath, root: false }).checkout(branch, (err) => this.onError(err));
                 }
