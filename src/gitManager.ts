@@ -128,7 +128,7 @@ export abstract class GitManager {
     */
     private simplify(tree: TreeItem[]): TreeItem[] {
         for (const node of tree) {
-            for (;;) {
+            while (true) {
                 const singleChild = node.children?.length == 1;
                 const singleChildIsDir = node.children?.first()?.statusResult == undefined;
 
