@@ -79,3 +79,4 @@ export class GeneralModal extends SuggestModal<string> {
     onChooseSuggestion(item: string, evt: MouseEvent | KeyboardEvent) {
     }
 }
+
