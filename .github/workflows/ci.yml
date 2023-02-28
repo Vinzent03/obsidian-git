@@ -1,7 +1,7 @@
 name: ci
 on: push
 jobs:
-    build:
+    lint:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
@@ -11,4 +11,4 @@ jobs:
             - name: Install modules
               run: pnpm install
             - name: Run ESLint
-              run: eslint src/**/*.ts
+              run: pnpm run lint
