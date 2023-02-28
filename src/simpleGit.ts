@@ -50,9 +50,6 @@ export class SimpleGit extends GitManager {
                 process.env[key] = value;
             }
 
-            const debug = require('debug');
-
-            debug.enable('simple-git');
             await this.git.cwd(await this.git.revparse("--show-toplevel"));
 
         }
