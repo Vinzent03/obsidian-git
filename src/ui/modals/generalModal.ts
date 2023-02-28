@@ -74,7 +74,7 @@ export class GeneralModal extends SuggestModal<string> {
 
     renderSuggestion(value: string, el: HTMLElement): void {
         el.setText(value);
-    };
+    }
 
     onChooseSuggestion(item: string, evt: MouseEvent | KeyboardEvent) {
     }
