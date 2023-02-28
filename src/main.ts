@@ -379,6 +379,23 @@ export default class ObsidianGit extends Plugin {
             }
         });
 
+        this.addCommand({
+            id: "discard-all",
+            name: "CAUTION: Discard all changes",
+            callback: async () => {
+                if (! await this.isAllInitialized()) return false;
+                    const modal = new GeneralModal({
+                        options: ["NO", "YES"],
+                        placeholder: "Do you want to discard all changes to tracked files? This action cannot be undone.",
+                        onlySelection: true
+                    });
+                    const shouldDiscardAll = await modal.open() === "YES";
+                    if (shouldDiscardAll) {
+                        this.promiseQueue.addTask(() => this.discardAll());
+                    }
+            }
+        });
+
         this.registerEvent(
             this.app.workspace.on('file-menu', (menu, file, source) => {
                 this.handleFileMenu(menu, file, source);
@@ -1066,6 +1083,13 @@ export default class ObsidianGit extends Plugin {
             const diff = this.settings.autoPullInterval - (Math.round(((now.getTime() - lastAutos.pull.getTime()) / 1000) / 60));
             this.startAutoPull(diff <= 0 ? 0 : diff);
         }
+    }
+
+    async discardAll() {
+        await this.gitManager.discardAll({
+            status: this.cachedStatus
+        })
+        new Notice('All local changes have been discarded. New files remain untouched.');
     }
 
     clearAutos(): void {
