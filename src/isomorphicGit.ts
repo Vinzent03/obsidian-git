@@ -972,15 +972,26 @@ export class IsomorphicGit extends GitManager {
         const stagedContent = new TextDecoder().decode(stagedBlob);
 
         if (stagedChanges) {
-            const headContent: string | undefined = await this.resolveRef("HEAD")
-                .then((oid) => readBlob({ ...this.getRepo(), filepath: filePath, oid: oid }))
+            const headContent = await this.resolveRef("HEAD")
+                .then((oid) =>
+                    readBlob({
+                        ...this.getRepo(),
+                        filepath: filePath,
+                        oid: oid,
+                    })
+                )
                 .then((headBlob) => new TextDecoder().decode(headBlob.blob))
                 .catch((err) => {
-                    if (err instanceof git.Errors.NotFoundError) return undefined;
+                    if (err instanceof git.Errors.NotFoundError)
+                        return undefined;
                     throw err;
                 });
 
-            const diff = createPatch(filePath, headContent ?? "", stagedContent);
+            const diff = createPatch(
+                filePath,
+                headContent ?? "",
+                stagedContent
+            );
             return diff;
         } else {
             let workdirContent: string;
