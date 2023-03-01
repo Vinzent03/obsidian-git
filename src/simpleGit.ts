@@ -1,4 +1,5 @@
 import { spawnSync } from "child_process";
+import debug from 'debug';
 import { FileSystemAdapter, normalizePath, Notice } from "obsidian";
 import * as path from "path";
 import { sep } from "path";
@@ -7,7 +8,6 @@ import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 import { splitRemoteBranch } from "./utils";
-import debug from 'debug';
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -52,9 +52,9 @@ export class SimpleGit extends GitManager {
             }
 
             debug.enable('simple-git');
-
-            await this.git.cwd(await this.git.revparse("--show-toplevel"));
-
+            if (await this.git.checkIsRepo()) {
+                await this.git.cwd(await this.git.revparse("--show-toplevel"));
+            }
         }
     }
 

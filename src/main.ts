@@ -384,15 +384,15 @@ export default class ObsidianGit extends Plugin {
             name: "CAUTION: Discard all changes",
             callback: async () => {
                 if (! await this.isAllInitialized()) return false;
-                    const modal = new GeneralModal({
-                        options: ["NO", "YES"],
-                        placeholder: "Do you want to discard all changes to tracked files? This action cannot be undone.",
-                        onlySelection: true
-                    });
-                    const shouldDiscardAll = await modal.open() === "YES";
-                    if (shouldDiscardAll) {
-                        this.promiseQueue.addTask(() => this.discardAll());
-                    }
+                const modal = new GeneralModal({
+                    options: ["NO", "YES"],
+                    placeholder: "Do you want to discard all changes to tracked files? This action cannot be undone.",
+                    onlySelection: true
+                });
+                const shouldDiscardAll = await modal.open() === "YES";
+                if (shouldDiscardAll) {
+                    this.promiseQueue.addTask(() => this.discardAll());
+                }
             }
         });
 
@@ -585,7 +585,7 @@ export default class ObsidianGit extends Plugin {
                     this.displayError("Cannot run git command");
                     break;
                 case "missing-repo":
-                    new Notice("Can't find a valid git repository. Please create one via the given command or clone an existing repo.");
+                    new Notice("Can't find a valid git repository. Please create one via the given command or clone an existing repo.", 10000);
                     break;
                 case "valid":
                     this.gitReady = true;
@@ -1088,7 +1088,7 @@ export default class ObsidianGit extends Plugin {
     async discardAll() {
         await this.gitManager.discardAll({
             status: this.cachedStatus
-        })
+        });
         new Notice('All local changes have been discarded. New files remain untouched.');
     }
 
