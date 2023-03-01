@@ -7,6 +7,7 @@ import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 import { splitRemoteBranch } from "./utils";
+import debug from 'debug';
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -50,9 +51,8 @@ export class SimpleGit extends GitManager {
                 process.env[key] = value;
             }
 
-            const debug = require('debug');
-
             debug.enable('simple-git');
+
             await this.git.cwd(await this.git.revparse("--show-toplevel"));
 
         }
@@ -349,7 +349,7 @@ export class SimpleGit extends GitManager {
         if (this.plugin.settings.submoduleRecurseCheckout) {
             const submodulePaths = await this.getSubmodulePaths();
             for (const submodulePath of submodulePaths) {
-                let branchSummary = await this.git.cwd({ path: submodulePath, root: false }).branch();
+                const branchSummary = await this.git.cwd({ path: submodulePath, root: false }).branch();
                 if (Object.keys(branchSummary.branches).includes(branch)) {
                     await this.git.cwd({ path: submodulePath, root: false }).checkout(branch, (err) => this.onError(err));
                 }

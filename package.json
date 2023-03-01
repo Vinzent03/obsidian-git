@@ -16,12 +16,14 @@
         "t": ""
     },
     "devDependencies": {
+        "@types/debug": "^4.1.7",
         "@types/diff": "^5.0.2",
         "@types/node": "^14.18.36",
         "@typescript-eslint/eslint-plugin": "5.29.0",
         "@typescript-eslint/parser": "5.29.0",
         "esbuild": "^0.12.29",
         "esbuild-svelte": "^0.5.7",
+        "eslint": "^8.35.0",
         "eslint-plugin-svelte3": "^4.0.0",
         "obsidian": "^0.16.3",
         "sass": "^1.57.1",
