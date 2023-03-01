@@ -1,11 +1,9 @@
 import { HoverParent, HoverPopover, ItemView, WorkspaceLeaf } from "obsidian";
 import { GIT_VIEW_CONFIG } from "src/constants";
 import ObsidianGit from "src/main";
-import GitViewComponent from './gitView.svelte';
-
+import GitViewComponent from "./gitView.svelte";
 
 export default class GitView extends ItemView implements HoverParent {
-
     plugin: ObsidianGit;
     private _view: GitViewComponent;
     hoverPopover: HoverPopover | null;
@@ -38,9 +36,8 @@ export default class GitView extends ItemView implements HoverParent {
             props: {
                 plugin: this.plugin,
                 view: this,
-            }
+            },
         });
         return super.onOpen();
     }
-
 }

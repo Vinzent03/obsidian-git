@@ -15,7 +15,10 @@ export class StatusBar {
     private iconEl: HTMLElement;
     private textEl: HTMLElement;
 
-    constructor(private statusBarEl: HTMLElement, private readonly plugin: ObsidianGit) {
+    constructor(
+        private statusBarEl: HTMLElement,
+        private readonly plugin: ObsidianGit
+    ) {
         this.statusBarEl.setAttribute("aria-label-position", "top");
     }
 
@@ -47,7 +50,10 @@ export class StatusBar {
 
     private displayState() {
         //Messages have to be removed before the state is set
-        if (this.statusBarEl.getText().length > 3 || !this.statusBarEl.hasChildNodes()) {
+        if (
+            this.statusBarEl.getText().length > 3 ||
+            !this.statusBarEl.hasChildNodes()
+        ) {
             this.statusBarEl.empty();
 
             this.iconEl = this.statusBarEl.createDiv();
@@ -99,13 +105,16 @@ export class StatusBar {
     }
 
     private displayFromNow(timestamp: number): void {
-
         if (timestamp) {
             const moment = (window as any).moment;
             const fromNow = moment(timestamp).fromNow();
-            this.statusBarEl.ariaLabel = `${this.plugin.offlineMode ? "Offline: " : ""}Last Git update: ${fromNow}`;
+            this.statusBarEl.ariaLabel = `${
+                this.plugin.offlineMode ? "Offline: " : ""
+            }Last Git update: ${fromNow}`;
         } else {
-            this.statusBarEl.ariaLabel = this.plugin.offlineMode ? "Git is offline" : "Git is ready";
+            this.statusBarEl.ariaLabel = this.plugin.offlineMode
+                ? "Git is offline"
+                : "Git is ready";
         }
 
         if (this.plugin.offlineMode) {
@@ -113,8 +122,13 @@ export class StatusBar {
         } else {
             setIcon(this.iconEl, "check");
         }
-        if (this.plugin.settings.changedFilesInStatusBar && this.plugin.cachedStatus) {
-            this.textEl.setText(this.plugin.cachedStatus.changed.length.toString());
+        if (
+            this.plugin.settings.changedFilesInStatusBar &&
+            this.plugin.cachedStatus
+        ) {
+            this.textEl.setText(
+                this.plugin.cachedStatus.changed.length.toString()
+            );
         }
         this.statusBarEl.addClass(this.base + "idle");
     }

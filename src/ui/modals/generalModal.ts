@@ -24,7 +24,9 @@ const generalModalConfigDefaults: GeneralModalConfig = {
 };
 
 export class GeneralModal extends SuggestModal<string> {
-    resolve: ((value: string | undefined | PromiseLike<string | undefined>) => void);
+    resolve: (
+        value: string | undefined | PromiseLike<string | undefined>
+    ) => void;
     config: GeneralModalConfig;
 
     constructor(config: OptionalGeneralModalConfig) {
@@ -65,10 +67,9 @@ export class GeneralModal extends SuggestModal<string> {
         if (this.config.onlySelection) {
             return this.config.options;
         } else if (this.config.allowEmpty) {
-            return [(query.length > 0) ? query : " ", ...this.config.options];
+            return [query.length > 0 ? query : " ", ...this.config.options];
         } else {
             return [query.length > 0 ? query : "...", ...this.config.options];
-
         }
     }
 
@@ -76,6 +77,5 @@ export class GeneralModal extends SuggestModal<string> {
         el.setText(value);
     }
 
-    onChooseSuggestion(item: string, evt: MouseEvent | KeyboardEvent) {
-    }
+    onChooseSuggestion(item: string, evt: MouseEvent | KeyboardEvent) {}
 }

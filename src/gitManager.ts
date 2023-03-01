@@ -1,7 +1,12 @@
 import { App } from "obsidian";
 import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, Status, TreeItem, UnstagedFile } from "./types";
-
+import {
+    BranchInfo,
+    FileStatusResult,
+    Status,
+    TreeItem,
+    UnstagedFile,
+} from "./types";
 
 export abstract class GitManager {
     readonly plugin: ObsidianGit;
@@ -13,13 +18,17 @@ export abstract class GitManager {
 
     abstract status(): Promise<Status>;
 
-    abstract commitAll(_: { message: string, status?: Status, unstagedFiles?: UnstagedFile[]; }): Promise<number | undefined>;
+    abstract commitAll(_: {
+        message: string;
+        status?: Status;
+        unstagedFiles?: UnstagedFile[];
+    }): Promise<number | undefined>;
 
     abstract commit(message?: string): Promise<number | undefined>;
 
-    abstract stageAll(_: { dir?: string, status?: Status; }): Promise<void>;
+    abstract stageAll(_: { dir?: string; status?: Status }): Promise<void>;
 
-    abstract unstageAll(_: { dir?: string, status?: Status; }): Promise<void>;
+    abstract unstageAll(_: { dir?: string; status?: Status }): Promise<void>;
 
     abstract stage(filepath: string, relativeToVault: boolean): Promise<void>;
 
@@ -27,7 +36,7 @@ export abstract class GitManager {
 
     abstract discard(filepath: string): Promise<void>;
 
-    abstract discardAll(_: { dir?: string, status?: Status; }): Promise<void>;
+    abstract discardAll(_: { dir?: string; status?: Status }): Promise<void>;
 
     abstract pull(): Promise<FileStatusResult[] | undefined>;
 
@@ -35,7 +44,9 @@ export abstract class GitManager {
 
     abstract canPush(): Promise<boolean>;
 
-    abstract checkRequirements(): Promise<"valid" | "missing-repo" | "missing-git">;
+    abstract checkRequirements(): Promise<
+        "valid" | "missing-repo" | "missing-git"
+    >;
 
     abstract branchInfo(): Promise<BranchInfo>;
 
@@ -51,7 +62,10 @@ export abstract class GitManager {
 
     abstract clone(url: string, dir: string, depth?: number): Promise<void>;
 
-    abstract setConfig(path: string, value: string | number | boolean | undefined): Promise<void>;
+    abstract setConfig(
+        path: string,
+        value: string | number | boolean | undefined
+    ): Promise<void>;
 
     abstract getConfig(path: string): Promise<any>;
 
@@ -73,10 +87,12 @@ export abstract class GitManager {
 
     abstract updateBasePath(basePath: string): void;
 
-    abstract getDiffString(filePath: string, stagedChanges: boolean): Promise<string>;
+    abstract getDiffString(
+        filePath: string,
+        stagedChanges: boolean
+    ): Promise<string>;
 
     abstract getLastCommitTime(): Promise<Date | undefined>;
-
 
     getVaultPath(path: string): string {
         if (this.plugin.settings.basePath) {
@@ -87,10 +103,15 @@ export abstract class GitManager {
     }
 
     getPath(path: string, relativeToVault: boolean): string {
-        return (relativeToVault && this.plugin.settings.basePath.length > 0) ? path.substring(this.plugin.settings.basePath.length + 1) : path;
+        return relativeToVault && this.plugin.settings.basePath.length > 0
+            ? path.substring(this.plugin.settings.basePath.length + 1)
+            : path;
     }
 
-    private _getTreeStructure(children: FileStatusResult[], beginLength = 0): TreeItem[] {
+    private _getTreeStructure(
+        children: FileStatusResult[],
+        beginLength = 0
+    ): TreeItem[] {
         const list: TreeItem[] = [];
         children = [...children];
         while (children.length > 0) {
@@ -99,22 +120,32 @@ export abstract class GitManager {
             if (restPath.contains("/")) {
                 const title = restPath.substring(0, restPath.indexOf("/"));
                 const childrenWithSameTitle = children.filter((item) => {
-                    return item.path.substring(beginLength).startsWith(title + "/");
+                    return item.path
+                        .substring(beginLength)
+                        .startsWith(title + "/");
                 });
                 childrenWithSameTitle.forEach((item) => children.remove(item));
-                const path = first.path.substring(0, restPath.indexOf("/") + beginLength);
+                const path = first.path.substring(
+                    0,
+                    restPath.indexOf("/") + beginLength
+                );
                 list.push({
                     title: title,
                     path: path,
                     vaultPath: this.getVaultPath(path),
-                    children: this._getTreeStructure(childrenWithSameTitle, (beginLength > 0 ? (beginLength + title.length) : title.length) + 1)
+                    children: this._getTreeStructure(
+                        childrenWithSameTitle,
+                        (beginLength > 0
+                            ? beginLength + title.length
+                            : title.length) + 1
+                    ),
                 });
             } else {
                 list.push({
                     title: restPath,
                     statusResult: first,
                     path: first.path,
-                    vaultPath: this.getVaultPath(first.path)
+                    vaultPath: this.getVaultPath(first.path),
                 });
                 children.remove(first);
             }
@@ -123,16 +154,24 @@ export abstract class GitManager {
     }
 
     /*
-    * Sorts the children and simplifies the title
-    * If a node only contains another subdirectory, that subdirectory is moved up one level and integrated into the parent node
-    */
+     * Sorts the children and simplifies the title
+     * If a node only contains another subdirectory, that subdirectory is moved up one level and integrated into the parent node
+     */
     private simplify(tree: TreeItem[]): TreeItem[] {
         for (const node of tree) {
             while (true) {
                 const singleChild = node.children?.length == 1;
-                const singleChildIsDir = node.children?.first()?.statusResult == undefined;
+                const singleChildIsDir =
+                    node.children?.first()?.statusResult == undefined;
 
-                if (!(node.children != undefined && singleChild && singleChildIsDir)) break;
+                if (
+                    !(
+                        node.children != undefined &&
+                        singleChild &&
+                        singleChildIsDir
+                    )
+                )
+                    break;
                 const child = node.children.first()!;
                 node.title += "/" + child.title;
                 node.statusResult = child.statusResult;
@@ -144,7 +183,9 @@ export abstract class GitManager {
                 this.simplify(node.children);
             }
             node.children?.sort((a, b) => {
-                const dirCompare = (b.statusResult == undefined ? 1 : 0) - (a.statusResult == undefined ? 1 : 0);
+                const dirCompare =
+                    (b.statusResult == undefined ? 1 : 0) -
+                    (a.statusResult == undefined ? 1 : 0);
                 if (dirCompare != 0) {
                     return dirCompare;
                 } else {
@@ -153,7 +194,9 @@ export abstract class GitManager {
             });
         }
         return tree.sort((a, b) => {
-            const dirCompare = (b.statusResult == undefined ? 1 : 0) - (a.statusResult == undefined ? 1 : 0);
+            const dirCompare =
+                (b.statusResult == undefined ? 1 : 0) -
+                (a.statusResult == undefined ? 1 : 0);
             if (dirCompare != 0) {
                 return dirCompare;
             } else {
@@ -182,9 +225,9 @@ export abstract class GitManager {
         }
 
         if (template.includes("{{files}}")) {
-            status = status ?? await this.status();
+            status = status ?? (await this.status());
 
-            const changeset: { [key: string]: string[]; } = {};
+            const changeset: { [key: string]: string[] } = {};
             status.staged.forEach((value: FileStatusResult) => {
                 if (value.index in changeset) {
                     changeset[value.index].push(value.path);
@@ -209,7 +252,14 @@ export abstract class GitManager {
             moment().format(this.plugin.settings.commitDateFormat)
         );
         if (this.plugin.settings.listChangedFilesInMessageBody) {
-            template = template + "\n\n" + "Affected files:" + "\n" + (status ?? await this.status()).staged.map((e) => e.path).join("\n");
+            template =
+                template +
+                "\n\n" +
+                "Affected files:" +
+                "\n" +
+                (status ?? (await this.status())).staged
+                    .map((e) => e.path)
+                    .join("\n");
         }
         return template;
     }

@@ -1,7 +1,7 @@
 import { Keymap, WorkspaceLeaf } from "obsidian";
 
 export const worthWalking = (filepath: string, root?: string) => {
-    if (filepath === '.' || root == null || root.length === 0 || root === '.') {
+    if (filepath === "." || root == null || root.length === 0 || root === ".") {
         return true;
     }
     if (root.length >= filepath.length) {
@@ -11,22 +11,22 @@ export const worthWalking = (filepath: string, root?: string) => {
     }
 };
 
-
 export function getNewLeaf(event?: MouseEvent): WorkspaceLeaf | undefined {
     let leaf: WorkspaceLeaf | undefined;
     if (event) {
-        if ((event.button === 0 || event.button === 1)) {
+        if (event.button === 0 || event.button === 1) {
             const type = Keymap.isModEvent(event);
             leaf = app.workspace.getLeaf(type);
         }
     } else {
         leaf = app.workspace.getLeaf(false);
-
     }
     return leaf;
 }
 
-export function splitRemoteBranch(remoteBranch: string): readonly [string | undefined, string | undefined] {
-    const [remote, ...branch] = remoteBranch.split("/")
-    return [remote, branch.length === 0 ? undefined : branch.join("/")]
+export function splitRemoteBranch(
+    remoteBranch: string
+): readonly [string | undefined, string | undefined] {
+    const [remote, ...branch] = remoteBranch.split("/");
+    return [remote, branch.length === 0 ? undefined : branch.join("/")];
 }

@@ -6,10 +6,22 @@ export class LocalStorageSettings {
     }
 
     migrate(): void {
-        const keys = ["password", "hostname", "conflict", "lastAutoPull", "lastAutoBackup", "lastAutoPush", "gitPath", "pluginDisabled"];
+        const keys = [
+            "password",
+            "hostname",
+            "conflict",
+            "lastAutoPull",
+            "lastAutoBackup",
+            "lastAutoPush",
+            "gitPath",
+            "pluginDisabled",
+        ];
         for (const key of keys) {
             const old = localStorage.getItem(this.prefix + key);
-            if (app.loadLocalStorage(this.prefix + key) == null && old != null) {
+            if (
+                app.loadLocalStorage(this.prefix + key) == null &&
+                old != null
+            ) {
                 if (old != null) {
                     app.saveLocalStorage(this.prefix + key, old);
                     localStorage.removeItem(this.prefix + key);
@@ -83,7 +95,9 @@ export class LocalStorageSettings {
     }
 
     getPATHPaths(): string[] {
-        return app.loadLocalStorage(this.prefix + "PATHPaths")?.split(":") ?? [];
+        return (
+            app.loadLocalStorage(this.prefix + "PATHPaths")?.split(":") ?? []
+        );
     }
 
     setPATHPaths(value: string[]): void {
@@ -91,11 +105,16 @@ export class LocalStorageSettings {
     }
 
     getEnvVars(): string[] {
-        return JSON.parse(app.loadLocalStorage(this.prefix + "envVars") ?? "[]");
+        return JSON.parse(
+            app.loadLocalStorage(this.prefix + "envVars") ?? "[]"
+        );
     }
 
     setEnvVars(value: string[]): void {
-        return app.saveLocalStorage(this.prefix + "envVars", JSON.stringify(value));
+        return app.saveLocalStorage(
+            this.prefix + "envVars",
+            JSON.stringify(value)
+        );
     }
 
     getPluginDisabled(): boolean {
