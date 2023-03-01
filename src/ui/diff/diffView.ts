@@ -4,7 +4,6 @@ import { DIFF_VIEW_CONFIG } from "src/constants";
 import ObsidianGit from "src/main";
 import { DiffViewState } from "src/types";
 
-
 export default class DiffView extends ItemView {
     parser: DOMParser;
     gettingDiff = false;
@@ -14,9 +13,8 @@ export default class DiffView extends ItemView {
         super(leaf);
         this.parser = new DOMParser();
         this.navigation = true;
-        addEventListener('git-refresh', this.refresh.bind(this));
+        addEventListener("git-refresh", this.refresh.bind(this));
     }
-
 
     getViewType(): string {
         return DIFF_VIEW_CONFIG.type;
@@ -25,8 +23,7 @@ export default class DiffView extends ItemView {
     getDisplayText(): string {
         if (this.state?.file != null) {
             let fileName = this.state.file.split("/").last();
-            if (fileName?.endsWith(".md"))
-                fileName = fileName.slice(0, -3);
+            if (fileName?.endsWith(".md")) fileName = fileName.slice(0, -3);
 
             return DIFF_VIEW_CONFIG.name + ` (${fileName})`;
         }
@@ -49,7 +46,7 @@ export default class DiffView extends ItemView {
     }
 
     onClose(): Promise<void> {
-        removeEventListener('git-refresh', this.refresh.bind(this));
+        removeEventListener("git-refresh", this.refresh.bind(this));
         return super.onClose();
     }
 
@@ -60,31 +57,35 @@ export default class DiffView extends ItemView {
 
     async refresh(): Promise<void> {
         if (this.state?.file && !this.gettingDiff && this.plugin.gitManager) {
-
             this.gettingDiff = true;
-            let diff =
-                await this.plugin.gitManager.getDiffString(this.state.file, this.state.staged);
+            let diff = await this.plugin.gitManager.getDiffString(
+                this.state.file,
+                this.state.staged
+            );
             this.contentEl.empty();
             if (!diff) {
-                const content = await this.app.vault.adapter.read(this.plugin.gitManager.getVaultPath(this.state.file));
-                const header =
-                    `--- /dev/null
+                const content = await this.app.vault.adapter.read(
+                    this.plugin.gitManager.getVaultPath(this.state.file)
+                );
+                const header = `--- /dev/null
 +++ ${this.state.file}
 @@ -0,0 +1,${content.split("\n").length} @@`;
 
-                diff = [...header.split("\n"), ...content.split("\n").map((line) => `+${line}`)].join("\n");
+                diff = [
+                    ...header.split("\n"),
+                    ...content.split("\n").map((line) => `+${line}`),
+                ].join("\n");
             }
 
-            const diffEl = this.parser.parseFromString(html(diff), 'text/html')
-                .querySelector('.d2h-file-diff');
+            const diffEl = this.parser
+                .parseFromString(html(diff), "text/html")
+                .querySelector(".d2h-file-diff");
             this.contentEl.append(diffEl!);
             // const div = this.contentEl.createDiv({ cls: 'diff-err' });
             // div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
             // div.createEl('br');
             // div.createSpan({ text: 'No changes to ' + this.state.file });
             this.gettingDiff = false;
-
         }
     }
-
 }

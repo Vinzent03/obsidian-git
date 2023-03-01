@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     listChangedFilesInMessageBody: false,
     showStatusBar: true,
     updateSubmodules: false,
-    syncMethod: 'merge',
+    syncMethod: "merge",
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
     treeStructure: false,
@@ -30,13 +30,13 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
 };
 
 export const GIT_VIEW_CONFIG = {
-    type: 'git-view',
-    name: 'Source Control',
-    icon: 'git-pull-request'
+    type: "git-view",
+    name: "Source Control",
+    icon: "git-pull-request",
 };
 
 export const DIFF_VIEW_CONFIG = {
-    type: 'diff-view',
-    name: 'Diff View',
-    icon: 'git-pull-request'
+    type: "diff-view",
+    name: "Diff View",
+    icon: "git-pull-request",
 };

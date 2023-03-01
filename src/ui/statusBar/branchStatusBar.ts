@@ -1,7 +1,10 @@
 import ObsidianGit from "src/main";
 
 export class BranchStatusBar {
-    constructor(private statusBarEl: HTMLElement, private readonly plugin: ObsidianGit) {
+    constructor(
+        private statusBarEl: HTMLElement,
+        private readonly plugin: ObsidianGit
+    ) {
         this.statusBarEl.addClass("mod-clickable");
         this.statusBarEl.onClickEvent((e) => {
             this.plugin.switchBranch();

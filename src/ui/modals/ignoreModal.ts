@@ -1,4 +1,4 @@
-import { App, Modal } from 'obsidian';
+import { App, Modal } from "obsidian";
 
 export class IgnoreModal extends Modal {
     resolve: ((value: string | PromiseLike<string>) => void) | null = null;
@@ -17,23 +17,19 @@ export class IgnoreModal extends Modal {
         titleEl.setText("Edit .gitignore");
         const div = contentEl.createDiv();
 
-        const text = div
-            .createEl("textarea", {
-                text: this.content,
-                cls: ["obsidian-git-textarea"],
-                attr: { rows: 10, cols: 30, wrap: "off" },
-            });
+        const text = div.createEl("textarea", {
+            text: this.content,
+            cls: ["obsidian-git-textarea"],
+            attr: { rows: 10, cols: 30, wrap: "off" },
+        });
 
-        div.createEl("button",
-            {
-                cls: ["mod-cta", "obsidian-git-center-button"],
-                text: "Save",
-            })
-            .addEventListener("click", async () => {
-                this.resolve(text.value);
-                this.close();
-            });
-
+        div.createEl("button", {
+            cls: ["mod-cta", "obsidian-git-center-button"],
+            text: "Save",
+        }).addEventListener("click", async () => {
+            this.resolve(text.value);
+            this.close();
+        });
     }
     onClose() {
         const { contentEl } = this;

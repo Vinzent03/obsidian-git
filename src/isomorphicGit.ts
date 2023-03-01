@@ -1,10 +1,28 @@
 import { createPatch } from "diff";
-import git, { AuthCallback, AuthFailureCallback, Errors, GitHttpRequest, GitHttpResponse, GitProgressEvent, HttpClient, readBlob, Walker, WalkerMap } from "isomorphic-git";
-import { Notice, requestUrl } from 'obsidian';
+import git, {
+    AuthCallback,
+    AuthFailureCallback,
+    Errors,
+    GitHttpRequest,
+    GitHttpResponse,
+    GitProgressEvent,
+    HttpClient,
+    readBlob,
+    Walker,
+    WalkerMap,
+} from "isomorphic-git";
+import { Notice, requestUrl } from "obsidian";
 import { GitManager } from "./gitManager";
-import ObsidianGit from './main';
-import { MyAdapter } from './myAdapter';
-import { BranchInfo, FileStatusResult, PluginState, Status, UnstagedFile, WalkDifference } from "./types";
+import ObsidianGit from "./main";
+import { MyAdapter } from "./myAdapter";
+import {
+    BranchInfo,
+    FileStatusResult,
+    PluginState,
+    Status,
+    UnstagedFile,
+    WalkDifference,
+} from "./types";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "./utils";
 
@@ -29,7 +47,7 @@ export class IsomorphicGit extends GitManager {
         "120": "DA", // Same as "110"
         "121": " M",
         "122": "M ",
-        "123": "MM"
+        "123": "MM",
     };
     private readonly noticeLength = 999_999;
     private readonly fs = new MyAdapter(this.app.vault, this.plugin);
@@ -39,12 +57,12 @@ export class IsomorphicGit extends GitManager {
     }
 
     getRepo(): {
-        fs: MyAdapter,
-        dir: string,
-        gitdir?: string,
-        onAuth: AuthCallback,
-        onAuthFailure: AuthFailureCallback,
-        http: HttpClient,
+        fs: MyAdapter;
+        dir: string;
+        gitdir?: string;
+        onAuth: AuthCallback;
+        onAuthFailure: AuthFailureCallback;
+        http: HttpClient;
     } {
         return {
             fs: this.fs,
@@ -52,21 +70,30 @@ export class IsomorphicGit extends GitManager {
             gitdir: this.plugin.settings.gitDir || undefined,
             onAuth: () => {
                 return {
-                    username: this.plugin.localStorage.getUsername() ?? undefined,
-                    password: this.plugin.localStorage.getPassword() ?? undefined
+                    username:
+                        this.plugin.localStorage.getUsername() ?? undefined,
+                    password:
+                        this.plugin.localStorage.getPassword() ?? undefined,
                 };
             },
             onAuthFailure: async () => {
-                new Notice("Authentication failed. Please try with different credentials");
-                const username = await new GeneralModal({ placeholder: "Specify your username" }).open();
+                new Notice(
+                    "Authentication failed. Please try with different credentials"
+                );
+                const username = await new GeneralModal({
+                    placeholder: "Specify your username",
+                }).open();
                 if (username) {
-                    const password = await new GeneralModal({ placeholder: "Specify your password/personal access token" }).open();
+                    const password = await new GeneralModal({
+                        placeholder:
+                            "Specify your password/personal access token",
+                    }).open();
                     if (password) {
                         this.plugin.localStorage.setUsername(username);
                         this.plugin.localStorage.setPassword(password);
                         return {
                             username,
-                            password
+                            password,
                         };
                     }
                 }
@@ -86,7 +113,13 @@ export class IsomorphicGit extends GitManager {
                         body = body.buffer;
                     }
 
-                    const res = await requestUrl({ url, method, headers, body, throw: false });
+                    const res = await requestUrl({
+                        url,
+                        method,
+                        headers,
+                        body,
+                        throw: false,
+                    });
                     return {
                         url,
                         method,
@@ -95,7 +128,7 @@ export class IsomorphicGit extends GitManager {
                         statusCode: res.status,
                         statusMessage: res.status.toString(),
                     };
-                }
+                },
             },
         };
     }
@@ -114,14 +147,24 @@ export class IsomorphicGit extends GitManager {
     async status(): Promise<Status> {
         let notice: Notice | undefined;
         const timeout = window.setTimeout(function () {
-            notice = new Notice("This takes longer: Getting status", this.noticeLength);
+            notice = new Notice(
+                "This takes longer: Getting status",
+                this.noticeLength
+            );
         }, 20000);
         try {
             this.plugin.setState(PluginState.status);
-            const status = (await this.wrapFS(git.statusMatrix({ ...this.getRepo(), }))).map(row => this.getFileStatusResult(row));
+            const status = (
+                await this.wrapFS(git.statusMatrix({ ...this.getRepo() }))
+            ).map((row) => this.getFileStatusResult(row));
 
-            const changed = status.filter(fileStatus => fileStatus.working_dir !== " ");
-            const staged = status.filter(fileStatus => fileStatus.index !== " " && fileStatus.index !== "U");
+            const changed = status.filter(
+                (fileStatus) => fileStatus.working_dir !== " "
+            );
+            const staged = status.filter(
+                (fileStatus) =>
+                    fileStatus.index !== " " && fileStatus.index !== "U"
+            );
             const conflicted: string[] = [];
             window.clearTimeout(timeout);
             notice?.hide();
@@ -134,7 +177,15 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async commitAll({ message, status, unstagedFiles }: { message: string, status?: Status, unstagedFiles?: UnstagedFile[]; }): Promise<number | undefined> {
+    async commitAll({
+        message,
+        status,
+        unstagedFiles,
+    }: {
+        message: string;
+        status?: Status;
+        unstagedFiles?: UnstagedFile[];
+    }): Promise<number | undefined> {
         try {
             await this.stageAll({ status, unstagedFiles });
             return this.commit(message);
@@ -148,7 +199,8 @@ export class IsomorphicGit extends GitManager {
         try {
             this.plugin.setState(PluginState.commit);
             const formatMessage = await this.formatCommitMessage(message);
-            const hadConflict = this.plugin.localStorage.getConflict() === "true";
+            const hadConflict =
+                this.plugin.localStorage.getConflict() === "true";
             let parent: string[] | undefined = undefined;
 
             if (hadConflict) {
@@ -156,11 +208,13 @@ export class IsomorphicGit extends GitManager {
                 parent = [branchInfo.current!, branchInfo.tracking!];
             }
 
-            await this.wrapFS(git.commit({
-                ...this.getRepo(),
-                message: formatMessage,
-                parent: parent,
-            }));
+            await this.wrapFS(
+                git.commit({
+                    ...this.getRepo(),
+                    message: formatMessage,
+                    parent: parent,
+                })
+            );
             this.plugin.localStorage.setConflict("false");
             return;
         } catch (error) {
@@ -180,9 +234,13 @@ export class IsomorphicGit extends GitManager {
         try {
             this.plugin.setState(PluginState.add);
             if (await this.app.vault.adapter.exists(vaultPath)) {
-                await this.wrapFS(git.add({ ...this.getRepo(), filepath: gitPath }));
+                await this.wrapFS(
+                    git.add({ ...this.getRepo(), filepath: gitPath })
+                );
             } else {
-                await this.wrapFS(git.remove({ ...this.getRepo(), filepath: gitPath }));
+                await this.wrapFS(
+                    git.remove({ ...this.getRepo(), filepath: gitPath })
+                );
             }
         } catch (error) {
             this.plugin.displayError(error);
@@ -190,19 +248,44 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async stageAll({ dir, status, unstagedFiles }: { dir?: string, status?: Status; unstagedFiles?: UnstagedFile[]; }): Promise<void> {
+    async stageAll({
+        dir,
+        status,
+        unstagedFiles,
+    }: {
+        dir?: string;
+        status?: Status;
+        unstagedFiles?: UnstagedFile[];
+    }): Promise<void> {
         try {
             if (status) {
                 await Promise.all(
-                    status.changed.map(file =>
-                        (file.working_dir !== "D") ? this.wrapFS(git.add({ ...this.getRepo(), filepath: file.path })) : git.remove(({ ...this.getRepo(), filepath: file.path }))
-                    ));
+                    status.changed.map((file) =>
+                        file.working_dir !== "D"
+                            ? this.wrapFS(
+                                  git.add({
+                                      ...this.getRepo(),
+                                      filepath: file.path,
+                                  })
+                              )
+                            : git.remove({
+                                  ...this.getRepo(),
+                                  filepath: file.path,
+                              })
+                    )
+                );
             } else {
-                const filesToStage = unstagedFiles ?? await this.getUnstagedFiles(dir ?? ".");
+                const filesToStage =
+                    unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
                 await Promise.all(
                     filesToStage.map(({ filepath, deleted }) =>
-                        deleted ? git.remove(({ ...this.getRepo(), filepath })) : this.wrapFS(git.add({ ...this.getRepo(), filepath }))
-                    ));
+                        deleted
+                            ? git.remove({ ...this.getRepo(), filepath })
+                            : this.wrapFS(
+                                  git.add({ ...this.getRepo(), filepath })
+                              )
+                    )
+                );
             }
         } catch (error) {
             this.plugin.displayError(error);
@@ -214,23 +297,37 @@ export class IsomorphicGit extends GitManager {
         try {
             this.plugin.setState(PluginState.add);
             filepath = this.getPath(filepath, relativeToVault);
-            await this.wrapFS(git.resetIndex({ ...this.getRepo(), filepath: filepath }));
+            await this.wrapFS(
+                git.resetIndex({ ...this.getRepo(), filepath: filepath })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
         }
     }
 
-    async unstageAll({ dir, status }: { dir?: string, status?: Status; }): Promise<void> {
+    async unstageAll({
+        dir,
+        status,
+    }: {
+        dir?: string;
+        status?: Status;
+    }): Promise<void> {
         try {
             let staged: string[];
             if (status) {
-                staged = status.staged.map(file => file.path);
+                staged = status.staged.map((file) => file.path);
             } else {
                 const res = await this.getStagedFiles(dir ?? ".");
                 staged = res.map(({ filepath }) => filepath);
             }
-            await this.wrapFS(Promise.all(staged.map(file => git.resetIndex({ ...this.getRepo(), filepath: file }))));
+            await this.wrapFS(
+                Promise.all(
+                    staged.map((file) =>
+                        git.resetIndex({ ...this.getRepo(), filepath: file })
+                    )
+                )
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -240,27 +337,49 @@ export class IsomorphicGit extends GitManager {
     async discard(filepath: string): Promise<void> {
         try {
             this.plugin.setState(PluginState.add);
-            await this.wrapFS(git.checkout({ ...this.getRepo(), filepaths: [filepath], force: true }));
+            await this.wrapFS(
+                git.checkout({
+                    ...this.getRepo(),
+                    filepaths: [filepath],
+                    force: true,
+                })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
         }
     }
 
-    async discardAll({ dir, status }: { dir?: string, status?: Status; }): Promise<void> {
+    async discardAll({
+        dir,
+        status,
+    }: {
+        dir?: string;
+        status?: Status;
+    }): Promise<void> {
         let files: string[] = [];
         if (status) {
             if (dir != undefined) {
-                files = status.changed.filter(file => file.path.startsWith(dir)).map(file => file.path);
+                files = status.changed
+                    .filter((file) => file.path.startsWith(dir))
+                    .map((file) => file.path);
             } else {
-                files = status.changed.map(file => file.path);
+                files = status.changed.map((file) => file.path);
             }
         } else {
-            files = (await this.getUnstagedFiles(dir)).map(({ filepath }) => filepath);
+            files = (await this.getUnstagedFiles(dir)).map(
+                ({ filepath }) => filepath
+            );
         }
 
         try {
-            await this.wrapFS(git.checkout({ ...this.getRepo(), filepaths: files, force: true }));
+            await this.wrapFS(
+                git.checkout({
+                    ...this.getRepo(),
+                    filepaths: files,
+                    force: true,
+                })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -288,38 +407,45 @@ export class IsomorphicGit extends GitManager {
     async pull(): Promise<FileStatusResult[]> {
         const progressNotice = this.showNotice("Initializing pull");
         try {
-
             this.plugin.setState(PluginState.pull);
 
             const localCommit = await this.resolveRef("HEAD");
             await this.fetch();
             const branchInfo = await this.branchInfo();
 
-            await this.wrapFS(git.merge({
-                ...this.getRepo(),
-                ours: branchInfo.current,
-                theirs: branchInfo.tracking!,
-                abortOnConflict: false,
-            }));
-            await this.wrapFS(git.checkout({
-                ...this.getRepo(),
-                ref: branchInfo.current,
-                onProgress: (progress) => {
-                    if (progressNotice !== undefined) {
-                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Checkout", progress);
-                    }
-                },
-                remote: branchInfo.remote,
-            }));
+            await this.wrapFS(
+                git.merge({
+                    ...this.getRepo(),
+                    ours: branchInfo.current,
+                    theirs: branchInfo.tracking!,
+                    abortOnConflict: false,
+                })
+            );
+            await this.wrapFS(
+                git.checkout({
+                    ...this.getRepo(),
+                    ref: branchInfo.current,
+                    onProgress: (progress) => {
+                        if (progressNotice !== undefined) {
+                            (progressNotice as any).noticeEl.innerText =
+                                this.getProgressText("Checkout", progress);
+                        }
+                    },
+                    remote: branchInfo.remote,
+                })
+            );
             progressNotice?.hide();
 
             const upstreamCommit = await this.resolveRef("HEAD");
             this.plugin.lastUpdate = Date.now();
-            const changedFiles = await this.getFileChangesCount(localCommit, upstreamCommit);
+            const changedFiles = await this.getFileChangesCount(
+                localCommit,
+                upstreamCommit
+            );
 
             this.showNotice("Finished pull", false);
 
-            return changedFiles.map<FileStatusResult>(file => ({
+            return changedFiles.map<FileStatusResult>((file) => ({
                 path: file.path,
                 working_dir: "P",
                 index: "P",
@@ -328,7 +454,9 @@ export class IsomorphicGit extends GitManager {
         } catch (error) {
             progressNotice?.hide();
             if (error instanceof Errors.MergeConflictError) {
-                this.plugin.handleConflict(error.data.filepaths.map((file) => this.getVaultPath(file)));
+                this.plugin.handleConflict(
+                    error.data.filepaths.map((file) => this.getVaultPath(file))
+                );
             }
 
             this.plugin.displayError(error);
@@ -337,7 +465,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async push(): Promise<number> {
-        if (! await this.canPush()) {
+        if (!(await this.canPush())) {
             return 0;
         }
         const progressNotice = this.showNotice("Initializing push");
@@ -346,18 +474,23 @@ export class IsomorphicGit extends GitManager {
             const status = await this.branchInfo();
             const trackingBranch = status.tracking;
             const currentBranch = status.current;
-            const numChangedFiles = (await this.getFileChangesCount(currentBranch!, trackingBranch!)).length;
+            const numChangedFiles = (
+                await this.getFileChangesCount(currentBranch!, trackingBranch!)
+            ).length;
 
             this.plugin.setState(PluginState.push);
 
-            await this.wrapFS(git.push({
-                ...this.getRepo(),
-                onProgress: (progress) => {
-                    if (progressNotice !== undefined) {
-                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Pushing", progress);
-                    }
-                }
-            }));
+            await this.wrapFS(
+                git.push({
+                    ...this.getRepo(),
+                    onProgress: (progress) => {
+                        if (progressNotice !== undefined) {
+                            (progressNotice as any).noticeEl.innerText =
+                                this.getProgressText("Pushing", progress);
+                        }
+                    },
+                })
+            );
             progressNotice?.hide();
             return numChangedFiles;
         } catch (error) {
@@ -378,25 +511,30 @@ export class IsomorphicGit extends GitManager {
         return current != tracking;
     }
 
-    async checkRequirements(): Promise<'valid' | 'missing-repo'> {
+    async checkRequirements(): Promise<"valid" | "missing-repo"> {
+        const headExists = await this.plugin.app.vault.adapter.exists(
+            `${this.getRepo().dir}/.git/HEAD`
+        );
 
-        const headExists = await this.plugin.app.vault.adapter.exists(`${this.getRepo().dir}/.git/HEAD`);
-
-        return headExists ? 'valid' : 'missing-repo';
+        return headExists ? "valid" : "missing-repo";
     }
 
-    async branchInfo(): Promise<BranchInfo & { remote: string; }> {
+    async branchInfo(): Promise<BranchInfo & { remote: string }> {
         try {
-            const current = await git.currentBranch(this.getRepo()) || "";
+            const current = (await git.currentBranch(this.getRepo())) || "";
 
             const branches = await git.listBranches(this.getRepo());
 
-            const remote = await this.getConfig(`branch.${current}.remote`) ?? "origin";
+            const remote =
+                (await this.getConfig(`branch.${current}.remote`)) ?? "origin";
 
-            const trackingBranch = (await this.getConfig(`branch.${current}.merge`))?.split("refs/heads")[1];
+            const trackingBranch = (
+                await this.getConfig(`branch.${current}.merge`)
+            )?.split("refs/heads")[1];
 
-
-            const tracking = trackingBranch ? remote + trackingBranch : undefined;
+            const tracking = trackingBranch
+                ? remote + trackingBranch
+                : undefined;
 
             return {
                 current: current,
@@ -411,22 +549,23 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getCurrentRemote(): Promise<string> {
-        const current = await git.currentBranch(this.getRepo()) || "";
+        const current = (await git.currentBranch(this.getRepo())) || "";
 
-
-        const remote = await this.getConfig(`branch.${current}.remote`) ?? "origin";
+        const remote =
+            (await this.getConfig(`branch.${current}.remote`)) ?? "origin";
         return remote;
-
     }
 
     async checkout(branch: string, remote?: string): Promise<void> {
         try {
-            return this.wrapFS(git.checkout({
-                ...this.getRepo(),
-                ref: branch,
-                force: !!remote,
-                remote,
-            }));
+            return this.wrapFS(
+                git.checkout({
+                    ...this.getRepo(),
+                    ref: branch,
+                    force: !!remote,
+                    remote,
+                })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -435,7 +574,9 @@ export class IsomorphicGit extends GitManager {
 
     async createBranch(branch: string): Promise<void> {
         try {
-            await this.wrapFS(git.branch({ ...this.getRepo(), ref: branch, checkout: true }));
+            await this.wrapFS(
+                git.branch({ ...this.getRepo(), ref: branch, checkout: true })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -444,7 +585,9 @@ export class IsomorphicGit extends GitManager {
 
     async deleteBranch(branch: string): Promise<void> {
         try {
-            await this.wrapFS(git.deleteBranch({ ...this.getRepo(), ref: branch, }));
+            await this.wrapFS(
+                git.deleteBranch({ ...this.getRepo(), ref: branch })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -467,17 +610,20 @@ export class IsomorphicGit extends GitManager {
     async clone(url: string, dir: string, depth?: number): Promise<void> {
         const progressNotice = this.showNotice("Initializing clone");
         try {
-            await this.wrapFS(git.clone({
-                ...this.getRepo(),
-                dir: dir,
-                url: url,
-                depth: depth,
-                onProgress: (progress) => {
-                    if (progressNotice !== undefined) {
-                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Cloning", progress);
-                    }
-                }
-            }));
+            await this.wrapFS(
+                git.clone({
+                    ...this.getRepo(),
+                    dir: dir,
+                    url: url,
+                    depth: depth,
+                    onProgress: (progress) => {
+                        if (progressNotice !== undefined) {
+                            (progressNotice as any).noticeEl.innerText =
+                                this.getProgressText("Cloning", progress);
+                        }
+                    },
+                })
+            );
             progressNotice?.hide();
         } catch (error) {
             progressNotice?.hide();
@@ -486,13 +632,18 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async setConfig(path: string, value: string | number | boolean | undefined): Promise<void> {
+    async setConfig(
+        path: string,
+        value: string | number | boolean | undefined
+    ): Promise<void> {
         try {
-            return this.wrapFS(git.setConfig({
-                ...this.getRepo(),
-                path: path,
-                value: value
-            }));
+            return this.wrapFS(
+                git.setConfig({
+                    ...this.getRepo(),
+                    path: path,
+                    value: value,
+                })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -501,10 +652,12 @@ export class IsomorphicGit extends GitManager {
 
     async getConfig(path: string): Promise<any> {
         try {
-            return this.wrapFS(git.getConfig({
-                ...this.getRepo(),
-                path: path
-            }));
+            return this.wrapFS(
+                git.getConfig({
+                    ...this.getRepo(),
+                    path: path,
+                })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -519,10 +672,11 @@ export class IsomorphicGit extends GitManager {
                 ...this.getRepo(),
                 onProgress: (progress: GitProgressEvent) => {
                     if (progressNotice !== undefined) {
-                        (progressNotice as any).noticeEl.innerText = this.getProgressText("Fetching", progress);
+                        (progressNotice as any).noticeEl.innerText =
+                            this.getProgressText("Fetching", progress);
                     }
                 },
-                remote: remote ?? await this.getCurrentRemote()
+                remote: remote ?? (await this.getCurrentRemote()),
             };
 
             await this.wrapFS(git.fetch(args));
@@ -536,7 +690,14 @@ export class IsomorphicGit extends GitManager {
 
     async setRemote(name: string, url: string): Promise<void> {
         try {
-            await this.wrapFS(git.addRemote({ ...this.getRepo(), remote: name, url: url, force: true }));
+            await this.wrapFS(
+                git.addRemote({
+                    ...this.getRepo(),
+                    remote: name,
+                    url: url,
+                    force: true,
+                })
+            );
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -545,7 +706,11 @@ export class IsomorphicGit extends GitManager {
 
     async getRemoteBranches(remote: string): Promise<string[]> {
         let remoteBranches = [];
-        remoteBranches.push(...await this.wrapFS(git.listBranches({ ...this.getRepo(), remote: remote })));
+        remoteBranches.push(
+            ...(await this.wrapFS(
+                git.listBranches({ ...this.getRepo(), remote: remote })
+            ))
+        );
 
         remoteBranches.remove("HEAD");
 
@@ -555,15 +720,21 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getRemotes(): Promise<string[]> {
-        return (await this.wrapFS(git.listRemotes({ ...this.getRepo() }))).map(remoteUrl => remoteUrl.remote);
+        return (await this.wrapFS(git.listRemotes({ ...this.getRepo() }))).map(
+            (remoteUrl) => remoteUrl.remote
+        );
     }
 
     async removeRemote(remoteName: string): Promise<void> {
-        await this.wrapFS(git.deleteRemote({ ...this.getRepo(), remote: remoteName }));
+        await this.wrapFS(
+            git.deleteRemote({ ...this.getRepo(), remote: remoteName })
+        );
     }
 
     async getRemoteUrl(remote: string): Promise<string | undefined> {
-        return (await this.wrapFS(git.listRemotes({ ...this.getRepo() }))).filter((item) => item.remote == remote)[0]?.url;
+        return (
+            await this.wrapFS(git.listRemotes({ ...this.getRepo() }))
+        ).filter((item) => item.remote == remote)[0]?.url;
     }
 
     updateBasePath(basePath: string): void {
@@ -574,9 +745,11 @@ export class IsomorphicGit extends GitManager {
         const [remote, branch] = splitRemoteBranch(remoteBranch);
         const branchInfo = await this.branchInfo();
 
-        await this.setConfig(`branch.${branchInfo.current}.merge`, `refs/heads/${branch}`);
+        await this.setConfig(
+            `branch.${branchInfo.current}.merge`,
+            `refs/heads/${branch}`
+        );
         await this.setConfig(`branch.${branch}.remote`, remote);
-
     }
 
     updateGitPath(gitPath: string): void {
@@ -584,59 +757,78 @@ export class IsomorphicGit extends GitManager {
         return;
     }
 
-    async getFileChangesCount(commitHash1: string, commitHash2: string): Promise<WalkDifference[]> {
-        return this.walkDifference({ walkers: [git.TREE({ ref: commitHash1 }), git.TREE({ ref: commitHash2 })] });
+    async getFileChangesCount(
+        commitHash1: string,
+        commitHash2: string
+    ): Promise<WalkDifference[]> {
+        return this.walkDifference({
+            walkers: [
+                git.TREE({ ref: commitHash1 }),
+                git.TREE({ ref: commitHash2 }),
+            ],
+        });
     }
 
+    async walkDifference({
+        walkers,
+        dir: base,
+    }: {
+        walkers: Walker[];
+        dir?: string;
+    }): Promise<WalkDifference[]> {
+        const res = await this.wrapFS(
+            git.walk({
+                ...this.getRepo(),
+                trees: walkers,
+                map: async function (filepath, [A, B]) {
+                    if (!worthWalking(filepath, base)) {
+                        return null;
+                    }
 
-    async walkDifference({ walkers, dir: base }: { walkers: Walker[]; dir?: string; }): Promise<WalkDifference[]> {
-        const res = await this.wrapFS(git.walk({
-            ...this.getRepo(),
-            trees: walkers,
-            map: async function (filepath, [A, B]) {
+                    if (
+                        (await A?.type()) === "tree" ||
+                        (await B?.type()) === "tree"
+                    ) {
+                        return;
+                    }
 
-                if (!worthWalking(filepath, base)) {
-                    return null;
-                }
+                    // generate ids
+                    const Aoid = await A?.oid();
+                    const Boid = await B?.oid();
 
-                if ((await A?.type()) === 'tree' || (await B?.type()) === 'tree') {
-                    return;
-                }
+                    // determine modification type
+                    let type = "equal";
+                    if (Aoid !== Boid) {
+                        type = "modify";
+                    }
+                    if (Aoid === undefined) {
+                        type = "add";
+                    }
+                    if (Boid === undefined) {
+                        type = "remove";
+                    }
 
-                // generate ids
-                const Aoid = await A?.oid();
-                const Boid = await B?.oid();
-
-                // determine modification type
-                let type = 'equal';
-                if (Aoid !== Boid) {
-                    type = 'modify';
-                }
-                if (Aoid === undefined) {
-                    type = 'add';
-                }
-                if (Boid === undefined) {
-                    type = 'remove';
-                }
-
-                if (Aoid === undefined && Boid === undefined) {
-                    console.log('Something weird happened:');
-                    console.log(A);
-                    console.log(B);
-                }
-                if (type === 'equal') {
-                    return;
-                }
-                return {
-                    path: filepath,
-                    type: type,
-                };
-            },
-        }));
+                    if (Aoid === undefined && Boid === undefined) {
+                        console.log("Something weird happened:");
+                        console.log(A);
+                        console.log(B);
+                    }
+                    if (type === "equal") {
+                        return;
+                    }
+                    return {
+                        path: filepath,
+                        type: type,
+                    };
+                },
+            })
+        );
         return res;
     }
 
-    async getStagedFiles(dir = "."): Promise<{ vault_path: string, filepath: string; }[]> {
+    async getStagedFiles(
+        dir = "."
+    ): Promise<{ vault_path: string; filepath: string }[]> {
         const res = await this.walkDifference({
             walkers: [git.TREE({ ref: "HEAD" }), git.STAGE()],
             dir,
@@ -652,7 +844,10 @@ export class IsomorphicGit extends GitManager {
     async getUnstagedFiles(base = "."): Promise<UnstagedFile[]> {
         let notice: Notice | undefined;
         const timeout = window.setTimeout(function () {
-            notice = new Notice("This takes longer: Getting status", this.noticeLength);
+            notice = new Notice(
+                "This takes longer: Getting status",
+                this.noticeLength
+            );
         }, 20000);
         try {
             const repo = this.getRepo();
@@ -661,10 +856,12 @@ export class IsomorphicGit extends GitManager {
                 git.walk({
                     ...repo,
                     trees: [git.WORKDIR(), git.STAGE()],
-                    map: async function (filepath, [workdir, stage]): Promise<UnstagedFile | null | undefined> {
+                    map: async function (
+                        filepath,
+                        [workdir, stage]
+                    ): Promise<UnstagedFile | null | undefined> {
                         // Ignore ignored files, but only if they are not already tracked.
                         if (!stage && workdir) {
-
                             const isIgnored = await git.isIgnored({
                                 ...repo,
                                 filepath,
@@ -672,7 +869,6 @@ export class IsomorphicGit extends GitManager {
                             if (isIgnored) {
                                 return null;
                             }
-
                         }
                         // match against base path
                         if (!worthWalking(filepath, base)) {
@@ -688,25 +884,35 @@ export class IsomorphicGit extends GitManager {
                             stage && stage.type(),
                         ]);
 
-                        const isBlob = [workdirType, stageType].includes('blob');
+                        const isBlob = [workdirType, stageType].includes(
+                            "blob"
+                        );
 
                         // For now, bail on directories unless the file is also a blob in another tree
-                        if ((workdirType === 'tree' || workdirType === 'special') && !isBlob)
+                        if (
+                            (workdirType === "tree" ||
+                                workdirType === "special") &&
+                            !isBlob
+                        )
                             return;
 
-                        if (stageType === 'commit') return null;
-                        if ((stageType === 'tree' || stageType === 'special') && !isBlob) return;
+                        if (stageType === "commit") return null;
+                        if (
+                            (stageType === "tree" || stageType === "special") &&
+                            !isBlob
+                        )
+                            return;
 
                         // Figure out the oids for files, using the staged oid for the working dir oid if the stats match.
-                        const stageOid = stageType === 'blob' ? await stage!.oid() : undefined;
+                        const stageOid =
+                            stageType === "blob"
+                                ? await stage!.oid()
+                                : undefined;
                         let workdirOid;
-                        if (
-                            workdirType === 'blob' &&
-                            stageType !== 'blob'
-                        ) {
+                        if (workdirType === "blob" && stageType !== "blob") {
                             // We don't actually NEED the sha. Any sha will do
-                            workdirOid = '42';
-                        } else if (workdirType === 'blob') {
+                            workdirOid = "42";
+                        } else if (workdirType === "blob") {
                             workdirOid = await workdir!.oid();
                         }
                         if (!workdirOid) {
@@ -727,8 +933,9 @@ export class IsomorphicGit extends GitManager {
                         // const result = entry.map(value => entry.indexOf(value));
                         // result.shift(); // remove leading undefined entry
                         // return [filepath, ...result];
-                    }
-                }));
+                    },
+                })
+            );
             window.clearTimeout(timeout);
             notice?.hide();
             return res;
@@ -738,23 +945,30 @@ export class IsomorphicGit extends GitManager {
             this.plugin.displayError(error);
             throw error;
         }
-
     }
 
-    async getDiffString(filePath: string, stagedChanges = false): Promise<string> {
+    async getDiffString(
+        filePath: string,
+        stagedChanges = false
+    ): Promise<string> {
         const map: WalkerMap = async (file, [A]) => {
             if (filePath == file) {
                 const oid = await A!.oid();
-                const contents = await git.readBlob({ ...this.getRepo(), oid: oid });
+                const contents = await git.readBlob({
+                    ...this.getRepo(),
+                    oid: oid,
+                });
                 return contents.blob;
             }
         };
 
-        const stagedBlob = (await git.walk({
-            ...this.getRepo(),
-            trees: [git.STAGE()],
-            map,
-        })).first();
+        const stagedBlob = (
+            await git.walk({
+                ...this.getRepo(),
+                trees: [git.STAGE()],
+                map,
+            })
+        ).first();
         const stagedContent = new TextDecoder().decode(stagedBlob);
 
         if (stagedChanges) {
@@ -768,7 +982,6 @@ export class IsomorphicGit extends GitManager {
 
             const diff = createPatch(filePath, headContent ?? "", stagedContent);
             return diff;
-
         } else {
             let workdirContent: string;
             if (await app.vault.adapter.exists(filePath)) {
@@ -790,22 +1003,27 @@ export class IsomorphicGit extends GitManager {
         return new Date(date * 1000);
     }
 
-    private getFileStatusResult(row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]): FileStatusResult {
-
-        const status = (this.status_mapping as any)[`${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`];
+    private getFileStatusResult(
+        row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]
+    ): FileStatusResult {
+        const status = (this.status_mapping as any)[
+            `${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`
+        ];
         // status will always be two characters
         return {
             index: status[0] == "?" ? "U" : status[0],
             working_dir: status[1] == "?" ? "U" : status[1],
             path: row[this.FILE],
-            vault_path: this.getVaultPath(row[this.FILE])
+            vault_path: this.getVaultPath(row[this.FILE]),
         };
-
     }
 
     private showNotice(message: string, infinity = true): Notice | undefined {
         if (!this.plugin.settings.disablePopups) {
-            return new Notice(message, infinity ? this.noticeLength : undefined);
+            return new Notice(
+                message,
+                infinity ? this.noticeLength : undefined
+            );
         }
     }
 }
@@ -818,7 +1036,10 @@ function fromValue(value: any) {
     let queue = [value];
     return {
         next() {
-            return Promise.resolve({ done: queue.length === 0, value: queue.pop() });
+            return Promise.resolve({
+                done: queue.length === 0,
+                value: queue.pop(),
+            });
         },
         return() {
             queue = [];

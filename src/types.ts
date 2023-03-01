@@ -15,8 +15,8 @@ export interface ObsidianGitSettings {
     updateSubmodules: boolean;
     submoduleRecurseCheckout: boolean;
     /**
-    * @deprecated Using `localstorage` instead
-    */
+     * @deprecated Using `localstorage` instead
+     */
     gitPath?: string;
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
@@ -41,7 +41,7 @@ export interface ObsidianGitSettings {
     gitDir: string;
 }
 
-export type SyncMethod = 'rebase' | 'merge' | 'reset';
+export type SyncMethod = "rebase" | "merge" | "reset";
 
 export interface Author {
     name: string;
@@ -53,7 +53,6 @@ export interface Status {
     staged: FileStatusResult[];
     conflicted: string[];
 }
-
 
 /**
  * `index` and `working_dir` are each one-character codes, based off the git
@@ -129,7 +128,7 @@ export enum PluginState {
 
 export interface WalkDifference {
     path: string;
-    type: | "modify" | "add" | "remove";
+    type: "modify" | "add" | "remove";
 }
 
 export interface UnstagedFile {
@@ -151,11 +150,11 @@ export interface TreeItem {
     children?: TreeItem[];
 }
 
-export type RootTreeItem = TreeItem & { children: TreeItem[]; };
+export type RootTreeItem = TreeItem & { children: TreeItem[] };
 
 export interface DiffViewState {
-    staged: boolean,
-    file: string,
+    staged: boolean;
+    file: string;
 }
 
 export enum FileType {
