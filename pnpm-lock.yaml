@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@types/debug': ^4.1.7
   '@types/diff': ^5.0.2
   '@types/node': ^14.18.36
   '@typescript-eslint/eslint-plugin': 5.29.0
@@ -38,6 +39,7 @@ dependencies:
   supports-color: 7.2.0
 
 devDependencies:
+  '@types/debug': 4.1.7
   '@types/diff': 5.0.2
   '@types/node': 14.18.36
   '@typescript-eslint/eslint-plugin': 5.29.0_vak6qdmta7v3nagmd3clhufmme
@@ -164,6 +166,12 @@ packages:
     dependencies:
       '@types/tern': 0.23.4
 
+  /@types/debug/4.1.7:
+    resolution: {integrity: sha512-9AonUzyTjXXhEOa0DnqpzZi6VHlqKMswga9EXjpXnnqxwLtdvPPtlO8evrI5D9S6asFRCQ6v+wpiUKbw+vKqyg==}
+    dependencies:
+      '@types/ms': 0.7.31
+    dev: true
+
   /@types/diff/5.0.2:
     resolution: {integrity: sha512-uw8eYMIReOwstQ0QKF0sICefSy8cNO/v7gOTiIy9SbwuHyEecJUm7qlgueOO5S1udZ5I/irVydHVwMchgzbKTg==}
     dev: true
@@ -177,6 +185,10 @@ packages:
 
   /@types/minimist/1.2.2:
     resolution: {integrity: sha512-jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==}
+    dev: true
+
+  /@types/ms/0.7.31:
+    resolution: {integrity: sha512-iiUgKzV9AuaEkZqkOLDIvlQiL6ltuZd9tGcW3gwpnX8JbuiuhFlEGmmFXEXkN50Cvq7Os88IY2v0dkDqXYWVgA==}
     dev: true
 
   /@types/node/14.18.36:

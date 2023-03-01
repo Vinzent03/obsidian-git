@@ -7,6 +7,7 @@ import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
 import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
 import { splitRemoteBranch } from "./utils";
+import debug from 'debug';
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -49,6 +50,8 @@ export class SimpleGit extends GitManager {
                 const [key, value] = envVar.split("=");
                 process.env[key] = value;
             }
+
+            debug.enable('simple-git');
 
             await this.git.cwd(await this.git.revparse("--show-toplevel"));
 
