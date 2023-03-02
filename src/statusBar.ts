@@ -34,7 +34,7 @@ export class StatusBar {
         if (this.messages.length > 0 && !this.currentMessage) {
             this.currentMessage = this.messages.shift();
             this.statusBarEl.addClass(this.base + "message");
-            this.statusBarEl.ariaLabel = "";
+            (this.statusBarEl as any).ariaLabel = "";
             this.statusBarEl.setText(this.currentMessage.message);
             this.lastMessageTimestamp = Date.now();
         } else if (this.currentMessage) {
