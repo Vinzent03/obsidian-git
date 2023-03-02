@@ -1,7 +1,9 @@
 import { App, Modal } from "obsidian";
 
 export class IgnoreModal extends Modal {
-    resolve: ((value: string | PromiseLike<string>) => void) | null = null;
+    resolve:
+        | ((value: string | PromiseLike<string> | undefined) => void)
+        | null = null;
     constructor(app: App, private content: string) {
         super(app);
     }

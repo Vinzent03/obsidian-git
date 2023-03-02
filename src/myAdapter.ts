@@ -6,8 +6,8 @@ export class MyAdapter {
     adapter: DataAdapter;
     vault: Vault;
     index: any;
-    indexctime: number;
-    indexmtime: number;
+    indexctime: number | undefined;
+    indexmtime: number | undefined;
     constructor(vault: Vault, private readonly plugin: ObsidianGit) {
         this.adapter = vault.adapter;
         this.vault = vault;
