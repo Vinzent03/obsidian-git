@@ -67,37 +67,40 @@ export class StatusBar {
                 this.displayFromNow(this.plugin.lastUpdate);
                 break;
             case PluginState.status:
-                this.statusBarEl.ariaLabel = "Checking repository status...";
+                (this.statusBarEl as any).ariaLabel =
+                    "Checking repository status...";
                 setIcon(this.iconEl, "refresh-cw");
                 this.statusBarEl.addClass(this.base + "status");
                 break;
             case PluginState.add:
-                this.statusBarEl.ariaLabel = "Adding files...";
+                (this.statusBarEl as any).ariaLabel = "Adding files...";
                 setIcon(this.iconEl, "refresh-w");
                 this.statusBarEl.addClass(this.base + "add");
                 break;
             case PluginState.commit:
-                this.statusBarEl.ariaLabel = "Committing changes...";
+                (this.statusBarEl as any).ariaLabel = "Committing changes...";
                 setIcon(this.iconEl, "git-commit");
-                this.statusBarEl.addClass(this.base + "commit");
+                (this.statusBarEl as any).addClass(this.base + "commit");
                 break;
             case PluginState.push:
-                this.statusBarEl.ariaLabel = "Pushing changes...";
+                (this.statusBarEl as any).ariaLabel = "Pushing changes...";
                 setIcon(this.iconEl, "upload");
                 this.statusBarEl.addClass(this.base + "push");
                 break;
             case PluginState.pull:
-                this.statusBarEl.ariaLabel = "Pulling changes...";
+                (this.statusBarEl as any).ariaLabel = "Pulling changes...";
                 setIcon(this.iconEl, "download");
                 this.statusBarEl.addClass(this.base + "pull");
                 break;
             case PluginState.conflicted:
-                this.statusBarEl.ariaLabel = "You have conflict files...";
+                (this.statusBarEl as any).ariaLabel =
+                    "You have conflict files...";
                 setIcon(this.iconEl, "alert-circle");
                 this.statusBarEl.addClass(this.base + "conflict");
                 break;
             default:
-                this.statusBarEl.ariaLabel = "Failed on initialization!";
+                (this.statusBarEl as any).ariaLabel =
+                    "Failed on initialization!";
                 setIcon(this.iconEl, "alert-triangle");
                 this.statusBarEl.addClass(this.base + "failed-init");
                 break;
@@ -108,11 +111,11 @@ export class StatusBar {
         if (timestamp) {
             const moment = (window as any).moment;
             const fromNow = moment(timestamp).fromNow();
-            this.statusBarEl.ariaLabel = `${
+            (this.statusBarEl as any).ariaLabel = `${
                 this.plugin.offlineMode ? "Offline: " : ""
             }Last Git update: ${fromNow}`;
         } else {
-            this.statusBarEl.ariaLabel = this.plugin.offlineMode
+            (this.statusBarEl as any).ariaLabel = this.plugin.offlineMode
                 ? "Git is offline"
                 : "Git is ready";
         }
