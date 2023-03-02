@@ -3,6 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@types/debug': ^4.1.7
   '@types/diff': ^5.0.2
+  '@types/hogan.js': ^3.0.1
   '@types/node': ^14.18.36
   '@typescript-eslint/eslint-plugin': 5.29.0
   '@typescript-eslint/parser': 5.29.0
@@ -42,6 +43,7 @@ dependencies:
 devDependencies:
   '@types/debug': 4.1.7
   '@types/diff': 5.0.2
+  '@types/hogan.js': 3.0.1
   '@types/node': 14.18.36
   '@typescript-eslint/eslint-plugin': 5.29.0_vak6qdmta7v3nagmd3clhufmme
   '@typescript-eslint/parser': 5.29.0_z6cdoq3x4n2my65vtydj477dna
@@ -180,6 +182,10 @@ packages:
 
   /@types/estree/1.0.0:
     resolution: {integrity: sha512-WulqXMDUTYAXCjZnk6JtIHPigp55cVtDgDrO2gHRwhyJto21+1zbVCtOYB2L1F9w4qCQ0rOGWBnBe0FNTiEJIQ==}
+
+  /@types/hogan.js/3.0.1:
+    resolution: {integrity: sha512-D03i/2OY7kGyMq9wdQ7oD8roE49z/ZCZThe/nbahtvuqCNZY9T2MfedOWyeBdbEpY2W8Gnh/dyJLdFtUCOkYbg==}
+    dev: true
 
   /@types/json-schema/7.0.11:
     resolution: {integrity: sha512-wOuvG1SN4Us4rez+tylwwwCV1psiNVOkJeM3AUWUNWg/jDQY2+HE/444y5gc+jBmRqASOm2Oeh5c1axHobwRKQ==}
