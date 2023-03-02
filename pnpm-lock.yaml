@@ -1,6 +1,8 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@codemirror/state': ^6.2.0
+  '@codemirror/view': ^6.9.1
   '@types/debug': ^4.1.7
   '@types/diff': ^5.0.2
   '@types/hogan.js': ^3.0.1
@@ -36,11 +38,13 @@ dependencies:
   diff: 5.1.0
   diff2html: 3.4.31
   isomorphic-git: 1.21.0
-  obsidian-community-lib: 2.0.2
+  obsidian-community-lib: 2.0.2_6i3pfqogrrmqkwm5tm4xxq6xdu
   simple-git: 3.16.1_supports-color@7.2.0
   supports-color: 7.2.0
 
 devDependencies:
+  '@codemirror/state': 6.2.0
+  '@codemirror/view': 6.9.1
   '@types/debug': 4.1.7
   '@types/diff': 5.0.2
   '@types/hogan.js': 3.0.1
@@ -51,7 +55,7 @@ devDependencies:
   esbuild-svelte: 0.5.7_esbuild@0.12.29
   eslint: 8.35.0_supports-color@7.2.0
   eslint-plugin-svelte3: 4.0.0_n4ieifq2d7jq3sqoe474cgqlim
-  obsidian: 0.16.3
+  obsidian: 0.16.3_6i3pfqogrrmqkwm5tm4xxq6xdu
   prettier: 2.8.4
   sass: 1.58.3
   scss: 0.2.4
@@ -84,6 +88,16 @@ packages:
       chalk: 2.4.2
       js-tokens: 4.0.0
     dev: true
+
+  /@codemirror/state/6.2.0:
+    resolution: {integrity: sha512-69QXtcrsc3RYtOtd+GsvczJ319udtBf1PTrr2KbLWM/e2CXUPnh0Nz9AUo8WfhSQ7GeL8dPVNUmhQVgpmuaNGA==}
+
+  /@codemirror/view/6.9.1:
+    resolution: {integrity: sha512-bzfSjJn9dAADVpabLKWKNmMG4ibyTV2e3eOGowjElNPTdTkSbi6ixPYHm2u0ADcETfKsi2/R84Rkmi91dH9yEg==}
+    dependencies:
+      '@codemirror/state': 6.2.0
+      style-mod: 4.0.0
+      w3c-keyname: 2.2.6
 
   /@eslint/eslintrc/2.0.0_supports-color@7.2.0:
     resolution: {integrity: sha512-fluIaaV+GyV24CCu/ggiHdV+j4RNh85yQnAYS/G2mZODZgGmmlrgCydjUcV3YvxCm9x8nMAfThsqTni4KiXT4A==}
@@ -1732,32 +1746,36 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /obsidian-community-lib/2.0.2:
+  /obsidian-community-lib/2.0.2_6i3pfqogrrmqkwm5tm4xxq6xdu:
     resolution: {integrity: sha512-cC0DZNkbCuSfNk4k3ZzItlNK/JiHTjUdqa1RfbZvJenywLXNkaHnk89YkCSXvy31reDTb82PCwPJd3e89mOr1w==}
     dependencies:
       feather-icons: 4.29.0
-      obsidian: 0.15.9
+      obsidian: 0.15.9_6i3pfqogrrmqkwm5tm4xxq6xdu
     transitivePeerDependencies:
       - '@codemirror/state'
       - '@codemirror/view'
     dev: false
 
-  /obsidian/0.15.9:
+  /obsidian/0.15.9_6i3pfqogrrmqkwm5tm4xxq6xdu:
     resolution: {integrity: sha512-w3JL/IM3/U61rjFSFIFDSv+pcHn3mH1EIRN40kBkC/lGYqjFSPbr6daQe08QkskBz/GAYIeBoaKQIcgU9vV3LQ==}
     peerDependencies:
       '@codemirror/state': ^6.0.0
       '@codemirror/view': ^6.0.0
     dependencies:
+      '@codemirror/state': 6.2.0
+      '@codemirror/view': 6.9.1
       '@types/codemirror': 0.0.108
       moment: 2.29.4
     dev: false
 
-  /obsidian/0.16.3:
+  /obsidian/0.16.3_6i3pfqogrrmqkwm5tm4xxq6xdu:
     resolution: {integrity: sha512-hal9qk1A0GMhHSeLr2/+o3OpLmImiP+Y+sx2ewP13ds76KXsziG96n+IPFT0mSkup1zSwhEu+DeRhmbcyCCXWw==}
     peerDependencies:
       '@codemirror/state': ^6.0.0
       '@codemirror/view': ^6.0.0
     dependencies:
+      '@codemirror/state': 6.2.0
+      '@codemirror/view': 6.9.1
       '@types/codemirror': 0.0.108
       moment: 2.29.4
     dev: true
@@ -2321,6 +2339,9 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
+  /style-mod/4.0.0:
+    resolution: {integrity: sha512-OPhtyEjyyN9x3nhPsu76f52yUGXiZcgvsrFVtvTkyGRQJ0XK+GPc6ov1z+lRpbeabka+MYEQxOYRnt5nF30aMw==}
+
   /supports-color/5.5.0:
     resolution: {integrity: sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow==}
     engines: {node: '>=4'}
@@ -2541,6 +2562,9 @@ packages:
       spdx-correct: 3.1.1
       spdx-expression-parse: 3.0.1
     dev: true
+
+  /w3c-keyname/2.2.6:
+    resolution: {integrity: sha512-f+fciywl1SJEniZHD6H+kUO8gOnwIr7f4ijKA6+ZvJFjeGi1r4PDLl53Ayud9O/rk64RqgoQine0feoeOU0kXg==}
 
   /which/2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}

@@ -17,6 +17,8 @@
         "t": ""
     },
     "devDependencies": {
+        "@codemirror/state": "^6.2.0",
+        "@codemirror/view": "^6.9.1",
         "@types/debug": "^4.1.7",
         "@types/diff": "^5.0.2",
         "@types/hogan.js": "^3.0.1",
