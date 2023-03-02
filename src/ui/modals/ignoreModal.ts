@@ -29,13 +29,17 @@ export class IgnoreModal extends Modal {
             cls: ["mod-cta", "obsidian-git-center-button"],
             text: "Save",
         }).addEventListener("click", async () => {
-            this.resolve(text.value);
+            // `this.resolve` asserts non-null here because the function is assigned when the `this.open()` is called
+            // and is not null at the time the save button is clicked.
+            this.resolve!(text.value);
             this.close();
         });
     }
     onClose() {
         const { contentEl } = this;
-        this.resolve(undefined);
+        // `this.resolve` asserts non-null here because the function is assigned when the `this.open()` is called
+        // and is not null at the time the modal is closed.
+        this.resolve!(undefined);
         contentEl.empty();
     }
 }
