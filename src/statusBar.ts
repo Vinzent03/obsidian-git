@@ -9,8 +9,8 @@ interface StatusBarMessage {
 
 export class StatusBar {
     private messages: StatusBarMessage[] = [];
-    private currentMessage: StatusBarMessage;
-    public lastMessageTimestamp: number;
+    private currentMessage: StatusBarMessage | null;
+    public lastMessageTimestamp: number | null;
     private base = "obsidian-git-statusbar-";
     private iconEl: HTMLElement;
     private textEl: HTMLElement;
@@ -32,7 +32,7 @@ export class StatusBar {
 
     public display() {
         if (this.messages.length > 0 && !this.currentMessage) {
-            this.currentMessage = this.messages.shift();
+            this.currentMessage = this.messages.shift() as StatusBarMessage;
             this.statusBarEl.addClass(this.base + "message");
             (this.statusBarEl as any).ariaLabel = "";
             this.statusBarEl.setText(this.currentMessage.message);
