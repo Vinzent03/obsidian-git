@@ -1,6 +1,6 @@
 export interface ObsidianGitSettings {
     commitMessage: string;
-    autoCommitMessage: string;
+    autoCommitMessage: string | undefined; // possibly undefined for settings migration
     commitDateFormat: string;
     autoSaveInterval: number;
     autoPushInterval: number;

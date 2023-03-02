@@ -1,7 +1,10 @@
 import { Platform } from "obsidian";
 import { ObsidianGitSettings } from "./types";
 
-export const DEFAULT_SETTINGS: ObsidianGitSettings = {
+export const DEFAULT_SETTINGS: Omit<
+    ObsidianGitSettings,
+    "gitDir" | "submoduleRecurseCheckout"
+> = {
     commitMessage: "vault backup: {{date}}",
     autoCommitMessage: undefined, // default undefined for settings migration
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
