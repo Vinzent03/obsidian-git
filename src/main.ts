@@ -611,7 +611,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async loadSettings() {
-        let data: ObsidianGitSettings = await this.loadData();
+        // At first startup, `data` is `null` because data.json does not exist.
+        let data = (await this.loadData()) as ObsidianGitSettings | null;
         //Check for existing settings
         if (data == undefined) {
             data = { showedMobileNotice: true } as any;
