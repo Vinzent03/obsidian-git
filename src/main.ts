@@ -973,6 +973,10 @@ export default class ObsidianGit extends Plugin {
                 committedFiles = await this.gitManager.commit(cmtMessage);
             } else {
                 committedFiles = await this.gitManager.commitAll({
+                    // A type error occurs here because `this.settings.autoCommitMessage` is possibly undefined.
+                    // However, since `this.settings.autoCommitMessage` is always set to string in `this.migrateSettings`,
+                    // `undefined` is never passed here. Therefore, temporarily ignore this error.
+                    // @ts-ignore
                     message: cmtMessage,
                     status,
                     unstagedFiles,
