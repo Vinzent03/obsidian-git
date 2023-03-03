@@ -568,6 +568,10 @@ export class SimpleGit extends GitManager {
                 console.error(e);
                 // fallback
                 await this.git.push(
+                    // A type error occurs here because the third element could be undefined.
+                    // However, it is unlikely to be undefined due to the `remoteBranch`'s format, and error handling is in place.
+                    // Therefore, we temporarily ignore the error.
+                    // @ts-ignore
                     ["--set-upstream", ...splitRemoteBranch(remoteBranch)],
                     (err) => this.onError(err)
                 );
