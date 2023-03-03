@@ -38,7 +38,8 @@ export class StatusBar {
             this.statusBarEl.setText(this.currentMessage.message);
             this.lastMessageTimestamp = Date.now();
         } else if (this.currentMessage) {
-            const messageAge = Date.now() - this.lastMessageTimestamp;
+            const messageAge =
+                Date.now() - (this.lastMessageTimestamp as number);
             if (messageAge >= this.currentMessage.timeout) {
                 this.currentMessage = null;
                 this.lastMessageTimestamp = null;
