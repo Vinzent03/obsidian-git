@@ -1,6 +1,6 @@
 export interface ObsidianGitSettings {
     commitMessage: string;
-    autoCommitMessage: string | undefined; // possibly undefined for settings migration
+    autoCommitMessage?: string; // possibly undefined for settings migration
     commitDateFormat: string;
     autoSaveInterval: number;
     autoPushInterval: number;
@@ -13,7 +13,7 @@ export interface ObsidianGitSettings {
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
     updateSubmodules: boolean;
-    submoduleRecurseCheckout: boolean;
+    submoduleRecurseCheckout?: boolean; // possibly undefined as it is not set by default
     /**
      * @deprecated Using `localstorage` instead
      */
@@ -38,7 +38,7 @@ export interface ObsidianGitSettings {
     refreshSourceControlTimer: number;
     showBranchStatusBar: boolean;
     setLastSaveToLastCommit: boolean;
-    gitDir: string;
+    gitDir?: string; // possibly undefined as it is not set by default
 }
 
 export type SyncMethod = "rebase" | "merge" | "reset";
