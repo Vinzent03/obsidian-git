@@ -34,7 +34,7 @@ export class StatusBar {
         if (this.messages.length > 0 && !this.currentMessage) {
             this.currentMessage = this.messages.shift() as StatusBarMessage;
             this.statusBarEl.addClass(this.base + "message");
-            (this.statusBarEl as any).ariaLabel = "";
+            this.statusBarEl.ariaLabel = "";
             this.statusBarEl.setText(this.currentMessage.message);
             this.lastMessageTimestamp = Date.now();
         } else if (this.currentMessage) {
@@ -68,40 +68,37 @@ export class StatusBar {
                 this.displayFromNow(this.plugin.lastUpdate);
                 break;
             case PluginState.status:
-                (this.statusBarEl as any).ariaLabel =
-                    "Checking repository status...";
+                this.statusBarEl.ariaLabel = "Checking repository status...";
                 setIcon(this.iconEl, "refresh-cw");
                 this.statusBarEl.addClass(this.base + "status");
                 break;
             case PluginState.add:
-                (this.statusBarEl as any).ariaLabel = "Adding files...";
+                this.statusBarEl.ariaLabel = "Adding files...";
                 setIcon(this.iconEl, "refresh-w");
                 this.statusBarEl.addClass(this.base + "add");
                 break;
             case PluginState.commit:
-                (this.statusBarEl as any).ariaLabel = "Committing changes...";
+                this.statusBarEl.ariaLabel = "Committing changes...";
                 setIcon(this.iconEl, "git-commit");
-                (this.statusBarEl as any).addClass(this.base + "commit");
+                this.statusBarEl.addClass(this.base + "commit");
                 break;
             case PluginState.push:
-                (this.statusBarEl as any).ariaLabel = "Pushing changes...";
+                this.statusBarEl.ariaLabel = "Pushing changes...";
                 setIcon(this.iconEl, "upload");
                 this.statusBarEl.addClass(this.base + "push");
                 break;
             case PluginState.pull:
-                (this.statusBarEl as any).ariaLabel = "Pulling changes...";
+                this.statusBarEl.ariaLabel = "Pulling changes...";
                 setIcon(this.iconEl, "download");
                 this.statusBarEl.addClass(this.base + "pull");
                 break;
             case PluginState.conflicted:
-                (this.statusBarEl as any).ariaLabel =
-                    "You have conflict files...";
+                this.statusBarEl.ariaLabel = "You have conflict files...";
                 setIcon(this.iconEl, "alert-circle");
                 this.statusBarEl.addClass(this.base + "conflict");
                 break;
             default:
-                (this.statusBarEl as any).ariaLabel =
-                    "Failed on initialization!";
+                this.statusBarEl.ariaLabel = "Failed on initialization!";
                 setIcon(this.iconEl, "alert-triangle");
                 this.statusBarEl.addClass(this.base + "failed-init");
                 break;
@@ -112,11 +109,11 @@ export class StatusBar {
         if (timestamp) {
             const moment = (window as any).moment;
             const fromNow = moment(timestamp).fromNow();
-            (this.statusBarEl as any).ariaLabel = `${
+            this.statusBarEl.ariaLabel = `${
                 this.plugin.offlineMode ? "Offline: " : ""
             }Last Git update: ${fromNow}`;
         } else {
-            (this.statusBarEl as any).ariaLabel = this.plugin.offlineMode
+            this.statusBarEl.ariaLabel = this.plugin.offlineMode
                 ? "Git is offline"
                 : "Git is ready";
         }
