@@ -23,7 +23,7 @@ jobs:
                   version: 6.0.2
             - name: Install modules
               run: pnpm install
-            - name: Run ESLint
+            - name: Run Prettier
               run: pnpm run format
     compile:
         runs-on: ubuntu-latest
