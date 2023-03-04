@@ -1,5 +1,7 @@
 name: test
-on: push
+on:
+    push:
+    pull_request:
 jobs:
     lint:
         runs-on: ubuntu-latest
@@ -21,5 +23,16 @@ jobs:
                   version: 6.0.2
             - name: Install modules
               run: pnpm install
-            - name: Run ESLint
+            - name: Run Prettier
               run: pnpm run format
+    compile:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: 6.0.2
+            - name: Install modules
+              run: pnpm install
+            - name: Run tsc
+              run: tsc --noEmit

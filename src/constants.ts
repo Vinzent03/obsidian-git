@@ -1,33 +1,35 @@
 import { Platform } from "obsidian";
 import { ObsidianGitSettings } from "./types";
 
-export const DEFAULT_SETTINGS: ObsidianGitSettings = {
-    commitMessage: "vault backup: {{date}}",
-    autoCommitMessage: undefined, // default undefined for settings migration
-    commitDateFormat: "YYYY-MM-DD HH:mm:ss",
-    autoSaveInterval: 0,
-    autoPushInterval: 0,
-    autoPullInterval: 0,
-    autoPullOnBoot: false,
-    disablePush: false,
-    pullBeforePush: true,
-    disablePopups: false,
-    listChangedFilesInMessageBody: false,
-    showStatusBar: true,
-    updateSubmodules: false,
-    syncMethod: "merge",
-    customMessageOnAutoBackup: false,
-    autoBackupAfterFileChange: false,
-    treeStructure: false,
-    refreshSourceControl: Platform.isDesktopApp,
-    basePath: "",
-    differentIntervalCommitAndPush: false,
-    changedFilesInStatusBar: false,
-    showedMobileNotice: false,
-    refreshSourceControlTimer: 7000,
-    showBranchStatusBar: true,
-    setLastSaveToLastCommit: false,
-};
+export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
+    {
+        commitMessage: "vault backup: {{date}}",
+        commitDateFormat: "YYYY-MM-DD HH:mm:ss",
+        autoSaveInterval: 0,
+        autoPushInterval: 0,
+        autoPullInterval: 0,
+        autoPullOnBoot: false,
+        disablePush: false,
+        pullBeforePush: true,
+        disablePopups: false,
+        listChangedFilesInMessageBody: false,
+        showStatusBar: true,
+        updateSubmodules: false,
+        syncMethod: "merge",
+        customMessageOnAutoBackup: false,
+        autoBackupAfterFileChange: false,
+        treeStructure: false,
+        refreshSourceControl: Platform.isDesktopApp,
+        basePath: "",
+        differentIntervalCommitAndPush: false,
+        changedFilesInStatusBar: false,
+        showedMobileNotice: false,
+        refreshSourceControlTimer: 7000,
+        showBranchStatusBar: true,
+        setLastSaveToLastCommit: false,
+        submoduleRecurseCheckout: false,
+        gitDir: "",
+    };
 
 export const GIT_VIEW_CONFIG = {
     type: "git-view",

@@ -611,7 +611,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async loadSettings() {
-        let data: ObsidianGitSettings = await this.loadData();
+        // At first startup, `data` is `null` because data.json does not exist.
+        let data = (await this.loadData()) as ObsidianGitSettings | null;
         //Check for existing settings
         if (data == undefined) {
             data = { showedMobileNotice: true } as any;
@@ -972,6 +973,10 @@ export default class ObsidianGit extends Plugin {
                 committedFiles = await this.gitManager.commit(cmtMessage);
             } else {
                 committedFiles = await this.gitManager.commitAll({
+                    // A type error occurs here because `this.settings.autoCommitMessage` is possibly undefined.
+                    // However, since `this.settings.autoCommitMessage` is always set to string in `this.migrateSettings`,
+                    // `undefined` is never passed here. Therefore, temporarily ignore this error.
+                    // @ts-ignore
                     message: cmtMessage,
                     status,
                     unstagedFiles,

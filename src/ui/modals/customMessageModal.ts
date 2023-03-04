@@ -4,7 +4,9 @@ import ObsidianGit from "src/main";
 export class CustomMessageModal extends SuggestModal<string> {
     plugin: ObsidianGit;
 
-    resolve: ((value: string | PromiseLike<string>) => void) | null = null;
+    resolve:
+        | ((value: string | PromiseLike<string> | undefined) => void)
+        | null = null;
     constructor(plugin: ObsidianGit, private readonly fromAutoBackup: boolean) {
         super(plugin.app);
         this.plugin = plugin;
