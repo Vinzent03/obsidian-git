@@ -6,7 +6,13 @@ import { sep } from "path";
 import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
+import {
+    BranchInfo,
+    FileStatusResult,
+    GitLogResult,
+    PluginState,
+    Status,
+} from "./types";
 import { splitRemoteBranch } from "./utils";
 
 export class SimpleGit extends GitManager {
@@ -412,10 +418,7 @@ export class SimpleGit extends GitManager {
     async log(
         file: string,
         relativeToVault = true
-    ): Promise<
-        readonly (simple.DefaultLogFields &
-            simple.ListLogLine & { fileName?: string })[]
-    > {
+    ): Promise<readonly GitLogResult[]> {
         const path = this.getPath(file, relativeToVault);
 
         const res = await this.git.log(

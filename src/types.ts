@@ -163,6 +163,38 @@ export enum FileType {
     pulled,
 }
 
+export interface DiffResultBinaryFile {
+    file: string;
+    before: number;
+    after: number;
+    binary: true;
+}
+
+export interface DiffResultTextFile {
+    file: string;
+    changes: number;
+    insertions: number;
+    deletions: number;
+    binary: false;
+}
+
+export interface GitLogResult {
+    hash: string;
+    date: string;
+    message: string;
+    refs: string;
+    body: string;
+    author_name: string;
+    author_email: string;
+    diff?: {
+        changed: number;
+        files: (DiffResultTextFile | DiffResultBinaryFile)[];
+        insertions: number;
+        deletions: number;
+    };
+    fileName?: string;
+}
+
 declare module "obsidian" {
     interface App {
         loadLocalStorage(key: string): string | null;
