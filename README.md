@@ -2,9 +2,10 @@
 
 Plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
 
-Requirements, installation steps (including setup for mobile), tips and tricks, common issues and more can be found in the [wiki](https://github.com/denolehov/obsidian-git/wiki/).
+Requirements, installation steps (including setup for mobile), tips and tricks, common issues and more can be found in the [documentation](https://publish.obsidian.md/git-doc).
 
 For mobile users see [Mobile](#mobile) section below.
+
 ## Highlighted Features
 
 - Automatic vault backup every X minutes
@@ -53,14 +54,14 @@ For mobile users see [Mobile](#mobile) section below.
 
 ## Authentication
 
-Authentication may require additional setup. See more in the [Authentication documentation](https://github.com/denolehov/obsidian-git/wiki/Authentication)
+Authentication may require additional setup. See more in the [Authentication documentation](https://publish.obsidian.md/git-doc/Authentication)
 
 ### Obsidian on Linux
 
 - ⚠ Snap is not supported.
 - ⚠ Flatpak is not recommended, because it doesn't have access to all system files. 
 
-Please use AppImage instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
+Please use AppImage instead ([Linux installation guide](https://publish.obsidian.md/git-doc/Installation#Linux))
 
 ## Mobile
 
