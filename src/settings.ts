@@ -553,9 +553,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     )
                     .addToggle((toggle) =>
                         toggle
-                            // `plugin.settings.submoduleRecurseCheckout` is possibly undefined and cannot be passed to `setValue` by type definition.
-                            // However, passing `undefined` here will not cause an error at runtime, so we ignore this type error for the moment.
-                            // @ts-ignore
                             .setValue(plugin.settings.submoduleRecurseCheckout)
                             .onChange((value) => {
                                 plugin.settings.submoduleRecurseCheckout =
@@ -640,9 +637,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 `Requires restart of Obsidian to take effect. Use "\\" instead of "/" on Windows.`
             )
             .addText((cb) => {
-                // `plugin.settings.gitDir` is possibly undefined and cannot be passed to `setValue` by type definition.
-                // However, passing `undefined` here will not cause an error at runtime, so we ignore this type error for the moment.
-                // @ts-ignore
                 cb.setValue(plugin.settings.gitDir);
                 cb.setPlaceholder(".git");
                 cb.onChange((value) => {

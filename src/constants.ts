@@ -1,10 +1,7 @@
 import { Platform } from "obsidian";
 import { ObsidianGitSettings } from "./types";
 
-export const DEFAULT_SETTINGS: Omit<
-    ObsidianGitSettings,
-    "gitDir" | "submoduleRecurseCheckout"
-> = {
+export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     autoCommitMessage: undefined, // default undefined for settings migration
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
@@ -30,6 +27,8 @@ export const DEFAULT_SETTINGS: Omit<
     refreshSourceControlTimer: 7000,
     showBranchStatusBar: true,
     setLastSaveToLastCommit: false,
+    submoduleRecurseCheckout: false,
+    gitDir: "",
 };
 
 export const GIT_VIEW_CONFIG = {
