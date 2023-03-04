@@ -1,5 +1,7 @@
 name: test
-on: push
+on:
+    push:
+    pull_request:
 jobs:
     lint:
         runs-on: ubuntu-latest
