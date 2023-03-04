@@ -3,7 +3,7 @@ import { ObsidianGitSettings } from "./types";
 
 export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
-    autoCommitMessage: "vault backup: {{date}}",
+    autoCommitMessage: undefined, // default undefined for settings migration
     commitDateFormat: "YYYY-MM-DD HH:mm:ss",
     autoSaveInterval: 0,
     autoPushInterval: 0,
