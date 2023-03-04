@@ -228,9 +228,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .addText((text) =>
                     text
                         .setPlaceholder("vault backup: {{date}}")
-                        // `plugin.settings.autoCommitMessage` is possibly undefined and cannot be passed to `setValue` by type definition.
-                        // However, passing `undefined` here will not cause an error at runtime, so we ignore this type error for the moment.
-                        // @ts-ignore
                         .setValue(plugin.settings.autoCommitMessage)
                         .onChange((value) => {
                             plugin.settings.autoCommitMessage = value;
