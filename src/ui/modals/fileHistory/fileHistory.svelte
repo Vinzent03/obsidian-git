@@ -23,10 +23,11 @@
 <style lang="scss">
     .obsidian-git-file-history-parent {
         display: flex;
+        height: 100%;
         .items-list {
             width: 30%;
+            margin-right: 10px;
             .item {
-                width: 200px;
                 padding: var(--size-4-1) var(--size-4-2);
                 font-size: calc(var(--font-ui-small) + 1px);
                 border-radius: var(--radius-s);
@@ -42,9 +43,12 @@
             }
         }
         .content-area {
-            margin-top: 20px;
+            padding-top: 20px;
             width: 70%;
-            height: 550px;
+            textarea {
+                width: 100%;
+                height: 100%;
+            }
         }
     }
 </style>
@@ -57,7 +61,9 @@
             </div>
         {/each}
     </div>
-    <textarea class="content-area" spellcheck="false" disabled>
-        {items[activeIndex]?.content}
-    </textarea>
+    <div class="content-area">
+        <textarea spellcheck="false" disabled>
+            {items[activeIndex]?.content}
+        </textarea>
+    </div>
 </div>

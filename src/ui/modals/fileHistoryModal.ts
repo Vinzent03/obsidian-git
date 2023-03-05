@@ -12,6 +12,7 @@ export class FileHistoryModal extends Modal {
 
     onOpen() {
         this.modalEl.style.width = "800px";
+        this.modalEl.style.height = "600px";
 
         new FileHistoryComponent({
             target: this.contentEl,
