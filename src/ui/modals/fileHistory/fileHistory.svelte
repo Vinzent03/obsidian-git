@@ -1,0 +1,56 @@
+<script lang="ts">
+    import { GitManager } from "../../../gitManager";
+    import { TFile } from "obsidian";
+
+    export let gitManager: GitManager;
+    export let file: TFile;
+
+    let options: { date: string; content: string; }[] = [];
+    let activeIndex: number = 0;
+
+    gitManager.log(file.path).then(async (result) => {
+        const temp = [];
+        for (const r of result) {
+            temp.push({
+                date: r.date,
+                content: await gitManager.show(r.hash, file.path),
+            });
+        }
+        options = temp;
+    });
+</script>
+
+<style lang="scss">
+    .obsidian-git-file-history-parent {
+        display: flex;
+        .items-list {
+            width: 30%;
+            .item {
+                width: 200px;
+            }
+            .item:hover {
+                background-color: var(--background-modifier-hover);
+            }
+            .is-active {
+                background-color: var(--interactive-accent);
+            }
+        }
+        .content-area {
+            width: 70%;
+            height: 550px;
+        }
+    }
+</style>
+
+<div class="obsidian-git-file-history-parent">
+    <div class="items-list">
+        {#each options as option, i}
+            <div class="item" class:is-active={i === activeIndex} on:click={() => { activeIndex = i }}>
+                {option.date}
+            </div>
+        {/each}
+    </div>
+    <textarea class="content-area" spellcheck="false" disabled>
+        {options[activeIndex]?.content}
+    </textarea>
+</div>

@@ -42,6 +42,7 @@ import { IgnoreModal } from "./ui/modals/ignoreModal";
 import GitView from "./ui/sidebar/sidebarView";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { getNewLeaf, splitRemoteBranch } from "./utils";
+import { FileHistoryModal } from "./ui/modals/fileHistoryModal";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -202,6 +203,13 @@ export default class ObsidianGit extends Plugin {
             name: "Open file history on GitHub",
             editorCallback: (_, { file }) =>
                 openHistoryInGitHub(file, this.gitManager),
+        });
+
+        this.addCommand({
+            id: "view-history",
+            name: "Open file history",
+            editorCallback: (_, { file }) =>
+                new FileHistoryModal(this.gitManager, file).open(),
         });
 
         this.addCommand({

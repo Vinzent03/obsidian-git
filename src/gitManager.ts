@@ -3,6 +3,7 @@ import ObsidianGit from "./main";
 import {
     BranchInfo,
     FileStatusResult,
+    GitLogResult,
     Status,
     TreeItem,
     UnstagedFile,
@@ -76,6 +77,17 @@ export abstract class GitManager {
     abstract getRemotes(): Promise<string[]>;
 
     abstract getRemoteUrl(remote: string): Promise<string | undefined>;
+
+    abstract log(
+        file: string,
+        relativeToVault?: boolean
+    ): Promise<readonly GitLogResult[]>;
+
+    abstract show(
+        commitHash: string,
+        file: string,
+        relativeToVault?: boolean
+    ): Promise<string>;
 
     abstract getRemoteBranches(remote: string): Promise<string[]>;
 

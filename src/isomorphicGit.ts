@@ -18,6 +18,7 @@ import { MyAdapter } from "./myAdapter";
 import {
     BranchInfo,
     FileStatusResult,
+    GitLogResult,
     PluginState,
     Status,
     UnstagedFile,
@@ -735,6 +736,23 @@ export class IsomorphicGit extends GitManager {
         return (
             await this.wrapFS(git.listRemotes({ ...this.getRepo() }))
         ).filter((item) => item.remote == remote)[0]?.url;
+    }
+
+    async log(
+        file: string,
+        relativeToVault = true
+    ): Promise<readonly GitLogResult[]> {
+        // TODO: Implement
+        return [];
+    }
+
+    async show(
+        commitHash: string,
+        file: string,
+        relativeToVault = true
+    ): Promise<string> {
+        // TODO: Implement
+        return "";
     }
 
     updateBasePath(basePath: string): void {
