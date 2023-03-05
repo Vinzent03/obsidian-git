@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.17.1](https://github.com/denolehov/obsidian-git/compare/2.17.0...2.17.1) (2023-03-05)
+
+
+### Bug Fixes
+
+* show missing repo message ([70a6464](https://github.com/denolehov/obsidian-git/commit/70a64640f3b21fe61bbdaf0b6215d2878df732be))
+
 ## [2.17.0](https://github.com/denolehov/obsidian-git/compare/2.16.0...2.17.0) (2023-02-25)
 
 
