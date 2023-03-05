@@ -5,7 +5,7 @@
     export let gitManager: GitManager;
     export let file: TFile;
 
-    let options: { date: string; content: string; }[] = [];
+    let items: { date: string; content: string; }[] = [];
     let activeIndex: number = 0;
 
     gitManager.log(file.path).then(async (result) => {
@@ -16,7 +16,7 @@
                 content: await gitManager.show(r.hash, file.path),
             });
         }
-        options = temp;
+        items = temp;
     });
 </script>
 
@@ -48,9 +48,9 @@
 
 <div class="obsidian-git-file-history-parent">
     <div class="items-list">
-        {#each options as option, i}
+        {#each items as item, i}
             <div class="item" class:is-active={i === activeIndex} on:click={() => { activeIndex = i }}>
-                {option.date}
+                {item.date}
             </div>
         {/each}
     </div>
