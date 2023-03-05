@@ -27,6 +27,9 @@
             width: 30%;
             .item {
                 width: 200px;
+                padding: var(--size-4-1) var(--size-4-2);
+                font-size: calc(var(--font-ui-small) + 1px);
+                border-radius: var(--radius-s);
             }
             .item:hover {
                 background-color: var(--background-modifier-hover);
@@ -36,6 +39,7 @@
             }
         }
         .content-area {
+            margin-top: 20px;
             width: 70%;
             height: 550px;
         }
