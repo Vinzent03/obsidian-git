@@ -37,6 +37,9 @@
             .is-active {
                 background-color: var(--interactive-accent);
             }
+            .is-active:hover {
+                background-color: var(--interactive-accent);
+            }
         }
         .content-area {
             margin-top: 20px;
@@ -55,6 +58,6 @@
         {/each}
     </div>
     <textarea class="content-area" spellcheck="false" disabled>
-        {options[activeIndex]?.content}
+        {items[activeIndex]?.content}
     </textarea>
 </div>
