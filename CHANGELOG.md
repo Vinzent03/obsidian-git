@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.17.2](https://github.com/denolehov/obsidian-git/compare/2.17.1...2.17.2) (2023-03-06)
+
+
+### Bug Fixes
+
+* use correct git dir on mobile ([fd456e5](https://github.com/denolehov/obsidian-git/commit/fd456e5f505ba1bedc0ab85fdc62ee9aa91c18e5))
+
 ### [2.17.1](https://github.com/denolehov/obsidian-git/compare/2.17.0...2.17.1) (2023-03-05)
 
 
