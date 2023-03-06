@@ -189,7 +189,7 @@ export class MyAdapter {
     }
 
     private get gitDir(): string {
-        return this.plugin.settings.gitDir ?? ".git";
+        return this.plugin.settings.gitDir || ".git";
     }
 
     private maybeLog(text: string) {
