@@ -187,6 +187,8 @@ export class IsomorphicGit extends GitManager {
         unstagedFiles?: UnstagedFile[];
     }): Promise<number | undefined> {
         try {
+            await this.checkAuthorInfo();
+
             await this.stageAll({ status, unstagedFiles });
             return this.commit(message);
         } catch (error) {
