@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.17.4](https://github.com/denolehov/obsidian-git/compare/2.17.3...2.17.4) (2023-03-07)
+
+
+### Bug Fixes
+
+* add additional author check ([58ce847](https://github.com/denolehov/obsidian-git/commit/58ce84749936c78a2789f3eae1e2de3877350b96))
+
 ### [2.17.3](https://github.com/denolehov/obsidian-git/compare/2.17.2...2.17.3) (2023-03-07)
 
 
