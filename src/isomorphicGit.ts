@@ -413,7 +413,7 @@ export class IsomorphicGit extends GitManager {
             await this.fetch();
             const branchInfo = await this.branchInfo();
 
-            await this.wrapFS(
+            const mergeRes = await this.wrapFS(
                 git.merge({
                     ...this.getRepo(),
                     ours: branchInfo.current,
@@ -421,19 +421,21 @@ export class IsomorphicGit extends GitManager {
                     abortOnConflict: false,
                 })
             );
-            await this.wrapFS(
-                git.checkout({
-                    ...this.getRepo(),
-                    ref: branchInfo.current,
-                    onProgress: (progress) => {
-                        if (progressNotice !== undefined) {
-                            (progressNotice as any).noticeEl.innerText =
-                                this.getProgressText("Checkout", progress);
-                        }
-                    },
-                    remote: branchInfo.remote,
-                })
-            );
+            if (!mergeRes.alreadyMerged) {
+                await this.wrapFS(
+                    git.checkout({
+                        ...this.getRepo(),
+                        ref: branchInfo.current,
+                        onProgress: (progress) => {
+                            if (progressNotice !== undefined) {
+                                (progressNotice as any).noticeEl.innerText =
+                                    this.getProgressText("Checkout", progress);
+                            }
+                        },
+                        remote: branchInfo.remote,
+                    })
+                );
+            }
             progressNotice?.hide();
 
             const upstreamCommit = await this.resolveRef("HEAD");
