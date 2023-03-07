@@ -781,12 +781,23 @@ export default class ObsidianGit extends Plugin {
                     }
                 }
                 new Notice(`Cloning new repo into "${dir}"`);
-                await this.gitManager.clone(url, dir, depthInt);
+                const oldBase = this.settings.basePath;
+                const customDir = dir && dir !== ".";
+                //Set new base path before clone to ensure proper .git/index file location in isomorphic-git
+                if (customDir) {
+                    this.settings.basePath = dir;
+                }
+                try {
+                    await this.gitManager.clone(url, dir, depthInt);
+                } catch (error) {
+                    this.settings.basePath = oldBase;
+                    this.saveSettings();
+                    throw error;
+                }
                 new Notice("Cloned new repo.");
                 new Notice("Please restart Obsidian");
 
-                if (dir && dir !== ".") {
-                    this.settings.basePath = dir;
+                if (customDir) {
                     this.saveSettings();
                 }
             }

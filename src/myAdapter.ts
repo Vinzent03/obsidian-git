@@ -8,9 +8,12 @@ export class MyAdapter {
     index: any;
     indexctime: number | undefined;
     indexmtime: number | undefined;
+    lastBasePath: string | undefined;
+
     constructor(vault: Vault, private readonly plugin: ObsidianGit) {
         this.adapter = vault.adapter;
         this.vault = vault;
+        this.lastBasePath = this.plugin.settings.basePath;
 
         this.promises.readFile = this.readFile.bind(this);
         this.promises.writeFile = this.writeFile.bind(this);
@@ -36,6 +39,11 @@ export class MyAdapter {
             }
         } else {
             if (path.endsWith(this.gitDir + "/index")) {
+                if (this.plugin.settings.basePath != this.lastBasePath) {
+                    this.clearIndex();
+                    this.lastBasePath = this.plugin.settings.basePath;
+                    return this.adapter.readBinary(path);
+                }
                 return this.index ?? this.adapter.readBinary(path);
             }
             const file = this.vault.getAbstractFileByPath(path);
@@ -183,6 +191,10 @@ export class MyAdapter {
                 }
             );
         }
+        this.clearIndex();
+    }
+
+    clearIndex() {
         this.index = undefined;
         this.indexctime = undefined;
         this.indexmtime = undefined;
