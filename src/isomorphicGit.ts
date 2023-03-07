@@ -951,6 +951,8 @@ export class IsomorphicGit extends GitManager {
         filePath: string,
         stagedChanges = false
     ): Promise<string> {
+        const vaultPath = this.getVaultPath(filePath);
+
         const map: WalkerMap = async (file, [A]) => {
             if (filePath == file) {
                 const oid = await A!.oid();
@@ -988,20 +990,20 @@ export class IsomorphicGit extends GitManager {
                 });
 
             const diff = createPatch(
-                filePath,
+                vaultPath,
                 headContent ?? "",
                 stagedContent
             );
             return diff;
         } else {
             let workdirContent: string;
-            if (await app.vault.adapter.exists(filePath)) {
-                workdirContent = await app.vault.adapter.read(filePath);
+            if (await app.vault.adapter.exists(vaultPath)) {
+                workdirContent = await app.vault.adapter.read(vaultPath);
             } else {
                 workdirContent = "";
             }
 
-            const diff = createPatch(filePath, stagedContent, workdirContent);
+            const diff = createPatch(vaultPath, stagedContent, workdirContent);
             return diff;
         }
     }
