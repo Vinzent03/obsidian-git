@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.17.3](https://github.com/denolehov/obsidian-git/compare/2.17.2...2.17.3) (2023-03-07)
+
+
+### Bug Fixes
+
+* better error message for missing author ([2e9e3b1](https://github.com/denolehov/obsidian-git/commit/2e9e3b135de411f764ba6eef5b0aaf4d21216b55))
+* don't checkout when nothing changed after merge ([f807d8a](https://github.com/denolehov/obsidian-git/commit/f807d8a19712bc8f697e37ba1a571b47be77c064))
+* show diff with custom base path ([fdde0bf](https://github.com/denolehov/obsidian-git/commit/fdde0bf83b4fedf430fe829724992207f1393d48))
+* use correct git path on clone on mobile ([686c323](https://github.com/denolehov/obsidian-git/commit/686c3230daff6a7fa1d51cf9270295ad975e2599))
+
 ### [2.17.2](https://github.com/denolehov/obsidian-git/compare/2.17.1...2.17.2) (2023-03-06)
 
 
