@@ -197,6 +197,7 @@ export class IsomorphicGit extends GitManager {
 
     async commit(message: string): Promise<undefined> {
         try {
+            await this.checkAuthorInfo();
             this.plugin.setState(PluginState.commit);
             const formatMessage = await this.formatCommitMessage(message);
             const hadConflict =
@@ -412,6 +413,8 @@ export class IsomorphicGit extends GitManager {
             const localCommit = await this.resolveRef("HEAD");
             await this.fetch();
             const branchInfo = await this.branchInfo();
+
+            await this.checkAuthorInfo();
 
             const mergeRes = await this.wrapFS(
                 git.merge({
@@ -1031,6 +1034,14 @@ export class IsomorphicGit extends GitManager {
             path: row[this.FILE],
             vault_path: this.getVaultPath(row[this.FILE]),
         };
+    }
+
+    private async checkAuthorInfo(): Promise<void> {
+        const name = await this.getConfig("user.name");
+        const email = await this.getConfig("user.email");
+        if (!name || !email) {
+            throw "Git author information is not set. Please set it in the settings.";
+        }
     }
 
     private showNotice(message: string, infinity = true): Notice | undefined {
