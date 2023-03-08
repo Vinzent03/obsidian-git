@@ -39,6 +39,7 @@ export interface ObsidianGitSettings {
     showBranchStatusBar: boolean;
     setLastSaveToLastCommit: boolean;
     gitDir: string;
+    showFileMenu: boolean;
 }
 
 export type SyncMethod = "rebase" | "merge" | "reset";

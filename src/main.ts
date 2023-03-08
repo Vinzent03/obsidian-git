@@ -518,6 +518,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     handleFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
+        if (!this.settings.showFileMenu) return;
         if (source !== "file-explorer-context-menu") {
             return;
         }

@@ -29,6 +29,7 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
         setLastSaveToLastCommit: false,
         submoduleRecurseCheckout: false,
         gitDir: "",
+        showFileMenu: true,
     };
 
 export const GIT_VIEW_CONFIG = {
