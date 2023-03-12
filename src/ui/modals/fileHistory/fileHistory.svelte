@@ -64,8 +64,6 @@
         {/each}
     </div>
     <div class="content-area">
-        <textarea spellcheck="false" disabled>
-            {items[activeIndex]?.content}
-        </textarea>
+        <textarea spellcheck="false" disabled>{items[activeIndex]?.content}</textarea>
     </div>
 </div>
