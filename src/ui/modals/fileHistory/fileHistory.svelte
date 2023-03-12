@@ -8,16 +8,18 @@
     let items: { date: string; content: string; }[] = [];
     let activeIndex: number = 0;
 
-    gitManager.log(file.path).then(async (result) => {
-        const temp = [];
+    const main = async () => {
+        const result = await gitManager.log(file.path);
         for (const r of result) {
-            temp.push({
+            items.push({
                 date: r.date,
                 content: await gitManager.show(r.hash, file.path),
             });
         }
-        items = temp;
-    });
+        items = items;
+    };
+
+    main();
 </script>
 
 <style lang="scss">
