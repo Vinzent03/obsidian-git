@@ -5,7 +5,7 @@
     export let gitManager: GitManager;
     export let file: TFile;
 
-    let items: { date: string; content: string; }[] = [];
+    let items: { date: string; message: string; content: string; }[] = [];
     let activeIndex: number = 0;
 
     const main = async () => {
@@ -13,6 +13,7 @@
         for (const r of result) {
             items.push({
                 date: r.date,
+                message: r.message,
                 content: await gitManager.show(r.hash, file.path),
             });
         }
@@ -63,7 +64,8 @@
     <div class="items-list">
         {#each items as item, i}
             <div class="item" class:is-active={i === activeIndex} on:click={() => { activeIndex = i }}>
-                {item.date}
+                <div>{item.message}</div>
+                <div>{item.date}</div>
             </div>
         {/each}
     </div>
