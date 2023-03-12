@@ -14,6 +14,8 @@ export class FileHistoryModal extends Modal {
         this.modalEl.style.width = "800px";
         this.modalEl.style.height = "600px";
 
+        this.contentEl.style.overflowY = "hidden";
+
         new FileHistoryComponent({
             target: this.contentEl,
             props: {

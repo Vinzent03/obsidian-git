@@ -26,9 +26,13 @@
     .obsidian-git-file-history-parent {
         display: flex;
         height: 100%;
+        .items-list::-webkit-scrollbar {
+            display: none;
+        }
         .items-list {
             width: 30%;
             margin-right: 10px;
+            overflow-y: scroll;
             .item {
                 padding: var(--size-4-1) var(--size-4-2);
                 font-size: calc(var(--font-ui-small) + 1px);
