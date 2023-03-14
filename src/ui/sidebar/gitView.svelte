@@ -266,7 +266,6 @@
         <textarea
             {rows}
             class="commit-msg-input"
-            type="text"
             spellcheck="true"
             placeholder="Commit Message"
             bind:value={commitMessage}
