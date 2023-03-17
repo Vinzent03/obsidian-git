@@ -25,10 +25,14 @@ The instructions assume you are using [GitHub](https://github.com), but can be e
 1. Make sure any outstanding changes on all devices are pushed and reconciled with the remote repo.
 2. Install Obsidian for Android or iOS.
 3. Create a new vault (or point Obsidian to an empty directory). Do NOT select `Store in iCloud` if you are on iOS.
-4. If your repo is hosted on GitHub, [authentication must be done with a personal access token](https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/). Detailed instruction for that process can be found [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). 
-	- Minimal permissions required are
-		- "Read access to metadata"
-		- "Read and Write access to contents and commit status"
+4. If your repo is hosted on GitHub, [authentication must be done with a fine-grained personal access token](https://github.blog/2022-10-18-introducing-fine-grained-personal-access-tokens-for-github/). Detailed instruction for that process can be found [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token). The minimal **repository** permissions required are as follows:
+
+    | Scope           | Access         |
+    | --------------- | -------------- |
+    | Commit statuses | Read and write |
+    | Contents        | Read and write |
+    | Metadata        | Read-only      |
+
 1. In Obsidian settings, enable community plugins. Browse plugins to install Obsidian Git.
 2. Enable Obsidian Git (on the same screen)
 3. Go to Options for the Obsidian Git plugin (bottom of main settings page, under Community Plugins section)
