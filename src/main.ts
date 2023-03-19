@@ -53,7 +53,6 @@ export default class ObsidianGit extends Plugin {
     timeoutIDBackup?: number;
     timeoutIDPush?: number;
     timeoutIDPull?: number;
-    lastUpdate: number;
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
@@ -838,7 +837,6 @@ export default class ObsidianGit extends Plugin {
         }
 
         dispatchEvent(new CustomEvent("git-refresh"));
-        this.lastUpdate = Date.now();
         this.setState(PluginState.idle);
     }
 
@@ -1078,7 +1076,6 @@ export default class ObsidianGit extends Plugin {
             console.log("Pushing....");
             const pushedFiles = await this.gitManager.push();
             console.log("Pushed!", pushedFiles);
-            this.lastUpdate = Date.now();
             if (pushedFiles > 0) {
                 this.displayMessage(
                     `Pushed ${pushedFiles} ${
