@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
         gitDir: "",
     };
 
-export const GIT_VIEW_CONFIG = {
+export const SOURCE_CONTROL_VIEW_CONFIG = {
     type: "git-view",
     name: "Source Control",
     icon: "git-pull-request",

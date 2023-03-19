@@ -21,7 +21,7 @@ import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import {
     DEFAULT_SETTINGS,
     DIFF_VIEW_CONFIG,
-    GIT_VIEW_CONFIG,
+    SOURCE_CONTROL_VIEW_CONFIG,
 } from "./constants";
 import { GitManager } from "./gitManager";
 import { IsomorphicGit } from "./isomorphicGit";
@@ -81,7 +81,7 @@ export default class ObsidianGit extends Plugin {
 
     async refresh() {
         const gitView = this.app.workspace.getLeavesOfType(
-            GIT_VIEW_CONFIG.type
+            SOURCE_CONTROL_VIEW_CONFIG.type
         );
 
         if (this.settings.changedFilesInStatusBar || gitView.length > 0) {
@@ -112,7 +112,7 @@ export default class ObsidianGit extends Plugin {
     async loadPlugin() {
         addEventListener("git-refresh", this.refresh.bind(this));
 
-        this.registerView(GIT_VIEW_CONFIG.type, (leaf) => {
+        this.registerView(SOURCE_CONTROL_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
         });
 
@@ -121,7 +121,7 @@ export default class ObsidianGit extends Plugin {
         });
 
         (this.app.workspace as any).registerHoverLinkSource(
-            GIT_VIEW_CONFIG.type,
+            SOURCE_CONTROL_VIEW_CONFIG.type,
             {
                 display: "Git View",
                 defaultMod: true,
@@ -152,13 +152,13 @@ export default class ObsidianGit extends Plugin {
             name: "Open source control view",
             callback: async () => {
                 const leafs = this.app.workspace.getLeavesOfType(
-                    GIT_VIEW_CONFIG.type
+                    SOURCE_CONTROL_VIEW_CONFIG.type
                 );
                 let leaf: WorkspaceLeaf;
                 if (leafs.length === 0) {
                     leaf = this.app.workspace.getRightLeaf(false);
                     await leaf.setViewState({
-                        type: GIT_VIEW_CONFIG.type,
+                        type: SOURCE_CONTROL_VIEW_CONFIG.type,
                     });
                 } else {
                     leaf = leafs.first()!;
@@ -601,7 +601,7 @@ export default class ObsidianGit extends Plugin {
 
     async onunload() {
         (this.app.workspace as any).unregisterHoverLinkSource(
-            GIT_VIEW_CONFIG.type
+            SOURCE_CONTROL_VIEW_CONFIG.type
         );
 
         this.unloadPlugin();

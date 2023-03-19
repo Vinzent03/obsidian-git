@@ -1,5 +1,5 @@
 import { HoverParent, HoverPopover, ItemView, WorkspaceLeaf } from "obsidian";
-import { GIT_VIEW_CONFIG } from "src/constants";
+import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
 import ObsidianGit from "src/main";
 // @tsconfig/svelte is required to resolve this error.
 // Ignore temporarily.
@@ -18,15 +18,15 @@ export default class GitView extends ItemView implements HoverParent {
     }
 
     getViewType(): string {
-        return GIT_VIEW_CONFIG.type;
+        return SOURCE_CONTROL_VIEW_CONFIG.type;
     }
 
     getDisplayText(): string {
-        return GIT_VIEW_CONFIG.name;
+        return SOURCE_CONTROL_VIEW_CONFIG.name;
     }
 
     getIcon(): string {
-        return GIT_VIEW_CONFIG.icon;
+        return SOURCE_CONTROL_VIEW_CONFIG.icon;
     }
 
     onClose(): Promise<void> {
