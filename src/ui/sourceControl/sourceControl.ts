@@ -4,7 +4,7 @@ import ObsidianGit from "src/main";
 // @tsconfig/svelte is required to resolve this error.
 // Ignore temporarily.
 // @ts-ignore
-import GitViewComponent from "./gitView.svelte";
+import GitViewComponent from "./sourceControl.svelte";
 
 export default class GitView extends ItemView implements HoverParent {
     plugin: ObsidianGit;

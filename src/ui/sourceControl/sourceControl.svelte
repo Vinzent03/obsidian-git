@@ -15,7 +15,7 @@
     import PulledFileComponent from "./components/pulledFileComponent.svelte";
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
     import TreeComponent from "./components/treeComponent.svelte";
-    import GitView from "./sidebarView";
+    import GitView from "./sourceControl";
 
     export let plugin: ObsidianGit;
     export let view: GitView;

@@ -5,7 +5,7 @@
     import { GitManager } from "src/gitManager";
     import { FileStatusResult } from "src/types";
     import { getNewLeaf } from "src/utils";
-    import GitView from "../sidebarView";
+    import GitView from "../sourceControl";
 
     export let change: FileStatusResult;
     export let view: GitView;

@@ -4,7 +4,7 @@
     import { FileType, RootTreeItem, TreeItem } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
     import { slide } from "svelte/transition";
-    import GitView from "../sidebarView";
+    import GitView from "../sourceControl";
     import FileComponent from "./fileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";

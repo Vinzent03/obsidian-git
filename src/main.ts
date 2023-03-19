@@ -39,7 +39,7 @@ import DiffView from "./ui/diff/diffView";
 import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
-import GitView from "./ui/sidebar/sidebarView";
+import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { getNewLeaf, splitRemoteBranch } from "./utils";
 
