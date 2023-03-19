@@ -444,7 +444,6 @@ export class IsomorphicGit extends GitManager {
             progressNotice?.hide();
 
             const upstreamCommit = await this.resolveRef("HEAD");
-            this.plugin.lastUpdate = Date.now();
             const changedFiles = await this.getFileChangesCount(
                 localCommit,
                 upstreamCommit
@@ -505,6 +504,21 @@ export class IsomorphicGit extends GitManager {
             this.plugin.displayError(error);
             throw error;
         }
+    }
+
+    async getUnpushedCommits(): Promise<number> {
+        const status = await this.branchInfo();
+        const trackingBranch = status.tracking;
+        const currentBranch = status.current;
+        const localCommit = await this.resolveRef(currentBranch!);
+        const upstreamCommit = await this.resolveRef(trackingBranch!);
+
+        const changedFiles = await this.getFileChangesCount(
+            localCommit,
+            upstreamCommit
+        );
+
+        return changedFiles.length;
     }
 
     async canPush(): Promise<boolean> {

@@ -360,6 +360,20 @@ export class SimpleGit extends GitManager {
         return remoteChangedFiles;
     }
 
+    async getUnpushedCommits(): Promise<number> {
+        const status = await this.git.status();
+        const trackingBranch = status.tracking!;
+        const currentBranch = status.current!;
+        const remoteChangedFiles = (
+            await this.git.diffSummary(
+                [currentBranch, trackingBranch, "--"],
+                (err) => this.onError(err)
+            )
+        ).changed;
+
+        return remoteChangedFiles;
+    }
+
     async canPush(): Promise<boolean> {
         // allow pushing in submodules even if the root has no changes.
         if (this.plugin.settings.updateSubmodules === true) {

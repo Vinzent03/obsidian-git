@@ -10,6 +10,8 @@ interface StatusBarMessage {
 export class StatusBar {
     private messages: StatusBarMessage[] = [];
     private currentMessage: StatusBarMessage | null;
+    private lastCommitTimestamp?: Date;
+    private unPushedCommits?: number;
     public lastMessageTimestamp: number | null;
     private base = "obsidian-git-statusbar-";
     private iconEl: HTMLElement;
@@ -20,6 +22,8 @@ export class StatusBar {
         private readonly plugin: ObsidianGit
     ) {
         this.statusBarEl.setAttribute("aria-label-position", "top");
+
+        addEventListener("git-refresh", this.refreshCommitTimestamp.bind(this));
     }
 
     public displayMessage(message: string, timeout: number) {
@@ -63,9 +67,10 @@ export class StatusBar {
             this.textEl.style.marginLeft = "5px";
             this.iconEl.style.float = "left";
         }
+
         switch (this.plugin.state) {
             case PluginState.idle:
-                this.displayFromNow(this.plugin.lastUpdate);
+                this.displayFromNow();
                 break;
             case PluginState.status:
                 this.statusBarEl.ariaLabel = "Checking repository status...";
@@ -105,13 +110,18 @@ export class StatusBar {
         }
     }
 
-    private displayFromNow(timestamp: number): void {
+    private displayFromNow(): void {
+        const timestamp = this.lastCommitTimestamp;
         if (timestamp) {
             const moment = (window as any).moment;
             const fromNow = moment(timestamp).fromNow();
             this.statusBarEl.ariaLabel = `${
                 this.plugin.offlineMode ? "Offline: " : ""
-            }Last Git update: ${fromNow}`;
+            }Last Commit: ${fromNow}`;
+
+            if (this.unPushedCommits ?? 0 > 0) {
+                this.statusBarEl.ariaLabel += `\n(${this.unPushedCommits} unpushed commits)`;
+            }
         } else {
             this.statusBarEl.ariaLabel = this.plugin.offlineMode
                 ? "Git is offline"
@@ -132,5 +142,12 @@ export class StatusBar {
             );
         }
         this.statusBarEl.addClass(this.base + "idle");
+    }
+
+    private async refreshCommitTimestamp() {
+        this.lastCommitTimestamp =
+            await this.plugin.gitManager.getLastCommitTime();
+        this.unPushedCommits =
+            await this.plugin.gitManager.getUnpushedCommits();
     }
 }

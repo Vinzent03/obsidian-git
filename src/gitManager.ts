@@ -42,6 +42,8 @@ export abstract class GitManager {
 
     abstract push(): Promise<number>;
 
+    abstract getUnpushedCommits(): Promise<number>;
+
     abstract canPush(): Promise<boolean>;
 
     abstract checkRequirements(): Promise<
