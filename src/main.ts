@@ -1319,7 +1319,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     startAutoBackup(minutes?: number) {
-        const time = (minutes ?? this.settings.autoSaveInterval) * 60000;
+        let time = (minutes ?? this.settings.autoSaveInterval) * 60000;
         if (this.settings.autoBackupAfterFileChange) {
             if (minutes === 0) {
                 this.doAutoBackup();
@@ -1334,6 +1334,8 @@ export default class ObsidianGit extends Plugin {
                 );
             }
         } else {
+            // max timeout in js
+            if (time > 2147483647) time = 2147483647;
             this.timeoutIDBackup = window.setTimeout(
                 () => this.doAutoBackup(),
                 time
@@ -1356,21 +1358,29 @@ export default class ObsidianGit extends Plugin {
     }
 
     startAutoPull(minutes?: number) {
+        let time = (minutes ?? this.settings.autoPullInterval) * 60000;
+        // max timeout in js
+        if (time > 2147483647) time = 2147483647;
+
         this.timeoutIDPull = window.setTimeout(() => {
             this.promiseQueue.addTask(() => this.pullChangesFromRemote());
             this.saveLastAuto(new Date(), "pull");
             this.saveSettings();
             this.startAutoPull();
-        }, (minutes ?? this.settings.autoPullInterval) * 60000);
+        }, time);
     }
 
     startAutoPush(minutes?: number) {
+        let time = (minutes ?? this.settings.autoPushInterval) * 60000;
+        // max timeout in js
+        if (time > 2147483647) time = 2147483647;
+
         this.timeoutIDPush = window.setTimeout(() => {
             this.promiseQueue.addTask(() => this.push());
             this.saveLastAuto(new Date(), "push");
             this.saveSettings();
             this.startAutoPush();
-        }, (minutes ?? this.settings.autoPushInterval) * 60000);
+        }, time);
     }
 
     clearAutoBackup(): boolean {
