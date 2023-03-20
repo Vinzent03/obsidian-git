@@ -21,6 +21,7 @@ import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import {
     DEFAULT_SETTINGS,
     DIFF_VIEW_CONFIG,
+    HISTORY_VIEW_CONFIG,
     SOURCE_CONTROL_VIEW_CONFIG,
 } from "./constants";
 import { GitManager } from "./gitManager";
@@ -36,6 +37,7 @@ import {
     UnstagedFile,
 } from "./types";
 import DiffView from "./ui/diff/diffView";
+import HistoryView from "./ui/history/historyView";
 import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
@@ -115,6 +117,9 @@ export default class ObsidianGit extends Plugin {
         this.registerView(SOURCE_CONTROL_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
         });
+        this.registerView(HISTORY_VIEW_CONFIG.type, (leaf) => {
+            return new HistoryView(leaf, this);
+        });
 
         this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {
             return new DiffView(leaf, this);
@@ -159,6 +164,27 @@ export default class ObsidianGit extends Plugin {
                     leaf = this.app.workspace.getRightLeaf(false);
                     await leaf.setViewState({
                         type: SOURCE_CONTROL_VIEW_CONFIG.type,
+                    });
+                } else {
+                    leaf = leafs.first()!;
+                }
+                this.app.workspace.revealLeaf(leaf);
+
+                dispatchEvent(new CustomEvent("git-refresh"));
+            },
+        });
+        this.addCommand({
+            id: "open-git-view",
+            name: "Open history view",
+            callback: async () => {
+                const leafs = this.app.workspace.getLeavesOfType(
+                    HISTORY_VIEW_CONFIG.type
+                );
+                let leaf: WorkspaceLeaf;
+                if (leafs.length === 0) {
+                    leaf = this.app.workspace.getRightLeaf(false);
+                    await leaf.setViewState({
+                        type: HISTORY_VIEW_CONFIG.type,
                     });
                 } else {
                     leaf = leafs.first()!;

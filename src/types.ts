@@ -126,6 +126,27 @@ export enum PluginState {
     conflicted,
 }
 
+export interface LogEntry {
+    hash: string;
+    date: string;
+    message: string;
+    refs: string[];
+    body: string;
+    diff: DiffEntry;
+}
+
+export interface DiffEntry {
+    changed: Number;
+    files: DiffFile[];
+}
+
+export interface DiffFile {
+    file: string;
+    hash: string;
+    status: string;
+    binary: boolean;
+}
+
 export interface WalkDifference {
     path: string;
     type: "modify" | "add" | "remove";

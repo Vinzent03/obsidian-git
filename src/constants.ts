@@ -37,6 +37,12 @@ export const SOURCE_CONTROL_VIEW_CONFIG = {
     icon: "git-pull-request",
 };
 
+export const HISTORY_VIEW_CONFIG = {
+    type: "git-history-view",
+    name: "History",
+    icon: "history",
+};
+
 export const DIFF_VIEW_CONFIG = {
     type: "diff-view",
     name: "Diff View",

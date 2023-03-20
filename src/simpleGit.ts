@@ -6,7 +6,13 @@ import { sep } from "path";
 import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "./main";
-import { BranchInfo, FileStatusResult, PluginState, Status } from "./types";
+import {
+    BranchInfo,
+    FileStatusResult,
+    LogEntry,
+    PluginState,
+    Status,
+} from "./types";
 import { splitRemoteBranch } from "./utils";
 
 export class SimpleGit extends GitManager {
@@ -425,19 +431,37 @@ export class SimpleGit extends GitManager {
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
     async log(
         file: string,
-        relativeToVault = true
-    ): Promise<
-        readonly (simple.DefaultLogFields &
-            simple.ListLogLine & { fileName?: string })[]
-    > {
-        const path = this.getPath(file, relativeToVault);
-
+        relativeToVault = true,
+        limit?: number
+    ): Promise<readonly (LogEntry & { fileName?: string })[]> {
+        let path: string | undefined;
+        if (file) {
+            path = this.getPath(file, relativeToVault);
+        }
         const res = await this.git.log(
-            { file: path, "--name-only": null },
+            {
+                file: path,
+                maxCount: limit,
+                "-m": null,
+                // "--stat": 4096,
+                "--name-status": null,
+            },
             (err) => this.onError(err)
         );
+        console.log(res);
+        res.all[2].diff;
+        console.log(res.all.find((e) => !e.diff));
+
         return res.all.map((e) => ({
             ...e,
+            refs: e.refs.split(", "),
+            diff: {
+                ...e.diff,
+                files: e.diff?.files.map((f) => ({
+                    ...f,
+                    status: "M",
+                })),
+            },
             fileName: e.diff?.files.first()?.file,
         }));
     }

@@ -12,6 +12,10 @@
     padding: 0;
 }
 
+.workspace-leaf-content[data-type='git-history-view'] .view-content {
+    padding: 0;
+}
+
 .loading>svg {
     animation: 2s linear infinite loading;
     transform-origin: 50% 50%;
