@@ -460,6 +460,7 @@ export class SimpleGit extends GitManager {
                 files: e.diff?.files.map((f) => ({
                     ...f,
                     status: "M",
+                    path: f.file,
                 })),
             },
             fileName: e.diff?.files.first()?.file,

@@ -5,8 +5,8 @@
         FileStatusResult,
         FileType,
         PluginState,
-        RootTreeItem,
         Status,
+        StatusRootTreeItem,
     } from "src/types";
     import { getDisplayPath } from "src/utils";
     import { onDestroy } from "svelte";
@@ -25,9 +25,9 @@
     let lastPulledFiles: FileStatusResult[] = [];
     let commitMessage = plugin.settings.commitMessage;
     let buttons: HTMLElement[] = [];
-    let changeHierarchy: RootTreeItem | undefined;
-    let stagedHierarchy: RootTreeItem | undefined;
-    let lastPulledFilesHierarchy: RootTreeItem;
+    let changeHierarchy: StatusRootTreeItem | undefined;
+    let stagedHierarchy: StatusRootTreeItem | undefined;
+    let lastPulledFilesHierarchy: StatusRootTreeItem;
     let changesOpen = true;
     let stagedOpen = true;
     let lastPulledFilesOpen = true;

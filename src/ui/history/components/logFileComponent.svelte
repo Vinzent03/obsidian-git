@@ -32,7 +32,7 @@
     <!-- svelte-ignore a11y-unknown-aria-attribute -->
     <div class="nav-file-title" aria-label-position={side}>
         <div class="nav-file-title-content">
-            {diff.file.split("/").last()?.replace(".md", "")}
+            {diff.path.split("/").last()?.replace(".md", "")}
         </div>
         <div class="tools">
             <span class="type" data-type={diff.status}>{diff.status}</span>

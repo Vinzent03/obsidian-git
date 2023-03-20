@@ -1,14 +1,14 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
     import ObsidianGit from "src/main";
-    import { FileType, RootTreeItem, TreeItem } from "src/types";
+    import { FileType, StatusRootTreeItem, TreeItem } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
     import { slide } from "svelte/transition";
     import GitView from "../sourceControl";
     import FileComponent from "./fileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";
-    export let hierarchy: RootTreeItem;
+    export let hierarchy: StatusRootTreeItem;
     export let plugin: ObsidianGit;
     export let view: GitView;
     export let fileType: FileType;
@@ -49,22 +49,22 @@
 
 <main class:topLevel>
     {#each hierarchy.children as entity}
-        {#if entity.statusResult}
+        {#if entity.data}
             <div>
                 {#if fileType == FileType.staged}
                     <StagedFileComponent
-                        change={entity.statusResult}
+                        change={entity.data}
                         manager={plugin.gitManager}
                         {view}
                     />
                 {:else if fileType == FileType.changed}
                     <FileComponent
-                        change={entity.statusResult}
+                        change={entity.data}
                         manager={plugin.gitManager}
                         {view}
                     />
                 {:else if fileType == FileType.pulled}
-                    <PulledFileComponent change={entity.statusResult} {view} />
+                    <PulledFileComponent change={entity.data} {view} />
                 {/if}
             </div>
         {:else}

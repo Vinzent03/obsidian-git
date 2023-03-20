@@ -142,7 +142,7 @@ export interface DiffEntry {
 }
 
 export interface DiffFile {
-    file: string;
+    path: string;
     hash: string;
     status: string;
     binary: boolean;
@@ -164,15 +164,22 @@ export interface BranchInfo {
     branches: string[];
 }
 
-export interface TreeItem {
+export interface TreeItem<T = DiffFile | FileStatusResult> {
     title: string;
     path: string;
     vaultPath: string;
-    statusResult?: FileStatusResult;
-    children?: TreeItem[];
+    data?: T;
+    children?: TreeItem<T>[];
 }
+export type StatusTreeItem = TreeItem<FileStatusResult>;
 
-export type RootTreeItem = TreeItem & { children: TreeItem[] };
+export type HistoryTreeItem = TreeItem<DiffFile>;
+
+export type RootTreeItem<T> = TreeItem<T> & { children: TreeItem<T>[] };
+
+export type StatusRootTreeItem = RootTreeItem<FileStatusResult>;
+
+export type HistoryRootTreeItem = RootTreeItem<DiffFile>;
 
 export interface DiffViewState {
     staged: boolean;

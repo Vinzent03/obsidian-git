@@ -2,6 +2,7 @@ import { App } from "obsidian";
 import ObsidianGit from "./main";
 import {
     BranchInfo,
+    DiffFile,
     FileStatusResult,
     Status,
     TreeItem,
@@ -110,11 +111,11 @@ export abstract class GitManager {
             : path;
     }
 
-    private _getTreeStructure(
-        children: FileStatusResult[],
+    private _getTreeStructure<T = DiffFile | FileStatusResult>(
+        children: (T & { path: string })[],
         beginLength = 0
-    ): TreeItem[] {
-        const list: TreeItem[] = [];
+    ): TreeItem<T>[] {
+        const list: TreeItem<T>[] = [];
         children = [...children];
         while (children.length > 0) {
             const first = children.first()!;
@@ -145,7 +146,7 @@ export abstract class GitManager {
             } else {
                 list.push({
                     title: restPath,
-                    statusResult: first,
+                    data: first,
                     path: first.path,
                     vaultPath: this.getVaultPath(first.path),
                 });
@@ -159,12 +160,12 @@ export abstract class GitManager {
      * Sorts the children and simplifies the title
      * If a node only contains another subdirectory, that subdirectory is moved up one level and integrated into the parent node
      */
-    private simplify(tree: TreeItem[]): TreeItem[] {
+    private simplify<T>(tree: TreeItem<T>[]): TreeItem<T>[] {
         for (const node of tree) {
             while (true) {
                 const singleChild = node.children?.length == 1;
                 const singleChildIsDir =
-                    node.children?.first()?.statusResult == undefined;
+                    node.children?.first()?.data == undefined;
 
                 if (
                     !(
@@ -176,18 +177,18 @@ export abstract class GitManager {
                     break;
                 const child = node.children.first()!;
                 node.title += "/" + child.title;
-                node.statusResult = child.statusResult;
+                node.data = child.data;
                 node.path = child.path;
                 node.vaultPath = child.vaultPath;
                 node.children = child.children;
             }
             if (node.children != undefined) {
-                this.simplify(node.children);
+                this.simplify<T>(node.children);
             }
             node.children?.sort((a, b) => {
                 const dirCompare =
-                    (b.statusResult == undefined ? 1 : 0) -
-                    (a.statusResult == undefined ? 1 : 0);
+                    (b.data == undefined ? 1 : 0) -
+                    (a.data == undefined ? 1 : 0);
                 if (dirCompare != 0) {
                     return dirCompare;
                 } else {
@@ -197,8 +198,7 @@ export abstract class GitManager {
         }
         return tree.sort((a, b) => {
             const dirCompare =
-                (b.statusResult == undefined ? 1 : 0) -
-                (a.statusResult == undefined ? 1 : 0);
+                (b.data == undefined ? 1 : 0) - (a.data == undefined ? 1 : 0);
             if (dirCompare != 0) {
                 return dirCompare;
             } else {
@@ -207,10 +207,12 @@ export abstract class GitManager {
         });
     }
 
-    getTreeStructure(children: FileStatusResult[]): TreeItem[] {
-        const tree = this._getTreeStructure(children);
+    getTreeStructure<T = DiffFile | FileStatusResult>(
+        children: (T & { path: string })[]
+    ): TreeItem<T>[] {
+        const tree = this._getTreeStructure<T>(children);
 
-        const res = this.simplify(tree);
+        const res = this.simplify<T>(tree);
         return res;
     }
 
