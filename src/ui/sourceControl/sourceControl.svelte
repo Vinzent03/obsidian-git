@@ -8,6 +8,7 @@
         RootTreeItem,
         Status,
     } from "src/types";
+    import { getDisplayPath } from "src/utils";
     import { onDestroy } from "svelte";
     import { slide } from "svelte/transition";
     import { DiscardModal } from "../modals/discardModal";
@@ -112,7 +113,7 @@
                 return a.vault_path
                     .split("/")
                     .last()!
-                    .localeCompare(b.vault_path.split("/").last()!);
+                    .localeCompare(getDisplayPath(b.vault_path));
             };
             status.changed.sort(sort);
             status.staged.sort(sort);
@@ -265,7 +266,6 @@
         <textarea
             {rows}
             class="commit-msg-input"
-            type="text"
             spellcheck="true"
             placeholder="Commit Message"
             bind:value={commitMessage}

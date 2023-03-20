@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.18.0](https://github.com/denolehov/obsidian-git/compare/2.17.4...2.18.0) (2023-03-20)
+
+
+### Features
+
+* add setting to hide file menu actions ([a59d38a](https://github.com/denolehov/obsidian-git/commit/a59d38a9f00042a1c27dc64426cd93e595f8eb6b)), closes [#456](https://github.com/denolehov/obsidian-git/issues/456)
+* show last commit time in status bar ([4525fef](https://github.com/denolehov/obsidian-git/commit/4525fef302c23b54c233186bdbf898615fc1b314)), closes [#334](https://github.com/denolehov/obsidian-git/issues/334)
+
+
+### Bug Fixes
+
+* catch huge auto intervals ([b96efc5](https://github.com/denolehov/obsidian-git/commit/b96efc5e06654f144d5837e784da297d79496c51)), closes [#153](https://github.com/denolehov/obsidian-git/issues/153)
+* minor source control view improvements ([fd7792c](https://github.com/denolehov/obsidian-git/commit/fd7792c80403d884d09c31bb09a76799bbd0dff0))
+* typo in settings ([4014057](https://github.com/denolehov/obsidian-git/commit/4014057879d24cb176a2ee1baac868fab05bc856)), closes [#468](https://github.com/denolehov/obsidian-git/issues/468)
+
 ### [2.17.4](https://github.com/denolehov/obsidian-git/compare/2.17.3...2.17.4) (2023-03-07)
 
 

@@ -30,3 +30,8 @@ export function splitRemoteBranch(
     const [remote, ...branch] = remoteBranch.split("/");
     return [remote, branch.length === 0 ? undefined : branch.join("/")];
 }
+
+export function getDisplayPath(path: string): string {
+    if (path.endsWith("/")) return path;
+    return path.split("/").last()!.replace(".md", "");
+}

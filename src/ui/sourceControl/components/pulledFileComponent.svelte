@@ -2,7 +2,7 @@
     import { TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
     import { FileStatusResult } from "src/types";
-    import { getNewLeaf } from "src/utils";
+    import { getDisplayPath, getNewLeaf } from "src/utils";
     import GitView from "../sourceControl";
 
     export let change: FileStatusResult;
@@ -11,15 +11,8 @@
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
-        if (
-            !change.path.startsWith(view.app.vault.configDir) ||
-            !change.path.startsWith(".")
-        ) {
-            hoverPreview(
-                event,
-                view as any,
-                change.vault_path.split("/").last()!.replace(".md", "")
-            );
+        if (app.vault.getAbstractFileByPath(change.vault_path)) {
+            hoverPreview(event, view as any, change.vault_path);
         }
     }
 
@@ -36,12 +29,10 @@
     <div
         class="nav-file-title"
         aria-label-position={side}
-        aria-label={change.vault_path.split("/").last() != change.vault_path
-            ? change.vault_path
-            : ""}
+        aria-label={change.vault_path}
     >
         <div class="nav-file-title-content">
-            {change.vault_path.split("/").last()?.replace(".md", "")}
+            {getDisplayPath(change.vault_path)}
         </div>
         <div class="tools">
             <span class="type" data-type={change.working_dir}

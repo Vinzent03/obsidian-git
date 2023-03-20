@@ -437,6 +437,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Show stage/unstage button in file menu")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.showFileMenu)
+                    .onChange((value) => {
+                        plugin.settings.showFileMenu = value;
+                        plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Show branch status bar")
             .setDesc(
                 "Obsidian must be restarted for the changes to take affect"

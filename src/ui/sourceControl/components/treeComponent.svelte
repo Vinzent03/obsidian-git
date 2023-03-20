@@ -72,10 +72,7 @@
                 <div
                     class="nav-folder-title"
                     aria-label-position={side}
-                    aria-label={entity.vaultPath.split("/").last() !=
-                    entity.vaultPath
-                        ? entity.vaultPath
-                        : ""}
+                    aria-label={entity.vaultPath}
                     on:click|self={() => fold(entity)}
                 >
                     <div

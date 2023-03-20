@@ -20,3 +20,7 @@ Run `which git` in the terminal. It should return the path to the Git executable
 ## Infinite pulling/pushing with no error
 
 That's most time caused by authentication problems. Head over to [[Authentication]]
+
+## Bad owner or permissions on /home/<user>/.ssh/config
+
+Run `chmod 600 ~/.ssh/config` in the terminal.

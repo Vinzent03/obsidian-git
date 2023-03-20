@@ -12,7 +12,8 @@ For mobile users see [Mobile](#mobile) section below.
 - Pull changes from remote repository on Obsidian startup
 - Assign hotkeys for pulling/pushing changes to a remote repository
 - Manage different repositories via Git submodules (after enabling this feature in settings)
-- Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command. 
+- Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command.
+- For viewing the history of a file, I strongly recommend you the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin
 
 ![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
 
