@@ -92,7 +92,8 @@ export abstract class GitManager {
 
     abstract getDiffString(
         filePath: string,
-        stagedChanges: boolean
+        stagedChanges: boolean,
+        hash?: string
     ): Promise<string>;
 
     abstract getLastCommitTime(): Promise<Date | undefined>;

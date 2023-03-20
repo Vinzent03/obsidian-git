@@ -185,6 +185,7 @@ export type HistoryRootTreeItem = RootTreeItem<DiffFile>;
 export interface DiffViewState {
     staged: boolean;
     file: string;
+    hash?: string;
 }
 
 export enum FileType {

@@ -60,7 +60,8 @@ export default class DiffView extends ItemView {
             this.gettingDiff = true;
             let diff = await this.plugin.gitManager.getDiffString(
                 this.state.file,
-                this.state.staged
+                this.state.staged,
+                this.state.hash
             );
             this.contentEl.empty();
             if (!diff) {

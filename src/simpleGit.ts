@@ -458,6 +458,7 @@ export class SimpleGit extends GitManager {
                     ...f,
                     status: "M",
                     path: f.file,
+                    hash: e.hash,
                     vault_path: this.getVaultPath(f.file),
                 })),
             },
@@ -626,10 +627,12 @@ export class SimpleGit extends GitManager {
 
     async getDiffString(
         filePath: string,
-        stagedChanges = false
+        stagedChanges = false,
+        hash?: string
     ): Promise<string> {
         if (stagedChanges)
             return await this.git.diff(["--cached", "--", filePath]);
+        if (hash) return await this.git.show([`${hash}`, "--", filePath]);
         else return await this.git.diff(["--", filePath]);
     }
 

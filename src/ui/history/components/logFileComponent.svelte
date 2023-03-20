@@ -1,11 +1,20 @@
 <script lang="ts">
+    import { setIcon, TFile } from "obsidian";
+    import { DIFF_VIEW_CONFIG } from "src/constants";
     import { DiffFile } from "src/types";
+    import { getNewLeaf } from "src/utils";
     import HistoryView from "../historyView";
 
     export let diff: DiffFile;
     export let view: HistoryView;
+    let buttons: HTMLElement[] = [];
+
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
+    window.setTimeout(
+        () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
+        0
+    );
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
         // if (
@@ -19,16 +28,29 @@
         //     );
         // }
     }
-
     function open(event: MouseEvent) {
-        // const file = view.app.vault.getAbstractFileByPath(change.vault_path);
-        // if (file instanceof TFile) {
-        //     getNewLeaf(event)?.openFile(file);
-        // }
+        const file = view.app.vault.getAbstractFileByPath(diff.vault_path);
+
+        if (file instanceof TFile) {
+            getNewLeaf(event)?.openFile(file);
+        }
+    }
+
+    function showDiff(event: MouseEvent) {
+        console.log(diff);
+        getNewLeaf(event)?.setViewState({
+            type: DIFF_VIEW_CONFIG.type,
+            active: true,
+            state: {
+                file: diff.path,
+                staged: false,
+                hash: diff.hash,
+            },
+        });
     }
 </script>
 
-<main on:mouseover={hover} on:click={open} on:focus class="nav-file">
+<main on:mouseover={hover} on:click={showDiff} on:focus class="nav-file">
     <div
         class="nav-file-title"
         aria-label-position={side}
@@ -38,6 +60,18 @@
             {diff.path.split("/").last()?.replace(".md", "")}
         </div>
         <div class="tools">
+            <div class="buttons">
+                {#if view.app.vault.getAbstractFileByPath(diff.vault_path)}
+                    <div
+                        data-icon="go-to-file"
+                        aria-label="Open File"
+                        bind:this={buttons[0]}
+                        on:auxclick={open}
+                        on:click={open}
+                        class="clickable-icon"
+                    />
+                {/if}
+            </div>
             <span class="type" data-type={diff.status}>{diff.status}</span>
         </div>
     </div>
@@ -62,6 +96,13 @@
                 }
                 &[data-type="D"] {
                     color: red;
+                }
+            }
+            .buttons {
+                display: flex;
+                > * {
+                    padding: 0 0;
+                    height: auto;
                 }
             }
         }
