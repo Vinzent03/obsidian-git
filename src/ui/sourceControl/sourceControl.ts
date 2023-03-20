@@ -4,11 +4,11 @@ import ObsidianGit from "src/main";
 // @tsconfig/svelte is required to resolve this error.
 // Ignore temporarily.
 // @ts-ignore
-import GitViewComponent from "./sourceControl.svelte";
+import SourceControlViewComponent from "./sourceControl.svelte";
 
 export default class GitView extends ItemView implements HoverParent {
     plugin: ObsidianGit;
-    private _view: GitViewComponent;
+    private _view: SourceControlViewComponent;
     hoverPopover: HoverPopover | null;
 
     constructor(leaf: WorkspaceLeaf, plugin: ObsidianGit) {
@@ -34,7 +34,7 @@ export default class GitView extends ItemView implements HoverParent {
     }
 
     onOpen(): Promise<void> {
-        this._view = new GitViewComponent({
+        this._view = new SourceControlViewComponent({
             target: this.contentEl,
             props: {
                 plugin: this.plugin,

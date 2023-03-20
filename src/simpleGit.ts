@@ -433,7 +433,7 @@ export class SimpleGit extends GitManager {
         file: string,
         relativeToVault = true,
         limit?: number
-    ): Promise<readonly (LogEntry & { fileName?: string })[]> {
+    ): Promise<(LogEntry & { fileName?: string })[]> {
         let path: string | undefined;
         if (file) {
             path = this.getPath(file, relativeToVault);
@@ -448,9 +448,6 @@ export class SimpleGit extends GitManager {
             },
             (err) => this.onError(err)
         );
-        console.log(res);
-        res.all[2].diff;
-        console.log(res.all.find((e) => !e.diff));
 
         return res.all.map((e) => ({
             ...e,
@@ -461,6 +458,7 @@ export class SimpleGit extends GitManager {
                     ...f,
                     status: "M",
                     path: f.file,
+                    vault_path: this.getVaultPath(f.file),
                 })),
             },
             fileName: e.diff?.files.first()?.file,

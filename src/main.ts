@@ -85,8 +85,15 @@ export default class ObsidianGit extends Plugin {
         const gitView = this.app.workspace.getLeavesOfType(
             SOURCE_CONTROL_VIEW_CONFIG.type
         );
+        const historyView = this.app.workspace.getLeavesOfType(
+            HISTORY_VIEW_CONFIG.type
+        );
 
-        if (this.settings.changedFilesInStatusBar || gitView.length > 0) {
+        if (
+            this.settings.changedFilesInStatusBar ||
+            gitView.length > 0 ||
+            historyView.length > 0
+        ) {
             this.loading = true;
             dispatchEvent(new CustomEvent("git-view-refresh"));
 
@@ -174,7 +181,7 @@ export default class ObsidianGit extends Plugin {
             },
         });
         this.addCommand({
-            id: "open-git-view",
+            id: "open-history-view",
             name: "Open history view",
             callback: async () => {
                 const leafs = this.app.workspace.getLeavesOfType(

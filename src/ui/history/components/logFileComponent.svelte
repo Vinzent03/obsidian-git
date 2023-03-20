@@ -1,6 +1,6 @@
 <script lang="ts">
     import { DiffFile } from "src/types";
-    import HistoryView from "../historyView.svelte";
+    import HistoryView from "../historyView";
 
     export let diff: DiffFile;
     export let view: HistoryView;
@@ -29,8 +29,11 @@
 </script>
 
 <main on:mouseover={hover} on:click={open} on:focus class="nav-file">
-    <!-- svelte-ignore a11y-unknown-aria-attribute -->
-    <div class="nav-file-title" aria-label-position={side}>
+    <div
+        class="nav-file-title"
+        aria-label-position={side}
+        aria-label={diff.vault_path}
+    >
         <div class="nav-file-title-content">
             {diff.path.split("/").last()?.replace(".md", "")}
         </div>

@@ -143,6 +143,7 @@ export interface DiffEntry {
 
 export interface DiffFile {
     path: string;
+    vault_path: string;
     hash: string;
     status: string;
     binary: boolean;

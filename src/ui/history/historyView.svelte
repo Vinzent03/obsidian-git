@@ -10,7 +10,7 @@
     export let view: HistoryView;
     let loading: boolean;
     let buttons: HTMLElement[] = [];
-    let logs: LogEntry[];
+    let logs: LogEntry[] | undefined;
     let showTree: boolean = plugin.settings.treeStructure;
 
     let layoutBtn: HTMLElement;
@@ -43,7 +43,6 @@
         loading = true;
         //@ts-ignore
         logs = await plugin.gitManager.log(undefined, false, 10);
-        console.log(logs);
         loading = false;
     }
 </script>
@@ -80,7 +79,7 @@
             <div class="nav-folder mod-root">
                 <div class="nav-folder-children">
                     {#each logs as log}
-                        <LogComponent {view} {log} />
+                        <LogComponent {view} {showTree} {log} {plugin} />
                     {/each}
                 </div>
             </div>

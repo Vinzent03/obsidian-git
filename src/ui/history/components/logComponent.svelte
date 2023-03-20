@@ -1,11 +1,22 @@
 <script lang="ts">
+    import ObsidianGit from "src/main";
     import { LogEntry } from "src/types";
     import { slide } from "svelte/transition";
     import HistoryView from "../historyView";
     import LogFileComponent from "./logFileComponent.svelte";
+    import LogTreeComponent from "./logTreeComponent.svelte";
 
     export let log: LogEntry;
     export let view: HistoryView;
+    export let showTree: boolean;
+    export let plugin: ObsidianGit;
+    $: logsHierarchy = {
+        title: "",
+        path: "",
+        vaultPath: "",
+        children: plugin.gitManager.getTreeStructure(log.diff.files),
+    };
+
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
     let isCollapsed = true;
 </script>
@@ -38,6 +49,7 @@
                 class="nav-folder-title-content"
                 on:click={() => (isCollapsed = !isCollapsed)}
                 aria-label={log.message}
+                aria-label-position={side}
             >
                 {log.message}
             </div>
@@ -51,9 +63,18 @@
                 class="nav-folder-children"
                 transition:slide|local={{ duration: 150 }}
             >
-                {#each log.diff.files as file}
-                    <LogFileComponent {view} diff={file} />
-                {/each}
+                {#if showTree}
+                    <LogTreeComponent
+                        hierarchy={logsHierarchy}
+                        {plugin}
+                        {view}
+                        topLevel={true}
+                    />
+                {:else}
+                    {#each log.diff.files as file}
+                        <LogFileComponent {view} diff={file} />
+                    {/each}
+                {/if}
             </div>
         {/if}
     </div>
