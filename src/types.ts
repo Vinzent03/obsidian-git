@@ -137,7 +137,7 @@ export interface LogEntry {
 }
 
 export interface DiffEntry {
-    changed: Number;
+    changed: number;
     files: DiffFile[];
 }
 

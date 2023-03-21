@@ -39,7 +39,7 @@ dependencies:
   diff2html: 3.4.34
   isomorphic-git: 1.23.0
   obsidian-community-lib: 2.0.2_ydzx5qoi6374xmclt4keb2sh6a
-  simple-git: github.com/Vinzent03/git-js/799b7c803e96dc7f8004509dbdc5e51d327f9c81_supports-color@7.2.0
+  simple-git: github.com/Vinzent03/git-js/6b9a2d899bc8256e38a1d6f0b8a88116ba2bf56a_supports-color@7.2.0
   supports-color: 7.2.0
 
 devDependencies:
@@ -2640,9 +2640,9 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  github.com/Vinzent03/git-js/799b7c803e96dc7f8004509dbdc5e51d327f9c81_supports-color@7.2.0:
-    resolution: {tarball: https://codeload.github.com/Vinzent03/git-js/tar.gz/799b7c803e96dc7f8004509dbdc5e51d327f9c81}
-    id: github.com/Vinzent03/git-js/799b7c803e96dc7f8004509dbdc5e51d327f9c81
+  github.com/Vinzent03/git-js/6b9a2d899bc8256e38a1d6f0b8a88116ba2bf56a_supports-color@7.2.0:
+    resolution: {tarball: https://codeload.github.com/Vinzent03/git-js/tar.gz/6b9a2d899bc8256e38a1d6f0b8a88116ba2bf56a}
+    id: github.com/Vinzent03/git-js/6b9a2d899bc8256e38a1d6f0b8a88116ba2bf56a
     name: simple-git
     version: 3.16.1
     dependencies:

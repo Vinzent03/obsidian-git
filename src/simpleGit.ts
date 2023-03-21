@@ -443,7 +443,6 @@ export class SimpleGit extends GitManager {
                 file: path,
                 maxCount: limit,
                 "-m": null,
-                // "--stat": 4096,
                 "--name-status": null,
             },
             (err) => this.onError(err)
@@ -453,10 +452,10 @@ export class SimpleGit extends GitManager {
             ...e,
             refs: e.refs.split(", "),
             diff: {
-                ...e.diff,
-                files: e.diff?.files.map((f) => ({
+                ...e.diff!,
+                files: e.diff!.files.map((f) => ({
                     ...f,
-                    status: f.status,
+                    status: f.status!,
                     path: f.file,
                     hash: e.hash,
                     vault_path: this.getVaultPath(f.file),
