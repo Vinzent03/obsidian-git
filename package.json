@@ -47,7 +47,7 @@
         "diff2html": "^3.4.33",
         "isomorphic-git": "^1.22.0",
         "obsidian-community-lib": "^2.0.2",
-        "simple-git": "^3.17.0",
+        "simple-git": "Vinzent03/git-js#release",
         "supports-color": "^7.2.0"
     },
     "moduleFileExtensions": [

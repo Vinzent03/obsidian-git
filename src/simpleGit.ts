@@ -456,7 +456,7 @@ export class SimpleGit extends GitManager {
                 ...e.diff,
                 files: e.diff?.files.map((f) => ({
                     ...f,
-                    status: "M",
+                    status: f.status,
                     path: f.file,
                     hash: e.hash,
                     vault_path: this.getVaultPath(f.file),
