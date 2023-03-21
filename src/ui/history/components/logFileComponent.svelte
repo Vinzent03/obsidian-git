@@ -2,7 +2,7 @@
     import { setIcon, TFile } from "obsidian";
     import { DIFF_VIEW_CONFIG } from "src/constants";
     import { DiffFile } from "src/types";
-    import { getNewLeaf } from "src/utils";
+    import { getDisplayPath, getNewLeaf } from "src/utils";
     import HistoryView from "../historyView";
 
     export let diff: DiffFile;
@@ -15,19 +15,7 @@
         () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
         0
     );
-    function hover(event: MouseEvent) {
-        //Don't show previews of config- or hidden files.
-        // if (
-        //     !change.path.startsWith(view.app.vault.configDir) ||
-        //     !change.path.startsWith(".")
-        // ) {
-        //     hoverPreview(
-        //         event,
-        //         view as any,
-        //         change.vault_path.split("/").last()!.replace(".md", "")
-        //     );
-        // }
-    }
+
     function open(event: MouseEvent) {
         const file = view.app.vault.getAbstractFileByPath(diff.vault_path);
 
@@ -37,7 +25,6 @@
     }
 
     function showDiff(event: MouseEvent) {
-        console.log(diff);
         getNewLeaf(event)?.setViewState({
             type: DIFF_VIEW_CONFIG.type,
             active: true,
@@ -50,14 +37,14 @@
     }
 </script>
 
-<main on:mouseover={hover} on:click={showDiff} on:focus class="nav-file">
+<main on:click={showDiff} on:focus class="nav-file">
     <div
         class="nav-file-title"
         aria-label-position={side}
         aria-label={diff.vault_path}
     >
         <div class="nav-file-title-content">
-            {diff.path.split("/").last()?.replace(".md", "")}
+            {getDisplayPath(diff.vault_path)}
         </div>
         <div class="tools">
             <div class="buttons">

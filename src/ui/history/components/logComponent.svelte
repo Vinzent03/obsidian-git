@@ -45,19 +45,22 @@
                     ><path d="M3 8L12 17L21 8" /></svg
                 >
             </div>
-            <div
-                class="nav-folder-title-content"
-                on:click={() => (isCollapsed = !isCollapsed)}
-                aria-label={log.message}
-                aria-label-position={side}
-            >
-                {log.message}
-            </div>
-            <div class="tools">
-                <div class="type">{log.refs.join(", ")}</div>
+            <div>
+                {#if log.refs.length > 0}
+                    <div class="git-ref">
+                        {log.refs.join(", ")}
+                    </div>
+                {/if}
+                <div
+                    class="nav-folder-title-content"
+                    on:click={() => (isCollapsed = !isCollapsed)}
+                    aria-label={log.message}
+                    aria-label-position={side}
+                >
+                    {log.message}
+                </div>
             </div>
         </div>
-
         {#if !isCollapsed}
             <div
                 class="nav-folder-children"
@@ -81,16 +84,7 @@
 </main>
 
 <style lang="scss">
-    main {
-        .nav-file-title-content {
-            display: flex;
-            align-items: center;
-        }
-    }
-    .tools {
-        display: inline;
-        margin-left: auto;
-        white-space: nowrap;
-        overflow: hidden;
+    .git-ref {
+        color: var(--text-accent);
     }
 </style>
