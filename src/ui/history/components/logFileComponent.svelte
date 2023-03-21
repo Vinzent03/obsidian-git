@@ -37,13 +37,19 @@
     }
 </script>
 
-<main on:click={showDiff} on:focus class="nav-file">
+<main on:focus class="nav-file">
     <div
+        on:click|self={showDiff}
+        on:auxclick|self={showDiff}
         class="nav-file-title"
         aria-label-position={side}
         aria-label={diff.vault_path}
     >
-        <div class="nav-file-title-content">
+        <div
+            on:click={showDiff}
+            on:auxclick={showDiff}
+            class="nav-file-title-content"
+        >
             {getDisplayPath(diff.vault_path)}
         </div>
         <div class="tools">

@@ -25,12 +25,9 @@
     <div class="staged nav-folder" class:is-collapsed={isCollapsed}>
         <div
             class="nav-folder-title"
-            on:click|self={() => (isCollapsed = !isCollapsed)}
+            on:click={() => (isCollapsed = !isCollapsed)}
         >
-            <div
-                class="nav-folder-collapse-indicator collapse-icon"
-                on:click={() => (isCollapsed = !isCollapsed)}
-            >
+            <div class="nav-folder-collapse-indicator collapse-icon">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -53,7 +50,6 @@
                 {/if}
                 <div
                     class="nav-folder-title-content"
-                    on:click={() => (isCollapsed = !isCollapsed)}
                     aria-label={log.message}
                     aria-label-position={side}
                 >
