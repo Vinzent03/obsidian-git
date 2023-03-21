@@ -80,16 +80,5 @@
             display: flex;
             align-items: center;
         }
-        .tools {
-            display: flex;
-            margin-left: auto;
-            .buttons {
-                display: flex;
-                > * {
-                    padding: 0 0;
-                    height: auto;
-                }
-            }
-        }
     }
 </style>

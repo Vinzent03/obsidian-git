@@ -34,7 +34,7 @@
         <div class="nav-file-title-content">
             {getDisplayPath(change.vault_path)}
         </div>
-        <div class="tools">
+        <div class="git-tools">
             <span class="type" data-type={change.working_dir}
                 >{change.working_dir}</span
             >
@@ -48,7 +48,7 @@
             display: flex;
             align-items: center;
         }
-        .tools {
+        .git-tools {
             display: flex;
             margin-left: auto;
             .type {

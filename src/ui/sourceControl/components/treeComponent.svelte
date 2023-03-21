@@ -103,7 +103,7 @@
                     >
                         {entity.title}
                     </div>
-                    <div class="tools">
+                    <div class="git-tools">
                         <div class="buttons">
                             {#if fileType == FileType.staged}
                                 <div
@@ -211,17 +211,6 @@
         .nav-folder-title-content {
             display: flex;
             align-items: center;
-        }
-        .tools {
-            display: flex;
-            margin-left: auto;
-            .buttons {
-                display: flex;
-                > * {
-                    padding: 0 0;
-                    height: auto;
-                }
-            }
         }
     }
 </style>

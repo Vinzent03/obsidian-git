@@ -52,7 +52,7 @@
         >
             {getDisplayPath(diff.vault_path)}
         </div>
-        <div class="tools">
+        <div class="git-tools">
             <div class="buttons">
                 {#if view.app.vault.getAbstractFileByPath(diff.vault_path)}
                     <div
@@ -75,29 +75,6 @@
         .nav-file-title-content {
             display: flex;
             align-items: center;
-        }
-        .tools {
-            display: flex;
-            margin-left: auto;
-            .type {
-                padding-left: var(--size-2-1);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                &[data-type="M"] {
-                    color: orange;
-                }
-                &[data-type="D"] {
-                    color: red;
-                }
-            }
-            .buttons {
-                display: flex;
-                > * {
-                    padding: 0 0;
-                    height: auto;
-                }
-            }
         }
     }
 </style>

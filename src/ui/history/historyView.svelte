@@ -88,29 +88,4 @@
 </main>
 
 <style lang="scss">
-    main {
-        .tools {
-            display: flex;
-            margin-left: auto;
-            .buttons {
-                display: flex;
-                > * {
-                    padding: 0 0;
-                    height: auto;
-                }
-            }
-            .files-count {
-                padding-left: var(--size-2-1);
-                width: 11px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-        }
-    }
-
-    .tree-item-flair {
-        margin-left: auto;
-        align-items: center;
-    }
 </style>

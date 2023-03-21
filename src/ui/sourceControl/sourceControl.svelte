@@ -316,7 +316,7 @@
                                 Staged Changes
                             </div>
 
-                            <div class="tools">
+                            <div class="git-tools">
                                 <div class="buttons">
                                     <div
                                         data-icon="minus"
@@ -407,7 +407,7 @@
                             >
                                 Changes
                             </div>
-                            <div class="tools">
+                            <div class="git-tools">
                                 <div class="buttons">
                                     <div
                                         data-icon="undo"
@@ -579,16 +579,7 @@
         margin: 4px auto;
     }
     main {
-        .tools {
-            display: flex;
-            margin-left: auto;
-            .buttons {
-                display: flex;
-                > * {
-                    padding: 0 0;
-                    height: auto;
-                }
-            }
+        .git-tools {
             .files-count {
                 padding-left: var(--size-2-1);
                 width: 11px;
@@ -628,9 +619,5 @@
         background-color: currentColor;
         -webkit-mask-image: url("data:image/svg+xml,<svg viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M6 12C9.31371 12 12 9.31371 12 6C12 2.68629 9.31371 0 6 0C2.68629 0 0 2.68629 0 6C0 9.31371 2.68629 12 6 12ZM3.8705 3.09766L6.00003 5.22718L8.12955 3.09766L8.9024 3.8705L6.77287 6.00003L8.9024 8.12955L8.12955 8.9024L6.00003 6.77287L3.8705 8.9024L3.09766 8.12955L5.22718 6.00003L3.09766 3.8705L3.8705 3.09766Z' fill='currentColor'/></svg>");
         -webkit-mask-repeat: no-repeat;
-    }
-    .tree-item-flair {
-        margin-left: auto;
-        align-items: center;
     }
 </style>
