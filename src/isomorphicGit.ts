@@ -863,7 +863,7 @@ export class IsomorphicGit extends GitManager {
                         type = "M";
                     }
                     if (Aoid === undefined) {
-                        type = "D";
+                        type = "A";
                     }
                     if (Boid === undefined) {
                         type = "D";
