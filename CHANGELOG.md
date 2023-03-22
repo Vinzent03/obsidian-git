@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.19.0](https://github.com/denolehov/obsidian-git/compare/2.18.0...2.19.0) (2023-03-22)
+
+
+### Features
+
+* add mobile support for history view ([8472c90](https://github.com/denolehov/obsidian-git/commit/8472c9004779ae143eb1208999b82d2a676e6b37))
+* open/diff for log element ([26c6ef4](https://github.com/denolehov/obsidian-git/commit/26c6ef4f69a80640200b9e5be1c884bbfd5f089c))
+* show last commit time in status bar ([b6d93a1](https://github.com/denolehov/obsidian-git/commit/b6d93a1b8574b1d9dc56c3be9bf8403d95fcef26)), closes [#334](https://github.com/denolehov/obsidian-git/issues/334)
+
+
+### Bug Fixes
+
+* catch error in diffView ([cbff377](https://github.com/denolehov/obsidian-git/commit/cbff37701fd8aa8b9e1257d09fb8ca9fb655b35b))
+* catch huge auto intervals ([35bca00](https://github.com/denolehov/obsidian-git/commit/35bca003c98637f65295fe7d5a8bc4ae1fd68b07)), closes [#153](https://github.com/denolehov/obsidian-git/issues/153)
+* correct on click handler ([9c84ea3](https://github.com/denolehov/obsidian-git/commit/9c84ea3b28440125fb3bee27eace03c330b3c26d))
+* file status on mobile ([d207a01](https://github.com/denolehov/obsidian-git/commit/d207a011407a5d81e9a28ca8e78489f959b18941))
+* show refs above log message ([4baf55b](https://github.com/denolehov/obsidian-git/commit/4baf55b2d264d96071eb16ff6cac92a3a1c6980f))
+* use own simple-git fork ([e76f701](https://github.com/denolehov/obsidian-git/commit/e76f701e235c3b0a490f3004cbedcaa8fdbe1d8d))
+
 ## [2.18.0](https://github.com/denolehov/obsidian-git/compare/2.17.4...2.18.0) (2023-03-20)
 
 
