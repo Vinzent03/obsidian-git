@@ -58,35 +58,38 @@ export default class DiffView extends ItemView {
     async refresh(): Promise<void> {
         if (this.state?.file && !this.gettingDiff && this.plugin.gitManager) {
             this.gettingDiff = true;
-            let diff = await this.plugin.gitManager.getDiffString(
-                this.state.file,
-                this.state.staged,
-                this.state.hash
-            );
-            this.contentEl.empty();
-            if (!diff) {
-                const content = await this.app.vault.adapter.read(
-                    this.plugin.gitManager.getVaultPath(this.state.file)
+            try {
+                let diff = await this.plugin.gitManager.getDiffString(
+                    this.state.file,
+                    this.state.staged,
+                    this.state.hash
                 );
-                const header = `--- /dev/null
+                this.contentEl.empty();
+                if (!diff) {
+                    const content = await this.app.vault.adapter.read(
+                        this.plugin.gitManager.getVaultPath(this.state.file)
+                    );
+                    const header = `--- /dev/null
 +++ ${this.state.file}
 @@ -0,0 +1,${content.split("\n").length} @@`;
 
-                diff = [
-                    ...header.split("\n"),
-                    ...content.split("\n").map((line) => `+${line}`),
-                ].join("\n");
-            }
+                    diff = [
+                        ...header.split("\n"),
+                        ...content.split("\n").map((line) => `+${line}`),
+                    ].join("\n");
+                }
 
-            const diffEl = this.parser
-                .parseFromString(html(diff), "text/html")
-                .querySelector(".d2h-file-diff");
-            this.contentEl.append(diffEl!);
-            // const div = this.contentEl.createDiv({ cls: 'diff-err' });
-            // div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
-            // div.createEl('br');
-            // div.createSpan({ text: 'No changes to ' + this.state.file });
-            this.gettingDiff = false;
+                const diffEl = this.parser
+                    .parseFromString(html(diff), "text/html")
+                    .querySelector(".d2h-file-diff");
+                this.contentEl.append(diffEl!);
+                // const div = this.contentEl.createDiv({ cls: 'diff-err' });
+                // div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
+                // div.createEl('br');
+                // div.createSpan({ text: 'No changes to ' + this.state.file });
+            } finally {
+                this.gettingDiff = false;
+            }
         }
     }
 }
