@@ -151,7 +151,7 @@ export interface DiffFile {
 
 export interface WalkDifference {
     path: string;
-    type: "modify" | "add" | "remove";
+    type: "M" | "A" | "D";
 }
 
 export interface UnstagedFile {

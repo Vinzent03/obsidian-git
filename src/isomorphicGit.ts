@@ -18,6 +18,7 @@ import { MyAdapter } from "./myAdapter";
 import {
     BranchInfo,
     FileStatusResult,
+    LogEntry,
     PluginState,
     Status,
     UnstagedFile,
@@ -758,6 +759,50 @@ export class IsomorphicGit extends GitManager {
         ).filter((item) => item.remote == remote)[0]?.url;
     }
 
+    async log(
+        _: string,
+        __ = true,
+        limit?: number
+    ): Promise<(LogEntry & { fileName?: string })[]> {
+        const logs = await this.wrapFS(
+            git.log({ ...this.getRepo(), depth: limit })
+        );
+
+        return Promise.all(
+            logs.map(async (log) => {
+                const completeMessage = log.commit.message.split("\n\n");
+
+                return {
+                    message: completeMessage[0],
+                    body: completeMessage.slice(1).join("\n\n"),
+                    date: new Date(
+                        log.commit.committer.timestamp
+                    ).toDateString(),
+                    diff: {
+                        changed: 0,
+                        files: (
+                            await this.getFileChangesCount(
+                                log.commit.parent.first()!,
+                                log.oid
+                            )
+                        ).map((item) => {
+                            return {
+                                path: item.path,
+                                status: item.type,
+                                vault_path: this.getVaultPath(item.path),
+                                hash: log.oid,
+                                binary: undefined!,
+                            };
+                        }),
+                    },
+                    hash: log.oid,
+                    fileName: "",
+                    refs: [],
+                };
+            })
+        );
+    }
+
     updateBasePath(basePath: string): void {
         this.getRepo().dir = basePath;
     }
@@ -820,13 +865,13 @@ export class IsomorphicGit extends GitManager {
                     // determine modification type
                     let type = "equal";
                     if (Aoid !== Boid) {
-                        type = "modify";
+                        type = "M";
                     }
                     if (Aoid === undefined) {
-                        type = "add";
+                        type = "D";
                     }
                     if (Boid === undefined) {
-                        type = "remove";
+                        type = "D";
                     }
 
                     if (Aoid === undefined && Boid === undefined) {
@@ -837,6 +882,7 @@ export class IsomorphicGit extends GitManager {
                     if (type === "equal") {
                         return;
                     }
+
                     return {
                         path: filepath,
                         type: type,
@@ -970,7 +1016,8 @@ export class IsomorphicGit extends GitManager {
 
     async getDiffString(
         filePath: string,
-        stagedChanges = false
+        stagedChanges = false,
+        hash?: string
     ): Promise<string> {
         const vaultPath = this.getVaultPath(filePath);
 
@@ -984,6 +1031,42 @@ export class IsomorphicGit extends GitManager {
                 return contents.blob;
             }
         };
+        if (hash) {
+            const commitContent = await readBlob({
+                ...this.getRepo(),
+                filepath: filePath,
+                oid: hash,
+            })
+                .then((headBlob) => new TextDecoder().decode(headBlob.blob))
+                .catch((err) => {
+                    if (err instanceof git.Errors.NotFoundError)
+                        return undefined;
+                    throw err;
+                });
+            const commit = await git.readCommit({
+                ...this.getRepo(),
+                oid: hash,
+            });
+
+            const previousContent = await readBlob({
+                ...this.getRepo(),
+                filepath: filePath,
+                oid: commit.commit.parent.first()!,
+            })
+                .then((headBlob) => new TextDecoder().decode(headBlob.blob))
+                .catch((err) => {
+                    if (err instanceof git.Errors.NotFoundError)
+                        return undefined;
+                    throw err;
+                });
+
+            const diff = createPatch(
+                vaultPath,
+                previousContent ?? "",
+                commitContent ?? ""
+            );
+            return diff;
+        }
 
         const stagedBlob = (
             await git.walk({
