@@ -1,6 +1,7 @@
 <script lang="ts">
     import { setIcon } from "obsidian";
     import ObsidianGit from "src/main";
+    import { SimpleGit } from "src/simpleGit";
     import { LogEntry } from "src/types";
     import { onDestroy } from "svelte";
     import LogComponent from "./components/logComponent.svelte";
@@ -41,7 +42,12 @@
 
     async function refresh() {
         loading = true;
-        logs = await plugin.gitManager.log(undefined, false, 50);
+        const isSimpleGit = plugin.gitManager instanceof SimpleGit;
+        logs = await plugin.gitManager.log(
+            undefined,
+            false,
+            isSimpleGit ? 50 : 10
+        );
         loading = false;
     }
 </script>
