@@ -52,7 +52,6 @@
 </script>
 
 <main on:mouseover={hover} on:focus on:click|self={showDiff} class="nav-file">
-    <!-- svelte-ignore a11y-unknown-aria-attribute -->
     <div
         class="nav-file-title"
         aria-label-position={side}

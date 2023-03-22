@@ -41,8 +41,7 @@
 
     async function refresh() {
         loading = true;
-        //@ts-ignore
-        logs = await plugin.gitManager.log(undefined, false, 10);
+        logs = await plugin.gitManager.log(undefined, false, 50);
         loading = false;
     }
 </script>

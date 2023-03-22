@@ -430,7 +430,7 @@ export class SimpleGit extends GitManager {
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
     async log(
-        file: string,
+        file: string | undefined,
         relativeToVault = true,
         limit?: number
     ): Promise<(LogEntry & { fileName?: string })[]> {

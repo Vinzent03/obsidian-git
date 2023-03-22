@@ -759,11 +759,7 @@ export class IsomorphicGit extends GitManager {
         ).filter((item) => item.remote == remote)[0]?.url;
     }
 
-    async log(
-        _: string,
-        __ = true,
-        limit?: number
-    ): Promise<(LogEntry & { fileName?: string })[]> {
+    async log(_?: string, __ = true, limit?: number): Promise<LogEntry[]> {
         const logs = await this.wrapFS(
             git.log({ ...this.getRepo(), depth: limit })
         );
@@ -796,7 +792,6 @@ export class IsomorphicGit extends GitManager {
                         }),
                     },
                     hash: log.oid,
-                    fileName: "",
                     refs: [],
                 };
             })

@@ -4,6 +4,7 @@ import {
     BranchInfo,
     DiffFile,
     FileStatusResult,
+    LogEntry,
     Status,
     TreeItem,
     UnstagedFile,
@@ -79,6 +80,12 @@ export abstract class GitManager {
     abstract getRemotes(): Promise<string[]>;
 
     abstract getRemoteUrl(remote: string): Promise<string | undefined>;
+
+    abstract log(
+        file: string | undefined,
+        relativeToVault?: boolean,
+        limit?: number
+    ): Promise<LogEntry[]>;
 
     abstract getRemoteBranches(remote: string): Promise<string[]>;
 
