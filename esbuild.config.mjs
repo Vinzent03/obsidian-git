@@ -11,35 +11,39 @@ if you want to view the source visit the plugins github repository (https://gith
 
 const prod = process.argv[2] === "production";
 
-esbuild
-    .build({
-        banner: {
-            js: banner,
-        },
-        entryPoints: ["src/main.ts"],
-        bundle: true,
-        external: ["obsidian", "electron", "child_process", "fs", "path"],
-        format: "cjs",
-        watch: !prod,
-        target: "es2018",
-        logLevel: "info",
-        sourcemap: prod ? false : "inline",
-        treeShaking: true,
-        platform: "browser",
-        plugins: [
-            sveltePlugin({
-                compilerOptions: {
-                    css: true,
-                    dev: !prod,
-                },
-                filterWarnings: (warning) => {
-                    if (warning.code.startsWith("a11y-")) return false;
-                    return true;
-                },
-                preprocess: autoPreprocess(),
-            }),
-        ],
-        inject: ["polyfill_buffer.js"],
-        outfile: "main.js",
-    })
-    .catch(() => process.exit(1));
+const context = await esbuild.context({
+    banner: {
+        js: banner,
+    },
+    entryPoints: ["src/main.ts"],
+    bundle: true,
+    external: ["obsidian", "electron", "child_process", "fs", "path"],
+    format: "cjs",
+    target: "es2018",
+    logLevel: "info",
+    sourcemap: prod ? false : "inline",
+    treeShaking: true,
+    platform: "browser",
+    plugins: [
+        sveltePlugin({
+            compilerOptions: {
+                css: true,
+                dev: !prod,
+            },
+            filterWarnings: (warning) => {
+                if (warning.code.startsWith("a11y-")) return false;
+                return true;
+            },
+            preprocess: autoPreprocess(),
+        }),
+    ],
+    inject: ["polyfill_buffer.js"],
+    outfile: "main.js",
+});
+
+if (prod) {
+    await context.rebuild();
+    process.exit(0);
+} else {
+    await context.watch();
+}
