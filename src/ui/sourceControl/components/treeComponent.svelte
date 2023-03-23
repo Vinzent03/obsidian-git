@@ -68,21 +68,21 @@
                 {/if}
             </div>
         {:else}
-            <div class="nav-folder" class:is-collapsed={closed[entity.title]}>
+            <div
+                on:click={() => fold(entity)}
+                class="nav-folder"
+                class:is-collapsed={closed[entity.title]}
+            >
                 <div
                     class="nav-folder-title"
                     aria-label-position={side}
                     aria-label={entity.vaultPath}
-                    on:click|self={() => fold(entity)}
                 >
                     <div
                         data-icon="folder"
                         style="padding-right: 5px; display: flex; "
                     />
-                    <div
-                        class="nav-folder-collapse-indicator collapse-icon"
-                        on:click={() => fold(entity)}
-                    >
+                    <div class="nav-folder-collapse-indicator collapse-icon">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="24"
@@ -97,10 +97,7 @@
                             ><path d="M3 8L12 17L21 8" /></svg
                         >
                     </div>
-                    <div
-                        on:click={() => fold(entity)}
-                        class="nav-folder-title-content"
-                    >
+                    <div class="nav-folder-title-content">
                         {entity.title}
                     </div>
                     <div class="git-tools">
@@ -109,7 +106,8 @@
                                 <div
                                     data-icon="minus"
                                     aria-label="Unstage"
-                                    on:click={() => unstage(entity.path)}
+                                    on:click|stopPropagation={() =>
+                                        unstage(entity.path)}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -134,7 +132,8 @@
                                 <div
                                     data-icon="undo"
                                     aria-label="Discard"
-                                    on:click={() => discard(entity)}
+                                    on:click|stopPropagation={() =>
+                                        discard(entity)}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -156,7 +155,8 @@
                                 <div
                                     data-icon="plus"
                                     aria-label="Stage"
-                                    on:click={() => stage(entity.path)}
+                                    on:click|stopPropagation={() =>
+                                        stage(entity.path)}
                                     class="clickable-icon"
                                 >
                                     <svg

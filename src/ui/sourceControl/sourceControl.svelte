@@ -289,11 +289,10 @@
                     >
                         <div
                             class="nav-folder-title"
-                            on:click|self={() => (stagedOpen = !stagedOpen)}
+                            on:click={() => (stagedOpen = !stagedOpen)}
                         >
                             <div
                                 class="nav-folder-collapse-indicator collapse-icon"
-                                on:click={() => (stagedOpen = !stagedOpen)}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -309,10 +308,7 @@
                                     ><path d="M3 8L12 17L21 8" /></svg
                                 >
                             </div>
-                            <div
-                                class="nav-folder-title-content"
-                                on:click={() => (stagedOpen = !stagedOpen)}
-                            >
+                            <div class="nav-folder-title-content">
                                 Staged Changes
                             </div>
 
@@ -322,7 +318,7 @@
                                         data-icon="minus"
                                         aria-label="Unstage"
                                         bind:this={buttons[8]}
-                                        on:click={unstageAll}
+                                        on:click|stopPropagation={unstageAll}
                                         class="clickable-icon"
                                     >
                                         <svg
@@ -379,12 +375,11 @@
                         class:is-collapsed={!changesOpen}
                     >
                         <div
-                            on:click|self={() => (changesOpen = !changesOpen)}
+                            on:click={() => (changesOpen = !changesOpen)}
                             class="nav-folder-title"
                         >
                             <div
                                 class="nav-folder-collapse-indicator collapse-icon"
-                                on:click={() => (changesOpen = !changesOpen)}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -401,18 +396,13 @@
                                 >
                             </div>
 
-                            <div
-                                class="nav-folder-title-content"
-                                on:click={() => (changesOpen = !changesOpen)}
-                            >
-                                Changes
-                            </div>
+                            <div class="nav-folder-title-content">Changes</div>
                             <div class="git-tools">
                                 <div class="buttons">
                                     <div
                                         data-icon="undo"
                                         aria-label="Discard"
-                                        on:click={() => discard()}
+                                        on:click|stopPropagation={discard}
                                         class="clickable-icon"
                                     >
                                         <svg
@@ -435,7 +425,7 @@
                                         data-icon="plus"
                                         aria-label="Stage"
                                         bind:this={buttons[9]}
-                                        on:click={stageAll}
+                                        on:click|stopPropagation={stageAll}
                                         class="clickable-icon"
                                     >
                                         <svg

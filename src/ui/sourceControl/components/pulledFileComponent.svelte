@@ -1,3 +1,4 @@
+<!-- @ts-ignore -->
 <script lang="ts">
     import { TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
@@ -24,7 +25,13 @@
     }
 </script>
 
-<main on:mouseover={hover} on:click={open} on:focus class="nav-file">
+<main
+    on:mouseover={hover}
+    on:click|stopPropagation={open}
+    on:auxclick|stopPropagation={open}
+    on:focus
+    class="nav-file"
+>
     <!-- svelte-ignore a11y-unknown-aria-attribute -->
     <div
         class="nav-file-title"
@@ -47,22 +54,6 @@
         .nav-file-title-content {
             display: flex;
             align-items: center;
-        }
-        .git-tools {
-            display: flex;
-            margin-left: auto;
-            .type {
-                padding-left: var(--size-2-1);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                &[data-type="M"] {
-                    color: orange;
-                }
-                &[data-type="D"] {
-                    color: red;
-                }
-            }
         }
     }
 </style>

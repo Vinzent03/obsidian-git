@@ -37,19 +37,18 @@
     }
 </script>
 
-<main on:focus class="nav-file">
+<main
+    on:click|stopPropagation={showDiff}
+    on:auxclick|stopPropagation={showDiff}
+    on:focus
+    class="nav-file"
+>
     <div
-        on:click|self={showDiff}
-        on:auxclick|self={showDiff}
         class="nav-file-title"
         aria-label-position={side}
         aria-label={diff.vault_path}
     >
-        <div
-            on:click={showDiff}
-            on:auxclick={showDiff}
-            class="nav-file-title-content"
-        >
+        <div class="nav-file-title-content">
             {getDisplayPath(diff.vault_path)}
         </div>
         <div class="git-tools">
@@ -59,8 +58,8 @@
                         data-icon="go-to-file"
                         aria-label="Open File"
                         bind:this={buttons[0]}
-                        on:auxclick={open}
-                        on:click={open}
+                        on:auxclick|stopPropagation={open}
+                        on:click|stopPropagation={open}
                         class="clickable-icon"
                     />
                 {/if}

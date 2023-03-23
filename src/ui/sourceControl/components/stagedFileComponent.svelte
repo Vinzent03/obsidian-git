@@ -51,18 +51,19 @@
     }
 </script>
 
-<main on:mouseover={hover} on:focus on:click|self={showDiff} class="nav-file">
+<main
+    on:mouseover={hover}
+    on:focus
+    on:click|stopPropagation={showDiff}
+    on:auxclick|stopPropagation={showDiff}
+    class="nav-file"
+>
     <div
         class="nav-file-title"
         aria-label-position={side}
         aria-label={change.vault_path}
-        on:click|self={showDiff}
     >
-        <div
-            on:click={showDiff}
-            on:auxclick={showDiff}
-            class="nav-file-title-content"
-        >
+        <div class="nav-file-title-content">
             {getDisplayPath(change.vault_path)}
         </div>
         <div class="git-tools">
@@ -72,7 +73,7 @@
                         data-icon="go-to-file"
                         aria-label="Open File"
                         bind:this={buttons[1]}
-                        on:click={open}
+                        on:click|stopPropagation={open}
                         class="clickable-icon"
                     />
                 {/if}
@@ -80,7 +81,7 @@
                     data-icon="minus"
                     aria-label="Unstage"
                     bind:this={buttons[0]}
-                    on:click={unstage}
+                    on:click|stopPropagation={unstage}
                     class="clickable-icon"
                 />
             </div>

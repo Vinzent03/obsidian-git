@@ -75,25 +75,24 @@
 </script>
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
-<main on:mouseover={hover} on:click|self={showDiff} on:focus class="nav-file">
-    <!-- svelte-ignore a11y-unknown-aria-attribute -->
+<main
+    on:mouseover={hover}
+    on:click|stopPropagation={showDiff}
+    on:auxclick|stopPropagation={showDiff}
+    on:focus
+    class="nav-file"
+>
     <div
         class="nav-file-title"
         aria-label-position={side}
         aria-label={change.vault_path}
-        on:click|self={showDiff}
-        on:auxclick|self={showDiff}
     >
         <!-- <div
 			data-icon="folder"
 			bind:this={buttons[3]}
 			style="padding-right: 5px; display: flex;"
 		/> -->
-        <div
-            on:click={showDiff}
-            on:auxclick={showDiff}
-            class="nav-file-title-content"
-        >
+        <div class="nav-file-title-content">
             {getDisplayPath(change.vault_path)}
         </div>
         <div class="git-tools">
@@ -103,8 +102,8 @@
                         data-icon="go-to-file"
                         aria-label="Open File"
                         bind:this={buttons[1]}
-                        on:auxclick={open}
-                        on:click={open}
+                        on:auxclick|stopPropagation={open}
+                        on:click|stopPropagation={open}
                         class="clickable-icon"
                     />
                 {/if}
@@ -112,14 +111,14 @@
                     data-icon="undo"
                     aria-label="Discard"
                     bind:this={buttons[0]}
-                    on:click={discard}
+                    on:click|stopPropagation={discard}
                     class="clickable-icon"
                 />
                 <div
                     data-icon="plus"
                     aria-label="Stage"
                     bind:this={buttons[2]}
-                    on:click={stage}
+                    on:click|stopPropagation={stage}
                     class="clickable-icon"
                 />
             </div>

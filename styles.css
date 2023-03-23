@@ -55,7 +55,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 11px;
 }
+
 .git-tools .type[data-type="M"] {
     color: orange;
 }

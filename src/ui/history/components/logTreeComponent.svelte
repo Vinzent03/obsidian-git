@@ -29,16 +29,13 @@
                     class="nav-folder-title"
                     aria-label-position={side}
                     aria-label={entity.vaultPath}
-                    on:click|self={() => fold(entity)}
+                    on:click={() => fold(entity)}
                 >
                     <div
                         data-icon="folder"
                         style="padding-right: 5px; display: flex; "
                     />
-                    <div
-                        class="nav-folder-collapse-indicator collapse-icon"
-                        on:click={() => fold(entity)}
-                    >
+                    <div class="nav-folder-collapse-indicator collapse-icon">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="24"
@@ -53,10 +50,7 @@
                             ><path d="M3 8L12 17L21 8" /></svg
                         >
                     </div>
-                    <div
-                        on:click={() => fold(entity)}
-                        class="nav-folder-title-content"
-                    >
+                    <div class="nav-folder-title-content">
                         {entity.title}
                     </div>
                 </div>
