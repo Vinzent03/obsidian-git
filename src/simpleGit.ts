@@ -368,8 +368,13 @@ export class SimpleGit extends GitManager {
 
     async getUnpushedCommits(): Promise<number> {
         const status = await this.git.status();
-        const trackingBranch = status.tracking!;
-        const currentBranch = status.current!;
+        const trackingBranch = status.tracking;
+        const currentBranch = status.current;
+
+        if (trackingBranch == null || currentBranch == null) {
+            return 0;
+        }
+
         const remoteChangedFiles = (
             await this.git.diffSummary(
                 [currentBranch, trackingBranch, "--"],
