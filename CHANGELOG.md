@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.19.1](https://github.com/denolehov/obsidian-git/compare/2.19.0...2.19.1) (2023-04-04)
+
+
+### Bug Fixes
+
+* handle missing tracking branch ([#483](https://github.com/denolehov/obsidian-git/issues/483)) ([703fc18](https://github.com/denolehov/obsidian-git/commit/703fc18e7dccec89c810e6529a869ec5c271c21e))
+
 ## [2.19.0](https://github.com/denolehov/obsidian-git/compare/2.18.0...2.19.0) (2023-03-22)
 
 
