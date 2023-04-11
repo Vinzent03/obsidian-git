@@ -112,10 +112,6 @@ export interface FileStatusResult {
     // if no merge conflicts, otherwise represents status of other side of a merge.
     working_dir: string;
 }
-export interface DiffResult {
-    path: string;
-    type: "equal" | "modify" | "add" | "remove";
-}
 
 export enum PluginState {
     idle,
@@ -172,9 +168,6 @@ export interface TreeItem<T = DiffFile | FileStatusResult> {
     data?: T;
     children?: TreeItem<T>[];
 }
-export type StatusTreeItem = TreeItem<FileStatusResult>;
-
-export type HistoryTreeItem = TreeItem<DiffFile>;
 
 export type RootTreeItem<T> = TreeItem<T> & { children: TreeItem<T>[] };
 
