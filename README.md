@@ -55,8 +55,7 @@ For mobile users see [Mobile](#mobile) section below.
 
 ## Authentication
 
-Authentication may require additional setup. See more in the [Authentication documentation](https://publish.obsidian.md/git-doc/Authentication)
-
+Authentication may require additional setup. See more in the [Authentication documentation](https://publish.obsidian.md/git-doc/04+Authentication)
 ### Obsidian on Linux
 
 - ⚠ Snap is not supported.
