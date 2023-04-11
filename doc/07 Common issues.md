@@ -4,7 +4,7 @@ This is an error occurring only on macOS. It's easy to fix though. Just run the 
 
 ## Error: spansSync git ENOENT/ Cannot run Git command
 
-This occurs, when the plugin can't find the Git executable. It takes it from the PATH. Head over to [[installation]] to see if everything is properly installed for your platform.
+This occurs, when the plugin can't find the Git executable. It takes it from the PATH. Head over to [[02 Installation]] to see if everything is properly installed for your platform.
 If you think everything is correctly set up and the error still occurs try the following:
 
 In case you know where Git is installed, you can set the path under "Custom Git binary path" in the settings. If you don't know where Git is installed, you can try to find it by running the following in the terminal:
@@ -19,7 +19,7 @@ Run `which git` in the terminal. It should return the path to the Git executable
 
 ## Infinite pulling/pushing with no error
 
-That's most time caused by authentication problems. Head over to [[Authentication]]
+That's most time caused by authentication problems. Head over to [[04 Authentication]]
 
 ## Bad owner or permissions on /home/<user>/.ssh/config
 

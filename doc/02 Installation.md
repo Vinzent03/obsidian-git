@@ -1,3 +1,7 @@
+---
+aliases:
+  - Installation
+---
 
 > [!important]
 > Although the plugin itself is desktop platform independent, an incorrect installation of Obsidian or Git may break the plugin.

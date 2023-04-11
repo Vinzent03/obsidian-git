@@ -1,3 +1,7 @@
+---
+aliases:
+  - Authentication
+---
 # Linux
 
 ## Recommeded: HTTPS

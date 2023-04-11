@@ -1,14 +1,20 @@
+---
+aliases:
+  - Start here
+---
+
 # Obsidian-Git Documentation
 
 ## Topics
-- [[Installation]]
-- [[Getting Started]]
-- [[Common issues]]
-- [[Tips-and-Tricks]]
-- [[Features]]
+- [[02 Installation|Installation]]
+- [[03 Getting Started|Getting Started]]
+- [[04 Authentication|Authentication]]
+- [[05 Features|Features]]
+- [[06 Tips-and-Tricks|Tips-and-Tricks]]
+- [[07 Common issues|Common Issues]]
 
 > [!warning] Obsidian installation on Linux
-> Please don't use Flatpak or Snap to install Obsidian on Linux. Learn more [[Installation#Linux|here]]
+> Please don't use Flatpak or Snap to install Obsidian on Linux. Learn more [[02 Installation#Linux|here]]
 
 
 ## What is Git?
@@ -22,3 +28,8 @@ You build your history by batching multiple changes into commits. These can then
 Git itself only manages a local repository. It becomes really handy in conjunction with an online remote repository. You can push and pull your commits to/from a remote repository to share or backup your vault. The most popular provider is [GitHub](https://github.com). 
 
 Git is primarily used by developers and thus the command line is sometimes needed. Obsidian-Git is a plugin for Obsidian that allows you to use Git from within Obsidian without always having to use the command line or leaving Obsidian.
+
+## Terminology
+
+### Backup
+For simplification, the term "Backup" refers to staging everything -> commiting -> pulling -> pushing.
