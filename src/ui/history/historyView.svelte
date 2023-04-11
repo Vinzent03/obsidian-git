@@ -1,7 +1,7 @@
 <script lang="ts">
     import { setIcon } from "obsidian";
     import ObsidianGit from "src/main";
-    import { SimpleGit } from "src/simpleGit";
+    import { SimpleGit } from "src/gitManager/simpleGit";
     import { LogEntry } from "src/types";
     import { onDestroy } from "svelte";
     import LogComponent from "./components/logComponent.svelte";

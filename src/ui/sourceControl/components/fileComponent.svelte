@@ -2,7 +2,7 @@
     import { setIcon, TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
     import { DIFF_VIEW_CONFIG } from "src/constants";
-    import { GitManager } from "src/gitManager";
+    import { GitManager } from "src/gitManager/gitManager";
     import { FileStatusResult } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
     import { getDisplayPath, getNewLeaf } from "src/utils";

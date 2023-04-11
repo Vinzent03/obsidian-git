@@ -5,15 +5,15 @@ import * as path from "path";
 import { sep } from "path";
 import simpleGit, * as simple from "simple-git";
 import { GitManager } from "./gitManager";
-import ObsidianGit from "./main";
+import ObsidianGit from "../main";
 import {
     BranchInfo,
     FileStatusResult,
     LogEntry,
     PluginState,
     Status,
-} from "./types";
-import { splitRemoteBranch } from "./utils";
+} from "../types";
+import { splitRemoteBranch } from "../utils";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
