@@ -1,5 +1,5 @@
 import { DataAdapter, normalizePath, TFile, Vault } from "obsidian";
-import ObsidianGit from "./main";
+import ObsidianGit from "../main";
 
 export class MyAdapter {
     promises: any = {};

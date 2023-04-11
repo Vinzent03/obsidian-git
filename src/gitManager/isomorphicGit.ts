@@ -14,7 +14,7 @@ import git, {
 import { Notice, requestUrl } from "obsidian";
 import { GitManager } from "./gitManager";
 import ObsidianGit from "../main";
-import { MyAdapter } from "../myAdapter";
+import { MyAdapter } from "./myAdapter";
 import {
     BranchInfo,
     FileStatusResult,
