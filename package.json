@@ -11,6 +11,15 @@
         "format": "prettier --check src",
         "prepare": "husky install"
     },
+    "lint-staged": {
+        "*.{js,ts,svelte}": [
+            "npx eslint --fix",
+            "npx prettier --write"
+        ],
+        "*.ts": [
+            "npx tsc --noEmit"
+        ]
+    },
     "keywords": [],
     "author": "",
     "license": "MIT",
@@ -31,6 +40,7 @@
         "eslint": "^8.36.0",
         "eslint-plugin-svelte3": "^4.0.0",
         "husky": "^8.0.3",
+        "lint-staged": "^13.2.1",
         "obsidian": "^0.16.3",
         "prettier": "2.8.4",
         "sass": "^1.59.2",
