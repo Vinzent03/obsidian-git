@@ -8,7 +8,8 @@
         "build": "node esbuild.config.mjs production",
         "release": "standard-version",
         "lint": "eslint --ext .ts,.svelte src",
-        "format": "prettier --check src"
+        "format": "prettier --check src",
+        "prepare": "husky install"
     },
     "keywords": [],
     "author": "",
@@ -29,6 +30,7 @@
         "esbuild-svelte": "^0.7.3",
         "eslint": "^8.36.0",
         "eslint-plugin-svelte3": "^4.0.0",
+        "husky": "^8.0.3",
         "obsidian": "^0.16.3",
         "prettier": "2.8.4",
         "sass": "^1.59.2",

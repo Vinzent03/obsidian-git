@@ -17,6 +17,7 @@ specifiers:
   esbuild-svelte: ^0.7.3
   eslint: ^8.36.0
   eslint-plugin-svelte3: ^4.0.0
+  husky: ^8.0.3
   isomorphic-git: ^1.22.0
   obsidian: ^0.16.3
   obsidian-community-lib: ^2.0.2
@@ -55,6 +56,7 @@ devDependencies:
   esbuild-svelte: 0.7.3_kuj6yhbyhvtczkvjti3btksg3m
   eslint: 8.36.0_supports-color@7.2.0
   eslint-plugin-svelte3: 4.0.0_wzem237sbvnwe7n34ytc5phasy
+  husky: 8.0.3
   obsidian: 0.16.3_ydzx5qoi6374xmclt4keb2sh6a
   prettier: 2.8.4
   sass: 1.59.3
@@ -1599,6 +1601,12 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       lru-cache: 6.0.0
+    dev: true
+
+  /husky/8.0.3:
+    resolution: {integrity: sha512-+dQSyqPh4x1hlO1swXBiNb2HzTDN1I2IGLQx1GrBuiqFJfoMrnZWwVmatvSiO+Iz8fBUnf+lekwNo4c2LlXItg==}
+    engines: {node: '>=14'}
+    hasBin: true
     dev: true
 
   /ieee754/1.2.1:
