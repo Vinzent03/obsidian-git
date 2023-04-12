@@ -774,7 +774,7 @@ export class IsomorphicGit extends GitManager {
                 const completeMessage = log.commit.message.split("\n\n");
 
                 return {
-                    message: completeMessage[0],
+                    message: completeMessage[0]!,
                     body: completeMessage.slice(1).join("\n\n"),
                     date: new Date(
                         log.commit.committer.timestamp

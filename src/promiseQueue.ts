@@ -9,7 +9,7 @@ export class PromiseQueue {
     }
     async handleTask() {
         if (this.tasks.length > 0) {
-            this.tasks[0]().finally(() => {
+            this.tasks[0]!().finally(() => {
                 this.tasks.shift();
                 this.handleTask();
             });

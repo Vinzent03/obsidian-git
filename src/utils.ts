@@ -28,7 +28,7 @@ export function splitRemoteBranch(
     remoteBranch: string
 ): readonly [string, string | undefined] {
     const [remote, ...branch] = remoteBranch.split("/");
-    return [remote, branch.length === 0 ? undefined : branch.join("/")];
+    return [remote!, branch.length === 0 ? undefined : branch.join("/")];
 }
 
 export function getDisplayPath(path: string): string {

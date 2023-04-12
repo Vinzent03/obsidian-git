@@ -242,7 +242,7 @@ export abstract class GitManager {
             const changeset: { [key: string]: string[] } = {};
             status.staged.forEach((value: FileStatusResult) => {
                 if (value.index in changeset) {
-                    changeset[value.index].push(value.path);
+                    changeset[value.index]!.push(value.path);
                 } else {
                     changeset[value.index] = [value.path];
                 }

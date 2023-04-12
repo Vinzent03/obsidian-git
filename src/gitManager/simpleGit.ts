@@ -56,7 +56,7 @@ export class SimpleGit extends GitManager {
             }
             for (const envVar of envVars) {
                 const [key, value] = envVar.split("=");
-                process.env[key] = value;
+                process.env[key!] = value;
             }
 
             debug.enable("simple-git");
@@ -579,7 +579,7 @@ export class SimpleGit extends GitManager {
 
         const list = [];
         for (const item in res.branches) {
-            list.push(res.branches[item].name);
+            list.push(res.branches[item]!.name);
         }
         return list;
     }
