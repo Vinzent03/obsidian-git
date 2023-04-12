@@ -24,11 +24,11 @@ import {
     HISTORY_VIEW_CONFIG,
     SOURCE_CONTROL_VIEW_CONFIG,
 } from "./constants";
-import { GitManager } from "./gitManager";
-import { IsomorphicGit } from "./isomorphicGit";
+import { GitManager } from "./gitManager/gitManager";
+import { IsomorphicGit } from "./gitManager/isomorphicGit";
 import { LocalStorageSettings } from "./localStorageSettings";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
-import { SimpleGit } from "./simpleGit";
+import { SimpleGit } from "./gitManager/simpleGit";
 import {
     FileStatusResult,
     ObsidianGitSettings,

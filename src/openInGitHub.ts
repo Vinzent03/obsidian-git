@@ -1,5 +1,5 @@
 import { Editor, Notice, TFile } from "obsidian";
-import { GitManager } from "./gitManager";
+import { GitManager } from "./gitManager/gitManager";
 
 export async function openLineInGitHub(
     editor: Editor,

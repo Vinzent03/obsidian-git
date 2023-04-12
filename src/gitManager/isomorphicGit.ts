@@ -13,7 +13,7 @@ import git, {
 } from "isomorphic-git";
 import { Notice, requestUrl } from "obsidian";
 import { GitManager } from "./gitManager";
-import ObsidianGit from "./main";
+import ObsidianGit from "../main";
 import { MyAdapter } from "./myAdapter";
 import {
     BranchInfo,
@@ -23,9 +23,9 @@ import {
     Status,
     UnstagedFile,
     WalkDifference,
-} from "./types";
-import { GeneralModal } from "./ui/modals/generalModal";
-import { splitRemoteBranch, worthWalking } from "./utils";
+} from "../types";
+import { GeneralModal } from "../ui/modals/generalModal";
+import { splitRemoteBranch, worthWalking } from "../utils";
 
 export class IsomorphicGit extends GitManager {
     private readonly FILE = 0;

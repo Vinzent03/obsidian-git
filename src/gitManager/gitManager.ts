@@ -1,5 +1,5 @@
 import { App } from "obsidian";
-import ObsidianGit from "./main";
+import ObsidianGit from "../main";
 import {
     BranchInfo,
     DiffFile,
@@ -8,7 +8,7 @@ import {
     Status,
     TreeItem,
     UnstagedFile,
-} from "./types";
+} from "../types";
 
 export abstract class GitManager {
     readonly plugin: ObsidianGit;

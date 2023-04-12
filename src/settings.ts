@@ -1,7 +1,7 @@
 import { Notice, Platform, PluginSettingTab, Setting } from "obsidian";
-import { IsomorphicGit } from "./isomorphicGit";
+import { IsomorphicGit } from "./gitManager/isomorphicGit";
 import ObsidianGit from "./main";
-import { SimpleGit } from "./simpleGit";
+import { SimpleGit } from "./gitManager/simpleGit";
 import { SyncMethod } from "./types";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
