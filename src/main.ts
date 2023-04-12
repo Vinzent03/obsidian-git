@@ -14,7 +14,7 @@ import {
     WorkspaceLeaf,
 } from "obsidian";
 import { PromiseQueue } from "src/promiseQueue";
-import { ObsidianGitSettingsTab } from "src/settings";
+import { ObsidianGitSettingsTab } from "src/setting/settings";
 import { StatusBar } from "src/statusBar";
 import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
@@ -26,7 +26,7 @@ import {
 } from "./constants";
 import { GitManager } from "./gitManager/gitManager";
 import { IsomorphicGit } from "./gitManager/isomorphicGit";
-import { LocalStorageSettings } from "./localStorageSettings";
+import { LocalStorageSettings } from "./setting/localStorageSettings";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./gitManager/simpleGit";
 import {
