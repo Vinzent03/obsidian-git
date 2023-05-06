@@ -1,4 +1,3 @@
-
 export class PromiseQueue {
     tasks: (() => Promise<any>)[] = [];
 

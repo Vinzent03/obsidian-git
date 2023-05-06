@@ -1,14 +1,14 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
     import ObsidianGit from "src/main";
-    import { FileType, RootTreeItem, TreeItem } from "src/types";
+    import { FileType, StatusRootTreeItem, TreeItem } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
     import { slide } from "svelte/transition";
-    import GitView from "../sidebarView";
+    import GitView from "../sourceControl";
     import FileComponent from "./fileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";
-    export let hierarchy: RootTreeItem;
+    export let hierarchy: StatusRootTreeItem;
     export let plugin: ObsidianGit;
     export let view: GitView;
     export let fileType: FileType;
@@ -49,43 +49,40 @@
 
 <main class:topLevel>
     {#each hierarchy.children as entity}
-        {#if entity.statusResult}
+        {#if entity.data}
             <div>
                 {#if fileType == FileType.staged}
                     <StagedFileComponent
-                        change={entity.statusResult}
+                        change={entity.data}
                         manager={plugin.gitManager}
                         {view}
                     />
                 {:else if fileType == FileType.changed}
                     <FileComponent
-                        change={entity.statusResult}
+                        change={entity.data}
                         manager={plugin.gitManager}
                         {view}
                     />
                 {:else if fileType == FileType.pulled}
-                    <PulledFileComponent change={entity.statusResult} {view} />
+                    <PulledFileComponent change={entity.data} {view} />
                 {/if}
             </div>
         {:else}
-            <div class="nav-folder" class:is-collapsed={closed[entity.title]}>
+            <div
+                on:click={() => fold(entity)}
+                class="nav-folder"
+                class:is-collapsed={closed[entity.title]}
+            >
                 <div
                     class="nav-folder-title"
                     aria-label-position={side}
-                    aria-label={entity.vaultPath.split("/").last() !=
-                    entity.vaultPath
-                        ? entity.vaultPath
-                        : ""}
-                    on:click|self={() => fold(entity)}
+                    aria-label={entity.vaultPath}
                 >
                     <div
                         data-icon="folder"
                         style="padding-right: 5px; display: flex; "
                     />
-                    <div
-                        class="nav-folder-collapse-indicator collapse-icon"
-                        on:click={() => fold(entity)}
-                    >
+                    <div class="nav-folder-collapse-indicator collapse-icon">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="24"
@@ -100,19 +97,17 @@
                             ><path d="M3 8L12 17L21 8" /></svg
                         >
                     </div>
-                    <div
-                        on:click={() => fold(entity)}
-                        class="nav-folder-title-content"
-                    >
+                    <div class="nav-folder-title-content">
                         {entity.title}
                     </div>
-                    <div class="tools">
+                    <div class="git-tools">
                         <div class="buttons">
                             {#if fileType == FileType.staged}
                                 <div
                                     data-icon="minus"
                                     aria-label="Unstage"
-                                    on:click={() => unstage(entity.path)}
+                                    on:click|stopPropagation={() =>
+                                        unstage(entity.path)}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -137,7 +132,8 @@
                                 <div
                                     data-icon="undo"
                                     aria-label="Discard"
-                                    on:click={() => discard(entity)}
+                                    on:click|stopPropagation={() =>
+                                        discard(entity)}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -159,7 +155,8 @@
                                 <div
                                     data-icon="plus"
                                     aria-label="Stage"
-                                    on:click={() => stage(entity.path)}
+                                    on:click|stopPropagation={() =>
+                                        stage(entity.path)}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -214,17 +211,6 @@
         .nav-folder-title-content {
             display: flex;
             align-items: center;
-        }
-        .tools {
-            display: flex;
-            margin-left: auto;
-            .buttons {
-                display: flex;
-                > * {
-                    padding: 0 0;
-                    height: auto;
-                }
-            }
         }
     }
 </style>

@@ -5,9 +5,10 @@
         FileStatusResult,
         FileType,
         PluginState,
-        RootTreeItem,
         Status,
+        StatusRootTreeItem,
     } from "src/types";
+    import { getDisplayPath } from "src/utils";
     import { onDestroy } from "svelte";
     import { slide } from "svelte/transition";
     import { DiscardModal } from "../modals/discardModal";
@@ -15,7 +16,7 @@
     import PulledFileComponent from "./components/pulledFileComponent.svelte";
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
     import TreeComponent from "./components/treeComponent.svelte";
-    import GitView from "./sidebarView";
+    import GitView from "./sourceControl";
 
     export let plugin: ObsidianGit;
     export let view: GitView;
@@ -24,9 +25,9 @@
     let lastPulledFiles: FileStatusResult[] = [];
     let commitMessage = plugin.settings.commitMessage;
     let buttons: HTMLElement[] = [];
-    let changeHierarchy: RootTreeItem | undefined;
-    let stagedHierarchy: RootTreeItem | undefined;
-    let lastPulledFilesHierarchy: RootTreeItem;
+    let changeHierarchy: StatusRootTreeItem | undefined;
+    let stagedHierarchy: StatusRootTreeItem | undefined;
+    let lastPulledFilesHierarchy: StatusRootTreeItem;
     let changesOpen = true;
     let stagedOpen = true;
     let lastPulledFilesOpen = true;
@@ -112,7 +113,7 @@
                 return a.vault_path
                     .split("/")
                     .last()!
-                    .localeCompare(b.vault_path.split("/").last()!);
+                    .localeCompare(getDisplayPath(b.vault_path));
             };
             status.changed.sort(sort);
             status.staged.sort(sort);
@@ -265,7 +266,6 @@
         <textarea
             {rows}
             class="commit-msg-input"
-            type="text"
             spellcheck="true"
             placeholder="Commit Message"
             bind:value={commitMessage}
@@ -289,11 +289,10 @@
                     >
                         <div
                             class="nav-folder-title"
-                            on:click|self={() => (stagedOpen = !stagedOpen)}
+                            on:click={() => (stagedOpen = !stagedOpen)}
                         >
                             <div
                                 class="nav-folder-collapse-indicator collapse-icon"
-                                on:click={() => (stagedOpen = !stagedOpen)}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -309,20 +308,17 @@
                                     ><path d="M3 8L12 17L21 8" /></svg
                                 >
                             </div>
-                            <div
-                                class="nav-folder-title-content"
-                                on:click={() => (stagedOpen = !stagedOpen)}
-                            >
+                            <div class="nav-folder-title-content">
                                 Staged Changes
                             </div>
 
-                            <div class="tools">
+                            <div class="git-tools">
                                 <div class="buttons">
                                     <div
                                         data-icon="minus"
                                         aria-label="Unstage"
                                         bind:this={buttons[8]}
-                                        on:click={unstageAll}
+                                        on:click|stopPropagation={unstageAll}
                                         class="clickable-icon"
                                     >
                                         <svg
@@ -379,12 +375,11 @@
                         class:is-collapsed={!changesOpen}
                     >
                         <div
-                            on:click|self={() => (changesOpen = !changesOpen)}
+                            on:click={() => (changesOpen = !changesOpen)}
                             class="nav-folder-title"
                         >
                             <div
                                 class="nav-folder-collapse-indicator collapse-icon"
-                                on:click={() => (changesOpen = !changesOpen)}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -401,18 +396,13 @@
                                 >
                             </div>
 
-                            <div
-                                class="nav-folder-title-content"
-                                on:click={() => (changesOpen = !changesOpen)}
-                            >
-                                Changes
-                            </div>
-                            <div class="tools">
+                            <div class="nav-folder-title-content">Changes</div>
+                            <div class="git-tools">
                                 <div class="buttons">
                                     <div
                                         data-icon="undo"
                                         aria-label="Discard"
-                                        on:click={() => discard()}
+                                        on:click|stopPropagation={discard}
                                         class="clickable-icon"
                                     >
                                         <svg
@@ -435,7 +425,7 @@
                                         data-icon="plus"
                                         aria-label="Stage"
                                         bind:this={buttons[9]}
-                                        on:click={stageAll}
+                                        on:click|stopPropagation={stageAll}
                                         class="clickable-icon"
                                     >
                                         <svg
@@ -579,16 +569,7 @@
         margin: 4px auto;
     }
     main {
-        .tools {
-            display: flex;
-            margin-left: auto;
-            .buttons {
-                display: flex;
-                > * {
-                    padding: 0 0;
-                    height: auto;
-                }
-            }
+        .git-tools {
             .files-count {
                 padding-left: var(--size-2-1);
                 width: 11px;
@@ -628,9 +609,5 @@
         background-color: currentColor;
         -webkit-mask-image: url("data:image/svg+xml,<svg viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M6 12C9.31371 12 12 9.31371 12 6C12 2.68629 9.31371 0 6 0C2.68629 0 0 2.68629 0 6C0 9.31371 2.68629 12 6 12ZM3.8705 3.09766L6.00003 5.22718L8.12955 3.09766L8.9024 3.8705L6.77287 6.00003L8.9024 8.12955L8.12955 8.9024L6.00003 6.77287L3.8705 8.9024L3.09766 8.12955L5.22718 6.00003L3.09766 3.8705L3.8705 3.09766Z' fill='currentColor'/></svg>");
         -webkit-mask-repeat: no-repeat;
-    }
-    .tree-item-flair {
-        margin-left: auto;
-        align-items: center;
     }
 </style>

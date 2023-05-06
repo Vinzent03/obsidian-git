@@ -12,6 +12,10 @@
     padding: 0;
 }
 
+.workspace-leaf-content[data-type='git-history-view'] .view-content {
+    padding: 0;
+}
+
 .loading>svg {
     animation: 2s linear infinite loading;
     transform-origin: 50% 50%;
@@ -42,21 +46,30 @@
 .tooltip.mod-right {
     overflow-wrap: break-word;
 }
-
-.obsidian-git-shortcuts {
-    margin: 10px;
-}
-
-.diff-err {
-    height: 100%;
+.git-tools {
     display: flex;
-    justify-content: center;
-    flex-direction: column;
+    margin-left: auto;
+}
+.git-tools .type {
+    padding-left: var(--size-2-1);
+    display: flex;
     align-items: center;
+    justify-content: center;
+    width: 11px;
 }
 
-.diff-err-sign {
-    font-size: 2em;
+.git-tools .type[data-type="M"] {
+    color: orange;
+}
+.git-tools .type[data-type="D"] {
+    color: red;
+}
+.git-tools .buttons {
+    display: flex;
+}
+.git-tools .buttons > * {
+    padding: 0 0;
+    height: auto;
 }
 
 .workspace-leaf-content[data-type="diff-view"] .d2h-d-none {

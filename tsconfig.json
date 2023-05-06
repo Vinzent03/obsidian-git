@@ -4,7 +4,7 @@
         "inlineSourceMap": true,
         "inlineSources": true,
         "module": "ESNext",
-        "target": "es2018",
+        "target": "ES6",
         "allowJs": true,
         "noImplicitAny": true,
         "isolatedModules": true,
@@ -18,9 +18,7 @@
             "ES6",
             "ES7"
         ],
-        "typeRoots": [
-          "node_modules/@types"
-        ]
+        "skipLibCheck": true
     },
     "include": [
         "**/*.ts"

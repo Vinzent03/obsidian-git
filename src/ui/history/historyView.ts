@@ -1,13 +1,14 @@
 import { HoverParent, HoverPopover, ItemView, WorkspaceLeaf } from "obsidian";
-import { GIT_VIEW_CONFIG } from "src/constants";
+import { HISTORY_VIEW_CONFIG } from "src/constants";
 import ObsidianGit from "src/main";
-import GitViewComponent from './gitView.svelte';
+// @tsconfig/svelte is required to resolve this error.
+// Ignore temporarily.
+// @ts-ignore
+import HistoryViewComponent from "./historyView.svelte";
 
-
-export default class GitView extends ItemView implements HoverParent {
-
+export default class HistoryView extends ItemView implements HoverParent {
     plugin: ObsidianGit;
-    private _view: GitViewComponent;
+    private _view: HistoryViewComponent;
     hoverPopover: HoverPopover | null;
 
     constructor(leaf: WorkspaceLeaf, plugin: ObsidianGit) {
@@ -17,15 +18,15 @@ export default class GitView extends ItemView implements HoverParent {
     }
 
     getViewType(): string {
-        return GIT_VIEW_CONFIG.type;
+        return HISTORY_VIEW_CONFIG.type;
     }
 
     getDisplayText(): string {
-        return GIT_VIEW_CONFIG.name;
+        return HISTORY_VIEW_CONFIG.name;
     }
 
     getIcon(): string {
-        return GIT_VIEW_CONFIG.icon;
+        return HISTORY_VIEW_CONFIG.icon;
     }
 
     onClose(): Promise<void> {
@@ -33,14 +34,13 @@ export default class GitView extends ItemView implements HoverParent {
     }
 
     onOpen(): Promise<void> {
-        this._view = new GitViewComponent({
+        this._view = new HistoryViewComponent({
             target: this.contentEl,
             props: {
                 plugin: this.plugin,
                 view: this,
-            }
+            },
         });
         return super.onOpen();
     }
-
 }

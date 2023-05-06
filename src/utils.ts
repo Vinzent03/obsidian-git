@@ -1,10 +1,10 @@
 import * as cssColorConverter from "css-color-converter";
 import deepEqual from "deep-equal";
 import { Moment } from "moment";
-import { moment, Keymap, RGB, WorkspaceLeaf } from "obsidian";
+import { Keymap, RGB, WorkspaceLeaf, moment } from "obsidian";
 
 export const worthWalking = (filepath: string, root?: string) => {
-    if (filepath === '.' || root == null || root.length === 0 || root === '.') {
+    if (filepath === "." || root == null || root.length === 0 || root === ".") {
         return true;
     }
     if (root.length >= filepath.length) {
@@ -17,13 +17,12 @@ export const worthWalking = (filepath: string, root?: string) => {
 export function getNewLeaf(event?: MouseEvent): WorkspaceLeaf | undefined {
     let leaf: WorkspaceLeaf | undefined;
     if (event) {
-        if ((event.button === 0 || event.button === 1)) {
+        if (event.button === 0 || event.button === 1) {
             const type = Keymap.isModEvent(event);
             leaf = app.workspace.getLeaf(type);
         }
     } else {
         leaf = app.workspace.getLeaf(false);
-
     }
     return leaf;
 }
@@ -69,24 +68,48 @@ export function strictDeepEqual<T>(a: T, b: T): boolean {
     return deepEqual(a, b, { strict: true });
 }
 
-export function resizeToLength(original: string, desiredLength: number, fillChar: string): string {
+export function resizeToLength(
+    original: string,
+    desiredLength: number,
+    fillChar: string
+): string {
     if (original.length <= desiredLength) {
-        const prefix = new Array(desiredLength - original.length).fill(fillChar).join("");
+        const prefix = new Array(desiredLength - original.length)
+            .fill(fillChar)
+            .join("");
         return prefix + original;
-    }
-    else {
+    } else {
         return original.substring(original.length - desiredLength);
     }
 }
 
-export function prefixOfLengthAsWhitespace(toBeRenderedText: string, whitespacePrefixLength: number): string {
+export function prefixOfLengthAsWhitespace(
+    toBeRenderedText: string,
+    whitespacePrefixLength: number
+): string {
     if (whitespacePrefixLength <= 0) return toBeRenderedText;
 
-    const whitespacePrefix = new Array(whitespacePrefixLength).fill(" ").join("");
-    const originalSuffix = toBeRenderedText.substring(whitespacePrefixLength, toBeRenderedText.length);
+    const whitespacePrefix = new Array(whitespacePrefixLength)
+        .fill(" ")
+        .join("");
+    const originalSuffix = toBeRenderedText.substring(
+        whitespacePrefixLength,
+        toBeRenderedText.length
+    );
     return whitespacePrefix + originalSuffix;
 }
 
 export function between(l: number, x: number, r: number) {
     return l <= x && x <= r;
+}
+export function splitRemoteBranch(
+    remoteBranch: string
+): readonly [string, string | undefined] {
+    const [remote, ...branch] = remoteBranch.split("/");
+    return [remote, branch.length === 0 ? undefined : branch.join("/")];
+}
+
+export function getDisplayPath(path: string): string {
+    if (path.endsWith("/")) return path;
+    return path.split("/").last()!.replace(".md", "");
 }

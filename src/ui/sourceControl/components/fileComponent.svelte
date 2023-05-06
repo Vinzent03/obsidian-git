@@ -2,11 +2,11 @@
     import { setIcon, TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
     import { DIFF_VIEW_CONFIG } from "src/constants";
-    import { GitManager } from "src/gitManager";
+    import { GitManager } from "src/gitManager/gitManager";
     import { FileStatusResult } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
-    import { getNewLeaf } from "src/utils";
-    import GitView from "../sidebarView";
+    import { getDisplayPath, getNewLeaf } from "src/utils";
+    import GitView from "../sourceControl";
 
     export let change: FileStatusResult;
     export let view: GitView;
@@ -21,15 +21,8 @@
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
-        if (
-            !change.path.startsWith(view.app.vault.configDir) ||
-            !change.path.startsWith(".")
-        ) {
-            hoverPreview(
-                event,
-                view as any,
-                change.vault_path.split("/").last()!.replace(".md", "")
-            );
+        if (app.vault.getAbstractFileByPath(change.vault_path)) {
+            hoverPreview(event, view as any, change.vault_path);
         }
     }
 
@@ -82,38 +75,35 @@
 </script>
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
-<main on:mouseover={hover} on:click|self={showDiff} on:focus class="nav-file">
-    <!-- svelte-ignore a11y-unknown-aria-attribute -->
+<main
+    on:mouseover={hover}
+    on:click|stopPropagation={showDiff}
+    on:auxclick|stopPropagation={showDiff}
+    on:focus
+    class="nav-file"
+>
     <div
         class="nav-file-title"
         aria-label-position={side}
-        aria-label={change.vault_path.split("/").last() != change.vault_path
-            ? change.vault_path
-            : ""}
-        on:click|self={showDiff}
-        on:auxclick|self={showDiff}
+        aria-label={change.vault_path}
     >
         <!-- <div
 			data-icon="folder"
 			bind:this={buttons[3]}
 			style="padding-right: 5px; display: flex;"
 		/> -->
-        <div
-            on:click={showDiff}
-            on:auxclick={showDiff}
-            class="nav-file-title-content"
-        >
-            {change.vault_path.split("/").last()?.replace(".md", "")}
+        <div class="nav-file-title-content">
+            {getDisplayPath(change.vault_path)}
         </div>
-        <div class="tools">
+        <div class="git-tools">
             <div class="buttons">
                 {#if view.app.vault.getAbstractFileByPath(change.vault_path)}
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"
                         bind:this={buttons[1]}
-                        on:auxclick={open}
-                        on:click={open}
+                        on:auxclick|stopPropagation={open}
+                        on:click|stopPropagation={open}
                         class="clickable-icon"
                     />
                 {/if}
@@ -121,14 +111,14 @@
                     data-icon="undo"
                     aria-label="Discard"
                     bind:this={buttons[0]}
-                    on:click={discard}
+                    on:click|stopPropagation={discard}
                     class="clickable-icon"
                 />
                 <div
                     data-icon="plus"
                     aria-label="Stage"
                     bind:this={buttons[2]}
-                    on:click={stage}
+                    on:click|stopPropagation={stage}
                     class="clickable-icon"
                 />
             </div>
@@ -144,30 +134,6 @@
         .nav-file-title-content {
             display: flex;
             align-items: center;
-        }
-        .tools {
-            display: flex;
-            margin-left: auto;
-            .type {
-                padding-left: var(--size-2-1);
-                width: 11px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                &[data-type="M"] {
-                    color: orange;
-                }
-                &[data-type="D"] {
-                    color: red;
-                }
-            }
-            .buttons {
-                display: flex;
-                > * {
-                    padding: 0 0;
-                    height: auto;
-                }
-            }
         }
     }
 </style>

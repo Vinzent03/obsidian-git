@@ -17,8 +17,8 @@ export interface ObsidianGitSettings {
     updateSubmodules: boolean;
     submoduleRecurseCheckout: boolean;
     /**
-    * @deprecated Using `localstorage` instead
-    */
+     * @deprecated Using `localstorage` instead
+     */
     gitPath?: string;
     customMessageOnAutoBackup: boolean;
     autoBackupAfterFileChange: boolean;
@@ -42,20 +42,21 @@ export interface ObsidianGitSettings {
     lineAuthor: LineAuthorSettings;
     setLastSaveToLastCommit: boolean;
     gitDir: string;
+    showFileMenu: boolean;
 }
 
 /**
  * Ensures, that nested values objects are correctly merged.
  */
 export function mergeSettingsByPriority(
-    low: ObsidianGitSettings,
+    low: Omit<ObsidianGitSettings, "autoCommitMessage">,
     high: ObsidianGitSettings
 ): ObsidianGitSettings {
     const lineAuthor = Object.assign({}, low.lineAuthor, high.lineAuthor);
     return Object.assign({}, low, high, { lineAuthor });
 }
 
-export type SyncMethod = 'rebase' | 'merge' | 'reset';
+export type SyncMethod = "rebase" | "merge" | "reset";
 
 export interface Author {
     name: string;
@@ -89,7 +90,7 @@ export interface BlameCommit {
     hash: string;
     author?: UserEmail & GitTimestamp;
     committer?: UserEmail & GitTimestamp;
-    previous?: { commitHash?: string; filename: string; };
+    previous?: { commitHash?: string; filename: string };
     filename?: string;
     summary: string;
     isZeroCommit: boolean; // true, if hash is 000...000
@@ -102,19 +103,19 @@ export interface Blame {
     commits: Map<string, BlameCommit>;
     /**
      * hashPerLine[i] is the commit hash where line i originates from
-     * 
+     *
      * The first element is always `undefined`, since line-numbers are 1-based.
      */
     hashPerLine: string[];
     /**
-     * originalFileLineNrPerLine[i] contains the original files' line number from where line i 
-     * 
+     * originalFileLineNrPerLine[i] contains the original files' line number from where line i
+     *
      * The first element is always `undefined`, since line-numbers are 1-based.originated
      */
     originalFileLineNrPerLine: number[];
     /**
      * finalFileLineNrPerLine[i] contains the final files' line number from where line i originated
-     * 
+     *
      * The first element is always `undefined`, since line-numbers are 1-based.
      */
     finalFileLineNrPerLine: number[];
@@ -183,10 +184,6 @@ export interface FileStatusResult {
     // if no merge conflicts, otherwise represents status of other side of a merge.
     working_dir: string;
 }
-export interface DiffResult {
-    path: string;
-    type: "equal" | "modify" | "add" | "remove";
-}
 
 export enum PluginState {
     idle,
@@ -198,9 +195,31 @@ export enum PluginState {
     conflicted,
 }
 
+export interface LogEntry {
+    hash: string;
+    date: string;
+    message: string;
+    refs: string[];
+    body: string;
+    diff: DiffEntry;
+}
+
+export interface DiffEntry {
+    changed: number;
+    files: DiffFile[];
+}
+
+export interface DiffFile {
+    path: string;
+    vault_path: string;
+    hash: string;
+    status: string;
+    binary: boolean;
+}
+
 export interface WalkDifference {
     path: string;
-    type: | "modify" | "add" | "remove";
+    type: "M" | "A" | "D";
 }
 
 export interface UnstagedFile {
@@ -214,19 +233,24 @@ export interface BranchInfo {
     branches: string[];
 }
 
-export interface TreeItem {
+export interface TreeItem<T = DiffFile | FileStatusResult> {
     title: string;
     path: string;
     vaultPath: string;
-    statusResult?: FileStatusResult;
-    children?: TreeItem[];
+    data?: T;
+    children?: TreeItem<T>[];
 }
 
-export type RootTreeItem = TreeItem & { children: TreeItem[]; };
+export type RootTreeItem<T> = TreeItem<T> & { children: TreeItem<T>[] };
+
+export type StatusRootTreeItem = RootTreeItem<FileStatusResult>;
+
+export type HistoryRootTreeItem = RootTreeItem<DiffFile>;
 
 export interface DiffViewState {
-    staged: boolean,
-    file: string,
+    staged: boolean;
+    file: string;
+    hash?: string;
 }
 
 export enum FileType {

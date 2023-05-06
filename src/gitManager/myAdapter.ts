@@ -1,16 +1,19 @@
 import { DataAdapter, normalizePath, TFile, Vault } from "obsidian";
-import ObsidianGit from "./main";
+import ObsidianGit from "../main";
 
 export class MyAdapter {
     promises: any = {};
     adapter: DataAdapter;
     vault: Vault;
     index: any;
-    indexctime: number;
-    indexmtime: number;
+    indexctime: number | undefined;
+    indexmtime: number | undefined;
+    lastBasePath: string | undefined;
+
     constructor(vault: Vault, private readonly plugin: ObsidianGit) {
         this.adapter = vault.adapter;
         this.vault = vault;
+        this.lastBasePath = this.plugin.settings.basePath;
 
         this.promises.readFile = this.readFile.bind(this);
         this.promises.writeFile = this.writeFile.bind(this);
@@ -36,6 +39,11 @@ export class MyAdapter {
             }
         } else {
             if (path.endsWith(this.gitDir + "/index")) {
+                if (this.plugin.settings.basePath != this.lastBasePath) {
+                    this.clearIndex();
+                    this.lastBasePath = this.plugin.settings.basePath;
+                    return this.adapter.readBinary(path);
+                }
                 return this.index ?? this.adapter.readBinary(path);
             }
             const file = this.vault.getAbstractFileByPath(path);
@@ -74,13 +82,14 @@ export class MyAdapter {
         }
     }
     async readdir(path: string) {
-        if (path === ".")
-            path = "/";
+        if (path === ".") path = "/";
         const res = await this.adapter.list(path);
         const all = [...res.files, ...res.folders];
         let formattedAll;
         if (path !== "/") {
-            formattedAll = all.map(e => normalizePath(e.substring(path.length)));
+            formattedAll = all.map((e) =>
+                normalizePath(e.substring(path.length))
+            );
         } else {
             formattedAll = all;
         }
@@ -93,9 +102,12 @@ export class MyAdapter {
         return this.adapter.rmdir(path, opts?.options?.recursive ?? false);
     }
     async stat(path: string) {
-
         if (path.endsWith(this.gitDir + "/index")) {
-            if (this.index !== undefined && this.indexctime != undefined && this.indexmtime != undefined) {
+            if (
+                this.index !== undefined &&
+                this.indexctime != undefined &&
+                this.indexmtime != undefined
+            ) {
                 return {
                     isFile: () => true,
                     isDirectory: () => false,
@@ -108,7 +120,7 @@ export class MyAdapter {
             } else {
                 const stat = await this.adapter.stat(path);
                 if (stat == undefined) {
-                    throw { "code": "ENOENT" };
+                    throw { code: "ENOENT" };
                 }
                 this.indexctime = stat.ctime;
                 this.indexmtime = stat.mtime;
@@ -123,8 +135,7 @@ export class MyAdapter {
                 };
             }
         }
-        if (path === ".")
-            path = "/";
+        if (path === ".") path = "/";
         const file = this.vault.getAbstractFileByPath(path);
         this.maybeLog("Stat: " + path);
         if (file instanceof TFile) {
@@ -152,7 +163,7 @@ export class MyAdapter {
                 };
             } else {
                 // used to determine whether a file exists or not
-                throw { "code": "ENOENT" };
+                throw { code: "ENOENT" };
             }
         }
     }
@@ -176,16 +187,21 @@ export class MyAdapter {
                 this.index,
                 {
                     ctime: this.indexctime,
-                    mtime: this.indexmtime
-                });
+                    mtime: this.indexmtime,
+                }
+            );
         }
+        this.clearIndex();
+    }
+
+    clearIndex() {
         this.index = undefined;
         this.indexctime = undefined;
         this.indexmtime = undefined;
     }
 
     private get gitDir(): string {
-        return (this.plugin.settings.gitDir ?? ".git");
+        return this.plugin.settings.gitDir || ".git";
     }
 
     private maybeLog(text: string) {

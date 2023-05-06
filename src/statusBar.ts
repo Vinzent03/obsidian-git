@@ -9,14 +9,21 @@ interface StatusBarMessage {
 
 export class StatusBar {
     private messages: StatusBarMessage[] = [];
-    private currentMessage?: StatusBarMessage;
-    private lastMessageTimestamp?: number;
+    private currentMessage: StatusBarMessage | null;
+    private lastCommitTimestamp?: Date;
+    private unPushedCommits?: number;
+    public lastMessageTimestamp: number | null;
     private base = "obsidian-git-statusbar-";
     private iconEl: HTMLElement;
     private textEl: HTMLElement;
 
-    constructor(private statusBarEl: HTMLElement, private readonly plugin: ObsidianGit) {
+    constructor(
+        private statusBarEl: HTMLElement,
+        private readonly plugin: ObsidianGit
+    ) {
         this.statusBarEl.setAttribute("aria-label-position", "top");
+
+        addEventListener("git-refresh", this.refreshCommitTimestamp.bind(this));
     }
 
     public displayMessage(message: string, timeout: number) {
@@ -29,16 +36,17 @@ export class StatusBar {
 
     public display() {
         if (this.messages.length > 0 && !this.currentMessage) {
-            this.currentMessage = this.messages.shift()!;
+            this.currentMessage = this.messages.shift() as StatusBarMessage;
             this.statusBarEl.addClass(this.base + "message");
             this.statusBarEl.ariaLabel = "";
             this.statusBarEl.setText(this.currentMessage.message);
             this.lastMessageTimestamp = Date.now();
         } else if (this.currentMessage) {
-            const messageAge = Date.now() - this.lastMessageTimestamp!;
+            const messageAge =
+                Date.now() - (this.lastMessageTimestamp as number);
             if (messageAge >= this.currentMessage.timeout) {
-                this.currentMessage = undefined;
-                this.lastMessageTimestamp = undefined;
+                this.currentMessage = null;
+                this.lastMessageTimestamp = null;
             }
         } else {
             this.displayState();
@@ -47,7 +55,10 @@ export class StatusBar {
 
     private displayState() {
         //Messages have to be removed before the state is set
-        if (this.statusBarEl.getText().length > 3 || !this.statusBarEl.hasChildNodes()) {
+        if (
+            this.statusBarEl.getText().length > 3 ||
+            !this.statusBarEl.hasChildNodes()
+        ) {
             this.statusBarEl.empty();
 
             this.iconEl = this.statusBarEl.createDiv();
@@ -56,9 +67,10 @@ export class StatusBar {
             this.textEl.style.marginLeft = "5px";
             this.iconEl.style.float = "left";
         }
+
         switch (this.plugin.state) {
             case PluginState.idle:
-                this.displayFromNow(this.plugin.lastUpdate);
+                this.displayFromNow();
                 break;
             case PluginState.status:
                 this.statusBarEl.ariaLabel = "Checking repository status...";
@@ -98,14 +110,22 @@ export class StatusBar {
         }
     }
 
-    private displayFromNow(timestamp: number): void {
-
+    private displayFromNow(): void {
+        const timestamp = this.lastCommitTimestamp;
         if (timestamp) {
             const moment = (window as any).moment;
             const fromNow = moment(timestamp).fromNow();
-            this.statusBarEl.ariaLabel = `${this.plugin.offlineMode ? "Offline: " : ""}Last Git update: ${fromNow}`;
+            this.statusBarEl.ariaLabel = `${
+                this.plugin.offlineMode ? "Offline: " : ""
+            }Last Commit: ${fromNow}`;
+
+            if (this.unPushedCommits ?? 0 > 0) {
+                this.statusBarEl.ariaLabel += `\n(${this.unPushedCommits} unpushed commits)`;
+            }
         } else {
-            this.statusBarEl.ariaLabel = this.plugin.offlineMode ? "Git is offline" : "Git is ready";
+            this.statusBarEl.ariaLabel = this.plugin.offlineMode
+                ? "Git is offline"
+                : "Git is ready";
         }
 
         if (this.plugin.offlineMode) {
@@ -113,9 +133,21 @@ export class StatusBar {
         } else {
             setIcon(this.iconEl, "check");
         }
-        if (this.plugin.settings.changedFilesInStatusBar && this.plugin.cachedStatus) {
-            this.textEl.setText(this.plugin.cachedStatus.changed.length.toString());
+        if (
+            this.plugin.settings.changedFilesInStatusBar &&
+            this.plugin.cachedStatus
+        ) {
+            this.textEl.setText(
+                this.plugin.cachedStatus.changed.length.toString()
+            );
         }
         this.statusBarEl.addClass(this.base + "idle");
+    }
+
+    private async refreshCommitTimestamp() {
+        this.lastCommitTimestamp =
+            await this.plugin.gitManager.getLastCommitTime();
+        this.unPushedCommits =
+            await this.plugin.gitManager.getUnpushedCommits();
     }
 }

@@ -2,16 +2,18 @@
 
 Plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
 
-Requirements, installation steps (including setup for mobile), tips and tricks, common issues and more can be found in the [wiki](https://github.com/denolehov/obsidian-git/wiki/).
+Requirements, installation steps (including setup for mobile), tips and tricks, common issues and more can be found in the [documentation](https://publish.obsidian.md/git-doc).
 
 For mobile users see [Mobile](#mobile) section below.
+
 ## Highlighted Features
 
 - Automatic vault backup every X minutes
 - Pull changes from remote repository on Obsidian startup
 - Assign hotkeys for pulling/pushing changes to a remote repository
-- Manage different repositories via Git submodules
-- Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command. 
+- Manage different repositories via Git submodules (after enabling this feature in settings)
+- Sidebar view. The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command.
+- For viewing the history of a file, I strongly recommend you the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin
 
 ![Source Control View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/source-view.png)
 
@@ -51,7 +53,16 @@ For mobile users see [Mobile](#mobile) section below.
 
 ## Desktop
 
-⚠ Installing Obsidian via Snap on Linux is not supported. Please use AppImage or Flatpak instead ([Linux installation guide](https://github.com/denolehov/obsidian-git/wiki/Installation#linux))
+## Authentication
+
+Authentication may require additional setup. See more in the [Authentication documentation](https://publish.obsidian.md/git-doc/Authentication)
+
+### Obsidian on Linux
+
+- ⚠ Snap is not supported.
+- ⚠ Flatpak is not recommended, because it doesn't have access to all system files. 
+
+Please use AppImage instead ([Linux installation guide](https://publish.obsidian.md/git-doc/Installation#Linux))
 
 ## Mobile
 

@@ -10,7 +10,9 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
         super(plugin.app);
         this.plugin = plugin;
         this.changedFiles = changedFiles;
-        this.setPlaceholder("Not supported files will be opened by default app!");
+        this.setPlaceholder(
+            "Not supported files will be opened by default app!"
+        );
     }
 
     getItems(): FileStatusResult[] {
@@ -25,14 +27,20 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
         let working_dir = "";
         let index = "";
 
-        if (item.working_dir != " ") working_dir = `Working dir: ${item.working_dir} `;
+        if (item.working_dir != " ")
+            working_dir = `Working dir: ${item.working_dir} `;
         if (item.index != " ") index = `Index: ${item.index}`;
 
         return `${working_dir}${index} | ${item.vault_path}`;
     }
 
     onChooseItem(item: FileStatusResult, _: MouseEvent | KeyboardEvent): void {
-        if (this.plugin.app.metadataCache.getFirstLinkpathDest(item.vault_path, "") == null) {
+        if (
+            this.plugin.app.metadataCache.getFirstLinkpathDest(
+                item.vault_path,
+                ""
+            ) == null
+        ) {
             (this.app as any).openWithDefaultApp(item.vault_path);
         } else {
             this.plugin.app.workspace.openLinkText(item.vault_path, "/");
