@@ -1,12 +1,24 @@
 import { Extension } from "@codemirror/state";
-import { EventRef, Platform, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
-import { enabledLineAuthorInfoExtensions, LineAuthorProvider } from "src/lineAuthor/lineAuthorProvider";
-import { LineAuthorSettings, provideSettingsAccess } from "src/lineAuthor/model";
+import {
+    EventRef,
+    Platform,
+    TAbstractFile,
+    TFile,
+    WorkspaceLeaf,
+} from "obsidian";
+import { SimpleGit } from "src/gitManager/simpleGit";
+import {
+    LineAuthorProvider,
+    enabledLineAuthorInfoExtensions,
+} from "src/lineAuthor/lineAuthorProvider";
+import {
+    LineAuthorSettings,
+    provideSettingsAccess,
+} from "src/lineAuthor/model";
 import { handleContextMenu } from "src/lineAuthor/view/contextMenu";
 import { setTextColorCssBasedOnSetting } from "src/lineAuthor/view/gutter/coloring";
 import { prepareGutterSearchForContextMenuHandling } from "src/lineAuthor/view/gutter/gutterElementSearch";
 import ObsidianGit from "src/main";
-import { SimpleGit } from "src/simpleGit";
 
 /**
  * Manages the interaction between Obsidian (file-open event, modification event, etc.)
@@ -14,18 +26,16 @@ import { SimpleGit } from "src/simpleGit";
  * line authoring functionality.
  */
 export class LineAuthoringFeature {
-
     private lineAuthorInfoProvider?: LineAuthorProvider;
     private fileOpenEvent?: EventRef;
     private workspaceLeafChangeEvent?: EventRef;
     private fileModificationEvent?: EventRef;
-    private refreshOnCssChangeEvent?: EventRef
+    private refreshOnCssChangeEvent?: EventRef;
     private fileRenameEvent?: EventRef;
     private gutterContextMenuEvent?: EventRef;
     private codeMirrorExtensions: Extension[] = [];
 
-    constructor(private plg: ObsidianGit) {
-    }
+    constructor(private plg: ObsidianGit) {}
 
     // ========================= INIT and DE-INIT ==========================
 
@@ -59,9 +69,11 @@ export class LineAuthoringFeature {
             this.activateCodeMirrorExtensions();
 
             console.log(this.plg.manifest.name + ": Enabled line authoring.");
-        }
-        catch (e) {
-            console.warn("Obsidian Git: Error while loading line authoring feature.", e);
+        } catch (e) {
+            console.warn(
+                "Obsidian Git: Error while loading line authoring feature.",
+                e
+            );
             this.deactivateFeature();
         }
     }
@@ -81,10 +93,16 @@ export class LineAuthoringFeature {
         console.log(this.plg.manifest.name + ": Disabled line authoring.");
     }
 
-    public isAvailableOnCurrentPlatform(): { available: boolean; gitManager: SimpleGit } {
+    public isAvailableOnCurrentPlatform(): {
+        available: boolean;
+        gitManager: SimpleGit;
+    } {
         return {
             available: this.plg.useSimpleGit && Platform.isDesktopApp,
-            gitManager: this.plg.gitManager instanceof SimpleGit ? this.plg.gitManager : undefined!,
+            gitManager:
+                this.plg.gitManager instanceof SimpleGit
+                    ? this.plg.gitManager
+                    : undefined!,
         };
     }
 
@@ -148,18 +166,20 @@ export class LineAuthoringFeature {
     }
 
     private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
-        const obsView = (<any>leaf?.view);
+        const obsView = <any>leaf?.view;
         const file = obsView?.file;
 
         if (!this.lineAuthorInfoProvider) {
-            console.warn("Obsidian Git: undefined lineAuthorInfoProvider. Unexpected situation.");
+            console.warn(
+                "Obsidian Git: undefined lineAuthorInfoProvider. Unexpected situation."
+            );
             return;
         }
 
         if (file === undefined || obsView?.allowNoFile === true) return;
 
         this.lineAuthorInfoProvider.trackChanged(file);
-    }
+    };
 
     private createFileOpenEvent(): EventRef {
         return this.plg.app.workspace.on("file-open", (file: TFile) =>
@@ -168,23 +188,34 @@ export class LineAuthoringFeature {
     }
 
     private createWorkspaceLeafChangeEvent(): EventRef {
-        return this.plg.app.workspace.on("active-leaf-change", this.handleWorkspaceLeaf);
+        return this.plg.app.workspace.on(
+            "active-leaf-change",
+            this.handleWorkspaceLeaf
+        );
     }
 
     private createFileRenameEvent(): EventRef {
-        return this.plg.app.vault.on("rename", (file, _old) =>
-            file instanceof TFile && this.lineAuthorInfoProvider?.trackChanged(file)
+        return this.plg.app.vault.on(
+            "rename",
+            (file, _old) =>
+                file instanceof TFile &&
+                this.lineAuthorInfoProvider?.trackChanged(file)
         );
     }
 
     private createVaultFileModificationHandler() {
-        return this.plg.app.vault.on("modify", (anyPath: TAbstractFile) =>
-            anyPath instanceof TFile && this.lineAuthorInfoProvider?.trackChanged(anyPath)
+        return this.plg.app.vault.on(
+            "modify",
+            (anyPath: TAbstractFile) =>
+                anyPath instanceof TFile &&
+                this.lineAuthorInfoProvider?.trackChanged(anyPath)
         );
     }
 
     private createCssRefreshHandler(): EventRef {
-        return this.plg.app.workspace.on("css-change", () => this.refreshLineAuthorViews());
+        return this.plg.app.workspace.on("css-change", () =>
+            this.refreshLineAuthorViews()
+        );
     }
 
     private createGutterContextMenuHandler() {

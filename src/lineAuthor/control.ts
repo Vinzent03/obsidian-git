@@ -4,7 +4,8 @@ import { editorEditorField, editorViewField } from "obsidian";
 import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
 import {
     LineAuthoring,
-    LineAuthoringId, newComputationResultAsTransaction
+    LineAuthoringId,
+    newComputationResultAsTransaction,
 } from "src/lineAuthor/model";
 
 /*
@@ -13,10 +14,10 @@ Contains classes and function responsible for updating the model
 given the changes in the Obsidian UI.
 */
 
-/** 
+/**
  * Subscribes to changes in the files on a specific filepath.
  * It knows its corresponding editor and initiates editor view changes.
-*/
+ */
 export class LineAuthoringSubscriber {
     private lastSeenPath: string; // remember path to detect and adapt to renames
 
@@ -26,7 +27,9 @@ export class LineAuthoringSubscriber {
 
     public async notifyLineAuthoring(id: LineAuthoringId, la: LineAuthoring) {
         if (this.view === undefined) {
-            console.warn(`Obsidian Git: View is not defined for editor cache key. Unforeseen situation. id: ${id}`);
+            console.warn(
+                `Obsidian Git: View is not defined for editor cache key. Unforeseen situation. id: ${id}`
+            );
             return;
         }
 
@@ -38,7 +41,8 @@ export class LineAuthoringSubscriber {
 
     public updateToNewState(state: EditorState) {
         // if filepath has changed, then re-subcribe.
-        const filepathChanged = this.lastSeenPath && this.filepath != this.lastSeenPath;
+        const filepathChanged =
+            this.lastSeenPath && this.filepath != this.lastSeenPath;
         this.state = state;
 
         if (filepathChanged) {
@@ -60,14 +64,18 @@ export class LineAuthoringSubscriber {
     private subscribeMe() {
         if (this.filepath === undefined) return; // happens on the very first editor after start.
 
-        eventsPerFilePathSingleton
-            .ifFilepathDefinedTransformSubscribers(this.filepath, (subs) => subs.add(this));
+        eventsPerFilePathSingleton.ifFilepathDefinedTransformSubscribers(
+            this.filepath,
+            (subs) => subs.add(this)
+        );
         this.lastSeenPath = this.filepath;
     }
 
     private unsubscribeMe(oldFilepath: string) {
-        eventsPerFilePathSingleton
-            .ifFilepathDefinedTransformSubscribers(oldFilepath, (subs) => subs.delete(this));
+        eventsPerFilePathSingleton.ifFilepathDefinedTransformSubscribers(
+            oldFilepath,
+            (subs) => subs.delete(this)
+        );
     }
 
     private get filepath(): string | undefined {
@@ -83,11 +91,10 @@ export type LineAuthoringSubscribers = Set<LineAuthoringSubscriber>;
 
 /**
  * The Codemirror {@link Extension} used to make each editor subscribe itself to this pub-sub.
-*/
+ */
 export const subscribeNewEditor: StateField<LineAuthoringSubscriber> =
     StateField.define<LineAuthoringSubscriber>({
         create: (state) => new LineAuthoringSubscriber(state),
         update: (v, transaction) => v.updateToNewState(transaction.state),
         compare: (a, b) => a === b,
     });
-

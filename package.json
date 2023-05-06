@@ -51,7 +51,8 @@
         "isomorphic-git": "^1.22.0",
         "obsidian-community-lib": "^2.0.2",
         "simple-git": "Vinzent03/git-js#release",
-        "supports-color": "^7.2.0"
+        "supports-color": "^7.2.0",
+        "js-sha256": "^0.9.0"
     },
     "moduleFileExtensions": [
         "js",

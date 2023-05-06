@@ -1,16 +1,15 @@
 import {
     Annotation,
     AnnotationType,
-    EditorState, StateField,
-    Transaction
+    EditorState,
+    StateField,
+    Transaction,
 } from "@codemirror/state";
 import { Hasher, sha256 } from "js-sha256";
 import { RGB } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
-import { parseColoringMaxAgeDuration } from "src/settings";
-import {
-    Blame
-} from "src/types";
+import { parseColoringMaxAgeDuration } from "src/setting/settings";
+import { Blame } from "src/types";
 
 /*
 ================== MODEL ======================
@@ -23,19 +22,19 @@ export type LineAuthoring = Blame | "untracked";
 
 /**
  * An identifier for each line authoring.
- * 
+ *
  * For every {@link LineAuthoring} there is exactly one valid corresponding {@link LineAuthoringId}
  * This is used to disambiguate differing line authoring content.
- * 
+ *
  * For instance, when there are UI-changes in an editor, we want to quickly figure out
  * whether the LineAuthoring has changed as well. Computing this cache-identifiying key/id
  * allows us to quickly find that out and avoid re-computing the result, if the corresponding
  * line authoring already has been computed. This is used in lineAuthorInfoProvider.ts.
- * 
+ *
  * This implementation assumes, that each {@link LineAuthoring} is unique, given
  * the HEAD revision of the git repository, the hash of the current contents of the file and
  * the path to the file within the vault. The exact syntax is determined by {@link lineAuthoringId}.
- * 
+ *
  * * HEAD: This ensures, that adding a new commit or changing the checked out revision
  *      forces re-computation.
  *   * We always want to use the submodule which contains the file rather than any super-project,
@@ -73,7 +72,7 @@ export type LineAuthoringWithChanges = {
 /**
  * The {@link Annotation} used in Codemirror {@link Transaction}s to
  * update the {@link EditorState} with the {@link LineAuthoring}, that should be displayed.
- * 
+ *
  * See users of {@link newComputationResultAsTransaction} for the value providers.
  * The {@link StateField} {@link lineAuthorState} hold the value of this transaction.
  */
@@ -94,7 +93,9 @@ export function newComputationResultAsTransaction(
     });
 }
 
-function getLineAuthorAnnotation(tr: Transaction): LineAuthoringWithChanges | undefined {
+function getLineAuthorAnnotation(
+    tr: Transaction
+): LineAuthoringWithChanges | undefined {
     return tr.annotation(LineAuthoringContainerType);
 }
 
@@ -103,14 +104,14 @@ function getLineAuthorAnnotation(tr: Transaction): LineAuthoringWithChanges | un
 /**
  * The Codemirror {@link StateField} which contains the current {@link LineAuthoring}
  * that is being shown.
- * 
+ *
  * The update method extracts the value from the annotation, if one is provided.
- * 
+ *
  * Strictly speaking, if the annotation of a previous and outdated computation
  * appears after a new a recent one, it might happen, that the old and stale one
  * will be shown instead. This is because we only ever show the annotation which
  * was most recently in a transaction - and we do not track any time here.
- * 
+ *
  * When caching this, please use {@link laStateDigest} to compute the key.
  */
 export const lineAuthorState: StateField<LineAuthoringWithChanges | undefined> =
@@ -118,30 +119,34 @@ export const lineAuthorState: StateField<LineAuthoringWithChanges | undefined> =
         create: (_state) => undefined,
         /**
          * The state can be updated from either an annotated transaction containing
-         * the newest line authoring (for the saved document) - or from 
+         * the newest line authoring (for the saved document) - or from
          * unsaved changes of the document as the user is actively typing in the editor.
-         * 
+         *
          * In the first case, we take the new line authoring and discard anything we had remembered
          * from unsaved changes. In the second case, we use the unsaved changes in {@link enrichUnsavedChanges} to pre-compute information to immediately update the
          * line author gutter without needing to wait until the document is saved and the
          * line authoring is properly computed.
-        */
+         */
         update: (previous, transaction) =>
-            getLineAuthorAnnotation(transaction) ?? enrichUnsavedChanges(transaction, previous),
+            getLineAuthorAnnotation(transaction) ??
+            enrichUnsavedChanges(transaction, previous),
         // compare cache keys.
         // equality rate is >= 95% :)
         // hence avoids recomputation of views
         compare: (l, r) => l?.key === r?.key,
     });
 
-export function laStateDigest(laState: LineAuthoringWithChanges | undefined): Hasher {
+export function laStateDigest(
+    laState: LineAuthoringWithChanges | undefined
+): Hasher {
     const digest = sha256.create();
     if (!laState) return digest;
 
     const { la, key, lineOffsetsFromUnsavedChanges } = laState;
     digest.update(la === "untracked" ? "t" : "f");
     digest.update(key);
-    for (const [k, v] of lineOffsetsFromUnsavedChanges.entries() ?? []) digest.update([k, v]);
+    for (const [k, v] of lineOffsetsFromUnsavedChanges.entries() ?? [])
+        digest.update([k, v]);
     return digest;
 }
 
@@ -165,48 +170,68 @@ export type LineAuthorSettings = {
     gutterSpacingFallbackLength: number;
 };
 
-export type LineAuthorFollowMovement = "inactive" | "same-commit" | "all-commits"
+export type LineAuthorFollowMovement =
+    | "inactive"
+    | "same-commit"
+    | "all-commits";
 
-export type LineAuthorDisplay = 'hide' | 'full' | 'first name' | 'last name' | 'initials';
+export type LineAuthorDisplay =
+    | "hide"
+    | "full"
+    | "first name"
+    | "last name"
+    | "initials";
 
-export type LineAuthorDateTimeFormatOptions = "hide" | "date" | "datetime" | "natural language" | "custom";
+export type LineAuthorDateTimeFormatOptions =
+    | "hide"
+    | "date"
+    | "datetime"
+    | "natural language"
+    | "custom";
 
-export type LineAuthorTimezoneOption = "viewer-local" | "author-local" | "utc0000";
+export type LineAuthorTimezoneOption =
+    | "viewer-local"
+    | "author-local"
+    | "utc0000";
 
 // ===============================================================
 
 /**
  * Global mutable container to get access to the latest Obsidian settings.
- * 
+ *
  * This is stored here globally and populated during line author feature loading
  * via {@link provideSettingsAccess}.
- * 
+ *
  * It is used to provide the editors with the recent settings when created, as this allows
  * us to create the correct spacing up-front as well as have the latest settings
  * when rendering.
  */
 export const latestSettings = {
     get: undefined! as () => LineAuthorSettings,
-    save: undefined! as (settings: LineAuthorSettings) => void
-}
+    save: undefined! as (settings: LineAuthorSettings) => void,
+};
 
 export function provideSettingsAccess(
     settingsGetter: () => LineAuthorSettings,
-    settingsSetter: (settings: LineAuthorSettings) => void,
+    settingsSetter: (settings: LineAuthorSettings) => void
 ) {
     latestSettings.get = settingsGetter;
     latestSettings.save = settingsSetter;
 }
 
 export function maxAgeInDaysFromSettings(settings: LineAuthorSettings) {
-    return parseColoringMaxAgeDuration(settings.coloringMaxAge)?.asDays() ??
-        parseColoringMaxAgeDuration(DEFAULT_SETTINGS.lineAuthor.coloringMaxAge)!.asDays();
+    return (
+        parseColoringMaxAgeDuration(settings.coloringMaxAge)?.asDays() ??
+        parseColoringMaxAgeDuration(
+            DEFAULT_SETTINGS.lineAuthor.coloringMaxAge
+        )!.asDays()
+    );
 }
 
 /**
  * Given a transaction containing editor changes and the previous line author state,
  * we want to update the `lineOffsetsFromUnsavedChanges` in {@link LineAuthoringWithChanges}.
- * 
+ *
  * This property contains for each line `ln` in the new document the following:
  * * if the line has not been changed, then it is not contained and `<map>.get(ln)` is undefined.
  * * if the line has been changed and its ChangeSet does not change the number of lines,
@@ -216,8 +241,10 @@ export function maxAgeInDaysFromSettings(settings: LineAuthorSettings) {
  *   `<map>.get(ln)=0` and the last line will have `<map>.get(ln)=n` where `n` is the number
  *   of added lines. If `n` is negative, then lines have been removed instead.
  */
-function enrichUnsavedChanges(tr: Transaction, prev: LineAuthoringWithChanges | undefined)
-    : LineAuthoringWithChanges | undefined {
+function enrichUnsavedChanges(
+    tr: Transaction,
+    prev: LineAuthoringWithChanges | undefined
+): LineAuthoringWithChanges | undefined {
     if (!prev) return undefined;
 
     if (!tr.changes.empty) {
@@ -226,7 +253,7 @@ function enrichUnsavedChanges(tr: Transaction, prev: LineAuthoringWithChanges | 
             const { newDoc } = tr;
 
             const beforeFrom = oldDoc.lineAt(fromA).number;
-            const beforeTo = oldDoc.lineAt(toA).number
+            const beforeTo = oldDoc.lineAt(toA).number;
 
             const afterFrom = newDoc.lineAt(fromB).number;
             const afterTo = newDoc.lineAt(toB).number;
@@ -247,7 +274,8 @@ function enrichUnsavedChanges(tr: Transaction, prev: LineAuthoringWithChanges | 
                 // Multiple changes can be made from the current transaction
                 // as well as from previous transactions since the last document save.
                 // Hence, we want to cumulate all offsets.
-                let offset = prev.lineOffsetsFromUnsavedChanges.get(afterI) ?? 0;
+                let offset =
+                    prev.lineOffsetsFromUnsavedChanges.get(afterI) ?? 0;
 
                 const isLastLine = afterTo === afterI;
 

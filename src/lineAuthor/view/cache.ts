@@ -14,7 +14,7 @@ The caches here are evicted whenever the line author feature is disabled/refresh
 
 /**
  * Clears the cache. This should be called whenever the settings are changed.
- * 
+ *
  * Currently, the entire feature is re-loaded, which is why it suffices this to be called
  * in the disabler in `lineAuthorIntegration.ts`.
  */
@@ -32,10 +32,14 @@ export function clearViewCache() {
 
 /**
  * A cache containing the last maximally-sized encountered gutter together with its length and text.
- * 
+ *
  * Whenever a longer gutter is encountered, it is saved via {@link conditionallyUpdateLongestRenderedGutter}.
  */
-type LongestGutterCache = { gutter: LineAuthoringGutter, length: number; text: string; };
+type LongestGutterCache = {
+    gutter: LineAuthoringGutter;
+    length: number;
+    text: string;
+};
 let longestRenderedGutter: LongestGutterCache | undefined = undefined;
 
 export const getLongestRenderedGutter = () => longestRenderedGutter;
@@ -43,10 +47,13 @@ export const getLongestRenderedGutter = () => longestRenderedGutter;
 /**
  * Given a newly rendered gutter, update the {@link longestRenderedGutter} by comparing the
  * text lengths.
- * 
+ *
  * If bigger, then update the global variable and persist the settings via {@link latestSettings.save}
  */
-export function conditionallyUpdateLongestRenderedGutter(gutter: LineAuthoringGutter, text: string) {
+export function conditionallyUpdateLongestRenderedGutter(
+    gutter: LineAuthoringGutter,
+    text: string
+) {
     const length = text.length;
 
     if (length < (longestRenderedGutter?.length ?? 0)) return;
@@ -63,12 +70,12 @@ export function conditionallyUpdateLongestRenderedGutter(gutter: LineAuthoringGu
 /**
  * When a new file is opened, we need to already render the line gutter even before we
  * know the true git line authoring - and their true colors.
- * 
+ *
  * Simply rendering them with the background color initially is not good, as the
  * UI update, when the result is available, is distracting and flickering.
- * 
+ *
  * Hence, we adapt the initial color shown when opening and switching panes.
- * 
+ *
  * The initial color is computed from the distribution of ages of each line commit
  * (in days). Currently, we use {@link ADAPTIVE_INITIAL_COLORING_AGE_CACHE_SIZE}`=50`
  * elements and the `median` to compute the color.
@@ -87,7 +94,6 @@ export function computeAdaptiveInitialColoringAgeInDays(): number | undefined {
     return median(renderedAgeInDaysForAdaptiveInitialColoring);
 }
 
-
 /**
  * Caches the {@link LineAuthoringGutter} instances created in `gutter.ts`.
  */
@@ -95,11 +101,14 @@ export const gutterInstances: Map<string, LineAuthoringGutter> = new Map();
 
 /**
  * Caches the computation of {@link computeLineAuthoringGutterMarkersRangeSet}.
- * 
+ *
  * Despite the computation of the document digest and line-blocks, the performance
  * was measured to be faster with the caching.
  */
-export const gutterMarkersRangeSet: Map<string, RangeSet<GutterMarker>> = new Map();
+export const gutterMarkersRangeSet: Map<
+    string,
+    RangeSet<GutterMarker>
+> = new Map();
 
 /**
  * Stores all DOM-attached gutter elements so that they can be checked for being

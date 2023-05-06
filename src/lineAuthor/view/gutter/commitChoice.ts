@@ -18,7 +18,11 @@ export function chooseNewestCommit(
         const currentHash = lineAuthoring.hashPerLine[line];
         const currentCommit = lineAuthoring.commits.get(currentHash)!;
 
-        if (!newest || currentCommit.isZeroCommit || isNewerThan(currentCommit, newest)) {
+        if (
+            !newest ||
+            currentCommit.isZeroCommit ||
+            isNewerThan(currentCommit, newest)
+        ) {
             newest = currentCommit;
         }
     }
@@ -34,5 +38,7 @@ function isNewerThan(left: BlameCommit, right: BlameCommit): boolean {
 }
 
 function getAbsoluteAuthoringMoment(commit: BlameCommit): Moment {
-    return moment.unix(commit.author!.epochSeconds).utcOffset(commit.author!.tz);
+    return moment
+        .unix(commit.author!.epochSeconds)
+        .utcOffset(commit.author!.tz);
 }

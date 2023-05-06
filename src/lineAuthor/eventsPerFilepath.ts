@@ -1,6 +1,6 @@
 import {
     LineAuthoringSubscriber,
-    LineAuthoringSubscribers
+    LineAuthoringSubscribers,
 } from "src/lineAuthor/control";
 
 const SECONDS = 1000;
@@ -11,18 +11,19 @@ const REMOVE_STALES_FREQUENCY = 60 * SECONDS;
  * * We need this pub-sub design, because a filepath may be opened in multiple editors
  *   and each editor should be updated asynchronously and independently.
  * * Subscribers can be cleared when the feature is deactivated
-*/
+ */
 class EventsPerFilePath {
-    private eventsPerFilepath: Map<string, LineAuthoringSubscribers> = new Map();
+    private eventsPerFilepath: Map<string, LineAuthoringSubscribers> =
+        new Map();
     private removeStalesSubscribersTimer: number;
 
     constructor() {
         this.startRemoveStalesSubscribersInterval();
     }
 
-    /** 
+    /**
      * Run the {@link handler} on the subscribers to {@link filepath}.
-    */
+     */
     public ifFilepathDefinedTransformSubscribers<T>(
         filepath: string | undefined,
         handler: (lass: LineAuthoringSubscribers) => T
@@ -34,7 +35,9 @@ class EventsPerFilePath {
         return handler(this.eventsPerFilepath.get(filepath)!);
     }
 
-    public forEachSubscriber(handler: (las: LineAuthoringSubscriber) => void): void {
+    public forEachSubscriber(
+        handler: (las: LineAuthoringSubscriber) => void
+    ): void {
         this.eventsPerFilepath.forEach((subs) => subs.forEach(handler));
     }
 
@@ -45,7 +48,7 @@ class EventsPerFilePath {
 
     private startRemoveStalesSubscribersInterval() {
         this.removeStalesSubscribersTimer = window.setInterval(
-            () => this?.forEachSubscriber(las => las?.removeIfStale()),
+            () => this?.forEachSubscriber((las) => las?.removeIfStale()),
             REMOVE_STALES_FREQUENCY
         );
     }
