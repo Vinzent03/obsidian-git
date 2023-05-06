@@ -1,15 +1,14 @@
 import { GutterMarker } from "@codemirror/view";
 import { sha256 } from "js-sha256";
-import { Moment } from "moment-timezone";
 import { moment } from "obsidian";
 import { DATE_FORMAT, DATE_TIME_FORMAT_MINUTES } from "src/constants";
 import {
-    latestSettings,
     LineAuthorDateTimeFormatOptions,
     LineAuthorDisplay,
-    LineAuthoring,
     LineAuthorSettings,
     LineAuthorTimezoneOption,
+    LineAuthoring,
+    latestSettings,
 } from "src/lineAuthor/model";
 import {
     attachedGutterElements,
@@ -270,7 +269,7 @@ export class LineAuthoringGutter extends GutterMarker {
         if (nonZeroCommit?.author?.epochSeconds === undefined)
             return FALLBACK_COMMIT_DATE;
 
-        let dateTimeFormatting: string | ((time: Moment) => string);
+        let dateTimeFormatting: string | ((time: moment.Moment) => string);
 
         // adapt dateTimeFormatting based on the settings
         switch (dateTimeFormatOptions) {
@@ -294,7 +293,7 @@ export class LineAuthoringGutter extends GutterMarker {
                 return impossibleBranch(dateTimeFormatOptions);
         }
 
-        let authoringDate: Moment = moment.unix(
+        let authoringDate: moment.Moment = moment.unix(
             nonZeroCommit.author.epochSeconds
         );
 

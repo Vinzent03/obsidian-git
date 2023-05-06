@@ -1,6 +1,5 @@
 import * as cssColorConverter from "css-color-converter";
 import deepEqual from "deep-equal";
-import { Moment } from "moment";
 import { Keymap, RGB, WorkspaceLeaf, moment } from "obsidian";
 
 export const worthWalking = (filepath: string, root?: string) => {
@@ -38,7 +37,7 @@ export function impossibleBranch(x: never): never {
     throw new Error("Impossible branch: " + x);
 }
 
-export function currentMoment(): Moment {
+export function currentMoment(): moment.Moment {
     return moment();
 }
 
@@ -55,7 +54,7 @@ export function convertToRgb(str: string): RGB | undefined {
     return { r, g, b };
 }
 
-export function momentToEpochSeconds(instant: Moment): number {
+export function momentToEpochSeconds(instant: moment.Moment): number {
     return instant.diff(moment.unix(0), "seconds");
 }
 

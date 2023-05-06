@@ -1,4 +1,3 @@
-import { Moment } from "moment-timezone";
 import { DEFAULT_SETTINGS } from "src/constants";
 import {
     latestSettings,
@@ -64,7 +63,7 @@ export function adaptiveInitialColoredWaitingLineAuthoring(
         computeAdaptiveInitialColoringAgeInDays() ??
         maxAgeInDaysFromSettings(settings) * 0.25;
 
-    const slightlyOlderAgeForInitialRender: Moment = currentMoment().add(
+    const slightlyOlderAgeForInitialRender: moment.Moment = currentMoment().add(
         -ageForInitialRender,
         "days"
     );

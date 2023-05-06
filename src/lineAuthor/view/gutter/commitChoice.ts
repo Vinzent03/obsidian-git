@@ -1,4 +1,3 @@
-import { Moment } from "moment-timezone";
 import { moment } from "obsidian";
 import { LineAuthoring } from "src/lineAuthor/model";
 import { BlameCommit } from "src/types";
@@ -37,7 +36,7 @@ function isNewerThan(left: BlameCommit, right: BlameCommit): boolean {
     return diff > 0;
 }
 
-function getAbsoluteAuthoringMoment(commit: BlameCommit): Moment {
+function getAbsoluteAuthoringMoment(commit: BlameCommit): moment.Moment {
     return moment
         .unix(commit.author!.epochSeconds)
         .utcOffset(commit.author!.tz);

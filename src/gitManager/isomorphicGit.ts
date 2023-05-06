@@ -12,9 +12,7 @@ import git, {
     WalkerMap,
 } from "isomorphic-git";
 import { Notice, requestUrl } from "obsidian";
-import { GitManager } from "./gitManager";
 import ObsidianGit from "../main";
-import { MyAdapter } from "./myAdapter";
 import {
     BranchInfo,
     FileStatusResult,
@@ -26,6 +24,8 @@ import {
 } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
+import { GitManager } from "./gitManager";
+import { MyAdapter } from "./myAdapter";
 
 export class IsomorphicGit extends GitManager {
     private readonly FILE = 0;
@@ -228,7 +228,10 @@ export class IsomorphicGit extends GitManager {
     }
 
     async stage(filepath: string, relativeToVault: boolean): Promise<void> {
-        const gitPath = this.getPath(filepath, relativeToVault);
+        const gitPath = this.asRepositoryRelativePath(
+            filepath,
+            relativeToVault
+        );
         let vaultPath: string;
         if (relativeToVault) {
             vaultPath = filepath;
@@ -300,7 +303,7 @@ export class IsomorphicGit extends GitManager {
     async unstage(filepath: string, relativeToVault: boolean): Promise<void> {
         try {
             this.plugin.setState(PluginState.add);
-            filepath = this.getPath(filepath, relativeToVault);
+            filepath = this.asRepositoryRelativePath(filepath, relativeToVault);
             await this.wrapFS(
                 git.resetIndex({ ...this.getRepo(), filepath: filepath })
             );
