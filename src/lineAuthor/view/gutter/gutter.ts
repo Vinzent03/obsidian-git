@@ -22,7 +22,6 @@ import { coloringBasedOnCommitAge } from "src/lineAuthor/view/gutter/coloring";
 import { chooseNewestCommit } from "src/lineAuthor/view/gutter/commitChoice";
 import { BlameCommit } from "src/types";
 import {
-    currentMoment,
     impossibleBranch,
     prefixOfLengthAsWhitespace,
     resizeToLength,
@@ -284,7 +283,7 @@ export class LineAuthoringGutter extends GutterMarker {
                 break;
             case "natural language":
                 dateTimeFormatting = (time) => {
-                    const diff = time.diff(currentMoment());
+                    const diff = time.diff(moment());
                     const addFluentSuffix = true; // 2 weeks -> 2 weeks ago
                     return moment.duration(diff).humanize(addFluentSuffix);
                 };

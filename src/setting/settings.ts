@@ -23,7 +23,7 @@ import {
 } from "src/lineAuthor/model";
 import ObsidianGit from "src/main";
 import { ObsidianGitSettings, SyncMethod } from "src/types";
-import { convertToRgb, currentMoment, rgbToString } from "src/utils";
+import { convertToRgb, rgbToString } from "src/utils";
 
 const FORMAT_STRING_REFERENCE_URL =
     "https://momentjs.com/docs/#/parsing/string-format/";
@@ -1082,9 +1082,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     private previewCustomDateTimeDescriptionHtml(
         dateTimeFormatCustomString: string
     ) {
-        const formattedDateTime = currentMoment().format(
-            dateTimeFormatCustomString
-        );
+        const formattedDateTime = moment().format(dateTimeFormatCustomString);
         return `<a href="${FORMAT_STRING_REFERENCE_URL}">Format string</a> to display the authoring date.</br>Currently: ${formattedDateTime}`;
     }
 

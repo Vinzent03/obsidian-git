@@ -37,10 +37,6 @@ export function impossibleBranch(x: never): never {
     throw new Error("Impossible branch: " + x);
 }
 
-export function currentMoment(): moment.Moment {
-    return moment();
-}
-
 export function rgbToString(rgb: RGB): string {
     return `rgb(${rgb.r},${rgb.g},${rgb.b})`;
 }

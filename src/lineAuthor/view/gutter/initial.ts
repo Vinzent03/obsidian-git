@@ -1,3 +1,4 @@
+import { moment } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
 import {
     latestSettings,
@@ -11,7 +12,7 @@ import {
     TextGutter,
 } from "src/lineAuthor/view/gutter/gutter";
 import { Blame, BlameCommit, GitTimestamp, UserEmail } from "src/types";
-import { currentMoment, momentToEpochSeconds } from "src/utils";
+import { momentToEpochSeconds } from "src/utils";
 
 /**
  * The gutter used to reserve the space used for the line authoring before it is loaded.
@@ -63,7 +64,7 @@ export function adaptiveInitialColoredWaitingLineAuthoring(
         computeAdaptiveInitialColoringAgeInDays() ??
         maxAgeInDaysFromSettings(settings) * 0.25;
 
-    const slightlyOlderAgeForInitialRender: moment.Moment = currentMoment().add(
+    const slightlyOlderAgeForInitialRender: moment.Moment = moment().add(
         -ageForInitialRender,
         "days"
     );
