@@ -260,12 +260,13 @@ export class SimpleGit extends GitManager {
 
         this.plugin.setState(PluginState.commit);
 
-        return (
-            await this.git.commit(
-                await this.formatCommitMessage(message),
-                (err) => this.onError(err)
-            )
-        ).summary.changes;
+        const res = await this.git.commit(
+            await this.formatCommitMessage(message),
+            (err) => this.onError(err)
+        );
+        dispatchEvent(new CustomEvent("git-head-update"));
+
+        return res.summary.changes;
     }
 
     async commit(message: string): Promise<number> {
@@ -277,6 +278,8 @@ export class SimpleGit extends GitManager {
                 (err) => this.onError(err)
             )
         ).summary.changes;
+        dispatchEvent(new CustomEvent("git-head-update"));
+
         this.plugin.setState(PluginState.idle);
         return res;
     }
@@ -400,6 +403,8 @@ export class SimpleGit extends GitManager {
                     );
                 }
             }
+            dispatchEvent(new CustomEvent("git-head-update"));
+
             const afterMergeCommit = await this.git.revparse(
                 [branchInfo.current!],
                 (err) => this.onError(err)

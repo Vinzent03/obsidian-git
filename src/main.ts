@@ -113,6 +113,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async refreshUpdatedHead() {
+        console.log("test");
+
         this.lineAuthoringFeature.refreshLineAuthorViews();
     }
 
@@ -1092,7 +1094,6 @@ export default class ObsidianGit extends Plugin {
         } else {
             this.displayMessage("No changes to commit");
         }
-        dispatchEvent(new CustomEvent("git-head-update"));
         dispatchEvent(new CustomEvent("git-refresh"));
 
         this.setState(PluginState.idle);
@@ -1196,7 +1197,6 @@ export default class ObsidianGit extends Plugin {
                 } from remote`
             );
             this.lastPulledFiles = pulledFiles;
-            dispatchEvent(new CustomEvent("git-head-update"));
         }
         return pulledFiles.length != 0;
     }
