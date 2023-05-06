@@ -1,4 +1,3 @@
-import { moment } from "obsidian";
 import { LineAuthoring } from "src/lineAuthor/model";
 import { BlameCommit } from "src/types";
 
@@ -30,14 +29,7 @@ export function chooseNewestCommit(
 }
 
 function isNewerThan(left: BlameCommit, right: BlameCommit): boolean {
-    const l = getAbsoluteAuthoringMoment(left);
-    const r = getAbsoluteAuthoringMoment(right);
-    const diff = l.diff(r, "minutes"); // l - r > 0  <=>  l > r  <=>  l is newer
-    return diff > 0;
-}
-
-function getAbsoluteAuthoringMoment(commit: BlameCommit): moment.Moment {
-    return moment
-        .unix(commit.author!.epochSeconds)
-        .utcOffset(commit.author!.tz);
+    const l = left.author?.epochSeconds ?? 0;
+    const r = right.author?.epochSeconds ?? 0;
+    return l > r;
 }
