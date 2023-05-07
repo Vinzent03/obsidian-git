@@ -61,7 +61,9 @@ We achieve the goal via the following steps:
 
 ## Development
 
-One the watchmode npm is started, one can simply open the `test-vault` in Obsidian to
+You can use this test-vault https://github.com/GollyTicker/obsidian-git-test-vault-online.
+
+Once the watchmode npm is started, one can simply open the `test-vault` in Obsidian to
 test the plugin. The Obsidian Git plugin files are symbolic links to the
 automatically re-compiled files at repository root level.
 
