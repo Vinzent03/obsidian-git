@@ -113,8 +113,6 @@ export default class ObsidianGit extends Plugin {
     }
 
     async refreshUpdatedHead() {
-        console.log("test");
-
         this.lineAuthoringFeature.refreshLineAuthorViews();
     }
 
