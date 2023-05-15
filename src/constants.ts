@@ -1,10 +1,15 @@
 import { Platform } from "obsidian";
 import { ObsidianGitSettings } from "./types";
+export const DATE_FORMAT = "YYYY-MM-DD";
+export const DATE_TIME_FORMAT_MINUTES = `${DATE_FORMAT} HH:mm`;
+export const DATE_TIME_FORMAT_SECONDS = `${DATE_FORMAT} HH:mm:ss`;
+
+export const GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH = 40;
 
 export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
     {
         commitMessage: "vault backup: {{date}}",
-        commitDateFormat: "YYYY-MM-DD HH:mm:ss",
+        commitDateFormat: DATE_TIME_FORMAT_SECONDS,
         autoSaveInterval: 0,
         autoPushInterval: 0,
         autoPullInterval: 0,
@@ -30,6 +35,23 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
         submoduleRecurseCheckout: false,
         gitDir: "",
         showFileMenu: true,
+        lineAuthor: {
+            show: false,
+            followMovement: "inactive",
+            authorDisplay: "initials",
+            showCommitHash: false,
+            dateTimeFormatOptions: "date",
+            dateTimeFormatCustomString: DATE_TIME_FORMAT_MINUTES,
+            dateTimeTimezone: "viewer-local",
+            coloringMaxAge: "1y",
+            // colors were picked via:
+            // https://color.adobe.com/de/create/color-accessibility
+            colorNew: { r: 255, g: 150, b: 150 },
+            colorOld: { r: 120, g: 160, b: 255 },
+            textColorCss: "var(--text-muted)", //  more pronounced than line numbers, but less than the content text
+            ignoreWhitespace: false,
+            gutterSpacingFallbackLength: 5,
+        },
     };
 
 export const SOURCE_CONTROL_VIEW_CONFIG = {

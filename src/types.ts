@@ -1,3 +1,5 @@
+import { LineAuthorSettings } from "src/lineAuthor/model";
+
 export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
@@ -37,9 +39,21 @@ export interface ObsidianGitSettings {
     showedMobileNotice: boolean;
     refreshSourceControlTimer: number;
     showBranchStatusBar: boolean;
+    lineAuthor: LineAuthorSettings;
     setLastSaveToLastCommit: boolean;
     gitDir: string;
     showFileMenu: boolean;
+}
+
+/**
+ * Ensures, that nested values objects are correctly merged.
+ */
+export function mergeSettingsByPriority(
+    low: Omit<ObsidianGitSettings, "autoCommitMessage">,
+    high: ObsidianGitSettings
+): ObsidianGitSettings {
+    const lineAuthor = Object.assign({}, low.lineAuthor, high.lineAuthor);
+    return Object.assign({}, low, high, { lineAuthor });
 }
 
 export type SyncMethod = "rebase" | "merge" | "reset";
@@ -53,6 +67,64 @@ export interface Status {
     changed: FileStatusResult[];
     staged: FileStatusResult[];
     conflicted: string[];
+}
+
+export interface GitTimestamp {
+    /**
+     * The number of unix seconds since epoch time (UTC).
+     */
+    epochSeconds: number;
+    /**
+     * The time zone, in which the commit was originally created.
+     * This can be used to reconstruct the local time during creating time.
+     */
+    tz: string;
+}
+
+export interface UserEmail {
+    name: string;
+    email: string;
+}
+
+export interface BlameCommit {
+    hash: string;
+    author?: UserEmail & GitTimestamp;
+    committer?: UserEmail & GitTimestamp;
+    previous?: { commitHash?: string; filename: string };
+    filename?: string;
+    summary: string;
+    isZeroCommit: boolean; // true, if hash is 000...000
+}
+
+/**
+ * See https://git-scm.com/docs/git-blame#_the_porcelain_format
+ */
+export interface Blame {
+    commits: Map<string, BlameCommit>;
+    /**
+     * hashPerLine[i] is the commit hash where line i originates from
+     *
+     * The first element is always `undefined`, since line-numbers are 1-based.
+     */
+    hashPerLine: string[];
+    /**
+     * originalFileLineNrPerLine[i] contains the original files' line number from where line i
+     *
+     * The first element is always `undefined`, since line-numbers are 1-based.originated
+     */
+    originalFileLineNrPerLine: number[];
+    /**
+     * finalFileLineNrPerLine[i] contains the final files' line number from where line i originated
+     *
+     * The first element is always `undefined`, since line-numbers are 1-based.
+     */
+    finalFileLineNrPerLine: number[];
+    /**
+     * For each line i, which originates from a different commit than it's previous line,
+     * groupSizePerStartingLine[i] contains the number of lines until either the next
+     * group of lines or EOF is reached.
+     */
+    groupSizePerStartingLine: Map<number, number>;
 }
 
 /**

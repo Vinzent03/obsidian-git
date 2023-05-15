@@ -4,16 +4,20 @@ import { FileSystemAdapter, normalizePath, Notice } from "obsidian";
 import * as path from "path";
 import { sep } from "path";
 import simpleGit, * as simple from "simple-git";
-import { GitManager } from "./gitManager";
+import { GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH } from "src/constants";
+import { LineAuthorFollowMovement } from "src/lineAuthor/model";
 import ObsidianGit from "../main";
 import {
+    Blame,
+    BlameCommit,
     BranchInfo,
     FileStatusResult,
     LogEntry,
     PluginState,
     Status,
 } from "../types";
-import { splitRemoteBranch } from "../utils";
+import { impossibleBranch, splitRemoteBranch } from "../utils";
+import { GitManager } from "./gitManager";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
@@ -101,6 +105,21 @@ export class SimpleGit extends GitManager {
         };
     }
 
+    async submoduleAwareHeadRevisonInContainingDirectory(
+        filepath: string
+    ): Promise<string> {
+        const repoPath = this.asRepositoryRelativePath(filepath, true);
+
+        const containingDirectory = path.dirname(repoPath);
+        const args = ["-C", containingDirectory, "rev-parse", "HEAD"];
+
+        const result = this.git.raw(args);
+        result.catch((err) =>
+            console.warn("obsidian-git: rev-parse error:", err)
+        );
+        return result;
+    }
+
     async getSubmodulePaths(): Promise<string[]> {
         return new Promise<string[]>(async (resolve) => {
             this.git.outputHandler(async (cmd, stdout, stderr, args) => {
@@ -169,6 +188,57 @@ export class SimpleGit extends GitManager {
         }
     }
 
+    async blame(
+        path: string,
+        trackMovement: LineAuthorFollowMovement,
+        ignoreWhitespace: boolean
+    ): Promise<Blame | "untracked"> {
+        path = this.asRepositoryRelativePath(path, true);
+
+        if (!(await this.isTracked(path))) return "untracked";
+
+        const inSubmodule = await this.getSubmoduleOfFile(path);
+        const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
+        const relativePath = inSubmodule ? inSubmodule.relativeFilepath : path;
+
+        args.push("blame", "--porcelain");
+
+        if (ignoreWhitespace) args.push("-w");
+
+        const trackCArg = `-C${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH}`;
+        switch (trackMovement) {
+            case "inactive":
+                break;
+            case "same-commit":
+                args.push("-C", trackCArg);
+                break;
+            case "all-commits":
+                args.push("-C", "-C", trackCArg);
+                break;
+            default:
+                impossibleBranch(trackMovement);
+        }
+
+        args.push("--", relativePath);
+
+        const rawBlame = await this.git.raw(
+            args,
+            (err) => err && console.warn("git-blame", err)
+        );
+        return parseBlame(rawBlame);
+    }
+
+    async isTracked(path: string): Promise<boolean> {
+        const inSubmodule = await this.getSubmoduleOfFile(path);
+        const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
+        const relativePath = inSubmodule ? inSubmodule.relativeFilepath : path;
+
+        args.push("ls-files", "--", relativePath);
+        return this.git
+            .raw(args, (err) => err && console.warn("ls-files", err))
+            .then((x) => x.trim() !== "");
+    }
+
     async commitAll({ message }: { message: string }): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setState(PluginState.commit);
@@ -190,12 +260,13 @@ export class SimpleGit extends GitManager {
 
         this.plugin.setState(PluginState.commit);
 
-        return (
-            await this.git.commit(
-                await this.formatCommitMessage(message),
-                (err) => this.onError(err)
-            )
-        ).summary.changes;
+        const res = await this.git.commit(
+            await this.formatCommitMessage(message),
+            (err) => this.onError(err)
+        );
+        dispatchEvent(new CustomEvent("git-head-update"));
+
+        return res.summary.changes;
     }
 
     async commit(message: string): Promise<number> {
@@ -207,6 +278,8 @@ export class SimpleGit extends GitManager {
                 (err) => this.onError(err)
             )
         ).summary.changes;
+        dispatchEvent(new CustomEvent("git-head-update"));
+
         this.plugin.setState(PluginState.idle);
         return res;
     }
@@ -214,7 +287,7 @@ export class SimpleGit extends GitManager {
     async stage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
 
-        path = this.getPath(path, relativeToVault);
+        path = this.asRepositoryRelativePath(path, relativeToVault);
         await this.git.add(["--", path], (err) => this.onError(err));
 
         this.plugin.setState(PluginState.idle);
@@ -237,7 +310,7 @@ export class SimpleGit extends GitManager {
     async unstage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
 
-        path = this.getPath(path, relativeToVault);
+        path = this.asRepositoryRelativePath(path, relativeToVault);
         await this.git.reset(["--", path], (err) => this.onError(err));
 
         this.plugin.setState(PluginState.idle);
@@ -247,6 +320,27 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.add);
         await this.git.checkout(["--", filepath], (err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
+    }
+
+    async hashObject(filepath: string): Promise<string> {
+        // Need to use raw command here to ensure filenames are literally used.
+        // Perhaps we could file a PR? https://github.com/steveukx/git-js/blob/main/simple-git/src/lib/tasks/hash-object.ts
+        filepath = this.asRepositoryRelativePath(filepath, true);
+        const inSubmodule = await this.getSubmoduleOfFile(filepath);
+        const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
+        const relativeFilepath = inSubmodule
+            ? inSubmodule.relativeFilepath
+            : filepath;
+
+        args.push("hash-object", "--", relativeFilepath);
+
+        const revision = this.git.raw(args);
+        revision.catch(
+            (err) =>
+                err &&
+                console.warn("obsidian-git. hash-object failed:", err?.message)
+        );
+        return revision;
     }
 
     async discardAll({ dir }: { dir?: string }): Promise<void> {
@@ -309,6 +403,8 @@ export class SimpleGit extends GitManager {
                     );
                 }
             }
+            dispatchEvent(new CustomEvent("git-head-update"));
+
             const afterMergeCommit = await this.git.revparse(
                 [branchInfo.current!],
                 (err) => this.onError(err)
@@ -441,7 +537,7 @@ export class SimpleGit extends GitManager {
     ): Promise<(LogEntry & { fileName?: string })[]> {
         let path: string | undefined;
         if (file) {
-            path = this.getPath(file, relativeToVault);
+            path = this.asRepositoryRelativePath(file, relativeToVault);
         }
         const res = await this.git.log(
             {
@@ -475,7 +571,7 @@ export class SimpleGit extends GitManager {
         file: string,
         relativeToVault = true
     ): Promise<string> {
-        const path = this.getPath(file, relativeToVault);
+        const path = this.asRepositoryRelativePath(file, relativeToVault);
 
         return this.git.show([commitHash + ":" + path], (err) =>
             this.onError(err)
@@ -648,6 +744,49 @@ export class SimpleGit extends GitManager {
         return await this.git.diff([`${commit1}..${commit2}`, "--", file]);
     }
 
+    private async getSubmoduleOfFile(
+        repositoryRelativeFile: string
+    ): Promise<{ submodule: string; relativeFilepath: string } | undefined> {
+        // Documentation: https://git-scm.com/docs/git-rev-parse
+
+        // git -C <dir-of-file> rev-parse --show-toplevel
+        // returns the submodules repository root as an absolute path
+        let submoduleRoot = await this.git.raw(
+            [
+                "-C",
+                path.dirname(repositoryRelativeFile),
+                "rev-parse",
+                "--show-toplevel",
+            ],
+            (err) => err && console.warn("get-submodule-of-file", err?.message)
+        );
+        submoduleRoot = submoduleRoot.trim();
+
+        // git -C <dir-of-file> rev-parse --show-superproject-working-tree
+        // returns the parent git repository, if the file is in a submodule - otherwise empty.
+        const superProject = await this.git.raw(
+            [
+                "-C",
+                path.dirname(repositoryRelativeFile),
+                "rev-parse",
+                "--show-superproject-working-tree",
+            ],
+            (err) => err && console.warn("get-submodule-of-file", err?.message)
+        );
+
+        if (superProject.trim() === "") {
+            return undefined; // not in submodule
+        }
+
+        const fsAdapter = this.app.vault.adapter as FileSystemAdapter;
+        const absolutePath = fsAdapter.getFullPath(
+            path.normalize(repositoryRelativeFile)
+        );
+        const newRelativePath = path.relative(submoduleRoot, absolutePath);
+
+        return { submodule: submoduleRoot, relativeFilepath: newRelativePath };
+    }
+
     async getLastCommitTime(): Promise<Date | undefined> {
         const res = await this.git.log({ n: 1 }, (err) => this.onError(err));
         if (res != null && res.latest != null) {
@@ -698,4 +837,159 @@ export class SimpleGit extends GitManager {
             }
         }
     }
+}
+
+export const zeroCommit: BlameCommit = {
+    hash: "000000",
+    isZeroCommit: true,
+    summary: "",
+};
+
+// Parse git blame porcelain format: https://git-scm.com/docs/git-blame#_the_porcelain_format
+function parseBlame(blameOutputUnnormalized: string): Blame {
+    const blameOutput = blameOutputUnnormalized.replace("\r\n", "\n");
+
+    const blameLines = blameOutput.split("\n");
+
+    const result: Blame = {
+        commits: new Map(),
+        hashPerLine: [undefined!], // one-based indices
+        originalFileLineNrPerLine: [undefined!],
+        finalFileLineNrPerLine: [undefined!],
+        groupSizePerStartingLine: new Map(),
+    };
+
+    let line = 1;
+    for (let bi = 0; bi < blameLines.length; ) {
+        if (startsWithNonWhitespace(blameLines[bi])) {
+            const lineInfo = blameLines[bi].split(" ");
+
+            const commitHash = parseLineInfoInto(lineInfo, line, result);
+            bi++;
+
+            // parse header values until a tab is encountered
+            for (; startsWithNonWhitespace(blameLines[bi]); bi++) {
+                const spaceSeparatedHeaderValues = blameLines[bi].split(" ");
+                parseHeaderInto(spaceSeparatedHeaderValues, result, line);
+            }
+            finalizeBlameCommitInfo(result.commits.get(commitHash)!);
+
+            // skip tab prefixed line
+            line += 1;
+        } else if (blameLines[bi] === "" && bi === blameLines.length - 1) {
+            // EOF
+        } else {
+            throw Error(
+                `Expected non-whitespace line or EOF, but found: ${blameLines[bi]}`
+            );
+        }
+        bi++;
+    }
+    return result;
+}
+
+function parseLineInfoInto(lineInfo: string[], line: number, result: Blame) {
+    const hash = lineInfo[0];
+    result.hashPerLine.push(hash);
+    result.originalFileLineNrPerLine.push(parseInt(lineInfo[1]));
+    result.finalFileLineNrPerLine.push(parseInt(lineInfo[2]));
+    lineInfo.length >= 4 &&
+        result.groupSizePerStartingLine.set(line, parseInt(lineInfo[3]));
+
+    if (parseInt(lineInfo[2]) !== line) {
+        throw Error(
+            `git-blame output is out of order: ${line} vs ${lineInfo[2]}`
+        );
+    }
+
+    return hash;
+}
+
+function parseHeaderInto(header: string[], out: Blame, line: number) {
+    const key = header[0];
+    const value = header.slice(1).join(" ");
+    const commitHash = out.hashPerLine[line];
+    const commit =
+        out.commits.get(commitHash) ||
+        <BlameCommit>{
+            hash: commitHash,
+            author: {},
+            committer: {},
+            previous: {},
+        };
+
+    switch (key) {
+        case "summary":
+            commit.summary = value;
+            break;
+
+        case "author":
+            commit.author!.name = value;
+            break;
+        case "author-mail":
+            commit.author!.email = removeEmailBrackets(value);
+            break;
+        case "author-time":
+            commit.author!.epochSeconds = parseInt(value);
+            break;
+        case "author-tz":
+            commit.author!.tz = value;
+            break;
+
+        case "committer":
+            commit.committer!.name = value;
+            break;
+        case "committer-mail":
+            commit.committer!.email = removeEmailBrackets(value);
+            break;
+        case "committer-time":
+            commit.committer!.epochSeconds = parseInt(value);
+            break;
+        case "committer-tz":
+            commit.committer!.tz = value;
+            break;
+
+        case "previous":
+            commit.previous!.commitHash = value;
+            break;
+        case "filename":
+            commit.previous!.filename = value;
+            break;
+    }
+    out.commits.set(commitHash, commit);
+}
+
+function finalizeBlameCommitInfo(commit: BlameCommit) {
+    if (commit.summary === undefined) {
+        throw Error(`Summary not provided for commit: ${commit.hash}`);
+    }
+
+    if (isUndefinedOrEmptyObject(commit.author)) {
+        commit.author = undefined;
+    }
+    if (isUndefinedOrEmptyObject(commit.committer)) {
+        commit.committer = undefined;
+    }
+    if (isUndefinedOrEmptyObject(commit.previous)) {
+        commit.previous = undefined;
+    }
+
+    commit.isZeroCommit = Boolean(commit.hash.match(/^0*$/));
+}
+
+function isUndefinedOrEmptyObject(obj: object | undefined | null): boolean {
+    return !obj || Object.keys(obj).length === 0;
+}
+
+function startsWithNonWhitespace(str: string): boolean {
+    return str.length > 0 && str[0].trim() === str[0];
+}
+
+function removeEmailBrackets(gitEmail: string) {
+    const prefixCleaned = gitEmail.startsWith("<")
+        ? gitEmail.substring(1)
+        : gitEmail;
+    return prefixCleaned.endsWith(">")
+        ? prefixCleaned.substring(0, prefixCleaned.length - 1)
+        : prefixCleaned;
 }

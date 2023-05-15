@@ -13,6 +13,8 @@ import {
     TFile,
     WorkspaceLeaf,
 } from "obsidian";
+import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
+import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/setting/settings";
 import { StatusBar } from "src/statusBar";
@@ -26,11 +28,12 @@ import {
 } from "./constants";
 import { GitManager } from "./gitManager/gitManager";
 import { IsomorphicGit } from "./gitManager/isomorphicGit";
-import { LocalStorageSettings } from "./setting/localStorageSettings";
-import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { SimpleGit } from "./gitManager/simpleGit";
+import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
+import { LocalStorageSettings } from "./setting/localStorageSettings";
 import {
     FileStatusResult,
+    mergeSettingsByPriority,
     ObsidianGitSettings,
     PluginState,
     Status,
@@ -49,6 +52,7 @@ export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
     localStorage: LocalStorageSettings;
     settings: ObsidianGitSettings;
+    settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
     branchBar?: BranchStatusBar;
     state: PluginState;
@@ -68,6 +72,7 @@ export default class ObsidianGit extends Plugin {
     deleteEvent: EventRef;
     createEvent: EventRef;
     renameEvent: EventRef;
+    lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(this);
 
     debRefresh: Debouncer<any, void>;
 
@@ -101,17 +106,28 @@ export default class ObsidianGit extends Plugin {
             this.loading = false;
             dispatchEvent(new CustomEvent("git-view-refresh"));
         }
+
+        // We don't put a line authoring refresh here, as it would force a re-loading
+        // of the line authoring feature - which would lead to a jumpy editor-view in the
+        // ui after every rename event.
+    }
+
+    async refreshUpdatedHead() {
+        this.lineAuthoringFeature.refreshLineAuthorViews();
     }
 
     async onload() {
         console.log("loading " + this.manifest.name + " plugin");
+        pluginRef.plugin = this;
+
         this.localStorage = new LocalStorageSettings(this);
 
         this.localStorage.migrate();
         await this.loadSettings();
         this.migrateSettings();
 
-        this.addSettingTab(new ObsidianGitSettingsTab(this.app, this));
+        this.settingsTab = new ObsidianGitSettingsTab(this.app, this);
+        this.addSettingTab(this.settingsTab);
 
         if (!this.localStorage.getPluginDisabled()) {
             this.loadPlugin();
@@ -120,6 +136,7 @@ export default class ObsidianGit extends Plugin {
 
     async loadPlugin() {
         addEventListener("git-refresh", this.refresh.bind(this));
+        addEventListener("git-head-update", this.refreshUpdatedHead.bind(this));
 
         this.registerView(SOURCE_CONTROL_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
@@ -131,6 +148,8 @@ export default class ObsidianGit extends Plugin {
         this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {
             return new DiffView(leaf, this);
         });
+
+        this.lineAuthoringFeature.onLoadPlugin();
 
         (this.app.workspace as any).registerHoverLinkSource(
             SOURCE_CONTROL_VIEW_CONFIG.type,
@@ -215,7 +234,10 @@ export default class ObsidianGit extends Plugin {
                         active: true,
                         state: {
                             staged: false,
-                            file: this.gitManager.getPath(file!.path, true),
+                            file: this.gitManager.asRepositoryRelativePath(
+                                file!.path,
+                                true
+                            ),
                         },
                     });
                 }
@@ -261,7 +283,11 @@ export default class ObsidianGit extends Plugin {
                     app.vault.adapter
                         .append(
                             this.gitManager.getVaultPath(".gitignore"),
-                            "\n" + this.gitManager.getPath(file!.path, true)
+                            "\n" +
+                                this.gitManager.asRepositoryRelativePath(
+                                    file!.path,
+                                    true
+                                )
                         )
                         .then(() => {
                             this.refresh();
@@ -488,6 +514,15 @@ export default class ObsidianGit extends Plugin {
             },
         });
 
+        this.addCommand({
+            id: "toggle-line-author-info",
+            name: "Toggle line author information",
+            callback: () =>
+                this.settingsTab?.configureLineAuthorShowStatus(
+                    !this.settings.lineAuthor.show
+                ),
+        });
+
         this.registerEvent(
             this.app.workspace.on("file-menu", (menu, file, source) => {
                 this.handleFileMenu(menu, file, source);
@@ -568,7 +603,10 @@ export default class ObsidianGit extends Plugin {
                             await this.gitManager.stage(file.path, true);
                         } else {
                             await this.gitManager.stageAll({
-                                dir: this.gitManager.getPath(file.path, true),
+                                dir: this.gitManager.asRepositoryRelativePath(
+                                    file.path,
+                                    true
+                                ),
                             });
                         }
                         this.displayMessage(`Staged ${file.path}`);
@@ -585,7 +623,10 @@ export default class ObsidianGit extends Plugin {
                             await this.gitManager.unstage(file.path, true);
                         } else {
                             await this.gitManager.unstageAll({
-                                dir: this.gitManager.getPath(file.path, true),
+                                dir: this.gitManager.asRepositoryRelativePath(
+                                    file.path,
+                                    true
+                                ),
                             });
                         }
                         this.displayMessage(`Unstaged ${file.path}`);
@@ -622,10 +663,15 @@ export default class ObsidianGit extends Plugin {
         this.gitReady = false;
         dispatchEvent(new CustomEvent("git-refresh"));
 
+        this.lineAuthoringFeature.deactivateFeature();
         this.clearAutoPull();
         this.clearAutoPush();
         this.clearAutoBackup();
         removeEventListener("git-refresh", this.refresh.bind(this));
+        removeEventListener(
+            "git-head-update",
+            this.refreshUpdatedHead.bind(this)
+        );
         this.app.metadataCache.offref(this.modifyEvent);
         this.app.metadataCache.offref(this.deleteEvent);
         this.app.metadataCache.offref(this.createEvent);
@@ -648,12 +694,13 @@ export default class ObsidianGit extends Plugin {
         let data = (await this.loadData()) as ObsidianGitSettings | null;
         //Check for existing settings
         if (data == undefined) {
-            data = { showedMobileNotice: true } as any;
+            data = <ObsidianGitSettings>{ showedMobileNotice: true };
         }
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+        this.settings = mergeSettingsByPriority(DEFAULT_SETTINGS, data);
     }
 
     async saveSettings() {
+        this.settingsTab?.beforeSaveSettings();
         await this.saveData(this.settings);
     }
 
@@ -675,11 +722,15 @@ export default class ObsidianGit extends Plugin {
         };
     }
 
+    get useSimpleGit(): boolean {
+        return Platform.isDesktopApp;
+    }
+
     async init(): Promise<void> {
         this.showNotices();
 
         try {
-            if (Platform.isDesktopApp) {
+            if (this.useSimpleGit) {
                 this.gitManager = new SimpleGit(this);
                 await (this.gitManager as SimpleGit).setGitInstance();
             } else {
@@ -720,6 +771,8 @@ export default class ObsidianGit extends Plugin {
                     this.registerEvent(this.renameEvent);
 
                     this.branchBar?.display();
+
+                    this.lineAuthoringFeature.conditionallyActivateBySettings();
 
                     dispatchEvent(new CustomEvent("git-refresh"));
 

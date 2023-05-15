@@ -15,7 +15,7 @@ export async function openLineInGitHub(
 
     const { isGitHub, branch, repo, user } = data;
     if (isGitHub) {
-        const path = manager.getPath(file.path, true);
+        const path = manager.asRepositoryRelativePath(file.path, true);
         const from = editor.getCursor("from").line + 1;
         const to = editor.getCursor("to").line + 1;
         if (from === to) {
@@ -41,7 +41,7 @@ export async function openHistoryInGitHub(file: TFile, manager: GitManager) {
     }
 
     const { isGitHub, branch, repo, user } = data;
-    const path = manager.getPath(file.path, true);
+    const path = manager.asRepositoryRelativePath(file.path, true);
 
     if (isGitHub) {
         window.open(

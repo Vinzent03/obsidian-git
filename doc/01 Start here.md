@@ -12,6 +12,7 @@ aliases:
 - [[05 Features|Features]]
 - [[06 Tips-and-Tricks|Tips-and-Tricks]]
 - [[07 Common issues|Common Issues]]
+- [[08 Line Authoring|Line Authoring]]
 
 > [!warning] Obsidian installation on Linux
 > Please don't use Flatpak or Snap to install Obsidian on Linux. Learn more [[02 Installation#Linux|here]]
