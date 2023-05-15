@@ -1,6 +1,6 @@
 ---
 aliases:
-  - Installation
+  - 02 Installation
 ---
 
 > [!important]

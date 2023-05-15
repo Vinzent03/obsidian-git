@@ -1,21 +1,21 @@
 ---
 aliases:
-  - Start here
+  - 01 Start here
 ---
 
 # Obsidian-Git Documentation
 
 ## Topics
-- [[02 Installation|Installation]]
-- [[03 Getting Started|Getting Started]]
-- [[04 Authentication|Authentication]]
-- [[05 Features|Features]]
-- [[06 Tips-and-Tricks|Tips-and-Tricks]]
-- [[07 Common issues|Common Issues]]
-- [[08 Line Authoring|Line Authoring]]
+- [[Installation|Installation]]
+- [[Getting Started|Getting Started]]
+- [[Authentication|Authentication]]
+- [[Features|Features]]
+- [[Tips-and-Tricks|Tips-and-Tricks]]
+- [[Common issues|Common Issues]]
+- [[Line Authoring|Line Authoring]]
 
 > [!warning] Obsidian installation on Linux
-> Please don't use Flatpak or Snap to install Obsidian on Linux. Learn more [[02 Installation#Linux|here]]
+> Please don't use Flatpak or Snap to install Obsidian on Linux. Learn more [[Installation#Linux|here]]
 
 
 ## What is Git?

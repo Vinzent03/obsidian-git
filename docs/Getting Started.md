@@ -2,12 +2,12 @@
 
 ## For existing remote repository
 
-For cloning you have to use an remote url. This can be one of two protocols. Either `https` or `ssh`. This depends on your choosen [[04 Authentication]] method.
+For cloning you have to use an remote url. This can be one of two protocols. Either `https` or `ssh`. This depends on your choosen [[Authentication]] method.
 `https`: `https://github.com/<username>/<repo>.git`
 `ssh`: `git@github.com:<username>/<repo>.git`
 
-1. Follow the [[02 Installation]] instructions for your operating system
-2. Setup [[04 Authentication]]
+1. Follow the [[Installation]] instructions for your operating system
+2. Setup [[Authentication]]
 3. Git can only clone a remote repo in a new folder. Thus you have two options
 	- Use the "Clone an exising remote repository" command to clone your repo into a subfolder of your vault. You then have again two choices
 		- Move all your files from the new folder (including `.git` !) into your vault root.

@@ -7,7 +7,7 @@ Open it using the "Open Source Control View" command. It lists all current chang
 - Switch between list and tree view using the button at the top
 - Stage/Unstage all files
 - Push/Pull
-- Commit and [[01 Start here#Backup|Backup]]
+- Commit and [[Start here#Backup|Backup]]
 
 ## History View
 
@@ -15,11 +15,11 @@ Open it using the "Open History View" command. It behaves like `git log` resulti
 
 ## Line Authoring
 
-For each line, view the last time, it was modified: [[08 Line Authoring|Line Authoring]]. Technically known as `git-blame`.
+For each line, view the last time, it was modified: [[Line Authoring|Line Authoring]]. Technically known as `git-blame`.
 
 ## Automatic Backup
 
-See [[01 Start here#Backup|Backup]] for an explanation of the term. The goal of automatic Backups is that you can focus on taking notes and not to care about saving your work, because this plugin will take care of it.
+See [[Start here#Backup|Backup]] for an explanation of the term. The goal of automatic Backups is that you can focus on taking notes and not to care about saving your work, because this plugin will take care of it.
 There are multiple ways to trigger an automatic backup. The default is a basic interval, resulting in backing up your files every X minutes. Use the "Vault backup interval" setting for that. The interval works across Obsidian sessions to ensure the backup is always run. For example, if you set a 15 minutes interval, you don't have to keep Obsidian open for 15 minutes. If you close Obsidian before the interval end, the backup will automatically run the next time you start Obsidian.
 
 Another method is to enable "Auto backup after file change". This waits X minutes after your last change for the backup. This is useful if you don't want to get interrupted by a backup while typing. 
