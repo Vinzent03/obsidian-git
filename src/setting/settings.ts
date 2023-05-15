@@ -28,7 +28,7 @@ import { convertToRgb, rgbToString } from "src/utils";
 const FORMAT_STRING_REFERENCE_URL =
     "https://momentjs.com/docs/#/parsing/string-format/";
 const LINE_AUTHOR_FEATURE_WIKI_LINK =
-    "https://github.com/denolehov/obsidian-git/wiki/Line-Author-Feature";
+    "https://publish.obsidian.md/git-doc/08+Line+Authoring";
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     lineAuthorColorSettings: Map<"oldest" | "newest", Setting> = new Map();

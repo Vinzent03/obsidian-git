@@ -13,6 +13,10 @@ Open it using the "Open Source Control View" command. It lists all current chang
 
 Open it using the "Open History View" command. It behaves like `git log` resulting in a list of the last commits. Each commit entry can be expanded to see the changed files in that commit. By clicking on a file, you can even see the specific diff.
 
+## Line Authoring
+
+For each line, view the last time, it was modified: [[08 Line Authoring|Line Authoring]]. Technically known as `git-blame`.
+
 ## Automatic Backup
 
 See [[01 Start here#Backup|Backup]] for an explanation of the term. The goal of automatic Backups is that you can focus on taking notes and not to care about saving your work, because this plugin will take care of it.
