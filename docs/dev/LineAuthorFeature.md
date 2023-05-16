@@ -1,10 +1,6 @@
-# Line Authoring Feature
-
-Developer documentation.
-
-This feature was developed by [GollyTicker](https://github.com/GollyTicker).
-
-[Feature presentation for users](https://github.com/denolehov/obsidian-git/wiki/Line-Author-Feature).
+# Line Authoring Feature - Developer Documentation
+* This feature was developed by [GollyTicker](https://github.com/GollyTicker).
+* [Feature documentation for users](https://publish.obsidian.md/git-doc/Line+Authoring)
 
 ## Architecture
 
