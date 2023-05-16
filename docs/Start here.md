@@ -1,6 +1,6 @@
 ---
 aliases:
-  - 01 Start here
+  - "01 Start here"
 ---
 
 # Obsidian-Git Documentation

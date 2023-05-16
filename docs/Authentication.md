@@ -1,6 +1,6 @@
 ---
 aliases:
-  - 04 Authentication
+  - "04 Authentication"
 ---
 # Linux
 
