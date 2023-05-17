@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.20.0](https://github.com/denolehov/obsidian-git/compare/2.19.1...2.20.0) (2023-05-17)
+
+
+### Features
+
+* Line Authoring ([aa8dd1b](https://github.com/denolehov/obsidian-git/commit/aa8dd1b3cf0fc440c4d7177831795f3fc5b0076c)), closes [#321](https://github.com/denolehov/obsidian-git/issues/321)
+
+
+### Bug Fixes
+
+* use proper tree structure on Obsidian 1.3.1 ([c124943](https://github.com/denolehov/obsidian-git/commit/c124943d5f1ba388f700524e517a43cf9682abc8)), closes [#512](https://github.com/denolehov/obsidian-git/issues/512)
+
 ### [2.19.1](https://github.com/denolehov/obsidian-git/compare/2.19.0...2.19.1) (2023-04-04)
 
 
