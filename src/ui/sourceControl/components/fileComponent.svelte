@@ -80,10 +80,10 @@
     on:click|stopPropagation={showDiff}
     on:auxclick|stopPropagation={showDiff}
     on:focus
-    class="nav-file"
+    class="tree-item nav-file"
 >
     <div
-        class="nav-file-title"
+        class="tree-item-self is-clickable nav-file-title"
         aria-label-position={side}
         aria-label={change.vault_path}
     >
@@ -92,7 +92,7 @@
 			bind:this={buttons[3]}
 			style="padding-right: 5px; display: flex;"
 		/> -->
-        <div class="nav-file-title-content">
+        <div class="tree-item-inner nav-file-title-content">
             {getDisplayPath(change.vault_path)}
         </div>
         <div class="git-tools">

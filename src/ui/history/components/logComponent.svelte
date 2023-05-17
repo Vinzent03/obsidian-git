@@ -22,12 +22,14 @@
 </script>
 
 <main>
-    <div class="staged nav-folder" class:is-collapsed={isCollapsed}>
+    <div class="tree-item nav-folder" class:is-collapsed={isCollapsed}>
         <div
-            class="nav-folder-title"
+            class="tree-item-self is-clickable nav-folder-title"
             on:click={() => (isCollapsed = !isCollapsed)}
         >
-            <div class="nav-folder-collapse-indicator collapse-icon">
+            <div
+                class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+            >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -49,7 +51,7 @@
                     </div>
                 {/if}
                 <div
-                    class="nav-folder-title-content"
+                    class="tree-item-inner nav-folder-title-content"
                     aria-label={log.message}
                     aria-label-position={side}
                 >
@@ -59,7 +61,7 @@
         </div>
         {#if !isCollapsed}
             <div
-                class="nav-folder-children"
+                class="tree-item-children nav-folder-children"
                 transition:slide|local={{ duration: 150 }}
             >
                 {#if showTree}

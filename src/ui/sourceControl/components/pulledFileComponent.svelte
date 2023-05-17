@@ -30,15 +30,15 @@
     on:click|stopPropagation={open}
     on:auxclick|stopPropagation={open}
     on:focus
-    class="nav-file"
+    class="tree-item nav-file"
 >
     <!-- svelte-ignore a11y-unknown-aria-attribute -->
     <div
-        class="nav-file-title"
+        class="tree-item-self is-clickable nav-file-title"
         aria-label-position={side}
         aria-label={change.vault_path}
     >
-        <div class="nav-file-title-content">
+        <div class="tree-item-inner nav-file-title-content">
             {getDisplayPath(change.vault_path)}
         </div>
         <div class="git-tools">

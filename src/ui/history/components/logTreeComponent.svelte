@@ -24,9 +24,12 @@
                 <LogFileComponent diff={entity.data} {view} />
             </div>
         {:else}
-            <div class="nav-folder" class:is-collapsed={closed[entity.title]}>
+            <div
+                class="tree-item nav-folder"
+                class:is-collapsed={closed[entity.title]}
+            >
                 <div
-                    class="nav-folder-title"
+                    class="tree-item-self is-clickable nav-folder-title"
                     aria-label-position={side}
                     aria-label={entity.vaultPath}
                     on:click={() => fold(entity)}
@@ -35,7 +38,9 @@
                         data-icon="folder"
                         style="padding-right: 5px; display: flex; "
                     />
-                    <div class="nav-folder-collapse-indicator collapse-icon">
+                    <div
+                        class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+                    >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="24"
@@ -50,14 +55,14 @@
                             ><path d="M3 8L12 17L21 8" /></svg
                         >
                     </div>
-                    <div class="nav-folder-title-content">
+                    <div class="tree-item-inner nav-folder-title-content">
                         {entity.title}
                     </div>
                 </div>
 
                 {#if !closed[entity.title]}
                     <div
-                        class="nav-folder-children"
+                        class="tree-item-children nav-folder-children"
                         transition:slide|local={{ duration: 150 }}
                     >
                         <svelte:self hierarchy={entity} {plugin} {view} />

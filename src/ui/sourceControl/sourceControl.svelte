@@ -281,18 +281,18 @@
 
     <div class="nav-files-container" style="position: relative;">
         {#if status && stagedHierarchy && changeHierarchy}
-            <div class="nav-folder mod-root">
-                <div class="nav-folder-children">
+            <div class="tree-item nav-folder mod-root">
+                <div class="tree-item-children nav-folder-children">
                     <div
-                        class="staged nav-folder"
+                        class="staged tree-item nav-folder"
                         class:is-collapsed={!stagedOpen}
                     >
                         <div
-                            class="nav-folder-title"
+                            class="tree-item-self is-clickable nav-folder-title"
                             on:click={() => (stagedOpen = !stagedOpen)}
                         >
                             <div
-                                class="nav-folder-collapse-indicator collapse-icon"
+                                class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -308,7 +308,9 @@
                                     ><path d="M3 8L12 17L21 8" /></svg
                                 >
                             </div>
-                            <div class="nav-folder-title-content">
+                            <div
+                                class="tree-item-inner nav-folder-title-content"
+                            >
                                 Staged Changes
                             </div>
 
@@ -347,7 +349,7 @@
                         </div>
                         {#if stagedOpen}
                             <div
-                                class="nav-folder-children"
+                                class="tree-item-children nav-folder-children"
                                 transition:slide|local={{ duration: 150 }}
                             >
                                 {#if showTree}
@@ -376,10 +378,10 @@
                     >
                         <div
                             on:click={() => (changesOpen = !changesOpen)}
-                            class="nav-folder-title"
+                            class="tree-item-self is-clickable nav-folder-title"
                         >
                             <div
-                                class="nav-folder-collapse-indicator collapse-icon"
+                                class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -396,7 +398,11 @@
                                 >
                             </div>
 
-                            <div class="nav-folder-title-content">Changes</div>
+                            <div
+                                class="tree-item-inner nav-folder-title-content"
+                            >
+                                Changes
+                            </div>
                             <div class="git-tools">
                                 <div class="buttons">
                                     <div
@@ -460,7 +466,7 @@
                         </div>
                         {#if changesOpen}
                             <div
-                                class="nav-folder-children"
+                                class="tree-item-children nav-folder-children"
                                 transition:slide|local={{ duration: 150 }}
                             >
                                 {#if showTree}
@@ -490,13 +496,13 @@
                             class:is-collapsed={!lastPulledFilesOpen}
                         >
                             <div
-                                class="nav-folder-title"
+                                class="tree-item-self is-clickable nav-folder-title"
                                 on:click={() =>
                                     (lastPulledFilesOpen =
                                         !lastPulledFilesOpen)}
                             >
                                 <div
-                                    class="nav-folder-collapse-indicator collapse-icon"
+                                    class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -513,7 +519,9 @@
                                     >
                                 </div>
 
-                                <div class="nav-folder-title-content">
+                                <div
+                                    class="tree-item-inner nav-folder-title-content"
+                                >
                                     Recently Pulled Files
                                 </div>
 
@@ -523,7 +531,7 @@
                             </div>
                             {#if lastPulledFilesOpen}
                                 <div
-                                    class="nav-folder-children"
+                                    class="tree-item-children nav-folder-children"
                                     transition:slide|local={{ duration: 150 }}
                                 >
                                     {#if showTree}

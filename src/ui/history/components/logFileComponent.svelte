@@ -41,14 +41,14 @@
     on:click|stopPropagation={showDiff}
     on:auxclick|stopPropagation={showDiff}
     on:focus
-    class="nav-file"
+    class="tree-item nav-file"
 >
     <div
-        class="nav-file-title"
+        class="tree-item-self is-clickable nav-file-title"
         aria-label-position={side}
         aria-label={diff.vault_path}
     >
-        <div class="nav-file-title-content">
+        <div class="tree-item-inner nav-file-title-content">
             {getDisplayPath(diff.vault_path)}
         </div>
         <div class="git-tools">

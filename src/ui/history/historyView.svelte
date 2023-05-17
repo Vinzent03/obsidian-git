@@ -1,7 +1,7 @@
 <script lang="ts">
     import { setIcon } from "obsidian";
-    import ObsidianGit from "src/main";
     import { SimpleGit } from "src/gitManager/simpleGit";
+    import ObsidianGit from "src/main";
     import { LogEntry } from "src/types";
     import { onDestroy } from "svelte";
     import LogComponent from "./components/logComponent.svelte";
@@ -81,8 +81,8 @@
 
     <div class="nav-files-container" style="position: relative;">
         {#if logs}
-            <div class="nav-folder mod-root">
-                <div class="nav-folder-children">
+            <div class="tree-item nav-folder mod-root">
+                <div class="tree-item-children nav-folder-children">
                     {#each logs as log}
                         <LogComponent {view} {showTree} {log} {plugin} />
                     {/each}
