@@ -958,10 +958,18 @@ export default class ObsidianGit extends Plugin {
                     this.settings.pullBeforePush
                 ) {
                     await this.pull();
+                    this.displayMessage("Pulled before pushing");
                 }
 
                 await this.push();
             } else {
+                if (
+                    this.settings.syncMethod != "reset" &&
+                    this.settings.pullBeforePush
+                ) {
+                    await this.pull();
+                    this.displayMessage("Pulled without pushing");
+                }
                 this.displayMessage("No changes to push");
             }
         }
