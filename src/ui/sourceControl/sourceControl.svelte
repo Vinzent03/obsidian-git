@@ -62,29 +62,33 @@
                 plugin.setState(PluginState.idle);
                 return false;
             }
-            plugin.gitManager
-                .commit(commitMessage)
-                .then(() => {
-                    if (commitMessage !== plugin.settings.commitMessage) {
-                        commitMessage = "";
-                    }
-                    plugin.setUpAutoBackup();
-                })
-                .finally(triggerRefresh);
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitManager
+                    .commit(commitMessage)
+                    .then(() => {
+                        if (commitMessage !== plugin.settings.commitMessage) {
+                            commitMessage = "";
+                        }
+                        plugin.setUpAutoBackup();
+                    })
+                    .finally(triggerRefresh)
+            );
         }
     }
 
     async function backup() {
         loading = true;
         if (status) {
-            plugin
-                .createBackup(false, false, commitMessage)
-                .then(() => {
-                    if (commitMessage !== plugin.settings.commitMessage) {
-                        commitMessage = "";
-                    }
-                })
-                .finally(triggerRefresh);
+            plugin.promiseQueue.addTask(() =>
+                plugin
+                    .createBackup(false, false, commitMessage)
+                    .then(() => {
+                        if (commitMessage !== plugin.settings.commitMessage) {
+                            commitMessage = "";
+                        }
+                    })
+                    .finally(triggerRefresh)
+            );
         }
     }
 
@@ -151,36 +155,48 @@
 
     function stageAll() {
         loading = true;
-        plugin.gitManager.stageAll({ status: status }).finally(triggerRefresh);
+        plugin.promiseQueue.addTask(() =>
+            plugin.gitManager
+                .stageAll({ status: status })
+                .finally(triggerRefresh)
+        );
     }
 
     function unstageAll() {
         loading = true;
-        plugin.gitManager
-            .unstageAll({ status: status })
-            .finally(triggerRefresh);
+        plugin.promiseQueue.addTask(() =>
+            plugin.gitManager
+                .unstageAll({ status: status })
+                .finally(triggerRefresh)
+        );
     }
 
     function push() {
         loading = true;
-        plugin.push().finally(triggerRefresh);
+        plugin.promiseQueue.addTask(() =>
+            plugin.push().finally(triggerRefresh)
+        );
     }
     function pull() {
         loading = true;
-        plugin.pullChangesFromRemote().finally(triggerRefresh);
+        plugin.promiseQueue.addTask(() =>
+            plugin.pullChangesFromRemote().finally(triggerRefresh)
+        );
     }
     function discard() {
         new DiscardModal(view.app, false, plugin.gitManager.getVaultPath("/"))
             .myOpen()
             .then((shouldDiscard) => {
                 if (shouldDiscard === true) {
-                    plugin.gitManager
-                        .discardAll({
-                            status: plugin.cachedStatus,
-                        })
-                        .finally(() => {
-                            dispatchEvent(new CustomEvent("git-refresh"));
-                        });
+                    plugin.promiseQueue.addTask(() =>
+                        plugin.gitManager
+                            .discardAll({
+                                status: plugin.cachedStatus,
+                            })
+                            .finally(() => {
+                                dispatchEvent(new CustomEvent("git-refresh"));
+                            })
+                    );
                 }
             });
     }
