@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.20.1](https://github.com/denolehov/obsidian-git/compare/2.20.0...2.20.1) (2023-05-31)
+
+
+### Bug Fixes
+
+* use queue for actions in source control view ([eb20dd4](https://github.com/denolehov/obsidian-git/commit/eb20dd4c93cb6013e9aef1e47f817586261507d5)), closes [#517](https://github.com/denolehov/obsidian-git/issues/517)
+
 ## [2.20.0](https://github.com/denolehov/obsidian-git/compare/2.19.1...2.20.0) (2023-05-17)
 
 
