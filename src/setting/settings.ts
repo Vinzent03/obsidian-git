@@ -402,10 +402,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         })
                 );
 
-            containerEl.createEl("br");
-            containerEl.createEl("h3", { text: "Line author information" });
+            if (plugin.gitManager instanceof SimpleGit) {
+                containerEl.createEl("br");
+                containerEl.createEl("h3", { text: "Line author information" });
 
-            this.addLineAuthorInfoSettings();
+                this.addLineAuthorInfoSettings();
+            }
         }
 
         containerEl.createEl("br");
