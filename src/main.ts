@@ -950,26 +950,18 @@ export default class ObsidianGit extends Plugin {
         )
             return;
 
+        if (
+            this.settings.syncMethod != "reset" &&
+            this.settings.pullBeforePush
+        ) {
+            await this.pull();
+        }
+
         if (!this.settings.disablePush) {
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
             if (await this.gitManager.canPush()) {
-                if (
-                    this.settings.syncMethod != "reset" &&
-                    this.settings.pullBeforePush
-                ) {
-                    await this.pull();
-                    this.displayMessage("Pulled before pushing");
-                }
-
                 await this.push();
             } else {
-                if (
-                    this.settings.syncMethod != "reset" &&
-                    this.settings.pullBeforePush
-                ) {
-                    await this.pull();
-                    this.displayMessage("Pulled without pushing");
-                }
                 this.displayMessage("No changes to push");
             }
         }
