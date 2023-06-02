@@ -704,7 +704,7 @@ export default class ObsidianGit extends Plugin {
         await this.saveData(this.settings);
     }
 
-    async saveLastAuto(date: Date, mode: "backup" | "pull" | "push") {
+    saveLastAuto(date: Date, mode: "backup" | "pull" | "push") {
         if (mode === "backup") {
             this.localStorage.setLastAutoBackup(date.toString());
         } else if (mode === "pull") {
@@ -714,7 +714,7 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async loadLastAuto(): Promise<{ backup: Date; pull: Date; push: Date }> {
+    loadLastAuto(): { backup: Date; pull: Date; push: Date } {
         return {
             backup: new Date(this.localStorage.getLastAutoBackup() ?? ""),
             pull: new Date(this.localStorage.getLastAutoPull() ?? ""),
@@ -982,7 +982,7 @@ export default class ObsidianGit extends Plugin {
     }): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
 
-        const hadConflict = this.localStorage.getConflict() === "true";
+        let hadConflict = this.localStorage.getConflict() === "true";
 
         let changedFiles: { vault_path: string }[];
         let status: Status | undefined;
@@ -991,6 +991,12 @@ export default class ObsidianGit extends Plugin {
         if (this.gitManager instanceof SimpleGit) {
             this.mayDeleteConflictFile();
             status = await this.updateCachedStatus();
+
+            //Should not be necessary, but just in case
+            if (status.conflicted.length == 0) {
+                this.localStorage.setConflict("false");
+                hadConflict = false;
+            }
 
             // check for conflict files on auto backup
             if (fromAutoBackup && status.conflicted.length > 0) {
@@ -1078,6 +1084,14 @@ export default class ObsidianGit extends Plugin {
                     unstagedFiles,
                 });
             }
+
+            //Handle resolved conflict after commit
+            if (this.gitManager instanceof SimpleGit) {
+                if ((await this.updateCachedStatus()).conflicted.length == 0) {
+                    this.localStorage.setConflict("false");
+                }
+            }
+
             let roughly = false;
             if (committedFiles === undefined) {
                 roughly = true;
