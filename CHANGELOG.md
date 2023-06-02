@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.20.2](https://github.com/denolehov/obsidian-git/compare/2.20.1...2.20.2) (2023-06-02)
+
+
+### Bug Fixes
+
+* hide line authoring settings on mobile ([c135c0b](https://github.com/denolehov/obsidian-git/commit/c135c0b49cd0cc8033ea40f64e6f922702375aa0))
+* properly resolve merge conflict ([80c0b65](https://github.com/denolehov/obsidian-git/commit/80c0b65f8d0d8dc8dbddff61118bd79733ffce94)), closes [#502](https://github.com/denolehov/obsidian-git/issues/502)
+
 ### [2.20.1](https://github.com/denolehov/obsidian-git/compare/2.20.0...2.20.1) (2023-05-31)
 
 
