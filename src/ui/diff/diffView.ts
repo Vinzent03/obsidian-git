@@ -1,6 +1,7 @@
 import { html } from "diff2html";
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { DIFF_VIEW_CONFIG } from "src/constants";
+import { SimpleGit } from "src/gitManager/simpleGit";
 import ObsidianGit from "src/main";
 import { DiffViewState } from "src/types";
 
@@ -8,12 +9,15 @@ export default class DiffView extends ItemView {
     parser: DOMParser;
     gettingDiff = false;
     state: DiffViewState;
+    gitRefreshBind = this.refresh.bind(this);
+    gitViewRefreshBind = this.refresh.bind(this);
 
     constructor(leaf: WorkspaceLeaf, private plugin: ObsidianGit) {
         super(leaf);
         this.parser = new DOMParser();
         this.navigation = true;
-        addEventListener("git-refresh", this.refresh.bind(this));
+        addEventListener("git-refresh", this.gitRefreshBind);
+        addEventListener("git-view-refresh", this.gitViewRefreshBind);
     }
 
     getViewType(): string {
@@ -46,7 +50,8 @@ export default class DiffView extends ItemView {
     }
 
     onClose(): Promise<void> {
-        removeEventListener("git-refresh", this.refresh.bind(this));
+        removeEventListener("git-refresh", this.gitRefreshBind);
+        removeEventListener("git-view-refresh", this.gitViewRefreshBind);
         return super.onClose();
     }
 
@@ -65,18 +70,32 @@ export default class DiffView extends ItemView {
                     this.state.hash
                 );
                 this.contentEl.empty();
+
                 if (!diff) {
-                    const content = await this.app.vault.adapter.read(
-                        this.plugin.gitManager.getVaultPath(this.state.file)
-                    );
-                    const header = `--- /dev/null
+                    if (
+                        this.plugin.gitManager instanceof SimpleGit &&
+                        (await this.plugin.gitManager.isTracked(
+                            this.state.file
+                        ))
+                    ) {
+                        diff = [
+                            `--- ${this.state.file}`,
+                            `+++ ${this.state.file}`,
+                            "",
+                        ].join("\n");
+                    } else {
+                        const content = await this.app.vault.adapter.read(
+                            this.plugin.gitManager.getVaultPath(this.state.file)
+                        );
+                        const header = `--- /dev/null
 +++ ${this.state.file}
 @@ -0,0 +1,${content.split("\n").length} @@`;
 
-                    diff = [
-                        ...header.split("\n"),
-                        ...content.split("\n").map((line) => `+${line}`),
-                    ].join("\n");
+                        diff = [
+                            ...header.split("\n"),
+                            ...content.split("\n").map((line) => `+${line}`),
+                        ].join("\n");
+                    }
                 }
 
                 const diffEl = this.parser
