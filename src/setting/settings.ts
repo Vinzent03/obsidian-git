@@ -257,7 +257,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setName("Commit message on auto backup/commit")
                 .setDesc(
                     "Available placeholders: {{date}}" +
-                        " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit), {{files}} (changed files in commit message)"
+                        " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)"
                 )
                 .addText((text) =>
                     text
@@ -276,7 +276,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setName("Commit message on manual backup/commit")
                 .setDesc(
                     "Available placeholders: {{date}}" +
-                        " (see below), {{hostname}} (see below) and {{numFiles}} (number of changed files in the commit), {{files}} (changed files in commit message)"
+                        " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)"
                 )
                 .addText((text) =>
                     text
