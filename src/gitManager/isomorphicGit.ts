@@ -45,6 +45,7 @@ export class IsomorphicGit extends GitManager {
         "103": "MD",
         "110": "DA", // Technically, two files: first one is deleted "D " and second one is untracked "??"
         "111": "  ",
+        "113": "MM",
         "120": "DA", // Same as "110"
         "121": " M",
         "122": "M ",
