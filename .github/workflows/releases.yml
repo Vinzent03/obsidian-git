@@ -8,6 +8,9 @@ on:
 env:
     PLUGIN_NAME: obsidian-git
 
+permissions:
+  contents: write
+
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -29,16 +32,13 @@ jobs:
                   cp main.js manifest.json ${{ env.PLUGIN_NAME }}
                   zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
                   ls
-                  echo "::set-output name=tag_name::$(git tag --sort version:refname | tail -n 1)"
             - name: Create Release
               id: create_release
-              uses: actions/create-release@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  VERSION: ${{ github.ref }}
+              uses: softprops/action-gh-release@v1
               with:
                   tag_name: ${{ github.ref }}
-                  release_name: ${{ github.ref }}
+                  name: ${{ github.ref_name }}
+                  generate_release_notes: true
                   draft: false
                   prerelease: false
             - name: Upload zip file
@@ -49,7 +49,7 @@ jobs:
               with:
                   upload_url: ${{ steps.create_release.outputs.upload_url }}
                   asset_path: ./${{ env.PLUGIN_NAME }}.zip
-                  asset_name: ${{ env.PLUGIN_NAME }}-${{ steps.build.outputs.tag_name }}.zip
+                  asset_name: ${{ env.PLUGIN_NAME }}-${{ github.ref_name }}.zip
                   asset_content_type: application/zip
             - name: Upload main.js
               id: upload-main
