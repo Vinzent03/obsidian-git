@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.20.4](https://github.com/denolehov/obsidian-git/compare/2.20.3...2.20.4) (2023-06-21)
+
+
+### Bug Fixes
+
+* make  `{{files}}` variable visible in settings ([#536](https://github.com/denolehov/obsidian-git/issues/536)) ([07abcce](https://github.com/denolehov/obsidian-git/commit/07abcce878a66e686e7f0221c68df746f69b590b))
+* missing git file status 113 ([#537](https://github.com/denolehov/obsidian-git/issues/537)) ([ba2b40c](https://github.com/denolehov/obsidian-git/commit/ba2b40cbc5687f92ab9ca6a65110d5d6ec39c2ca))
+
 ### [2.20.3](https://github.com/denolehov/obsidian-git/compare/2.20.2...2.20.3) (2023-06-04)
 
 
