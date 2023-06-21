@@ -15,7 +15,7 @@ body:
 - type: textarea
   id: logs
   attributes:
-    label: Relevant errors (if available)
+    label: Relevant errors (if available) from notifications or console (`CTRL+SHIFT+I`)
     description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
     render: shell
 - type: textarea
