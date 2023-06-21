@@ -807,7 +807,10 @@ export default class ObsidianGit extends Plugin {
         if (url) {
             const confirmOption = "Vault Root";
             let dir = await new GeneralModal({
-                options: [confirmOption],
+                options:
+                    this.gitManager instanceof IsomorphicGit
+                        ? [confirmOption]
+                        : [],
                 placeholder:
                     "Enter directory for clone. It needs to be empty or not existent.",
                 allowEmpty: this.gitManager instanceof IsomorphicGit,
