@@ -15,8 +15,23 @@ For cloning you have to use an remote url. This can be one of two protocols. Eit
 	- Run `git clone <your-remote-url>` in the command line wherever you want your vault to be located. 
 
 # Mobile
+## Performance and restrictions
 
-## For existing remote repository
+I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of Git in JavaScript, because you cannot use native Git on Android or iOS.
+
+-   SSH authentication is not supported ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
+-   Repo size is limited, because of memory restrictions
+-   Rebase merge strategy is not supported
+-   Submodules are not supported
+
+### Performance on mobile
+
+> [!Warning]
+> Depending on your device and available free RAM, Obsidian may crash on clone/pull. I don't know how to fix this. If that's the case for you, I have to admit this plugin won't work for you. So commenting on any issue or creating a new one won't help. I am sorry.
+
+## Start with existing remote repository
+
+### Clone via plugin
 
 Follow these instructions for setting up an Obsidian Vault on a mobile device that is already backed up in a remote git repository. 
 
@@ -41,7 +56,30 @@ The instructions assume you are using [GitHub](https://github.com), but can be e
 9. Follow instructions to determine the folder to place repo in and whether an `.obsidian` directory already exits.
 10. Clone should start. Popup notifications (if not disabled) will display the progress. Do not exit until a popup appears requesting that you "Restart Obsidian".
 
-## New Repo
+### Clone via Working Copy on iOS
+
+Depending on the size of your repository and your device, Obsidian may crash during clone via the plugin. Alternatively, the initial clone can be done via [Working Copy](https://workingcopy.app/). None that this a paid app. The usual backup in can then be done via the plugin. The following guide assumes you don't commit your `.obsidian` directory.
+
+
+1. Make sure any outstanding changes on all devices are pushed and reconciled with the remote repo.
+2. Install Obsidian for Android or iOS.
+3. Create a new vault (or point Obsidian to an empty directory). Do NOT select `Store in iCloud` if you are on iOS.
+4. If your repo is hosted on GitHub, [authentication must be done with a personal access token](https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/). Detailed instruction for that process can be found [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). 
+	- Minimal permissions required are
+		- "Read access to metadata"
+		- "Read and Write access to contents and commit status"
+3. Swipe up and away Obsidian to fully close it. Open Working Copy app.
+4. Clone the repo using Working Copy. Instead of logging in to GitHub through the Working Copy interface, enter the clone URL directly. Then enter your username, and for the password your Personal Access Token.
+5. Open Files app.
+6. Copy the repo from Working Copy. Delete the vault from Obsidian and paste the repo there (repo has the same name as the vault).
+7. Open Obsidian.
+8. All your cloned files should be visible.
+9. Install and enable the Obsidian Git plugin.
+11. Add your name/email to the "Authentication/Commit Author" section in the plugin settings.
+12. Use the command palette to call the "Pull" command.
+
+
+## Start with new repo
 
 Similar steps as [existing repo](#existing-repo), except use the `Initialize a new repo` command, followed by `Edit remotes` to add the remote repo to track. This remote repo will need to exist and be empty.
 
