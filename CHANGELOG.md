@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.20.5](https://github.com/denolehov/obsidian-git/compare/2.20.4...2.20.5) (2023-06-29)
+
+
+### Bug Fixes
+
+* disallow clone in vault root on desktop ([c073d19](https://github.com/denolehov/obsidian-git/commit/c073d19283c01af4fdc79002d1913b1d5672a5fd)), closes [#540](https://github.com/denolehov/obsidian-git/issues/540)
+* textarea for commit message in settings ([ea4a7a1](https://github.com/denolehov/obsidian-git/commit/ea4a7a105a8a954e705b372dac127fa3a83fddc1))
+
 ### [2.20.4](https://github.com/denolehov/obsidian-git/compare/2.20.3...2.20.4) (2023-06-21)
 
 
