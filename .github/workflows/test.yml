@@ -9,7 +9,7 @@ jobs:
             - uses: actions/checkout@v2
             - uses: pnpm/action-setup@v2
               with:
-                  version: 6.0.2
+                  version: latest
             - name: Install modules
               run: pnpm install
             - name: Run ESLint
@@ -20,7 +20,7 @@ jobs:
             - uses: actions/checkout@v2
             - uses: pnpm/action-setup@v2
               with:
-                  version: 6.0.2
+                  version: latest
             - name: Install modules
               run: pnpm install
             - name: Run Prettier
@@ -31,7 +31,7 @@ jobs:
             - uses: actions/checkout@v2
             - uses: pnpm/action-setup@v2
               with:
-                  version: 6.0.2
+                  version: latest
             - name: Install modules
               run: pnpm install
             - name: Run tsc
@@ -42,7 +42,7 @@ jobs:
             -   uses: actions/checkout@v2
             -   uses: pnpm/action-setup@v2
                 with:
-                    version: 6.0.2
+                    version: latest
             -   name: Install modules
                 run: pnpm install
             -   name: Run build
