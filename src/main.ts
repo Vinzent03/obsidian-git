@@ -247,15 +247,18 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "view-file-on-github",
             name: "Open file on GitHub",
-            editorCallback: (editor, { file }) =>
-                openLineInGitHub(editor, file, this.gitManager),
+            editorCallback: (editor, { file }) => {
+                if (file)
+                    return openLineInGitHub(editor, file, this.gitManager);
+            },
         });
 
         this.addCommand({
             id: "view-history-on-github",
             name: "Open file history on GitHub",
-            editorCallback: (_, { file }) =>
-                openHistoryInGitHub(file, this.gitManager),
+            editorCallback: (_, { file }) => {
+                if (file) return openHistoryInGitHub(file, this.gitManager);
+            },
         });
 
         this.addCommand({
