@@ -554,13 +554,14 @@ export class SimpleGit extends GitManager {
             refs: e.refs.split(", "),
             diff: {
                 ...e.diff!,
-                files: e.diff!.files.map((f) => ({
-                    ...f,
-                    status: f.status!,
-                    path: f.file,
-                    hash: e.hash,
-                    vault_path: this.getVaultPath(f.file),
-                })),
+                files:
+                    e.diff?.files.map((f) => ({
+                        ...f,
+                        status: f.status!,
+                        path: f.file,
+                        hash: e.hash,
+                        vault_path: this.getVaultPath(f.file),
+                    })) ?? [],
             },
             fileName: e.diff?.files.first()?.file,
         }));
