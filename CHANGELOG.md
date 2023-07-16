@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.20.6](https://github.com/denolehov/obsidian-git/compare/2.20.5...2.20.6) (2023-07-16)
+
+
+### Bug Fixes
+
+* allow empty commit in history view ([2571473](https://github.com/denolehov/obsidian-git/commit/257147311cf65a2b5dedf957f4c71ad9624ce7be))
+
 ### [2.20.5](https://github.com/denolehov/obsidian-git/compare/2.20.4...2.20.5) (2023-06-29)
 
 
