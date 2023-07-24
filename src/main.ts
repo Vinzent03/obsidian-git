@@ -1190,6 +1190,7 @@ export default class ObsidianGit extends Plugin {
             }
             this.offlineMode = false;
             this.setState(PluginState.idle);
+            dispatchEvent(new CustomEvent("git-refresh"));
 
             return true;
         }
