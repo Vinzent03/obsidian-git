@@ -309,6 +309,7 @@
                         >
                             <div
                                 class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+                                class:is-collapsed={!stagedOpen}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -398,6 +399,7 @@
                         >
                             <div
                                 class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+                                class:is-collapsed={!changesOpen}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"

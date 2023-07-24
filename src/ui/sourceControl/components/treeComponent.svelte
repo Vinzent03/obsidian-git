@@ -84,6 +84,7 @@
                     />
                     <div
                         class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+                        class:is-collapsed={closed[entity.title]}
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
