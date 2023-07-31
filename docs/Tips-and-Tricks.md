@@ -15,6 +15,9 @@ There's also the `Edit .gitignore` command that will open the file in a modal.
 # OR only to exclude workspace cache
 .obsidian/workspace.json
 
+# to exclude workspace cache specific to mobile devices
+.obsidian/workspace-mobile.json
+
 # Add below lines to exclude OS settings and caches
 .trash/
 .DS_Store
