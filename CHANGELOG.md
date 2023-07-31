@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.20.7](https://github.com/denolehov/obsidian-git/compare/2.20.6...2.20.7) (2023-07-31)
+
+
+### Bug Fixes
+
+* properly collapse icon in tree views ([919d7f8](https://github.com/denolehov/obsidian-git/commit/919d7f8f65174e76a4f13a992b3f37931eaf7262))
+* refresh status bar after push ([ed31df8](https://github.com/denolehov/obsidian-git/commit/ed31df88effc5e686cb2e81e0379df93627bdd9b)), closes [#566](https://github.com/denolehov/obsidian-git/issues/566)
+
 ### [2.20.6](https://github.com/denolehov/obsidian-git/compare/2.20.5...2.20.6) (2023-07-16)
 
 
