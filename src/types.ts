@@ -264,4 +264,7 @@ declare module "obsidian" {
         loadLocalStorage(key: string): string | null;
         saveLocalStorage(key: string, value: string | undefined): void;
     }
+    interface View {
+        titleEl: HTMLElement;
+    }
 }

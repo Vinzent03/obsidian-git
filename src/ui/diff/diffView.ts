@@ -1,5 +1,5 @@
 import { html } from "diff2html";
-import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
+import { ItemView, Platform, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { DIFF_VIEW_CONFIG } from "src/constants";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import ObsidianGit from "src/main";
@@ -41,8 +41,12 @@ export default class DiffView extends ItemView {
     async setState(state: any, result: ViewStateResult): Promise<void> {
         this.state = state;
 
+        if (Platform.isMobile) {
+            //Update view title on mobile only to show the file name of the diff
+            this.leaf.view.titleEl.textContent = this.getDisplayText();
+        }
+
         await this.refresh();
-        return;
     }
 
     getState() {
