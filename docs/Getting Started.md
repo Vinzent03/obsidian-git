@@ -2,7 +2,7 @@
 
 ## For existing remote repository
 
-For cloning you have to use an remote url. This can be one of two protocols. Either `https` or `ssh`. This depends on your choosen [[Authentication]] method.
+To clone, you have to use a remote URL. This can be one of two protocols: either `https` or `ssh`. This depends on your chosen [[Authentication]] method.
 `https`: `https://github.com/<username>/<repo>.git`
 `ssh`: `git@github.com:<username>/<repo>.git`
 
