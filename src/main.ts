@@ -269,6 +269,12 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "fetch",
+            name: "fetch",
+            callback: () => this.promiseQueue.addTask(() => this.fetch()),
+        });
+
+        this.addCommand({
             id: "switch-to-remote-branch",
             name: "Switch to remote branch",
             callback: () =>
@@ -1214,6 +1220,17 @@ export default class ObsidianGit extends Plugin {
             this.lastPulledFiles = pulledFiles;
         }
         return pulledFiles.length != 0;
+    }
+
+    async fetch(): Promise<void> {
+        if (!(await this.remotesAreSet())) {
+            return;
+        }
+        await this.gitManager.fetch();
+
+        this.displayMessage(`Fetched from remote`);
+        this.offlineMode = false;
+        dispatchEvent(new CustomEvent("git-refresh"));
     }
 
     async mayDeleteConflictFile(): Promise<void> {
