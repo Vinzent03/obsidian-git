@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { setIcon } from "obsidian";
+    import { Platform, setIcon } from "obsidian";
     import ObsidianGit from "src/main";
     import {
         FileStatusResult,
@@ -37,7 +37,7 @@
     $: {
         if (layoutBtn) {
             layoutBtn.empty();
-            setIcon(layoutBtn, showTree ? "list" : "folder", 16);
+            setIcon(layoutBtn, showTree ? "list" : "folder");
         }
     }
     addEventListener("git-view-refresh", refresh);
@@ -45,10 +45,8 @@
     //setTimeout's callback will execute after the current event loop finishes.
     plugin.app.workspace.onLayoutReady(() => {
         window.setTimeout(() => {
-            buttons.forEach((btn) =>
-                setIcon(btn, btn.getAttr("data-icon")!, 16)
-            );
-            setIcon(layoutBtn, showTree ? "list" : "folder", 16);
+            buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
+            setIcon(layoutBtn, showTree ? "list" : "folder");
         }, 0);
     });
     onDestroy(() => {
@@ -97,6 +95,21 @@
             status = undefined;
             return;
         }
+        const unPushedCommits = await plugin.gitManager.getUnpushedCommits();
+
+        buttons.forEach((btn) => {
+            if(Platform.isMobile){
+                btn.removeClass("button-border");
+                if (btn.id == "push" && unPushedCommits > 0) {
+                    btn.addClass("button-border");
+                }
+            }else{
+                btn.firstElementChild?.removeAttribute("color")
+                if (btn.id == "push" && unPushedCommits > 0) {
+                    btn.firstElementChild?.setAttr("color","var(--text-accent)")
+                }
+            }
+        });
 
         status = plugin.cachedStatus;
         if (
