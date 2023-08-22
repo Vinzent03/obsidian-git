@@ -128,9 +128,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             if (!plugin.settings.setLastSaveToLastCommit)
                 new Setting(containerEl)
-                    .setName(`Auto Backup after file change`)
+                    .setName(`Auto Backup after stop editing any file`)
                     .setDesc(
-                        `If turned on, do auto ${commitOrBackup} every ${plugin.settings.autoSaveInterval} minutes after last change. This also prevents auto ${commitOrBackup} while editing a file. If turned off, it's independent from the last change.`
+                        `Requires the ${commitOrBackup} interval not to be 0. If turned on, do auto ${commitOrBackup} every ${plugin.settings.autoSaveInterval} minutes after stop editing any file. This also prevents auto ${commitOrBackup} while editing a file. If turned off, it's independent from the last change.`
                     )
                     .addToggle((toggle) =>
                         toggle
