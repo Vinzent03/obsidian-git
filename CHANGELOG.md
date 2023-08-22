@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.21.0](https://github.com/denolehov/obsidian-git/compare/2.20.7...2.21.0) (2023-08-22)
+
+
+### Features
+
+* add fetch command ([222245b](https://github.com/denolehov/obsidian-git/commit/222245b7c750bd4d2740aa25913d74d538e5035d))
+* mark push button when push is ready ([32936eb](https://github.com/denolehov/obsidian-git/commit/32936eb76dff45c2333660791faa0bc8f86e1154)), closes [#557](https://github.com/denolehov/obsidian-git/issues/557)
+
+
+### Bug Fixes
+
+* clarify backup after file change setting ([30d12ca](https://github.com/denolehov/obsidian-git/commit/30d12ca872c523cc3d6ee2987c2299270f50a578)), closes [#575](https://github.com/denolehov/obsidian-git/issues/575)
+* show file name in diff view on mobile ([20e0aba](https://github.com/denolehov/obsidian-git/commit/20e0aba46fa3454f8dabc60dd9d3c579efc322ee)), closes [#564](https://github.com/denolehov/obsidian-git/issues/564)
+
 ### [2.20.7](https://github.com/denolehov/obsidian-git/compare/2.20.6...2.20.7) (2023-07-31)
 
 
