@@ -32,6 +32,7 @@ import { SimpleGit } from "./gitManager/simpleGit";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
 import {
+    DiffViewState,
     FileStatusResult,
     mergeSettingsByPriority,
     ObsidianGitSettings,
@@ -68,6 +69,9 @@ export default class ObsidianGit extends Plugin {
     offlineMode = false;
     loading = false;
     cachedStatus: Status | undefined;
+    // Used to store the path of the file that is currently shown in the diff view.
+    lastDiffViewState: DiffViewState | undefined;
+    openEvent: EventRef;
     modifyEvent: EventRef;
     deleteEvent: EventRef;
     createEvent: EventRef;
@@ -681,6 +685,7 @@ export default class ObsidianGit extends Plugin {
             "git-head-update",
             this.refreshUpdatedHead.bind(this)
         );
+        this.app.workspace.offref(this.openEvent);
         this.app.metadataCache.offref(this.modifyEvent);
         this.app.metadataCache.offref(this.deleteEvent);
         this.app.metadataCache.offref(this.createEvent);
@@ -760,6 +765,11 @@ export default class ObsidianGit extends Plugin {
                 case "valid":
                     this.gitReady = true;
                     this.setState(PluginState.idle);
+
+                    this.openEvent = this.app.workspace.on(
+                        "active-leaf-change",
+                        (leaf) => this.handleViewActiveState(leaf)
+                    );
 
                     this.modifyEvent = this.app.vault.on("modify", () => {
                         this.debRefresh();
@@ -1664,6 +1674,52 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         });
         if (!fileIsAlreadyOpened) {
             this.app.workspace.openLinkText(this.conflictOutputFile, "/", true);
+        }
+    }
+
+    handleViewActiveState(leaf: WorkspaceLeaf | null): void {
+        // Prevent removing focus when switching to other panes than file panes like search or GitView
+        if (!leaf?.view.getState().file) return;
+
+        const sourceControlLeaf = this.app.workspace
+            .getLeavesOfType(SOURCE_CONTROL_VIEW_CONFIG.type)
+            .first();
+        const historyLeaf = this.app.workspace
+            .getLeavesOfType(HISTORY_VIEW_CONFIG.type)
+            .first();
+
+        // Clear existing active state
+        sourceControlLeaf?.view.containerEl
+            .querySelector(`div.nav-file-title.is-active`)
+            ?.removeClass("is-active");
+        historyLeaf?.view.containerEl
+            .querySelector(`div.nav-file-title.is-active`)
+            ?.removeClass("is-active");
+
+        if (leaf?.view instanceof DiffView) {
+            const path = leaf.view.state.file;
+            this.lastDiffViewState = leaf.view.getState();
+            let el: Element | undefined | null;
+            if (sourceControlLeaf && leaf.view.state.staged) {
+                el = sourceControlLeaf.view.containerEl.querySelector(
+                    `div.staged div.nav-file-title[data-path='${path}']`
+                );
+            } else if (
+                sourceControlLeaf &&
+                leaf.view.state.staged === false &&
+                !leaf.view.state.hash
+            ) {
+                el = sourceControlLeaf.view.containerEl.querySelector(
+                    `div.changes div.nav-file-title[data-path='${path}']`
+                );
+            } else if (historyLeaf && leaf.view.state.hash) {
+                el = historyLeaf.view.containerEl.querySelector(
+                    `div.nav-file-title[data-path='${path}']`
+                );
+            }
+            el?.addClass("is-active");
+        } else {
+            this.lastDiffViewState = undefined;
         }
     }
 

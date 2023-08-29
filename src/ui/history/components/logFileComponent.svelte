@@ -45,6 +45,8 @@
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
+        class:is-active={view.plugin.lastDiffViewState?.file ==
+            diff.vault_path && view.plugin.lastDiffViewState?.hash}
         data-path={diff.vault_path}
         aria-label-position={side}
         aria-label={diff.vault_path}
