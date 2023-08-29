@@ -45,6 +45,7 @@
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
+        data-path={diff.vault_path}
         aria-label-position={side}
         aria-label={diff.vault_path}
     >
@@ -71,8 +72,7 @@
 
 <style lang="scss">
     main {
-        .nav-file-title-content {
-            display: flex;
+        .nav-file-title {
             align-items: center;
         }
     }

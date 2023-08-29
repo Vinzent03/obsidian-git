@@ -211,8 +211,7 @@
 
 <style lang="scss">
     main {
-        .nav-folder-title-content {
-            display: flex;
+        .nav-folder-title {
             align-items: center;
         }
     }

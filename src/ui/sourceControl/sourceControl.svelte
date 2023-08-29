@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Platform, setIcon } from "obsidian";
+    import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import ObsidianGit from "src/main";
     import {
         FileStatusResult,
@@ -98,15 +99,18 @@
         const unPushedCommits = await plugin.gitManager.getUnpushedCommits();
 
         buttons.forEach((btn) => {
-            if(Platform.isMobile){
+            if (Platform.isMobile) {
                 btn.removeClass("button-border");
                 if (btn.id == "push" && unPushedCommits > 0) {
                     btn.addClass("button-border");
                 }
-            }else{
-                btn.firstElementChild?.removeAttribute("color")
+            } else {
+                btn.firstElementChild?.removeAttribute("color");
                 if (btn.id == "push" && unPushedCommits > 0) {
-                    btn.firstElementChild?.setAttr("color","var(--text-accent)")
+                    btn.firstElementChild?.setAttr(
+                        "color",
+                        "var(--text-accent)"
+                    );
                 }
             }
         });
@@ -217,7 +221,7 @@
     $: rows = (commitMessage.match(/\n/g) || []).length + 1 || 1;
 </script>
 
-<main>
+<main data-type={SOURCE_CONTROL_VIEW_CONFIG.type}>
     <div class="nav-header">
         <div class="nav-buttons-container">
             <div
@@ -403,7 +407,7 @@
                         {/if}
                     </div>
                     <div
-                        class="changes nav-folder"
+                        class="changes tree-item nav-folder"
                         class:is-collapsed={!changesOpen}
                     >
                         <div
@@ -617,6 +621,10 @@
                 justify-content: center;
             }
         }
+    }
+
+    .nav-folder-title {
+        align-items: center;
     }
 
     .git-commit-msg-clear-button {
