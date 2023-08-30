@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.22.0](https://github.com/denolehov/obsidian-git/compare/2.21.0...2.22.0) (2023-08-30)
+
+
+### Features
+
+* highlight opened diff view file ([5708c63](https://github.com/denolehov/obsidian-git/commit/5708c63ad7cad72c3939a4d554a5b98bc04783ed)), closes [#545](https://github.com/denolehov/obsidian-git/issues/545)
+
+
+### Bug Fixes
+
+* ui alignment ([a9adfff](https://github.com/denolehov/obsidian-git/commit/a9adfff996d570f8e893a2e2786059d0fa2e1cb9))
+
 ## [2.21.0](https://github.com/denolehov/obsidian-git/compare/2.20.7...2.21.0) (2023-08-22)
 
 
