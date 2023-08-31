@@ -65,7 +65,8 @@ export class SimpleGit extends GitManager {
 
             debug.enable("simple-git");
             if (await this.git.checkIsRepo()) {
-                await this.git.cwd(await this.git.revparse("--show-toplevel"));
+                const relativeRoot = await this.git.revparse("--show-cdup");
+                relativeRoot && await this.git.cwd(relativeRoot);
             }
         }
     }
