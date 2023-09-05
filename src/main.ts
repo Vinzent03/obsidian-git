@@ -466,6 +466,11 @@ export default class ObsidianGit extends Plugin {
         return Platform.isDesktopApp;
     }
 
+    hasConnectivity() {
+        if (navigator.onLine) return true;
+        return (new Notice('No Connectivity'), false)
+    }
+
     async init({ fromReload = false }): Promise<void> {
         if (this.settings.showStatusBar) {
             const statusBarEl = this.addStatusBarItem();
@@ -663,6 +668,7 @@ export default class ObsidianGit extends Plugin {
     ///Used for command
     async pullChangesFromRemote(): Promise<void> {
         if (!(await this.isAllInitialized())) return;
+        if (!(this.hasConnectivity())) return;
 
         const filesUpdated = await this.pull();
         await this.automaticsManager.setUpAutoCommitAndSync();
@@ -695,11 +701,13 @@ export default class ObsidianGit extends Plugin {
         commitMessage?: string
     ): Promise<void> {
         if (!(await this.isAllInitialized())) return;
+        const isConnected = this.hasConnectivity();
 
         if (
             this.settings.syncMethod == "reset" &&
             this.settings.pullBeforePush
         ) {
+            if (!isConnected) return;
             await this.pull();
         }
 
@@ -716,11 +724,13 @@ export default class ObsidianGit extends Plugin {
             this.settings.syncMethod != "reset" &&
             this.settings.pullBeforePush
         ) {
+            if (!isConnected) return;
             await this.pull();
         }
 
         if (!this.settings.disablePush) {
             // Prevent trying to push every time. Only if unpushed commits are present
+            if (!isConnected) return;
             if (
                 (await this.remotesAreSet()) &&
                 (await this.gitManager.canPush())
@@ -891,9 +901,9 @@ export default class ObsidianGit extends Plugin {
      */
     async push(): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
-        if (!(await this.remotesAreSet())) {
-            return false;
-        }
+        if (!(await this.remotesAreSet())) return false;
+        if (!(this.hasConnectivity())) return false;
+
         const hadConflict = this.localStorage.getConflict();
         try {
             if (this.gitManager instanceof SimpleGit)
