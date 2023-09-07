@@ -196,6 +196,15 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
+    handleOnlineStatusChange() {
+        if (!this.state.offlineMode) return;
+
+        if (navigator.onLine) {
+            this.setPluginState({ offlineMode: false });
+            this.promiseQueue.addTask(() => this.pullChangesFromRemote());
+        }
+    }
+
     /** This method only registers events, views, commands and more.
      *
      * This only needs to be called once since the registered events are
@@ -209,6 +218,7 @@ export default class ObsidianGit extends Plugin {
                 this.refresh().catch((e) => this.displayError(e));
             })
         );
+
         this.registerEvent(
             this.app.workspace.on("obsidian-git:head-change", () => {
                 this.refreshUpdatedHead();
@@ -226,6 +236,12 @@ export default class ObsidianGit extends Plugin {
                 this.onActiveLeafChange(leaf);
             })
         );
+
+        this.registerDomEvent(window, "online", () => {
+                this.handleOnlineStatusChange();
+            }
+        );
+
         this.registerEvent(
             this.app.vault.on("modify", () => {
                 this.debRefresh();
@@ -468,6 +484,7 @@ export default class ObsidianGit extends Plugin {
 
     hasConnectivity() {
         if (navigator.onLine) return true;
+        this.setPluginState({ offlineMode: true });
         return (new Notice('No Connectivity'), false)
     }
 
