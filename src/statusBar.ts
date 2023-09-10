@@ -22,6 +22,7 @@ export class StatusBar {
         private readonly plugin: ObsidianGit
     ) {
         this.statusBarEl.setAttribute("aria-label-position", "top");
+        this.statusBarEl.setAttribute("data-tooltip-position", "top");
 
         addEventListener("git-refresh", this.refreshCommitTimestamp.bind(this));
     }
