@@ -90,6 +90,7 @@
             !view.plugin.lastDiffViewState?.staged}
         data-path={change.vault_path}
         aria-label-position={side}
+        data-tooltip-position={side}
         aria-label={change.vault_path}
     >
         <!-- <div
