@@ -11,7 +11,6 @@
     export let view: GitView;
     export let manager: GitManager;
     let buttons: HTMLElement[] = [];
-    $: formattedPath = change.vault_path;
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
     window.setTimeout(

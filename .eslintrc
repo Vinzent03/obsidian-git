@@ -5,28 +5,37 @@
         "node": true
     },
     "plugins": [
-        "@typescript-eslint",
-        "svelte3"
+        "@typescript-eslint"
     ],
     "overrides": [
         {
             "files": [
                 "*.svelte"
             ],
-            "processor": "svelte3/svelte3"
+            "parser": "svelte-eslint-parser",
+            "parserOptions": {
+                "parser": "@typescript-eslint/parser"
+            },
+            "rules": {
+                "no-undef": "off" // TODO: remove this line
+            }
         }
     ],
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/eslint-recommended",
-        "plugin:@typescript-eslint/recommended"
+        "plugin:@typescript-eslint/recommended",
+        "plugin:svelte/base"
     ],
     "parserOptions": {
         "sourceType": "module",
         "project": [
             "./tsconfig.json"
         ],
-        "tsconfigRootDir": "."
+        "tsconfigRootDir": ".",
+        "extraFileExtensions": [
+            ".svelte"
+        ]
     },
     "settings": {
         "svelte3/typescript": true
