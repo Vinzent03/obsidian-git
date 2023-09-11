@@ -76,6 +76,7 @@
                 <div
                     class="tree-item-self is-clickable nav-folder-title"
                     aria-label-position={side}
+                    data-tooltip-position={side}
                     aria-label={entity.vaultPath}
                 >
                     <div

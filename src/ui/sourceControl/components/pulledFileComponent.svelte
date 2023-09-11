@@ -37,6 +37,7 @@
         class="tree-item-self is-clickable nav-file-title"
         data-path={change.vault_path}
         aria-label-position={side}
+        data-tooltip-position={side}
         aria-label={change.vault_path}
     >
         <div class="tree-item-inner nav-file-title-content">
