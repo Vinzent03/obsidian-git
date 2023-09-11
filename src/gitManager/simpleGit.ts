@@ -522,11 +522,16 @@ export class SimpleGit extends GitManager {
     }
 
     async getRemoteUrl(remote: string): Promise<string | undefined> {
-        return (
-            (await this.git.remote(["get-url", remote], (err, url) =>
-                this.onError(err)
-            )) || undefined
-        );
+        try {
+            await this.git.remote(["get-url", remote]);
+        } catch (error) {
+            // Verify the error is at least not about git is not found or similar. Checks if the remote exists or not
+            if (error.toString().contains(remote)) {
+                return undefined;
+            } else {
+                this.onError(error);
+            }
+        }
     }
 
     // https://github.com/kometenstaub/obsidian-version-history-diff/issues/3
