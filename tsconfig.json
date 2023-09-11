@@ -21,6 +21,7 @@
         "skipLibCheck": true
     },
     "include": [
-        "**/*.ts"
+        "**/*.ts",
+        "**/*.svelte"
     ]
 }

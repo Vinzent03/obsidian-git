@@ -1251,7 +1251,7 @@ export default class ObsidianGit extends Plugin {
             this.app.workspace.iterateAllLeaves((leaf) => {
                 if (
                     leaf.view instanceof MarkdownView &&
-                    leaf.view.file.path == file.path
+                    leaf.view.file?.path == file.path
                 ) {
                     leaf.detach();
                 }
