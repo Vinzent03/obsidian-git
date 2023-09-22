@@ -451,6 +451,25 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
+            .setName("Maximum number of files displayed")
+            .setDesc(
+                "Maximum number of files displayed in the Source Control View. If there are more files than the specified number, a corresponding notification will be displayed."
+            )
+            .addText((text) =>
+                text
+                    .setValue(String(plugin.settings.maximumNumberOfFilesToDisplay))
+                    .onChange((value) => {
+                        if (!isNaN(Number(value))) {
+                            plugin.settings.maximumNumberOfFilesToDisplay = Number(value);
+                            plugin.saveSettings();
+                            plugin.refresh();
+                        } else {
+                            new Notice("Please specify a valid number.");
+                        }
+                    })
+            );
+
+        new Setting(containerEl)
             .setName("Disable notifications")
             .setDesc(
                 "Disable notifications for git operations to minimize distraction (refer to status bar for updates). Errors are still shown as notifications even if you enable this setting"

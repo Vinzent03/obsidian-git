@@ -99,6 +99,10 @@
         const unPushedCommits = await plugin.gitManager.getUnpushedCommits();
 
         buttons.forEach((btn) => {
+            if (!btn) {
+                return;
+            }
+
             if (Platform.isMobile) {
                 btn.removeClass("button-border");
                 if (btn.id == "push" && unPushedCommits > 0) {
@@ -138,7 +142,7 @@
             };
             status.changed.sort(sort);
             status.staged.sort(sort);
-            if (status.changed.length + status.staged.length > 500) {
+            if (status.changed.length + status.staged.length > plugin.settings.maximumNumberOfFilesToDisplay) {
                 status = undefined;
                 if (!plugin.loading) {
                     plugin.displayError("Too many changes to display");

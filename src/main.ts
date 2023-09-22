@@ -476,7 +476,7 @@ export default class ObsidianGit extends Plugin {
 
                 const status = await this.gitManager.status();
                 this.setState(PluginState.idle);
-                if (status.changed.length + status.staged.length > 500) {
+                if (status.changed.length + status.staged.length > this.settings.maximumNumberOfFilesToDisplay) {
                     this.displayError("Too many changes to display");
                     return;
                 }

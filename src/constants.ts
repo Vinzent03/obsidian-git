@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
         changedFilesInStatusBar: false,
         showedMobileNotice: false,
         refreshSourceControlTimer: 7000,
+        maximumNumberOfFilesToDisplay: 500,
         showBranchStatusBar: true,
         setLastSaveToLastCommit: false,
         submoduleRecurseCheckout: false,

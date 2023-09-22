@@ -38,6 +38,7 @@ export interface ObsidianGitSettings {
     basePath: string;
     showedMobileNotice: boolean;
     refreshSourceControlTimer: number;
+    maximumNumberOfFilesToDisplay: number;
     showBranchStatusBar: boolean;
     lineAuthor: LineAuthorSettings;
     setLastSaveToLastCommit: boolean;
