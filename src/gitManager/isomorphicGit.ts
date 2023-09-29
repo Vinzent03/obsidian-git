@@ -204,8 +204,7 @@ export class IsomorphicGit extends GitManager {
             await this.checkAuthorInfo();
             this.plugin.setState(PluginState.commit);
             const formatMessage = await this.formatCommitMessage(message);
-            const hadConflict =
-                this.plugin.localStorage.getConflict() === "true";
+            const hadConflict = this.plugin.localStorage.getConflict();
             let parent: string[] | undefined = undefined;
 
             if (hadConflict) {
@@ -220,7 +219,7 @@ export class IsomorphicGit extends GitManager {
                     parent: parent,
                 })
             );
-            this.plugin.localStorage.setConflict("false");
+            this.plugin.localStorage.setConflict(false);
             return;
         } catch (error) {
             this.plugin.displayError(error);

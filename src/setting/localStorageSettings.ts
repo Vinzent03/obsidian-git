@@ -54,12 +54,12 @@ export class LocalStorageSettings {
         return app.saveLocalStorage(this.prefix + "hostname", value);
     }
 
-    getConflict(): string | null {
-        return app.loadLocalStorage(this.prefix + "conflict");
+    getConflict(): boolean {
+        return app.loadLocalStorage(this.prefix + "conflict") == "true";
     }
 
-    setConflict(value: string): void {
-        return app.saveLocalStorage(this.prefix + "conflict", value);
+    setConflict(value: boolean): void {
+        return app.saveLocalStorage(this.prefix + "conflict", `${value}`);
     }
 
     getLastAutoPull(): string | null {
