@@ -1706,7 +1706,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
                 );
             } else if (
                 sourceControlLeaf &&
-                leaf.view.state.staged === false &&
+                !leaf.view.state.staged &&
                 !leaf.view.state.hash
             ) {
                 el = sourceControlLeaf.view.containerEl.querySelector(
