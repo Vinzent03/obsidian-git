@@ -62,3 +62,12 @@ $ flatpak run md.obsidian.Obsidian
 ## MacOS
 
 Nothing specific.
+
+## iOS
+
+_Note you will need to have an existing vault in order to install and enable the extension._
+
+- Under `Settings` -> `Obsidian Git` set git username and password/personal access token.
+- Use one of the following command palette actions to initialize the plugin.
+  - `Obsidian Git: Initialize a new repo`
+  - `Obsidian Git: Clone an existing remote repo`
