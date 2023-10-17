@@ -1389,7 +1389,7 @@ export default class ObsidianGit extends Plugin {
         }
 
         if (!this.timeoutIDBackup && !this.onFileModifyEventRef) {
-            const lastAutos = await this.loadLastAuto();
+            const lastAutos = this.loadLastAuto();
 
             if (this.settings.autoSaveInterval > 0) {
                 const now = new Date();
@@ -1406,7 +1406,7 @@ export default class ObsidianGit extends Plugin {
 
     async setUpAutos() {
         this.setUpAutoBackup();
-        const lastAutos = await this.loadLastAuto();
+        const lastAutos = this.loadLastAuto();
 
         if (
             this.settings.differentIntervalCommitAndPush &&
