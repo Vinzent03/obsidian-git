@@ -93,6 +93,28 @@ The initial clone took 0m25s. After that, the most time consuming part is to che
 
 The fastest way to work on mobile if you have a large repo/vault is to stage individual files and only commit staged files.
 
+### Configuration on a mobile - iOS
+Depending on the screen size/type, some of the prompts may be less than intuitive.  Below is the general order I was able to encant to get it working across an iPhone and an iPad using the command palette:
+1) Initialize a new repo
+2) Clone an existing repo
+   a) Enter URL from your git repo
+   b) Press the blank area which will create a directory on your device
+   c) Answer whether you have an existing obsidian directory in your repo (YES if you've previously pushed an Obsidian folder from any device, probably NO otherwise)
+   d) Select "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS" (If you sync successfully, you'll pull down what you've already downloaded elsewhere)
+   e) Specify depth of your clone.  Probably leave empty and grab it all.
+   f) You should be prompted to restart Obsidian and get all your goodness.
+3) After restart, you'll see errors about not having authorship; go into the settings for the Git plugin.
+   a) Enter a name for "Author name for commit"
+   b) Enter an email for "Author email for commit"
+   c) Exit settings
+4) Switch to Remote Branch
+   a) First box, you can probably name anything.  "origin" was very straightforward
+   b) Git should pull the branches from your repo, and show you something like "origin/main"; Select that.
+5) Perform a pull; all your files and things should be downloaded if not already there.
+
+After editing your files, you'll want to do a "Commit all changes" followed by a "Push" to upload your changes.  You'll also need to do a Pull on any devices.  Bonus to setup pulling when you start Obsidian and on regular intervals.  I'm new to Obsidian, so have a small directory, syncing still fast for me. :)
+   
+
 ## Contact
 
 The Line Authoring feature was developed by [GollyTicker](https://github.com/GollyTicker), so any questions may be best answered by him.
