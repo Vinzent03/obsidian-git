@@ -504,7 +504,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Show changes files count in status bar")
+            .setName("Show the count of modified files in the status bar")
             .addToggle((toggle) =>
                 toggle
                     .setValue(plugin.settings.changedFilesInStatusBar)
