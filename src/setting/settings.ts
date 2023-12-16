@@ -23,7 +23,7 @@ import {
 } from "src/lineAuthor/model";
 import ObsidianGit from "src/main";
 import { ObsidianGitSettings, SyncMethod } from "src/types";
-import { convertToRgb, rgbToString } from "src/utils";
+import { convertToRgb, rgbToString, formatMinutes } from "src/utils";
 
 const FORMAT_STRING_REFERENCE_URL =
     "https://momentjs.com/docs/#/parsing/string-format/";
@@ -110,7 +110,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                         plugin.settings.autoSaveInterval
                                     );
                                     new Notice(
-                                        `Automatic ${commitOrBackup} enabled! Every ${plugin.settings.autoSaveInterval} minutes.`
+                                        `Automatic ${commitOrBackup} enabled! Every ${formatMinutes(plugin.settings.autoSaveInterval)}.`
                                     );
                                 } else if (
                                     plugin.settings.autoSaveInterval <= 0
@@ -128,9 +128,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             if (!plugin.settings.setLastSaveToLastCommit)
                 new Setting(containerEl)
-                    .setName(`Auto Backup after stop editing any file`)
+                    .setName(`Auto Backup after stopping file edits`)
                     .setDesc(
-                        `Requires the ${commitOrBackup} interval not to be 0. If turned on, do auto ${commitOrBackup} every ${plugin.settings.autoSaveInterval} minutes after stop editing any file. This also prevents auto ${commitOrBackup} while editing a file. If turned off, it's independent from the last change.`
+                        `Requires the ${commitOrBackup} interval not to be 0.
+                        If turned on, do auto ${commitOrBackup} every ${formatMinutes(plugin.settings.autoSaveInterval)} after stopping file edits.
+                        This also prevents auto ${commitOrBackup} while editing a file. If turned off, it's independent from the last change.`
                     )
                     .addToggle((toggle) =>
                         toggle
@@ -188,7 +190,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                             plugin.settings.autoPushInterval
                                         );
                                         new Notice(
-                                            `Automatic push enabled! Every ${plugin.settings.autoPushInterval} minutes.`
+                                            `Automatic push enabled! Every ${formatMinutes(plugin.settings.autoPushInterval)}.`
                                         );
                                     } else if (
                                         plugin.settings.autoPushInterval <= 0
@@ -227,7 +229,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                         plugin.settings.autoPullInterval
                                     );
                                     new Notice(
-                                        `Automatic pull enabled! Every ${plugin.settings.autoPullInterval} minutes.`
+                                        `Automatic pull enabled! Every ${formatMinutes(plugin.settings.autoPullInterval)}.`
                                     );
                                 } else if (
                                     plugin.settings.autoPullInterval <= 0
