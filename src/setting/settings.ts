@@ -110,7 +110,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                         plugin.settings.autoSaveInterval
                                     );
                                     new Notice(
-                                        `Automatic ${commitOrBackup} enabled! Every ${formatMinutes(plugin.settings.autoSaveInterval)}.`
+                                        `Automatic ${commitOrBackup} enabled! Every ${formatMinutes(
+                                            plugin.settings.autoSaveInterval
+                                        )}.`
                                     );
                                 } else if (
                                     plugin.settings.autoSaveInterval <= 0
@@ -131,7 +133,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setName(`Auto Backup after stopping file edits`)
                     .setDesc(
                         `Requires the ${commitOrBackup} interval not to be 0.
-                        If turned on, do auto ${commitOrBackup} every ${formatMinutes(plugin.settings.autoSaveInterval)} after stopping file edits.
+                        If turned on, do auto ${commitOrBackup} every ${formatMinutes(
+                            plugin.settings.autoSaveInterval
+                        )} after stopping file edits.
                         This also prevents auto ${commitOrBackup} while editing a file. If turned off, it's independent from the last change.`
                     )
                     .addToggle((toggle) =>
@@ -190,7 +194,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                             plugin.settings.autoPushInterval
                                         );
                                         new Notice(
-                                            `Automatic push enabled! Every ${formatMinutes(plugin.settings.autoPushInterval)}.`
+                                            `Automatic push enabled! Every ${formatMinutes(
+                                                plugin.settings.autoPushInterval
+                                            )}.`
                                         );
                                     } else if (
                                         plugin.settings.autoPushInterval <= 0
@@ -229,7 +235,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                         plugin.settings.autoPullInterval
                                     );
                                     new Notice(
-                                        `Automatic pull enabled! Every ${formatMinutes(plugin.settings.autoPullInterval)}.`
+                                        `Automatic pull enabled! Every ${formatMinutes(
+                                            plugin.settings.autoPullInterval
+                                        )}.`
                                     );
                                 } else if (
                                     plugin.settings.autoPullInterval <= 0
