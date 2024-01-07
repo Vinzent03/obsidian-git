@@ -88,7 +88,7 @@ async function getData(manager: GitManager): Promise<
     // However, this runtime error does not have a fatal negative impact, so we temporary ignore.
     // @ts-ignore
     const [isGitHub, httpsUser, httpsRepo, sshUser, sshRepo] = remoteUrl.match(
-        /(?:^https:\/\/github\.com\/(.*)\/(.*)\.git$)|(?:^git@github\.com:(.*)\/(.*)\.git$)/
+        /(?:^https:\/\/github\.com\/(.*)\/(.*)\.git$)|(?:^[a-zA-Z]+@github\.com:(.*)\/(.*)\.git$)/
     );
     return {
         result: "success",
