@@ -1004,7 +1004,7 @@ export default class ObsidianGit extends Plugin {
     }): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
 
-        let hadConflict = this.localStorage.getConflict() === "true";
+        let hadConflict = this.localStorage.getConflict();
 
         let changedFiles: { vault_path: string }[];
         let status: Status | undefined;
@@ -1016,7 +1016,7 @@ export default class ObsidianGit extends Plugin {
 
             //Should not be necessary, but just in case
             if (status.conflicted.length == 0) {
-                this.localStorage.setConflict("false");
+                this.localStorage.setConflict(false);
                 hadConflict = false;
             }
 
@@ -1106,7 +1106,7 @@ export default class ObsidianGit extends Plugin {
             //Handle resolved conflict after commit
             if (this.gitManager instanceof SimpleGit) {
                 if ((await this.updateCachedStatus()).conflicted.length == 0) {
-                    this.localStorage.setConflict("false");
+                    this.localStorage.setConflict(false);
                 }
             }
 
@@ -1169,7 +1169,7 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.remotesAreSet())) {
             return false;
         }
-        const hadConflict = this.localStorage.getConflict() === "true";
+        const hadConflict = this.localStorage.getConflict();
         if (this.gitManager instanceof SimpleGit)
             await this.mayDeleteConflictFile();
 
@@ -1550,7 +1550,7 @@ export default class ObsidianGit extends Plugin {
     async handleConflict(conflicted?: string[]): Promise<void> {
         this.setState(PluginState.conflicted);
 
-        this.localStorage.setConflict("true");
+        this.localStorage.setConflict(true);
         let lines: string[] | undefined;
         if (conflicted !== undefined) {
             lines = [
