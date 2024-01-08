@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.22.1](https://github.com/denolehov/obsidian-git/compare/2.22.0...2.22.1) (2024-01-08)
+
+
+### Bug Fixes
+
+* allow different ssh remote user than git ([5b6400c](https://github.com/denolehov/obsidian-git/commit/5b6400cc85c827bc13e11ffa1bc0cbb3bd6cfd26)), closes [#664](https://github.com/denolehov/obsidian-git/issues/664)
+* create new remote ([1a4cca8](https://github.com/denolehov/obsidian-git/commit/1a4cca8baf20de91ce3ee825740a85f1d33c1744)), closes [#599](https://github.com/denolehov/obsidian-git/issues/599)
+* grammar improvement in settings ([#635](https://github.com/denolehov/obsidian-git/issues/635)) ([1d81577](https://github.com/denolehov/obsidian-git/commit/1d81577877ccb548b06fb91036a246aa442a41ae))
+* tooltip direction ([#600](https://github.com/denolehov/obsidian-git/issues/600)) ([a913303](https://github.com/denolehov/obsidian-git/commit/a91330381e83cfc2ece14186325b129d7fc9b6bf))
+* update settings grammar ([#656](https://github.com/denolehov/obsidian-git/issues/656)) ([d9e8be1](https://github.com/denolehov/obsidian-git/commit/d9e8be14b5dbb64a9b78b2d3fe56c474bd57596f))
+
 ## [2.22.0](https://github.com/denolehov/obsidian-git/compare/2.21.0...2.22.0) (2023-08-30)
 
 
