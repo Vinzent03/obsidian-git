@@ -200,7 +200,7 @@ export class IsomorphicGit extends GitManager {
         }
     }
     async getAICommitSummary(): Promise<string>{
-        const commitFiles = await this.getCommitFiles();
+        const commitFiles = await this.getStagedFiles(".");  // TODO: get proper paths
         let prompt_string = ""; // TODO: get this from the settings
         prompt_string += "Commit message: " + commitFiles.join('\n');
         const response = await axios.post('https://api.openai.com/v1/engines/davinci-codex/completions', { // TODO: get endpoint from settings
