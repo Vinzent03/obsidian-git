@@ -108,3 +108,8 @@ export function getDisplayPath(path: string): string {
     if (path.endsWith("/")) return path;
     return path.split("/").last()!.replace(".md", "");
 }
+
+export function formatMinutes(minutes: number): string {
+    if (minutes === 1) return "1 minute";
+    return `${minutes} minutes`;
+}
