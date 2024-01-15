@@ -305,7 +305,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("{{date}} placeholder format")
                 .setDesc(
-                    `Specify custom date format. E.g. "${DATE_TIME_FORMAT_SECONDS}"`
+                    `Specify custom date format. E.g. "${DATE_TIME_FORMAT_SECONDS}. See https://momentjs.com/ for more formats"`
                 )
                 .addText((text) =>
                     text
