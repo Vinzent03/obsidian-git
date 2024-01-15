@@ -12,6 +12,7 @@ export interface ObsidianGitSettings {
     disablePush: boolean;
     pullBeforePush: boolean;
     disablePopups: boolean;
+    disablePopupsForNoChanges: boolean;
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
     updateSubmodules: boolean;
