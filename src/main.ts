@@ -1729,8 +1729,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
 
         if (!this.settings.disablePopups) {
             if (!this.settings.disablePopupsForNoChanges
-                || (this.settings.disablePopupsForNoChanges
-                && !message.startsWith("No changes"))) {
+                || !message.startsWith("No changes")) {
                 new Notice(message, 5 * 1000);
             }
         }
