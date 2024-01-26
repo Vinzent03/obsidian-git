@@ -1,4 +1,4 @@
-# Obsidian Git
+# Git
 
 Plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
 

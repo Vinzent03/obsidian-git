@@ -9,14 +9,14 @@ aliases:
 ## Plugin installation
 
 ### From within Obsidian
-Go to "Settings" -> "Community plugins" -> "Browse", search for "Obsidian Git", install and enable it.
+Go to "Settings" -> "Community plugins" -> "Browse", search for "Git", install and enable it.
 
 ### Manual
 1. Download `obsidian-git-<latest-version>.zip` from the [latest release](https://github.com/denolehov/obsidian-git/releases/latest)
 2. Unpack the zip in `<vault>/.obsidian/plugins/obsidian-git`
 3. Reload Obsidian (CTRL + R)
 4. Go to settings and disable restricted mode
-5. Enable `Obsidian Git`
+5. Enable `Git`
 
 # Windows
 

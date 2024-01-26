@@ -4,9 +4,9 @@ import { subscribeNewEditor } from "src/lineAuthor/control";
 import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
 import {
     LineAuthoring,
-    lineAuthoringId,
     LineAuthoringId,
     lineAuthorState,
+    lineAuthoringId,
 } from "src/lineAuthor/model";
 import { clearViewCache } from "src/lineAuthor/view/cache";
 import { lineAuthorGutter } from "src/lineAuthor/view/view";
@@ -32,7 +32,7 @@ export class LineAuthorProvider {
 
     public async trackChanged(file: TFile) {
         this.trackChangedHelper(file).catch((reason) => {
-            console.warn("Obsidian Git: Error in trackChanged." + reason);
+            console.warn("Git: Error in trackChanged." + reason);
             return Promise.reject(reason);
         });
     }
@@ -42,7 +42,7 @@ export class LineAuthorProvider {
 
         if (file.path === undefined) {
             console.warn(
-                "Obsidian Git: Attempted to track change of undefined filepath. Unforeseen situation."
+                "Git: Attempted to track change of undefined filepath. Unforeseen situation."
             );
             return;
         }

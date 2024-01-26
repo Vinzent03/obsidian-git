@@ -28,7 +28,7 @@ export class LineAuthoringSubscriber {
     public async notifyLineAuthoring(id: LineAuthoringId, la: LineAuthoring) {
         if (this.view === undefined) {
             console.warn(
-                `Obsidian Git: View is not defined for editor cache key. Unforeseen situation. id: ${id}`
+                `Git: View is not defined for editor cache key. Unforeseen situation. id: ${id}`
             );
             return;
         }

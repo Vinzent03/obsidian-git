@@ -12,7 +12,7 @@ A quick showcase of all functionality. This feature is based on [git-blame](http
 
 ![](assets/line-author-activate.png)
 
-It can also be activated via Command Palette `Obsidian Git: Toggle line author information`.
+It can also be activated via Command Palette `Git: Toggle line author information`.
 
 ## Default line author information
 
@@ -96,7 +96,7 @@ color or variable.
 ![](assets/line-author-text-color.png)
 
 Example:
-| `var(--text-muted)`                          | `var(--text-normal)`                          |
+| `var(--text-muted)` | `var(--text-normal)` |
 |----------------------------------------------|-----------------------------------------------|
 | ![](assets/line-author-text-color-muted.png) | ![](assets/line-author-text-color-normal.png) |
 
@@ -153,8 +153,8 @@ In this case the newest of all lines is shown in the gutter.
 
 This can be activated in the settings.
 
-| **Original** | **Changed with preserved whitespace** | **Changed with ignored whitespace** |
-|------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------|
+| **Original**                                         | **Changed with preserved whitespace**                   | **Changed with ignored whitespace**                   |
+| ---------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------- |
 | ![](assets/line-author-ignore-whitespace-before.png) | ![](assets/line-author-ignore-whitespace-preserved.png) | ![](assets/line-author-ignore-whitespace-ignored.png) |
 
 Note, how ignoring the whitespace does not mark the indented

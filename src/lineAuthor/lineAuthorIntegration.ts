@@ -70,10 +70,7 @@ export class LineAuthoringFeature {
 
             console.log(this.plg.manifest.name + ": Enabled line authoring.");
         } catch (e) {
-            console.warn(
-                "Obsidian Git: Error while loading line authoring feature.",
-                e
-            );
+            console.warn("Git: Error while loading line authoring feature.", e);
             this.deactivateFeature();
         }
     }
@@ -171,7 +168,7 @@ export class LineAuthoringFeature {
 
         if (!this.lineAuthorInfoProvider) {
             console.warn(
-                "Obsidian Git: undefined lineAuthorInfoProvider. Unexpected situation."
+                "Git: undefined lineAuthorInfoProvider. Unexpected situation."
             );
             return;
         }

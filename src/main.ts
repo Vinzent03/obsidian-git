@@ -583,7 +583,7 @@ export default class ObsidianGit extends Plugin {
             !this.settings.showedMobileNotice
         ) {
             new Notice(
-                "Obsidian Git is now available on mobile! Please read the plugin's README for more information.",
+                "Git is now available on mobile! Please read the plugin's README for more information.",
                 length
             );
             this.settings.showedMobileNotice = true;
@@ -591,7 +591,7 @@ export default class ObsidianGit extends Plugin {
         }
         if (this.manifest.id === "obsidian-git-isomorphic") {
             new Notice(
-                "Obsidian Git Mobile is now deprecated. Please uninstall it and install Obsidian Git instead.",
+                "Git Mobile is now deprecated. Please uninstall it and install Git instead.",
                 length
             );
         }
@@ -1555,7 +1555,7 @@ export default class ObsidianGit extends Plugin {
         if (conflicted !== undefined) {
             lines = [
                 "# Conflicts",
-                "Please resolve them and commit them using the commands `Obsidian Git: Commit all changes` followed by `Obsidian Git: Push`",
+                "Please resolve them and commit them using the commands `Git: Commit all changes` followed by `Git: Push`",
                 "(This file will automatically be deleted before commit)",
                 "[[#Additional Instructions]] available below file list",
                 "",
