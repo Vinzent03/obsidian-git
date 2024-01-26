@@ -73,6 +73,8 @@ Please use AppImage instead ([Linux installation guide](https://publish.obsidian
 
 ## Mobile
 
+Installation and Getting Started can be found in the [documentation](https://publish.obsidian.md/git-doc/Getting+Started#Mobile).
+
 ### Restrictions of the mobile version
 
 I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of Git in JavaScript, because you cannot use native Git on Android or iOS.
