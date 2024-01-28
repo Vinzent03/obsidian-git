@@ -69,7 +69,7 @@
             </div>
         {:else}
             <div
-                on:click={() => fold(entity)}
+                on:click|stopPropagation={() => fold(entity)}
                 class="tree-item nav-folder"
                 class:is-collapsed={closed[entity.title]}
             >
