@@ -1728,8 +1728,10 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
 
         if (!this.settings.disablePopups) {
-            if (!this.settings.disablePopupsForNoChanges
-                || !message.startsWith("No changes")) {
+            if (
+                !this.settings.disablePopupsForNoChanges ||
+                !message.startsWith("No changes")
+            ) {
                 new Notice(message, 5 * 1000);
             }
         }
