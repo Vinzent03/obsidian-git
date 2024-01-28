@@ -470,9 +470,25 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .setValue(plugin.settings.disablePopups)
                     .onChange((value) => {
                         plugin.settings.disablePopups = value;
+                        this.display();
                         plugin.saveSettings();
                     })
             );
+
+        if (!plugin.settings.disablePopups)
+            new Setting(containerEl)
+                .setName("Hide notifications for no changes")
+                .setDesc(
+                    "Don't show notifications when there are no changes to commit/push"
+                )
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.disablePopupsForNoChanges)
+                        .onChange((value) => {
+                            plugin.settings.disablePopupsForNoChanges = value;
+                            plugin.saveSettings();
+                        })
+                );
 
         new Setting(containerEl)
             .setName("Show status bar")

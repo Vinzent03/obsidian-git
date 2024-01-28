@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
         disablePush: false,
         pullBeforePush: true,
         disablePopups: false,
+        disablePopupsForNoChanges: false,
         listChangedFilesInMessageBody: false,
         showStatusBar: true,
         updateSubmodules: false,
