@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.23.0](https://github.com/denolehov/obsidian-git/compare/2.22.2...2.23.0) (2024-01-28)
+
+
+### Features
+
+* add commit amend command ([8f10261](https://github.com/denolehov/obsidian-git/commit/8f10261b08a498b0fc8f989209c1e0b048a27c35)), closes [#648](https://github.com/denolehov/obsidian-git/issues/648)
+* add setting to disable 'No changes...' popups ([#676](https://github.com/denolehov/obsidian-git/issues/676)) ([bfd6de9](https://github.com/denolehov/obsidian-git/commit/bfd6de9092aaa18d7624b374d10873a179f12351))
+
+
+### Bug Fixes
+
+* fold only one item ([cd1d932](https://github.com/denolehov/obsidian-git/commit/cd1d93226a4e2f5ebfaa89ada97851c60f35a4fd)), closes [#680](https://github.com/denolehov/obsidian-git/issues/680)
+
 ### [2.22.2](https://github.com/denolehov/obsidian-git/compare/2.22.1...2.22.2) (2024-01-26)
 
 ### [2.22.1](https://github.com/denolehov/obsidian-git/compare/2.22.0...2.22.1) (2024-01-08)
