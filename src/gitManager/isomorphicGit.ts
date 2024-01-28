@@ -192,14 +192,19 @@ export class IsomorphicGit extends GitManager {
             await this.checkAuthorInfo();
 
             await this.stageAll({ status, unstagedFiles });
-            return this.commit(message);
+            return this.commit({ message });
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
         }
     }
 
-    async commit(message: string): Promise<undefined> {
+    async commit({
+        message,
+    }: {
+        message: string;
+        amend?: boolean;
+    }): Promise<undefined> {
         try {
             await this.checkAuthorInfo();
             this.plugin.setState(PluginState.commit);

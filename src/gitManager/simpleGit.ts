@@ -269,12 +269,19 @@ export class SimpleGit extends GitManager {
         return res.summary.changes;
     }
 
-    async commit(message: string): Promise<number> {
+    async commit({
+        message,
+        amend,
+    }: {
+        message: string;
+        amend?: boolean;
+    }): Promise<number> {
         this.plugin.setState(PluginState.commit);
 
         const res = (
             await this.git.commit(
                 await this.formatCommitMessage(message),
+                amend ? ["--amend"] : [],
                 (err) => this.onError(err)
             )
         ).summary.changes;

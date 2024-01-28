@@ -367,6 +367,22 @@ export default class ObsidianGit extends Plugin {
                 ),
         });
 
+        if (Platform.isDesktopApp) {
+            this.addCommand({
+                id: "commit-amend-staged-specified-message",
+                name: "Commit Amend",
+                callback: () =>
+                    this.promiseQueue.addTask(() =>
+                        this.commit({
+                            fromAutoBackup: false,
+                            requestCustomMessage: true,
+                            onlyStaged: true,
+                            amend: true,
+                        })
+                    ),
+            });
+        }
+
         this.addCommand({
             id: "commit-staged-specified-message",
             name: "Commit staged with specific message",
@@ -996,11 +1012,13 @@ export default class ObsidianGit extends Plugin {
         requestCustomMessage = false,
         onlyStaged = false,
         commitMessage,
+        amend = false,
     }: {
         fromAutoBackup: boolean;
         requestCustomMessage?: boolean;
         onlyStaged?: boolean;
         commitMessage?: string;
+        amend?: boolean;
     }): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
 
@@ -1094,12 +1112,16 @@ export default class ObsidianGit extends Plugin {
             }
             let committedFiles: number | undefined;
             if (onlyStaged) {
-                committedFiles = await this.gitManager.commit(cmtMessage);
+                committedFiles = await this.gitManager.commit({
+                    message: cmtMessage,
+                    amend,
+                });
             } else {
                 committedFiles = await this.gitManager.commitAll({
                     message: cmtMessage,
                     status,
                     unstagedFiles,
+                    amend,
                 });
             }
 

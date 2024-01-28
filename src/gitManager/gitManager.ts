@@ -24,9 +24,13 @@ export abstract class GitManager {
         message: string;
         status?: Status;
         unstagedFiles?: UnstagedFile[];
+        amend?: boolean;
     }): Promise<number | undefined>;
 
-    abstract commit(message?: string): Promise<number | undefined>;
+    abstract commit(_: {
+        message: string;
+        amend?: boolean;
+    }): Promise<number | undefined>;
 
     abstract stageAll(_: { dir?: string; status?: Status }): Promise<void>;
 
