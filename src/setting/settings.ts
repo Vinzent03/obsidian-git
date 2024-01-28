@@ -302,11 +302,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         })
                 );
 
-            new Setting(containerEl)
+            const datePlaceholderSetting = new Setting(containerEl)
                 .setName("{{date}} placeholder format")
-                .setDesc(
-                    `Specify custom date format. E.g. "${DATE_TIME_FORMAT_SECONDS}"`
-                )
                 .addText((text) =>
                     text
                         .setPlaceholder(plugin.settings.commitDateFormat)
@@ -316,6 +313,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             await plugin.saveSettings();
                         })
                 );
+            datePlaceholderSetting.descEl.innerHTML = `
+            Specify custom date format. E.g. "${DATE_TIME_FORMAT_SECONDS}. See <a href="https://momentjs.com">Moment.js</a> for more formats.`;
 
             new Setting(containerEl)
                 .setName("{{hostname}} placeholder replacement")
