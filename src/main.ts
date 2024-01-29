@@ -1653,9 +1653,8 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         if (remoteName) {
             this.displayMessage("Fetching remote branches");
             await this.gitManager.fetch(remoteName);
-            const branches = await this.gitManager.getRemoteBranches(
-                remoteName
-            );
+            const branches =
+                await this.gitManager.getRemoteBranches(remoteName);
             const branchModal = new GeneralModal({
                 options: branches,
                 placeholder:

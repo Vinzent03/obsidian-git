@@ -12,7 +12,10 @@ export default class DiffView extends ItemView {
     gitRefreshBind = this.refresh.bind(this);
     gitViewRefreshBind = this.refresh.bind(this);
 
-    constructor(leaf: WorkspaceLeaf, private plugin: ObsidianGit) {
+    constructor(
+        leaf: WorkspaceLeaf,
+        private plugin: ObsidianGit
+    ) {
         super(leaf);
         this.parser = new DOMParser();
         this.navigation = true;

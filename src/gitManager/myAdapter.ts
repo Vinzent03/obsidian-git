@@ -10,7 +10,10 @@ export class MyAdapter {
     indexmtime: number | undefined;
     lastBasePath: string | undefined;
 
-    constructor(vault: Vault, private readonly plugin: ObsidianGit) {
+    constructor(
+        vault: Vault,
+        private readonly plugin: ObsidianGit
+    ) {
         this.adapter = vault.adapter;
         this.vault = vault;
         this.lastBasePath = this.plugin.settings.basePath;

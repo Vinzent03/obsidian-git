@@ -776,7 +776,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
      * refreshes the line author info views.
      */
     public lineAuthorSettingHandler<
-        K extends keyof ObsidianGitSettings["lineAuthor"]
+        K extends keyof ObsidianGitSettings["lineAuthor"],
     >(key: K, value: ObsidianGitSettings["lineAuthor"][K]) {
         this.settings.lineAuthor[key] = value;
         this.plugin.saveSettings();

@@ -70,7 +70,7 @@
                         }
                         plugin.setUpAutoBackup();
                     })
-                    .finally(triggerRefresh),
+                    .finally(triggerRefresh)
             );
         }
     }
@@ -86,7 +86,7 @@
                             commitMessage = "";
                         }
                     })
-                    .finally(triggerRefresh),
+                    .finally(triggerRefresh)
             );
         }
     }
@@ -109,7 +109,7 @@
                 if (btn.id == "push" && unPushedCommits > 0) {
                     btn.firstElementChild?.setAttr(
                         "color",
-                        "var(--text-accent)",
+                        "var(--text-accent)"
                     );
                 }
             }
@@ -149,7 +149,7 @@
                     path: "",
                     vaultPath: "",
                     children: plugin.gitManager.getTreeStructure(
-                        status.changed,
+                        status.changed
                     ),
                 };
                 stagedHierarchy = {
@@ -175,7 +175,7 @@
         plugin.promiseQueue.addTask(() =>
             plugin.gitManager
                 .stageAll({ status: status })
-                .finally(triggerRefresh),
+                .finally(triggerRefresh)
         );
     }
 
@@ -184,20 +184,20 @@
         plugin.promiseQueue.addTask(() =>
             plugin.gitManager
                 .unstageAll({ status: status })
-                .finally(triggerRefresh),
+                .finally(triggerRefresh)
         );
     }
 
     function push() {
         loading = true;
         plugin.promiseQueue.addTask(() =>
-            plugin.push().finally(triggerRefresh),
+            plugin.push().finally(triggerRefresh)
         );
     }
     function pull() {
         loading = true;
         plugin.promiseQueue.addTask(() =>
-            plugin.pullChangesFromRemote().finally(triggerRefresh),
+            plugin.pullChangesFromRemote().finally(triggerRefresh)
         );
     }
     function discard() {
@@ -212,7 +212,7 @@
                             })
                             .finally(() => {
                                 dispatchEvent(new CustomEvent("git-refresh"));
-                            }),
+                            })
                     );
                 }
             });
