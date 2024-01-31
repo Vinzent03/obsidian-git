@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.23.2](https://github.com/denolehov/obsidian-git/compare/2.23.1...2.23.2) (2024-01-31)
+
+
+### Bug Fixes
+
+* many issues with list changed files ([8b3fc8b](https://github.com/denolehov/obsidian-git/commit/8b3fc8bd69b76193086d5b3a814546a9e3cf51ea)), closes [#655](https://github.com/denolehov/obsidian-git/issues/655)
+
 ### [2.23.1](https://github.com/denolehov/obsidian-git/compare/2.23.0...2.23.1) (2024-01-29)
 
 
