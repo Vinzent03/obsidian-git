@@ -65,6 +65,7 @@ export interface Author {
 }
 
 export interface Status {
+    all: FileStatusResult[];
     changed: FileStatusResult[];
     staged: FileStatusResult[];
     conflicted: string[];

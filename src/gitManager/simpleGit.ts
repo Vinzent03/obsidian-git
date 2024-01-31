@@ -74,31 +74,23 @@ export class SimpleGit extends GitManager {
         this.plugin.setState(PluginState.status);
         const status = await this.git.status((err) => this.onError(err));
         this.plugin.setState(PluginState.idle);
-        return {
-            changed: status.files
-                .filter((e) => e.working_dir !== " ")
-                .map((e) => {
-                    const res = this.formatPath(e);
 
-                    return <FileStatusResult>{
-                        path: res.path,
-                        from: res.from,
-                        working_dir:
-                            e.working_dir === "?" ? "U" : e.working_dir,
-                        vault_path: this.getVaultPath(res.path),
-                    };
-                }),
-            staged: status.files
-                .filter((e) => e.index !== " " && e.index != "?")
-                .map((e) => {
-                    const res = this.formatPath(e, e.index === "R");
-                    return <FileStatusResult>{
-                        path: res.path,
-                        from: res.from,
-                        index: e.index,
-                        vault_path: this.getVaultPath(res.path),
-                    };
-                }),
+        const allFilesFormatted = status.files.map<FileStatusResult>((e) => {
+            const res = this.formatPath(e);
+            return {
+                path: res.path,
+                from: res.from,
+                index: e.index === "?" ? "U" : e.index,
+                working_dir: e.working_dir === "?" ? "U" : e.working_dir,
+                vault_path: this.getVaultPath(res.path),
+            };
+        });
+        return {
+            all: allFilesFormatted,
+            changed: allFilesFormatted.filter((e) => e.working_dir !== " "),
+            staged: allFilesFormatted.filter(
+                (e) => e.index !== " " && e.index != "U"
+            ),
             conflicted: status.conflicted.map(
                 (path) => this.formatPath({ path }).path
             ),

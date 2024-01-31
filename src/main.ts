@@ -289,11 +289,11 @@ export default class ObsidianGit extends Plugin {
             id: "add-to-gitignore",
             name: "Add file to gitignore",
             checkCallback: (checking) => {
-                const file = app.workspace.getActiveFile();
+                const file = this.app.workspace.getActiveFile();
                 if (checking) {
                     return file !== null;
                 } else {
-                    app.vault.adapter
+                    this.app.vault.adapter
                         .append(
                             this.gitManager.getVaultPath(".gitignore"),
                             "\n" +
@@ -491,13 +491,14 @@ export default class ObsidianGit extends Plugin {
                 if (!(await this.isAllInitialized())) return;
 
                 const status = await this.gitManager.status();
+                console.log(status);
                 this.setState(PluginState.idle);
                 if (status.changed.length + status.staged.length > 500) {
                     this.displayError("Too many changes to display");
                     return;
                 }
 
-                new ChangedFilesModal(this, status.changed).open();
+                new ChangedFilesModal(this, status.all).open();
             },
         });
 

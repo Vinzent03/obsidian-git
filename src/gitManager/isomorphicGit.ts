@@ -170,7 +170,7 @@ export class IsomorphicGit extends GitManager {
             const conflicted: string[] = [];
             window.clearTimeout(timeout);
             notice?.hide();
-            return { changed, staged, conflicted };
+            return { all: status, changed, staged, conflicted };
         } catch (error) {
             window.clearTimeout(timeout);
             notice?.hide();
@@ -629,7 +629,7 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async branchIsMerged(branch: string): Promise<boolean> {
+    async branchIsMerged(_: string): Promise<boolean> {
         return true;
     }
 
@@ -826,7 +826,7 @@ export class IsomorphicGit extends GitManager {
         await this.setConfig(`branch.${branch}.remote`, remote);
     }
 
-    updateGitPath(gitPath: string): void {
+    updateGitPath(_: string): void {
         // isomorphic-git library has its own git client
         return;
     }
@@ -1109,8 +1109,8 @@ export class IsomorphicGit extends GitManager {
             return diff;
         } else {
             let workdirContent: string;
-            if (await app.vault.adapter.exists(vaultPath)) {
-                workdirContent = await app.vault.adapter.read(vaultPath);
+            if (await this.app.vault.adapter.exists(vaultPath)) {
+                workdirContent = await this.app.vault.adapter.read(vaultPath);
             } else {
                 workdirContent = "";
             }

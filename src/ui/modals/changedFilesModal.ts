@@ -28,7 +28,7 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
         let index = "";
 
         if (item.working_dir != " ")
-            working_dir = `Working dir: ${item.working_dir} `;
+            working_dir = `Working Dir: ${item.working_dir} `;
         if (item.index != " ") index = `Index: ${item.index}`;
 
         return `${working_dir}${index} | ${item.vault_path}`;
