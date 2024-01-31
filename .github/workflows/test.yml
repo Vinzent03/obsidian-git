@@ -6,7 +6,7 @@ jobs:
     lint:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
             - uses: pnpm/action-setup@v2
               with:
                   version: latest
@@ -17,7 +17,7 @@ jobs:
     format:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
             - uses: pnpm/action-setup@v2
               with:
                   version: latest
@@ -28,7 +28,7 @@ jobs:
     compile:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
             - uses: pnpm/action-setup@v2
               with:
                   version: latest
@@ -39,7 +39,7 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v2
+            -   uses: actions/checkout@v4
             -   uses: pnpm/action-setup@v2
                 with:
                     version: latest
