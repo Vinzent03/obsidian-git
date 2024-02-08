@@ -18,6 +18,8 @@ aliases:
 > Please don't use Flatpak or Snap to install Obsidian on Linux. Learn more [[Installation#Linux|here]]
 
 
+![[Getting Started#Performance on mobile]]
+
 ## What is Git?
 
 Git is a version control system. It allows you to keep track of changes to your notes and revert back to previous versions. It also allows you to collaborate with other people on the same files. You can read more about Git [here](https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control).

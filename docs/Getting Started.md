@@ -16,8 +16,9 @@ To clone, you have to use a remote URL. This can be one of two protocols: either
 4. Read on how to best configure your [[Tips-and-Tricks#Gitignore|.gitignore]]
 
 # Mobile
+The git implementation on mobile is **very unstable**!
 
-## Performance and restrictions
+## Restrictions
 
 I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of Git in JavaScript, because you cannot use native Git on Android or iOS.
 
@@ -26,10 +27,15 @@ I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implemen
 -   Rebase merge strategy is not supported
 -   Submodules are not supported
 
-### Performance on mobile
+## Performance on mobile
 
-> [!Warning]
-> Depending on your device and available free RAM, Obsidian may crash on clone/pull. I don't know how to fix this. If that's the case for you, I have to admit this plugin won't work for you. So commenting on any issue or creating a new one won't help. I am sorry.
+> [!danger] Warning
+> Depending on your device and available free RAM, Obsidian may
+> - crash on clone/pull
+> - create buffer overflow errors
+> - run indefinitely.
+>   
+> It's caused by the underlying git implementation on mobile, which is not efficient. I don't know how to fix this. If that's the case for you, I have to admit this plugin won't work for you. So commenting on any issue or creating a new one won't help. I am sorry.
 
 ## Start with existing remote repository
 

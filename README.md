@@ -73,9 +73,9 @@ Please use AppImage instead ([Linux installation guide](https://publish.obsidian
 
 ## Mobile
 
-Installation and Getting Started can be found in the [documentation](https://publish.obsidian.md/git-doc/Getting+Started#Mobile).
+The git implementation on mobile is **very unstable**!
 
-### Restrictions of the mobile version
+### Restrictions
 
 I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of Git in JavaScript, because you cannot use native Git on Android or iOS.
 
@@ -86,8 +86,14 @@ I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implemen
 
 ### Performance on mobile
 
-> **Warning**
-> Depending on your device and available free RAM, Obsidian may crash on clone/pull. I don't know how to fix this. If that's the case for you, I have to admit this plugin won't work for you. So commenting on any issue or creating a new one won't help. I am sorry.
+> [!caution]
+> Depending on your device and available free RAM, Obsidian may
+>
+> -   crash on clone/pull
+> -   create buffer overflow errors
+> -   run indefinitely.
+>
+> It's caused by the underlying git implementation on mobile, which is not efficient. I don't know how to fix this. If that's the case for you, I have to admit this plugin won't work for you. So commenting on any issue or creating a new one won't help. I am sorry.
 
 **Setup:** iPad Pro M1 with a [repo](https://github.com/Vinzent03/obsidian-git-stress-test) of 3000 files reduced from [10000 markdown files](https://github.com/Zettelkasten-Method/10000-markdown-files)
 
