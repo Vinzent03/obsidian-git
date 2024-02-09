@@ -221,6 +221,8 @@
     $: rows = (commitMessage.match(/\n/g) || []).length + 1 || 1;
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <main data-type={SOURCE_CONTROL_VIEW_CONFIG.type}>
     <div class="nav-header">
         <div class="nav-buttons-container">

@@ -75,6 +75,9 @@
 </script>
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <main
     on:mouseover={hover}
     on:click|stopPropagation={showDiff}

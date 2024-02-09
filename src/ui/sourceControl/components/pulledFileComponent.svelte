@@ -25,6 +25,8 @@
     }
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <main
     on:mouseover={hover}
     on:click|stopPropagation={open}
@@ -32,7 +34,6 @@
     on:focus
     class="tree-item nav-file"
 >
-    <!-- svelte-ignore a11y-unknown-aria-attribute -->
     <div
         class="tree-item-self is-clickable nav-file-title"
         data-path={change.vault_path}

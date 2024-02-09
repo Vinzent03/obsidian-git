@@ -21,6 +21,8 @@
     let isCollapsed = true;
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <main>
     <div class="tree-item nav-folder" class:is-collapsed={isCollapsed}>
         <div
