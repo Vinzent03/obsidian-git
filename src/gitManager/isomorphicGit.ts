@@ -233,15 +233,12 @@ export class IsomorphicGit extends GitManager {
     }
 
     async stage(filepath: string, relativeToVault: boolean): Promise<void> {
-        const gitPath = this.asRepositoryRelativePath(
-            filepath,
-            relativeToVault
-        );
+        const gitPath = this.getRelativeRepoPath(filepath, relativeToVault);
         let vaultPath: string;
         if (relativeToVault) {
             vaultPath = filepath;
         } else {
-            vaultPath = this.getVaultPath(filepath);
+            vaultPath = this.getRelativeVaultPath(filepath);
         }
         try {
             this.plugin.setState(PluginState.add);
@@ -308,7 +305,7 @@ export class IsomorphicGit extends GitManager {
     async unstage(filepath: string, relativeToVault: boolean): Promise<void> {
         try {
             this.plugin.setState(PluginState.add);
-            filepath = this.asRepositoryRelativePath(filepath, relativeToVault);
+            filepath = this.getRelativeRepoPath(filepath, relativeToVault);
             await this.wrapFS(
                 git.resetIndex({ ...this.getRepo(), filepath: filepath })
             );
@@ -464,13 +461,15 @@ export class IsomorphicGit extends GitManager {
                 path: file.path,
                 working_dir: "P",
                 index: "P",
-                vault_path: this.getVaultPath(file.path),
+                vault_path: this.getRelativeVaultPath(file.path),
             }));
         } catch (error) {
             progressNotice?.hide();
             if (error instanceof Errors.MergeConflictError) {
                 this.plugin.handleConflict(
-                    error.data.filepaths.map((file) => this.getVaultPath(file))
+                    error.data.filepaths.map((file) =>
+                        this.getRelativeVaultPath(file)
+                    )
                 );
             }
 
@@ -798,7 +797,9 @@ export class IsomorphicGit extends GitManager {
                             return {
                                 path: item.path,
                                 status: item.type,
-                                vault_path: this.getVaultPath(item.path),
+                                vault_path: this.getRelativeVaultPath(
+                                    item.path
+                                ),
                                 hash: log.oid,
                                 binary: undefined!,
                             };
@@ -910,7 +911,7 @@ export class IsomorphicGit extends GitManager {
         });
         return res.map((file) => {
             return {
-                vault_path: this.getVaultPath(file.path),
+                vault_path: this.getRelativeVaultPath(file.path),
                 filepath: file.path,
             };
         });
@@ -1027,7 +1028,7 @@ export class IsomorphicGit extends GitManager {
         stagedChanges = false,
         hash?: string
     ): Promise<string> {
-        const vaultPath = this.getVaultPath(filePath);
+        const vaultPath = this.getRelativeVaultPath(filePath);
 
         const map: WalkerMap = async (file, [A]) => {
             if (filePath == file) {
@@ -1139,7 +1140,7 @@ export class IsomorphicGit extends GitManager {
             index: status[0] == "?" ? "U" : status[0],
             working_dir: status[1] == "?" ? "U" : status[1],
             path: row[this.FILE],
-            vault_path: this.getVaultPath(row[this.FILE]),
+            vault_path: this.getRelativeVaultPath(row[this.FILE]),
         };
     }
 

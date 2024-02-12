@@ -109,7 +109,8 @@ export abstract class GitManager {
 
     abstract getLastCommitTime(): Promise<Date | undefined>;
 
-    getVaultPath(path: string): string {
+    // Constructs a path relative to the vault from a path relative to the git repository
+    getRelativeVaultPath(path: string): string {
         if (this.plugin.settings.basePath) {
             return this.plugin.settings.basePath + "/" + path;
         } else {
@@ -117,10 +118,16 @@ export abstract class GitManager {
         }
     }
 
-    asRepositoryRelativePath(path: string, relativeToVault: boolean): string {
-        return relativeToVault && this.plugin.settings.basePath.length > 0
-            ? path.substring(this.plugin.settings.basePath.length + 1)
-            : path;
+    // Constructs a path relative to the git repository from a path relative to the vault
+    //
+    // @param doConversion - If false, the path is returned as is. This is added because that parameter is often passed on to functions where this method is called.
+    getRelativeRepoPath(path: string, doConversion: boolean = true): string {
+        if (doConversion) {
+            if (this.plugin.settings.basePath.length > 0) {
+                return path.substring(this.plugin.settings.basePath.length + 1);
+            }
+        }
+        return path;
     }
 
     private _getTreeStructure<T = DiffFile | FileStatusResult>(
@@ -147,7 +154,7 @@ export abstract class GitManager {
                 list.push({
                     title: title,
                     path: path,
-                    vaultPath: this.getVaultPath(path),
+                    vaultPath: this.getRelativeVaultPath(path),
                     children: this._getTreeStructure(
                         childrenWithSameTitle,
                         (beginLength > 0
@@ -160,7 +167,7 @@ export abstract class GitManager {
                     title: restPath,
                     data: first,
                     path: first.path,
-                    vaultPath: this.getVaultPath(first.path),
+                    vaultPath: this.getRelativeVaultPath(first.path),
                 });
                 children.remove(first);
             }

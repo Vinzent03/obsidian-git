@@ -82,7 +82,7 @@ export class SimpleGit extends GitManager {
                 from: res.from,
                 index: e.index === "?" ? "U" : e.index,
                 working_dir: e.working_dir === "?" ? "U" : e.working_dir,
-                vault_path: this.getVaultPath(res.path),
+                vault_path: this.getRelativeVaultPath(res.path),
             };
         });
         return {
@@ -100,7 +100,7 @@ export class SimpleGit extends GitManager {
     async submoduleAwareHeadRevisonInContainingDirectory(
         filepath: string
     ): Promise<string> {
-        const repoPath = this.asRepositoryRelativePath(filepath, true);
+        const repoPath = this.getRelativeRepoPath(filepath);
 
         const containingDirectory = path.dirname(repoPath);
         const args = ["-C", containingDirectory, "rev-parse", "HEAD"];
@@ -185,7 +185,7 @@ export class SimpleGit extends GitManager {
         trackMovement: LineAuthorFollowMovement,
         ignoreWhitespace: boolean
     ): Promise<Blame | "untracked"> {
-        path = this.asRepositoryRelativePath(path, true);
+        path = this.getRelativeRepoPath(path);
 
         if (!(await this.isTracked(path))) return "untracked";
 
@@ -286,7 +286,7 @@ export class SimpleGit extends GitManager {
     async stage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
 
-        path = this.asRepositoryRelativePath(path, relativeToVault);
+        path = this.getRelativeRepoPath(path, relativeToVault);
         await this.git.add(["--", path], (err) => this.onError(err));
 
         this.plugin.setState(PluginState.idle);
@@ -309,7 +309,7 @@ export class SimpleGit extends GitManager {
     async unstage(path: string, relativeToVault: boolean): Promise<void> {
         this.plugin.setState(PluginState.add);
 
-        path = this.asRepositoryRelativePath(path, relativeToVault);
+        path = this.getRelativeRepoPath(path, relativeToVault);
         await this.git.reset(["--", path], (err) => this.onError(err));
 
         this.plugin.setState(PluginState.idle);
@@ -324,7 +324,7 @@ export class SimpleGit extends GitManager {
     async hashObject(filepath: string): Promise<string> {
         // Need to use raw command here to ensure filenames are literally used.
         // Perhaps we could file a PR? https://github.com/steveukx/git-js/blob/main/simple-git/src/lib/tasks/hash-object.ts
-        filepath = this.asRepositoryRelativePath(filepath, true);
+        filepath = this.getRelativeRepoPath(filepath);
         const inSubmodule = await this.getSubmoduleOfFile(filepath);
         const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
         const relativeFilepath = inSubmodule
@@ -421,7 +421,7 @@ export class SimpleGit extends GitManager {
                     return <FileStatusResult>{
                         path: e,
                         working_dir: "P",
-                        vault_path: this.getVaultPath(e),
+                        vault_path: this.getRelativeVaultPath(e),
                     };
                 });
         } else {
@@ -541,7 +541,7 @@ export class SimpleGit extends GitManager {
     ): Promise<(LogEntry & { fileName?: string })[]> {
         let path: string | undefined;
         if (file) {
-            path = this.asRepositoryRelativePath(file, relativeToVault);
+            path = this.getRelativeRepoPath(file, relativeToVault);
         }
         const res = await this.git.log(
             {
@@ -564,7 +564,7 @@ export class SimpleGit extends GitManager {
                         status: f.status!,
                         path: f.file,
                         hash: e.hash,
-                        vault_path: this.getVaultPath(f.file),
+                        vault_path: this.getRelativeVaultPath(f.file),
                     })) ?? [],
             },
             fileName: e.diff?.files.first()?.file,
@@ -576,7 +576,7 @@ export class SimpleGit extends GitManager {
         file: string,
         relativeToVault = true
     ): Promise<string> {
-        const path = this.asRepositoryRelativePath(file, relativeToVault);
+        const path = this.getRelativeRepoPath(file, relativeToVault);
 
         return this.git.show([commitHash + ":" + path], (err) =>
             this.onError(err)

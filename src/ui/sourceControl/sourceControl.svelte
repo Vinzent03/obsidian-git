@@ -201,7 +201,11 @@
         );
     }
     function discard() {
-        new DiscardModal(view.app, false, plugin.gitManager.getVaultPath("/"))
+        new DiscardModal(
+            view.app,
+            false,
+            plugin.gitManager.getRelativeVaultPath("/")
+        )
             .myOpen()
             .then((shouldDiscard) => {
                 if (shouldDiscard === true) {

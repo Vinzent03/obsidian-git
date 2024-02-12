@@ -169,7 +169,7 @@ export default class ObsidianGit extends Plugin {
             id: "edit-gitignore",
             name: "Edit .gitignore",
             callback: async () => {
-                const path = this.gitManager.getVaultPath(".gitignore");
+                const path = this.gitManager.getRelativeVaultPath(".gitignore");
                 if (!(await this.app.vault.adapter.exists(path))) {
                     this.app.vault.adapter.write(path, "");
                 }
@@ -238,7 +238,7 @@ export default class ObsidianGit extends Plugin {
                         active: true,
                         state: {
                             staged: false,
-                            file: this.gitManager.asRepositoryRelativePath(
+                            file: this.gitManager.getRelativeRepoPath(
                                 file!.path,
                                 true
                             ),
@@ -295,9 +295,9 @@ export default class ObsidianGit extends Plugin {
                 } else {
                     this.app.vault.adapter
                         .append(
-                            this.gitManager.getVaultPath(".gitignore"),
+                            this.gitManager.getRelativeVaultPath(".gitignore"),
                             "\n" +
-                                this.gitManager.asRepositoryRelativePath(
+                                this.gitManager.getRelativeRepoPath(
                                     file!.path,
                                     true
                                 )
@@ -633,7 +633,7 @@ export default class ObsidianGit extends Plugin {
                             await this.gitManager.stage(file.path, true);
                         } else {
                             await this.gitManager.stageAll({
-                                dir: this.gitManager.asRepositoryRelativePath(
+                                dir: this.gitManager.getRelativeRepoPath(
                                     file.path,
                                     true
                                 ),
@@ -653,7 +653,7 @@ export default class ObsidianGit extends Plugin {
                             await this.gitManager.unstage(file.path, true);
                         } else {
                             await this.gitManager.unstageAll({
-                                dir: this.gitManager.asRepositoryRelativePath(
+                                dir: this.gitManager.getRelativeRepoPath(
                                     file.path,
                                     true
                                 ),
@@ -1072,7 +1072,7 @@ export default class ObsidianGit extends Plugin {
                     this.gitManager as IsomorphicGit
                 ).getUnstagedFiles();
                 changedFiles = unstagedFiles.map(({ filepath }) => ({
-                    vault_path: this.gitManager.getVaultPath(filepath),
+                    vault_path: this.gitManager.getRelativeVaultPath(filepath),
                 }));
             }
         }
