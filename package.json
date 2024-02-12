@@ -57,7 +57,7 @@
         "diff": "^5.2.0",
         "diff2html": "^3.4.47",
         "isomorphic-git": "^1.25.3",
-        "js-sha256": "^0.11.0",
+        "js-sha256": "^0.9.0",
         "obsidian-community-lib": "github:Vinzent03/obsidian-community-lib#upgrade",
         "simple-git": "github:Vinzent03/git-js#release",
         "supports-color": "^9.4.0"

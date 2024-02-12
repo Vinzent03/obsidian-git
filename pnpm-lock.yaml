@@ -27,8 +27,8 @@ dependencies:
     specifier: ^1.25.3
     version: 1.25.3
   js-sha256:
-    specifier: ^0.11.0
-    version: 0.11.0
+    specifier: ^0.9.0
+    version: 0.9.0
   obsidian-community-lib:
     specifier: github:Vinzent03/obsidian-community-lib#upgrade
     version: github.com/Vinzent03/obsidian-community-lib/e663de4f95c879b40613090da78ea599ff621d24(@codemirror/state@6.4.0)(@codemirror/view@6.24.0)
@@ -2159,8 +2159,8 @@ packages:
       simple-get: 4.0.1
     dev: false
 
-  /js-sha256@0.11.0:
-    resolution: {integrity: sha512-6xNlKayMZvds9h1Y1VWc0fQHQ82BxTXizWPEtEeGvmOUYpBRy4gbWroHLpzowe6xiQhHpelCQiE7HEdznyBL9Q==}
+  /js-sha256@0.9.0:
+    resolution: {integrity: sha512-sga3MHh9sgQN2+pJ9VYZ+1LPwXOxuBJBA5nrR5/ofPfuiJBE2hnjsaN8se8JznOmGLN2p49Pe5U/ttafcs/apA==}
     dev: false
 
   /js-tokens@4.0.0:
