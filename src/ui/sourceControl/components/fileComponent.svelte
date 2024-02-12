@@ -78,6 +78,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y-unknown-aria-attribute -->
 <main
     on:mouseover={hover}
     on:click|stopPropagation={showDiff}
@@ -92,7 +93,6 @@
             !view.plugin.lastDiffViewState?.hash &&
             !view.plugin.lastDiffViewState?.staged}
         data-path={change.vault_path}
-        aria-label-position={side}
         data-tooltip-position={side}
         aria-label={change.vault_path}
     >

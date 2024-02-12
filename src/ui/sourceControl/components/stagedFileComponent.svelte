@@ -14,7 +14,7 @@
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
     window.setTimeout(
-        () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!, 16)),
+        () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
         0
     );
 
@@ -67,7 +67,6 @@
             !view.plugin.lastDiffViewState?.hash &&
             view.plugin.lastDiffViewState?.staged}
         data-path={change.vault_path}
-        aria-label-position={side}
         data-tooltip-position={side}
         aria-label={change.vault_path}
     >

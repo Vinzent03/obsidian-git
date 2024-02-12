@@ -92,7 +92,9 @@ export default class DiffView extends ItemView {
                         ].join("\n");
                     } else {
                         const content = await this.app.vault.adapter.read(
-                            this.plugin.gitManager.getRelativeVaultPath(this.state.file)
+                            this.plugin.gitManager.getRelativeVaultPath(
+                                this.state.file
+                            )
                         );
                         const header = `--- /dev/null
 +++ ${this.state.file}

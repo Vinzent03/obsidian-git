@@ -9,7 +9,9 @@
         "release": "standard-version",
         "lint": "eslint --ext .ts,.svelte src",
         "format": "prettier --check src",
-        "check": "svelte-check"
+        "tsc": "tsc --noEmit",
+        "svelte": "svelte-check",
+        "all": "pnpm run tsc && pnpm run svelte && pnpm run format && pnpm run lint"
     },
     "keywords": [],
     "author": "",

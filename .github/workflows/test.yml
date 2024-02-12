@@ -3,6 +3,17 @@ on:
     push:
     pull_request:
 jobs:
+    svelte-check:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: latest
+            - name: Install modules
+              run: pnpm install
+            - name: Run Svelte-Check
+              run: pnpm run svelte
     lint:
         runs-on: ubuntu-latest
         steps:
@@ -39,11 +50,11 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
-            -   uses: pnpm/action-setup@v2
-                with:
-                    version: latest
-            -   name: Install modules
-                run: pnpm install
-            -   name: Run build
-                run: pnpm run build
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: latest
+            - name: Install modules
+              run: pnpm install
+            - name: Run build
+              run: pnpm run build

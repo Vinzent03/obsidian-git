@@ -56,7 +56,6 @@
                 <div
                     class="tree-item-inner nav-folder-title-content"
                     aria-label={log.message}
-                    aria-label-position={side}
                     data-tooltip-position={side}
                 >
                     {log.message}

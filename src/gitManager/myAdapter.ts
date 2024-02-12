@@ -186,7 +186,9 @@ export class MyAdapter {
     async saveAndClear(): Promise<void> {
         if (this.index !== undefined) {
             await this.adapter.writeBinary(
-                this.plugin.gitManager.getRelativeVaultPath(this.gitDir + "/index"),
+                this.plugin.gitManager.getRelativeVaultPath(
+                    this.gitDir + "/index"
+                ),
                 this.index,
                 {
                     ctime: this.indexctime,
