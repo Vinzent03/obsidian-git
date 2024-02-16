@@ -246,7 +246,10 @@ export abstract class GitManager {
             const hostname = this.plugin.localStorage.getHostname() || "";
             template = template.replace("{{hostname}}", hostname);
         }
-
+        if (template.includes("{{author}}")) {
+          const author = await this.plugin.gitManager.getConfig("user.name");
+          template = template.replace("{{author}}", author);
+        }
         if (template.includes("{{files}}")) {
             status = status ?? (await this.status());
 
