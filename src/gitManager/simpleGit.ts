@@ -653,7 +653,7 @@ export class SimpleGit extends GitManager {
           this.onError(err)
         );
         const config = { ...globalConfig.all, ...localConfig.all };
-        return config[path2];
+        return config[path];
     }
 
     async fetch(remote?: string): Promise<void> {
