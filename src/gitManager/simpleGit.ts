@@ -646,10 +646,14 @@ export class SimpleGit extends GitManager {
     }
 
     async getConfig(path: string): Promise<any> {
-        const config = await this.git.listConfig("local", (err) =>
-            this.onError(err)
+        const globalConfig = await this.git.listConfig("global", (err) =>
+          this.onError(err)
         );
-        return config.all[path];
+        const localConfig = await this.git.listConfig("local", (err) =>
+          this.onError(err)
+        );
+        const config = { ...globalConfig.all, ...localConfig.all };
+        return config[path2];
     }
 
     async fetch(remote?: string): Promise<void> {
