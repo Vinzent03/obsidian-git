@@ -722,6 +722,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Disable on this device")
+            .setDesc(
+                "Disables the plugin on this device. This setting is not synced."
+            )
             .addToggle((toggle) =>
                 toggle
                     .setValue(plugin.localStorage.getPluginDisabled())
