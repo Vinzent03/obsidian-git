@@ -782,6 +782,10 @@ export class IsomorphicGit extends GitManager {
 
                 return {
                     message: completeMessage[0],
+                    author: {
+                        name: log.commit.author.name,
+                        email: log.commit.author.email,
+                    },
                     body: completeMessage.slice(1).join("\n\n"),
                     date: new Date(
                         log.commit.committer.timestamp

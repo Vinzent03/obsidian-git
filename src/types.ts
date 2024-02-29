@@ -44,6 +44,8 @@ export interface ObsidianGitSettings {
     setLastSaveToLastCommit: boolean;
     gitDir: string;
     showFileMenu: boolean;
+    authorInHistoryView: ShowAuthorInHistoryView;
+    dateInHistoryView: boolean;
 }
 
 /**
@@ -58,6 +60,8 @@ export function mergeSettingsByPriority(
 }
 
 export type SyncMethod = "rebase" | "merge" | "reset";
+
+export type ShowAuthorInHistoryView = "full" | "initials" | "hide";
 
 export interface Author {
     name: string;
@@ -204,6 +208,10 @@ export interface LogEntry {
     refs: string[];
     body: string;
     diff: DiffEntry;
+    author: {
+        name: string;
+        email: string;
+    };
 }
 
 export interface DiffEntry {

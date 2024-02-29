@@ -22,7 +22,11 @@ import {
     LineAuthorTimezoneOption,
 } from "src/lineAuthor/model";
 import ObsidianGit from "src/main";
-import { ObsidianGitSettings, SyncMethod } from "src/types";
+import {
+    ObsidianGitSettings,
+    ShowAuthorInHistoryView,
+    SyncMethod,
+} from "src/types";
 import { convertToRgb, rgbToString, formatMinutes } from "src/utils";
 
 const FORMAT_STRING_REFERENCE_URL =
@@ -420,7 +424,43 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         }
 
         containerEl.createEl("br");
-        containerEl.createEl("h3", { text: "Miscellaneous" });
+        containerEl.createEl("h3", { text: "History View" });
+
+        new Setting(containerEl)
+            .setName("Show Author")
+            .setDesc("Show the author of the commit in the history view")
+            .addDropdown((dropdown) => {
+                const options: Record<ShowAuthorInHistoryView, string> = {
+                    hide: "Hide",
+                    full: "Full",
+                    initials: "Initials",
+                };
+                dropdown.addOptions(options);
+                dropdown.setValue(plugin.settings.authorInHistoryView);
+                dropdown.onChange(async (option: ShowAuthorInHistoryView) => {
+                    plugin.settings.authorInHistoryView = option;
+                    plugin.saveSettings();
+                    plugin.refresh();
+                });
+            });
+
+        new Setting(containerEl)
+            .setName("Show Date")
+            .setDesc(
+                "Show the date of the commit in the history view. The {{date}} placeholder format is used to display the date."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.dateInHistoryView)
+                    .onChange((value) => {
+                        plugin.settings.dateInHistoryView = value;
+                        plugin.saveSettings();
+                        plugin.refresh();
+                    })
+            );
+
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Source Control View" });
 
         new Setting(containerEl)
             .setName(
@@ -458,6 +498,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.setRefreshDebouncer();
                     })
             );
+        containerEl.createEl("br");
+        containerEl.createEl("h3", { text: "Miscellaneous" });
 
         new Setting(containerEl)
             .setName("Disable notifications")

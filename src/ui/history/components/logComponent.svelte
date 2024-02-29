@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { moment } from "obsidian";
     import ObsidianGit from "src/main";
     import { LogEntry } from "src/types";
     import { slide } from "svelte/transition";
@@ -19,6 +20,17 @@
 
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
     let isCollapsed = true;
+
+    function authorToString(log: LogEntry) {
+        const name = log.author.name;
+        if (plugin.settings.authorInHistoryView == "full") {
+            return name;
+        } else if (plugin.settings.authorInHistoryView == "initials") {
+            const words = name.split(" ").filter((word) => word.length > 0);
+
+            return words.map((word) => word[0].toUpperCase()).join("");
+        }
+    }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -53,6 +65,27 @@
                         {log.refs.join(", ")}
                     </div>
                 {/if}
+                {#if plugin.settings.authorInHistoryView != "hide" && log.author?.name}
+                    <div
+                        class="git-author"
+                        aria-label={log.author.name}
+                        data-tooltip-position={side}
+                    >
+                        {authorToString(log)}
+                    </div>
+                {/if}
+                {#if plugin.settings.dateInHistoryView}
+                    <div
+                        class="git-date"
+                        aria-label={log.date}
+                        data-tooltip-position={side}
+                    >
+                        {moment(log.date).format(
+                            plugin.settings.commitDateFormat
+                        )}
+                    </div>
+                {/if}
+
                 <div
                     class="tree-item-inner nav-folder-title-content"
                     aria-label={log.message}
@@ -85,7 +118,4 @@
 </main>
 
 <style lang="scss">
-    .git-ref {
-        color: var(--text-accent);
-    }
 </style>

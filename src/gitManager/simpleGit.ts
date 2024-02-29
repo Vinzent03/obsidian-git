@@ -553,8 +553,12 @@ export class SimpleGit extends GitManager {
             (err) => this.onError(err)
         );
 
-        return res.all.map((e) => ({
+        return res.all.map<LogEntry>((e) => ({
             ...e,
+            author: {
+                name: e.author_name,
+                email: e.author_email,
+            },
             refs: e.refs.split(", "),
             diff: {
                 ...e.diff!,
