@@ -441,6 +441,12 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.addCommand({
+            id: "set-upstream-branch",
+            name: "Set upstream branch",
+            callback: async () => this.setUpsreamBranch(),
+        });
+
+        this.addCommand({
             id: "delete-repo",
             name: "CAUTION: Delete repository",
             callback: async () => {
@@ -946,6 +952,9 @@ export default class ObsidianGit extends Plugin {
 
         const filesUpdated = await this.pull();
         this.setUpAutoBackup();
+        if (filesUpdated === false) {
+            return;
+        }
         if (!filesUpdated) {
             this.displayMessage("Everything is up-to-date");
         }
@@ -1214,9 +1223,10 @@ export default class ObsidianGit extends Plugin {
             this.setState(PluginState.conflicted);
             return false;
         }
-        {
-            console.log("Pushing....");
-            const pushedFiles = await this.gitManager.push();
+        console.log("Pushing....");
+        const pushedFiles = await this.gitManager.push();
+
+        if (pushedFiles !== undefined) {
             console.log("Pushed!", pushedFiles);
             if (pushedFiles > 0) {
                 this.displayMessage(
@@ -1227,17 +1237,20 @@ export default class ObsidianGit extends Plugin {
             } else {
                 this.displayMessage(`No changes to push`);
             }
-            this.offlineMode = false;
-            this.setState(PluginState.idle);
-            dispatchEvent(new CustomEvent("git-refresh"));
-
-            return true;
         }
+        this.offlineMode = false;
+        this.setState(PluginState.idle);
+        dispatchEvent(new CustomEvent("git-refresh"));
+
+        return true;
     }
 
-    /// Used for internals
-    /// Returns whether the pull added a commit or not.
-    async pull(): Promise<boolean> {
+    //
+    // Used for internals
+    // Returns whether the pull added a commit or not.
+    //
+    // See {@link pullChangesFromRemote} for the command version.
+    async pull(): Promise<false | number> {
         if (!(await this.remotesAreSet())) {
             return false;
         }
@@ -1252,7 +1265,7 @@ export default class ObsidianGit extends Plugin {
             );
             this.lastPulledFiles = pulledFiles;
         }
-        return pulledFiles.length != 0;
+        return pulledFiles.length;
     }
 
     async fetch(): Promise<void> {
@@ -1385,21 +1398,36 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
+    // Ensures that the upstream branch is set.
+    // If not, it will prompt the user to set it.
+    //
+    // An exception is when the user has submodules enabled.
+    // In this case, the upstream branch is not required,
+    // to allow pulling/pushing only the submodules and not the outer repo.
     async remotesAreSet(): Promise<boolean> {
+        if (this.settings.updateSubmodules) {
+            return true;
+        }
         if (!(await this.gitManager.branchInfo()).tracking) {
             new Notice("No upstream branch is set. Please select one.");
-            const remoteBranch = await this.selectRemoteBranch();
-
-            if (remoteBranch == undefined) {
-                this.displayError("Aborted. No upstream-branch is set!", 10000);
-                this.setState(PluginState.idle);
-                return false;
-            } else {
-                await this.gitManager.updateUpstreamBranch(remoteBranch);
-                return true;
-            }
+            return await this.setUpsreamBranch();
         }
         return true;
+    }
+
+    async setUpsreamBranch(): Promise<boolean> {
+        const remoteBranch = await this.selectRemoteBranch();
+
+        if (remoteBranch == undefined) {
+            this.displayError("Aborted. No upstream-branch is set!", 10000);
+            this.setState(PluginState.idle);
+            return false;
+        } else {
+            await this.gitManager.updateUpstreamBranch(remoteBranch);
+            this.displayMessage(`Set upstream branch to ${remoteBranch}`);
+            this.setState(PluginState.idle);
+            return true;
+        }
     }
 
     async setUpAutoBackup() {
@@ -1624,6 +1652,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
 
         if (remoteName) {
             const oldUrl = await this.gitManager.getRemoteUrl(remoteName);
+
             const urlModal = new GeneralModal({ initialValue: oldUrl });
             // urlModal.inputEl.setText(oldUrl ?? "");
             const remoteURL = await urlModal.open();
@@ -1758,8 +1787,9 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             }
         }
 
-        console.log(`git obsidian message: ${message}`);
+        this.log(message);
     }
+
     displayError(message: any, timeout: number = 10 * 1000): void {
         if (message instanceof Errors.UserCanceledError) {
             new Notice("Aborted");
@@ -1770,5 +1800,9 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         new Notice(message, timeout);
         console.log(`git obsidian error: ${message}`);
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
+    }
+
+    log(message: string) {
+        console.log(`${this.manifest.id}: ` + message);
     }
 }

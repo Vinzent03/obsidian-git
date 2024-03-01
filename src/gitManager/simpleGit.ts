@@ -360,6 +360,13 @@ export class SimpleGit extends GitManager {
             (err) => this.onError(err)
         );
 
+        if (!branchInfo.tracking && this.plugin.settings.updateSubmodules) {
+            this.plugin.log(
+                "No tracking branch found. Ignoring pull of main repo and updating submodules only."
+            );
+            return;
+        }
+
         await this.git.fetch((err) => this.onError(err));
         const upstreamCommit = await this.git.revparse(
             [branchInfo.tracking!],
@@ -429,21 +436,10 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async push(): Promise<number> {
-        this.plugin.setState(PluginState.status);
-        const status = await this.git.status();
-        const trackingBranch = status.tracking!;
-        const currentBranch = status.current!;
-        const remoteChangedFiles = (
-            await this.git.diffSummary(
-                [currentBranch, trackingBranch, "--"],
-                (err) => this.onError(err)
-            )
-        ).changed;
-
+    async push(): Promise<number | undefined> {
         this.plugin.setState(PluginState.push);
         if (this.plugin.settings.updateSubmodules) {
-            await this.git
+            const res = await this.git
                 .env({ ...process.env, OBSIDIAN_GIT: 1 })
                 .subModule(
                     [
@@ -453,7 +449,26 @@ export class SimpleGit extends GitManager {
                     ],
                     (err) => this.onError(err)
                 );
+            console.log(res);
         }
+        const status = await this.git.status();
+        const trackingBranch = status.tracking!;
+        const currentBranch = status.current!;
+
+        if (!trackingBranch && this.plugin.settings.updateSubmodules) {
+            this.plugin.log(
+                "No tracking branch found. Ignoring push of main repo and updating submodules only."
+            );
+            return undefined;
+        }
+
+        const remoteChangedFiles = (
+            await this.git.diffSummary(
+                [currentBranch, trackingBranch, "--"],
+                (err) => this.onError(err)
+            )
+        ).changed;
+
         await this.git
             .env({ ...process.env, OBSIDIAN_GIT: 1 })
             .push((err) => this.onError(err));
@@ -522,7 +537,7 @@ export class SimpleGit extends GitManager {
 
     async getRemoteUrl(remote: string): Promise<string | undefined> {
         try {
-            await this.git.remote(["get-url", remote]);
+            return (await this.git.remote(["get-url", remote])) || undefined;
         } catch (error) {
             // Verify the error is at least not about git is not found or similar. Checks if the remote exists or not
             if (error.toString().contains(remote)) {
@@ -679,8 +694,6 @@ export class SimpleGit extends GitManager {
             ["-r", "--list", `${remote}*`],
             (err) => this.onError(err)
         );
-        console.log(remote);
-        console.log(res);
 
         const list = [];
         for (const item in res.branches) {
