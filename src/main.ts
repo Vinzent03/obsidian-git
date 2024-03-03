@@ -443,7 +443,7 @@ export default class ObsidianGit extends Plugin {
         this.addCommand({
             id: "set-upstream-branch",
             name: "Set upstream branch",
-            callback: async () => this.setUpsreamBranch(),
+            callback: async () => this.setUpstreamBranch(),
         });
 
         this.addCommand({
@@ -995,12 +995,16 @@ export default class ObsidianGit extends Plugin {
                 requestCustomMessage,
                 commitMessage,
             }))
-        )
+        ) {
             return;
+        }
 
         if (!this.settings.disablePush) {
             // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
-            if (await this.gitManager.canPush()) {
+            if (
+                (await this.remotesAreSet()) &&
+                (await this.gitManager.canPush())
+            ) {
                 if (
                     this.settings.syncMethod != "reset" &&
                     this.settings.pullBeforePush
@@ -1409,12 +1413,12 @@ export default class ObsidianGit extends Plugin {
         }
         if (!(await this.gitManager.branchInfo()).tracking) {
             new Notice("No upstream branch is set. Please select one.");
-            return await this.setUpsreamBranch();
+            return await this.setUpstreamBranch();
         }
         return true;
     }
 
-    async setUpsreamBranch(): Promise<boolean> {
+    async setUpstreamBranch(): Promise<boolean> {
         const remoteBranch = await this.selectRemoteBranch();
 
         if (remoteBranch == undefined) {

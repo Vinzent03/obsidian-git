@@ -501,8 +501,11 @@ export class SimpleGit extends GitManager {
             return true;
         }
         const status = await this.git.status((err) => this.onError(err));
-        const trackingBranch = status.tracking!;
+        const trackingBranch = status.tracking;
         const currentBranch = status.current!;
+        if (!trackingBranch) {
+            return false;
+        }
         const remoteChangedFiles = (
             await this.git.diffSummary([currentBranch, trackingBranch, "--"])
         ).changed;
