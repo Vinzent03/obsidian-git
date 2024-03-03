@@ -574,7 +574,7 @@ export class SimpleGit extends GitManager {
                 name: e.author_name,
                 email: e.author_email,
             },
-            refs: e.refs.split(", "),
+            refs: e.refs.split(", ").filter((e) => e.length > 0),
             diff: {
                 ...e.diff!,
                 files:

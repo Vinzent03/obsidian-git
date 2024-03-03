@@ -39,6 +39,10 @@
     <div class="tree-item nav-folder" class:is-collapsed={isCollapsed}>
         <div
             class="tree-item-self is-clickable nav-folder-title"
+            aria-label={`${log.refs.length > 0 ? log.refs.join(", ") + "\n" : ""}${log.author?.name}
+${moment(log.date).format(plugin.settings.commitDateFormat)}
+${log.message}`}
+            data-tooltip-position={side}
             on:click={() => (isCollapsed = !isCollapsed)}
         >
             <div
@@ -66,31 +70,19 @@
                     </div>
                 {/if}
                 {#if plugin.settings.authorInHistoryView != "hide" && log.author?.name}
-                    <div
-                        class="git-author"
-                        aria-label={log.author.name}
-                        data-tooltip-position={side}
-                    >
+                    <div class="git-author">
                         {authorToString(log)}
                     </div>
                 {/if}
                 {#if plugin.settings.dateInHistoryView}
-                    <div
-                        class="git-date"
-                        aria-label={log.date}
-                        data-tooltip-position={side}
-                    >
+                    <div class="git-date">
                         {moment(log.date).format(
                             plugin.settings.commitDateFormat
                         )}
                     </div>
                 {/if}
 
-                <div
-                    class="tree-item-inner nav-folder-title-content"
-                    aria-label={log.message}
-                    data-tooltip-position={side}
-                >
+                <div class="tree-item-inner nav-folder-title-content">
                     {log.message}
                 </div>
             </div>
