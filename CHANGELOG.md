@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.24.0](https://github.com/denolehov/obsidian-git/compare/2.23.2...2.24.0) (2024-03-04)
+
+
+### Features
+
+* show date and author in history view ([a6e33d3](https://github.com/denolehov/obsidian-git/commit/a6e33d30d1556c485cc2ac6467972aa471b94758)), closes [#691](https://github.com/denolehov/obsidian-git/issues/691)
+
+
+### Bug Fixes
+
+* update submodules without outer remote repo ([675cef5](https://github.com/denolehov/obsidian-git/commit/675cef52d4e0ebbd2d11ff2322aa21649574bf9d)), closes [#701](https://github.com/denolehov/obsidian-git/issues/701)
+
 ### [2.23.2](https://github.com/denolehov/obsidian-git/compare/2.23.1...2.23.2) (2024-01-31)
 
 
