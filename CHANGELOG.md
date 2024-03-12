@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.24.1](https://github.com/denolehov/obsidian-git/compare/2.24.0...2.24.1) (2024-03-12)
+
+
+### Bug Fixes
+
+* disable line authoring on mobile ([ac28656](https://github.com/denolehov/obsidian-git/commit/ac2865676135a22a81f8d1a440825e7583aa73ec))
+
 ## [2.24.0](https://github.com/denolehov/obsidian-git/compare/2.23.2...2.24.0) (2024-03-04)
 
 
