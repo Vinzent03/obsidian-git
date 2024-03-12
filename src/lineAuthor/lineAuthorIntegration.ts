@@ -58,7 +58,7 @@ export class LineAuthoringFeature {
 
     public activateFeature() {
         try {
-            if (!this.isAvailableOnCurrentPlatform()) return;
+            if (!this.isAvailableOnCurrentPlatform().available) return;
 
             setTextColorCssBasedOnSetting(this.plg.settings.lineAuthor);
 
