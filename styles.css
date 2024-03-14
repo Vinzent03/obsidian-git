@@ -549,3 +549,10 @@
     padding: 0px 6px 0px 6px;
     white-space: pre; /* Keep spaces and do not collapse them. */
 }
+
+@media(max-width:800px){
+    /* hide git blame gutter not to superpose text */
+    .cm-gutterElement.obs-git-blame-gutter {
+        display: none;
+    }
+}
