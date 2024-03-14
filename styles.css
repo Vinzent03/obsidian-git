@@ -511,7 +511,7 @@
     white-space: pre; /* Keep spaces and do not collapse them. */
 }
 
-@media(max-width:1000px){
+@media(max-width:800px){
     /* hide git blame gutter not to superpose text */
     .cm-gutterElement.obs-git-blame-gutter {
         display: none;
