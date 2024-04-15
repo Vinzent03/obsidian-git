@@ -1,5 +1,6 @@
-import { App } from "obsidian";
+import { App, FileSystemAdapter } from "obsidian";
 import ObsidianGit from "../main";
+import { relative, join } from 'path';
 import {
     BranchInfo,
     DiffFile,
@@ -123,8 +124,12 @@ export abstract class GitManager {
     // @param doConversion - If false, the path is returned as is. This is added because that parameter is often passed on to functions where this method is called.
     getRelativeRepoPath(path: string, doConversion: boolean = true): string {
         if (doConversion) {
-            if (this.plugin.settings.basePath.length > 0) {
-                return path.substring(this.plugin.settings.basePath.length + 1);
+            let adapter = this.plugin.app.vault.adapter;
+            if (adapter instanceof FileSystemAdapter) {
+                const folder = adapter.getBasePath();
+                const from = join(folder, this.plugin.settings.basePath);
+                const to = join(folder, path);
+                return relative(from, to);
             }
         }
         return path;
