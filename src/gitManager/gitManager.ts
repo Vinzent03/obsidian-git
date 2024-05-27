@@ -1,6 +1,6 @@
 import { App, FileSystemAdapter } from "obsidian";
 import ObsidianGit from "../main";
-import { relative, join } from 'path';
+import * as path from 'path';
 import {
     BranchInfo,
     DiffFile,
@@ -122,17 +122,17 @@ export abstract class GitManager {
     // Constructs a path relative to the git repository from a path relative to the vault
     //
     // @param doConversion - If false, the path is returned as is. This is added because that parameter is often passed on to functions where this method is called.
-    getRelativeRepoPath(path: string, doConversion: boolean = true): string {
+    getRelativeRepoPath(path_str: string, doConversion: boolean = true): string {
         if (doConversion) {
             let adapter = this.plugin.app.vault.adapter;
             if (adapter instanceof FileSystemAdapter) {
                 const folder = adapter.getBasePath();
-                const from = join(folder, this.plugin.settings.basePath);
-                const to = join(folder, path);
-                return relative(from, to);
+                const from = path.join(folder, this.plugin.settings.basePath);
+                const to = path.join(folder, path_str);
+                return path.relative(from, to);
             }
         }
-        return path;
+        return path_str;
     }
 
     private _getTreeStructure<T = DiffFile | FileStatusResult>(
