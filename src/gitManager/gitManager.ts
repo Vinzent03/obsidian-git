@@ -1,4 +1,4 @@
-import { App, FileSystemAdapter } from "obsidian";
+import { App, FileSystemAdapter, Platform } from "obsidian";
 import ObsidianGit from "../main";
 import * as path from 'path';
 import {
@@ -124,6 +124,10 @@ export abstract class GitManager {
     // @param doConversion - If false, the path is returned as is. This is added because that parameter is often passed on to functions where this method is called.
     getRelativeRepoPath(path_str: string, doConversion: boolean = true): string {
         if (doConversion) {
+            if (Platform.isMobileApp && this.plugin.settings.basePath.length > 0) {
+                //Expect the case that the git repository is located inside the vault on mobile platform currently.
+                return path_str.substring(this.plugin.settings.basePath.length + 1);
+            }
             let adapter = this.plugin.app.vault.adapter;
             if (adapter instanceof FileSystemAdapter) {
                 const folder = adapter.getBasePath();
