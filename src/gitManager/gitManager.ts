@@ -1,6 +1,5 @@
-import { App, FileSystemAdapter, Platform } from "obsidian";
+import { App } from "obsidian";
 import ObsidianGit from "../main";
-import * as path from "path";
 import {
     BranchInfo,
     DiffFile,

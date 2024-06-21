@@ -788,11 +788,11 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    updateGitPath(gitPath: string) {
+    updateGitPath(_: string) {
         this.setGitInstance();
     }
 
-    updateBasePath(basePath: string) {
+    updateBasePath(_: string) {
         this.setGitInstance(true);
     }
 
