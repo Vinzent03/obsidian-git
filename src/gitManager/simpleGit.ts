@@ -1,6 +1,6 @@
 import { spawnSync } from "child_process";
 import debug from "debug";
-import { FileSystemAdapter, normalizePath, Notice } from "obsidian";
+import { FileSystemAdapter, normalizePath, Notice, Platform } from "obsidian";
 import * as path from "path";
 import { sep, resolve } from "path";
 import simpleGit, * as simple from "simple-git";
@@ -21,6 +21,7 @@ import { GitManager } from "./gitManager";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
+    absoluteRepoPath: string;
     constructor(plugin: ObsidianGit) {
         super(plugin);
     }
@@ -28,8 +29,8 @@ export class SimpleGit extends GitManager {
     async setGitInstance(ignoreError = false): Promise<void> {
         if (this.isGitInstalled()) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
-            const path = adapter.getBasePath();
-            let basePath = path;
+            const vaultBasePath = adapter.getBasePath();
+            let basePath = vaultBasePath;
             // Because the basePath setting is a relative path, a leading `/` must
             // be appended before concatenating with the path.
             if (this.plugin.settings.basePath) {
@@ -37,11 +38,15 @@ export class SimpleGit extends GitManager {
                     normalizePath(this.plugin.settings.basePath)
                 );
                 if (exists) {
-                    basePath = path + sep + this.plugin.settings.basePath;
+                    basePath = path.join(
+                        vaultBasePath,
+                        this.plugin.settings.basePath
+                    );
                 } else if (!ignoreError) {
                     new Notice("ObsidianGit: Base path does not exist");
                 }
             }
+            this.absoluteRepoPath = basePath;
 
             this.git = simpleGit({
                 baseDir: basePath,
@@ -69,9 +74,46 @@ export class SimpleGit extends GitManager {
                 // in case git resides in a different filesystem (eg, WSL)
                 const relativeRoot = await this.git.revparse("--show-cdup");
                 const absoluteRoot = resolve(basePath + sep + relativeRoot);
+
+                this.absoluteRepoPath = absoluteRoot;
                 await this.git.cwd(absoluteRoot);
             }
         }
+    }
+
+    // Constructs a path relative to the vault from a path relative to the git repository
+    getRelativeVaultPath(filePath: string): string {
+        const adapter = this.app.vault.adapter as FileSystemAdapter;
+        const from = adapter.getBasePath();
+
+        const to = path.join(this.absoluteRepoPath, filePath);
+
+        let res = path.relative(from, to);
+        if (Platform.isWin) {
+            res = res.replace(/\\/g, "/");
+        }
+        return res;
+    }
+
+    // Constructs a path relative to the git repository from a path relative to the vault
+    //
+    // @param doConversion - If false, the path is returned as is. This is added because that parameter is often passed on to functions where this method is called.
+    getRelativeRepoPath(
+        filePath: string,
+        doConversion: boolean = true
+    ): string {
+        if (doConversion) {
+            const adapter = this.plugin.app.vault.adapter as FileSystemAdapter;
+            const vaultPath = adapter.getBasePath();
+            const from = this.absoluteRepoPath;
+            const to = path.join(vaultPath, filePath);
+            let res = path.relative(from, to);
+            if (Platform.isWin) {
+                res = res.replace(/\\/g, "/");
+            }
+            return res;
+        }
+        return filePath;
     }
 
     async status(): Promise<Status> {
