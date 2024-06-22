@@ -121,13 +121,19 @@ export abstract class GitManager {
     // Constructs a path relative to the git repository from a path relative to the vault
     //
     // @param doConversion - If false, the path is returned as is. This is added because that parameter is often passed on to functions where this method is called.
-    getRelativeRepoPath(path: string, doConversion: boolean = true): string {
+    getRelativeRepoPath(
+        filePath: string,
+        doConversion: boolean = true
+    ): string {
         if (doConversion) {
             if (this.plugin.settings.basePath.length > 0) {
-                return path.substring(this.plugin.settings.basePath.length + 1);
+                //Expect the case that the git repository is located inside the vault on mobile platform currently.
+                return filePath.substring(
+                    this.plugin.settings.basePath.length + 1
+                );
             }
         }
-        return path;
+        return filePath;
     }
 
     private _getTreeStructure<T = DiffFile | FileStatusResult>(
