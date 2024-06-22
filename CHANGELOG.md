@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.24.3](https://github.com/denolehov/obsidian-git/compare/2.24.2...2.24.3) (2024-06-22)
+
+
+### Bug Fixes
+
+* Adjust git.cwd to use a relative path to git root ([#733](https://github.com/denolehov/obsidian-git/issues/733)) ([ed31553](https://github.com/denolehov/obsidian-git/commit/ed31553a8cf25548ab722c4edf40d8d0a20df4e8))
+* limit amount of files to list in commit msg ([a0416ed](https://github.com/denolehov/obsidian-git/commit/a0416edf5f3ac5d9adc9fc37cf9a9c932583ced4))
+* support vault in subdirectory of git repo ([#722](https://github.com/denolehov/obsidian-git/issues/722)) ([171693f](https://github.com/denolehov/obsidian-git/commit/171693f7fda542f4ba0452a54979d92c8ecfcdb6))
+
 ### [2.24.2](https://github.com/denolehov/obsidian-git/compare/2.24.1...2.24.2) (2024-05-09)
 
 
