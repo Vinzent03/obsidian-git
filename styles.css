@@ -77,6 +77,10 @@
     height: auto;
 }
 
+.is-active .git-tools .buttons > * {
+    color: var(--nav-item-color-active);
+}
+
 .git-author {
     color: var(--text-accent);
 }
@@ -550,7 +554,7 @@
     white-space: pre; /* Keep spaces and do not collapse them. */
 }
 
-@media(max-width:800px){
+@media (max-width: 800px) {
     /* hide git blame gutter not to superpose text */
     .cm-gutterElement.obs-git-blame-gutter {
         display: none;
