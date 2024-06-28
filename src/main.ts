@@ -191,7 +191,9 @@ export default class ObsidianGit extends Plugin {
                 );
                 let leaf: WorkspaceLeaf;
                 if (leafs.length === 0) {
-                    leaf = this.app.workspace.getRightLeaf(false);
+                    leaf =
+                        this.app.workspace.getRightLeaf(false) ??
+                        this.app.workspace.getLeaf();
                     await leaf.setViewState({
                         type: SOURCE_CONTROL_VIEW_CONFIG.type,
                     });
@@ -212,7 +214,9 @@ export default class ObsidianGit extends Plugin {
                 );
                 let leaf: WorkspaceLeaf;
                 if (leafs.length === 0) {
-                    leaf = this.app.workspace.getRightLeaf(false);
+                    leaf =
+                        this.app.workspace.getRightLeaf(false) ??
+                        this.app.workspace.getLeaf();
                     await leaf.setViewState({
                         type: HISTORY_VIEW_CONFIG.type,
                     });
