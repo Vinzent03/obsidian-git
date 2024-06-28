@@ -15,6 +15,12 @@ To clone, you have to use a remote URL. This can be one of two protocols: either
     - Run `git clone <your-remote-url>` in the command line wherever you want your vault to be located.
 4. Read on how to best configure your [[Tips-and-Tricks#Gitignore|.gitignore]]
 
+
+> [!info] iCloud and Git
+> When syncing your vault with iCloud and using Git on your desktop device the whole `.git` directory gets synced to your mobile device as well. This may slow down the Obsidian startup time. 
+> - One solution is to put the git repository above your Obsidian vault. So that your vault is a sub directory of your git repository.
+> - Another solution is to move the `.git` directory to another location and create a `.git` file in your vault with only the following line: `gitdir: <path-to-your-actual-git-direcotry>`
+
 # Mobile
 The git implementation on mobile is **very unstable**!
 
