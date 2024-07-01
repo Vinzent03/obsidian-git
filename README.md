@@ -1,6 +1,8 @@
 # Git
 
-Plugin that allows you to back up your [Obsidian.md](https://obsidian.md) vault to a remote Git repository (e.g. private repo on GitHub).
+A Community Plugin for [Obsidian.md](https://obsidian.md) to manage your vault with Git.
+
+## Documentation
 
 Requirements, installation steps (including setup for mobile), tips and tricks, common issues and more can be found in the [documentation](https://publish.obsidian.md/git-doc).
 
@@ -8,13 +10,12 @@ For mobile users see [Mobile](#mobile) section below.
 
 ## Highlighted Features
 
--   Automatic vault backup every X minutes
--   Pull changes from remote repository on Obsidian startup
--   Assign hotkeys for pulling/pushing changes to a remote repository
--   Manage different repositories via Git submodules (after enabling this feature in settings)
--   The Source Control View allows you to stage and commit individual files. It can be opened with the `Open Source Control View` command.
--   The History View shows the commits and their changed files. So basically an integrated `git log`. It can be opened with the `Open History View` command.
--   For viewing the history of a file, I strongly recommend you the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin
+-   Automatic vault backup (pull, commit, push) on a schedule.
+-   Pull changes from remote repository on Obsidian startup.
+-   Manage different repositories via Git submodules (Opt-in in settings) (Desktop only).
+-   Stage, commit and diff individual files via the Source Control View. Open it with the `Open Source Control View` command.
+-   List your commits and their changed files (like a `git log`) via the History View. Open it with the `Open History View` command.
+-   For viewing the detailed history of a file, I strongly recommend you the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin.
 
 ### Source Control View
 
@@ -24,7 +25,7 @@ For mobile users see [Mobile](#mobile) section below.
 
 ![History View](https://raw.githubusercontent.com/denolehov/obsidian-git/master/images/history-view.png)
 
-## Available Commands
+## Available Commands (not exhaustive)
 
 -   Changes
     -   `List changed files`: Lists all changes in a modal
@@ -77,7 +78,7 @@ The git implementation on mobile is **very unstable**!
 
 ### Restrictions
 
-I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of Git in JavaScript, because you cannot use native Git on Android or iOS.
+The mobile version is supported by [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of Git in JavaScript, because you cannot use native Git on Android or iOS.
 
 -   SSH authentication is not supported ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
 -   Repo size is limited, because of memory restrictions
@@ -105,7 +106,7 @@ The fastest way to work on mobile if you have a large repo/vault is to stage ind
 
 The Line Authoring feature was developed by [GollyTicker](https://github.com/GollyTicker), so any questions may be best answered by him.
 
-If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `@Vinadon` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
+If you have any kind of feedback or questions, feel free to reach out via GitHub issues or `vinzent3` on [Obsidian Discord server](https://discord.com/invite/veuWUTm).
 
 This plugin was initial developed by [denolehov](https://github.com/denolehov). Since March 2021, it is [Vinzent03](https://github.com/Vinzent03) who is developing on this plugin.
 
