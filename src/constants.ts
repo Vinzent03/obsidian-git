@@ -60,7 +60,7 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
 export const SOURCE_CONTROL_VIEW_CONFIG = {
     type: "git-view",
     name: "Source Control",
-    icon: "git-pull-request",
+    icon: "lucide-git-pull-request-arrow",
 };
 
 export const HISTORY_VIEW_CONFIG = {
@@ -72,5 +72,5 @@ export const HISTORY_VIEW_CONFIG = {
 export const DIFF_VIEW_CONFIG = {
     type: "diff-view",
     name: "Diff View",
-    icon: "git-pull-request",
+    icon: "lucide-git-pull-request-arrow",
 };
