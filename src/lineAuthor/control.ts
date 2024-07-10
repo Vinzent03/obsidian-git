@@ -1,12 +1,10 @@
-import { EditorState, StateField } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import type { EditorState } from "@codemirror/state";
+import { StateField } from "@codemirror/state";
+import type { EditorView } from "@codemirror/view";
 import { editorEditorField, editorViewField } from "obsidian";
 import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
-import {
-    LineAuthoring,
-    LineAuthoringId,
-    newComputationResultAsTransaction,
-} from "src/lineAuthor/model";
+import type { LineAuthoring, LineAuthoringId } from "src/lineAuthor/model";
+import { newComputationResultAsTransaction } from "src/lineAuthor/model";
 
 /*
 ================== CONTROL ======================

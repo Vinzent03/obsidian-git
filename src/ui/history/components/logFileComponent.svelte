@@ -1,9 +1,9 @@
 <script lang="ts">
     import { setIcon, TFile } from "obsidian";
     import { DIFF_VIEW_CONFIG } from "src/constants";
-    import { DiffFile } from "src/types";
+    import type { DiffFile } from "src/types";
     import { getDisplayPath, getNewLeaf } from "src/utils";
-    import HistoryView from "../historyView";
+    import type HistoryView from "../historyView";
 
     export let diff: DiffFile;
     export let view: HistoryView;

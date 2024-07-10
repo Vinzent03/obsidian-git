@@ -1,9 +1,10 @@
 import { html } from "diff2html";
-import { ItemView, Platform, ViewStateResult, WorkspaceLeaf } from "obsidian";
+import type { ViewStateResult, WorkspaceLeaf } from "obsidian";
+import { ItemView, Platform } from "obsidian";
 import { DIFF_VIEW_CONFIG } from "src/constants";
 import { SimpleGit } from "src/gitManager/simpleGit";
-import ObsidianGit from "src/main";
-import { DiffViewState } from "src/types";
+import type ObsidianGit from "src/main";
+import type { DiffViewState } from "src/types";
 
 export default class DiffView extends ItemView {
     parser: DOMParser;

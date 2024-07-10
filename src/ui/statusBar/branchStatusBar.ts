@@ -1,4 +1,4 @@
-import ObsidianGit from "src/main";
+import type ObsidianGit from "src/main";
 
 export class BranchStatusBar {
     constructor(

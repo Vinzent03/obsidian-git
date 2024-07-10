@@ -1,24 +1,17 @@
-import { Extension } from "@codemirror/state";
-import {
-    EventRef,
-    Platform,
-    TAbstractFile,
-    TFile,
-    WorkspaceLeaf,
-} from "obsidian";
+import type { Extension } from "@codemirror/state";
+import type { EventRef, TAbstractFile, WorkspaceLeaf } from "obsidian";
+import { Platform, TFile } from "obsidian";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import {
     LineAuthorProvider,
     enabledLineAuthorInfoExtensions,
 } from "src/lineAuthor/lineAuthorProvider";
-import {
-    LineAuthorSettings,
-    provideSettingsAccess,
-} from "src/lineAuthor/model";
+import type { LineAuthorSettings } from "src/lineAuthor/model";
+import { provideSettingsAccess } from "src/lineAuthor/model";
 import { handleContextMenu } from "src/lineAuthor/view/contextMenu";
 import { setTextColorCssBasedOnSetting } from "src/lineAuthor/view/gutter/coloring";
 import { prepareGutterSearchForContextMenuHandling } from "src/lineAuthor/view/gutter/gutterElementSearch";
-import ObsidianGit from "src/main";
+import type ObsidianGit from "src/main";
 
 /**
  * Manages the interaction between Obsidian (file-open event, modification event, etc.)

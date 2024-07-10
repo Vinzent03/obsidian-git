@@ -1,9 +1,9 @@
 <script lang="ts">
     import { TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
-    import { FileStatusResult } from "src/types";
+    import type { FileStatusResult } from "src/types";
     import { getDisplayPath, getNewLeaf } from "src/utils";
-    import GitView from "../sourceControl";
+    import type GitView from "../sourceControl";
 
     export let change: FileStatusResult;
     export let view: GitView;

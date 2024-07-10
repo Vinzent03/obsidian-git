@@ -1,6 +1,7 @@
-import { HoverParent, HoverPopover, ItemView, WorkspaceLeaf } from "obsidian";
+import type { HoverParent, HoverPopover, WorkspaceLeaf } from "obsidian";
+import { ItemView } from "obsidian";
 import { HISTORY_VIEW_CONFIG } from "src/constants";
-import ObsidianGit from "src/main";
+import type ObsidianGit from "src/main";
 import HistoryViewComponent from "./historyView.svelte";
 
 export default class HistoryView extends ItemView implements HoverParent {

@@ -1,5 +1,5 @@
 import { SuggestModal } from "obsidian";
-import ObsidianGit from "src/main";
+import type ObsidianGit from "src/main";
 
 export class CustomMessageModal extends SuggestModal<string> {
     plugin: ObsidianGit;

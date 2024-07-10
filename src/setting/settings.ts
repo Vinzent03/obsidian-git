@@ -1,11 +1,5 @@
-import {
-    moment,
-    Notice,
-    Platform,
-    PluginSettingTab,
-    RGB,
-    Setting,
-} from "obsidian";
+import type { RGB } from "obsidian";
+import { moment, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 import {
     DATE_TIME_FORMAT_SECONDS,
     DEFAULT_SETTINGS,
@@ -14,15 +8,15 @@ import {
 import { IsomorphicGit } from "src/gitManager/isomorphicGit";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import { previewColor } from "src/lineAuthor/lineAuthorProvider";
-import {
+import type {
     LineAuthorDateTimeFormatOptions,
     LineAuthorDisplay,
     LineAuthorFollowMovement,
     LineAuthorSettings,
     LineAuthorTimezoneOption,
 } from "src/lineAuthor/model";
-import ObsidianGit from "src/main";
-import {
+import type ObsidianGit from "src/main";
+import type {
     ObsidianGitSettings,
     ShowAuthorInHistoryView,
     SyncMethod,

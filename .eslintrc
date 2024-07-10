@@ -56,5 +56,6 @@
         "no-prototype-builtins": "off",
         "@typescript-eslint/no-empty-function": "off",
         "no-constant-condition": "off"
+        // "@typescript-eslint/consistent-type-imports": "error"
     }
 }

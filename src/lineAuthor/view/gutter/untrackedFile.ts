@@ -1,7 +1,7 @@
 import { zeroCommit } from "src/gitManager/simpleGit";
-import { LineAuthorSettings } from "src/lineAuthor/model";
+import type { LineAuthorSettings } from "src/lineAuthor/model";
 import { lineAuthoringGutterMarker } from "src/lineAuthor/view/gutter/gutter";
-import { Blame } from "src/types";
+import type { Blame } from "src/types";
 
 /**
  * The gutter to show on untracked files.

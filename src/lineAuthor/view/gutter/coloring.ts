@@ -1,8 +1,6 @@
-import {
-    LineAuthorSettings,
-    maxAgeInDaysFromSettings,
-} from "src/lineAuthor/model";
-import { GitTimestamp } from "src/types";
+import type { LineAuthorSettings } from "src/lineAuthor/model";
+import { maxAgeInDaysFromSettings } from "src/lineAuthor/model";
+import type { GitTimestamp } from "src/types";
 
 /**
  * Given the settings, it computes the background gutter color for the

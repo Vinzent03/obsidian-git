@@ -1,9 +1,9 @@
 <script lang="ts">
     import { moment } from "obsidian";
-    import ObsidianGit from "src/main";
-    import { LogEntry } from "src/types";
+    import type ObsidianGit from "src/main";
+    import type { LogEntry } from "src/types";
     import { slide } from "svelte/transition";
-    import HistoryView from "../historyView";
+    import type HistoryView from "../historyView";
     import LogFileComponent from "./logFileComponent.svelte";
     import LogTreeComponent from "./logTreeComponent.svelte";
 

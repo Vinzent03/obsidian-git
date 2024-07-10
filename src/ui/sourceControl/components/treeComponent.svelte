@@ -1,10 +1,11 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
-    import ObsidianGit from "src/main";
-    import { FileType, StatusRootTreeItem, TreeItem } from "src/types";
+    import type ObsidianGit from "src/main";
+    import type { StatusRootTreeItem, TreeItem } from "src/types";
+    import { FileType } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
     import { slide } from "svelte/transition";
-    import GitView from "../sourceControl";
+    import type GitView from "../sourceControl";
     import FileComponent from "./fileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";

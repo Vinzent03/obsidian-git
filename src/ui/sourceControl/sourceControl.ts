@@ -1,6 +1,7 @@
-import { HoverParent, HoverPopover, ItemView, WorkspaceLeaf } from "obsidian";
+import type { HoverParent, HoverPopover, WorkspaceLeaf } from "obsidian";
+import { ItemView } from "obsidian";
 import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
-import ObsidianGit from "src/main";
+import type ObsidianGit from "src/main";
 import SourceControlViewComponent from "./sourceControl.svelte";
 
 export default class GitView extends ItemView implements HoverParent {

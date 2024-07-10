@@ -1,6 +1,6 @@
 import { FuzzySuggestModal } from "obsidian";
-import ObsidianGit from "src/main";
-import { FileStatusResult } from "src/types";
+import type ObsidianGit from "src/main";
+import type { FileStatusResult } from "src/types";
 
 export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
     plugin: ObsidianGit;

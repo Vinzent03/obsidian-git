@@ -1,15 +1,15 @@
-import {
-    Annotation,
+import type {
     AnnotationType,
     EditorState,
-    StateField,
     Transaction,
 } from "@codemirror/state";
-import { Hasher, sha256 } from "js-sha256";
-import { RGB } from "obsidian";
+import { Annotation, StateField } from "@codemirror/state";
+import type { Hasher } from "js-sha256";
+import { sha256 } from "js-sha256";
+import type { RGB } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
 import { parseColoringMaxAgeDuration } from "src/setting/settings";
-import { Blame } from "src/types";
+import type { Blame } from "src/types";
 
 /*
 ================== MODEL ======================

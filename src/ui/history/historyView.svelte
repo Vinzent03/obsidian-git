@@ -1,11 +1,11 @@
 <script lang="ts">
     import { setIcon } from "obsidian";
     import { SimpleGit } from "src/gitManager/simpleGit";
-    import ObsidianGit from "src/main";
-    import { LogEntry } from "src/types";
+    import type ObsidianGit from "src/main";
+    import type { LogEntry } from "src/types";
     import { onDestroy } from "svelte";
     import LogComponent from "./components/logComponent.svelte";
-    import HistoryView from "./historyView";
+    import type HistoryView from "./historyView";
 
     export let plugin: ObsidianGit;
     export let view: HistoryView;

@@ -1,5 +1,5 @@
 import { Platform } from "obsidian";
-import { ObsidianGitSettings } from "./types";
+import type { ObsidianGitSettings } from "./types";
 export const DATE_FORMAT = "YYYY-MM-DD";
 export const DATE_TIME_FORMAT_MINUTES = `${DATE_FORMAT} HH:mm`;
 export const DATE_TIME_FORMAT_SECONDS = `${DATE_FORMAT} HH:mm:ss`;

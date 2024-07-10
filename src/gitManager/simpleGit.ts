@@ -1,21 +1,23 @@
 import { spawnSync } from "child_process";
 import debug from "debug";
-import { FileSystemAdapter, normalizePath, Notice, Platform } from "obsidian";
+import type { FileSystemAdapter } from "obsidian";
+import { normalizePath, Notice, Platform } from "obsidian";
 import * as path from "path";
 import { sep, resolve } from "path";
-import simpleGit, * as simple from "simple-git";
+import type * as simple from "simple-git";
+import simpleGit from "simple-git";
 import { GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH } from "src/constants";
-import { LineAuthorFollowMovement } from "src/lineAuthor/model";
-import ObsidianGit from "../main";
-import {
+import type { LineAuthorFollowMovement } from "src/lineAuthor/model";
+import type ObsidianGit from "../main";
+import type {
     Blame,
     BlameCommit,
     BranchInfo,
     FileStatusResult,
     LogEntry,
-    PluginState,
     Status,
 } from "../types";
+import { PluginState } from "../types";
 import { impossibleBranch, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 

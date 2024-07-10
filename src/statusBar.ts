@@ -1,5 +1,5 @@
 import { setIcon } from "obsidian";
-import ObsidianGit from "./main";
+import type ObsidianGit from "./main";
 import { PluginState } from "./types";
 
 interface StatusBarMessage {

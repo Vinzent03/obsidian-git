@@ -1,6 +1,7 @@
 import * as cssColorConverter from "css-color-converter";
 import deepEqual from "deep-equal";
-import { Keymap, RGB, WorkspaceLeaf, moment } from "obsidian";
+import type { RGB, WorkspaceLeaf } from "obsidian";
+import { Keymap, moment } from "obsidian";
 
 export const worthWalking = (filepath: string, root?: string) => {
     if (filepath === "." || root == null || root.length === 0 || root === ".") {

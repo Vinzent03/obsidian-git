@@ -1,27 +1,26 @@
 import { createPatch } from "diff";
-import git, {
+import type {
     AuthCallback,
     AuthFailureCallback,
-    Errors,
     GitHttpRequest,
     GitHttpResponse,
     GitProgressEvent,
     HttpClient,
-    readBlob,
     Walker,
     WalkerMap,
 } from "isomorphic-git";
+import git, { Errors, readBlob } from "isomorphic-git";
 import { Notice, requestUrl } from "obsidian";
-import ObsidianGit from "../main";
-import {
+import type ObsidianGit from "../main";
+import type {
     BranchInfo,
     FileStatusResult,
     LogEntry,
-    PluginState,
     Status,
     UnstagedFile,
     WalkDifference,
 } from "../types";
+import { PluginState } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";

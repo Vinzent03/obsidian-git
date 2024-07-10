@@ -12,6 +12,7 @@
         "strictNullChecks": true,
         "importHelpers": true,
         "allowSyntheticDefaultImports": true,
+        "verbatimModuleSyntax": true,
         "lib": [
             "DOM",
             "ES5",

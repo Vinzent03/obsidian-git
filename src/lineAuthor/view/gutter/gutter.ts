@@ -2,14 +2,14 @@ import { GutterMarker } from "@codemirror/view";
 import { sha256 } from "js-sha256";
 import { moment } from "obsidian";
 import { DATE_FORMAT, DATE_TIME_FORMAT_MINUTES } from "src/constants";
-import {
+import type {
     LineAuthorDateTimeFormatOptions,
     LineAuthorDisplay,
     LineAuthorSettings,
     LineAuthorTimezoneOption,
     LineAuthoring,
-    latestSettings,
 } from "src/lineAuthor/model";
+import { latestSettings } from "src/lineAuthor/model";
 import {
     attachedGutterElements,
     conditionallyUpdateLongestRenderedGutter,
@@ -20,7 +20,7 @@ import {
 import { enrichCommitInfoForContextMenu } from "src/lineAuthor/view/contextMenu";
 import { coloringBasedOnCommitAge } from "src/lineAuthor/view/gutter/coloring";
 import { chooseNewestCommit } from "src/lineAuthor/view/gutter/commitChoice";
-import { BlameCommit } from "src/types";
+import type { BlameCommit } from "src/types";
 import {
     impossibleBranch,
     prefixOfLengthAsWhitespace,

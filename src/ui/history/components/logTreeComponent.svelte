@@ -1,9 +1,9 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
-    import ObsidianGit from "src/main";
-    import { HistoryRootTreeItem, TreeItem } from "src/types";
+    import type ObsidianGit from "src/main";
+    import type { HistoryRootTreeItem, TreeItem } from "src/types";
     import { slide } from "svelte/transition";
-    import HistoryView from "../historyView";
+    import type HistoryView from "../historyView";
     import LogFileComponent from "./logFileComponent.svelte";
     export let hierarchy: HistoryRootTreeItem;
     export let plugin: ObsidianGit;

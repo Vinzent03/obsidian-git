@@ -1,4 +1,4 @@
-import {
+import type {
     LineAuthoringSubscriber,
     LineAuthoringSubscribers,
 } from "src/lineAuthor/control";

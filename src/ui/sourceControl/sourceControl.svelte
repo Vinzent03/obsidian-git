@@ -1,14 +1,13 @@
 <script lang="ts">
     import { Platform, setIcon } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
-    import ObsidianGit from "src/main";
-    import {
+    import type ObsidianGit from "src/main";
+    import type {
         FileStatusResult,
-        FileType,
-        PluginState,
         Status,
         StatusRootTreeItem,
     } from "src/types";
+    import { FileType, PluginState } from "src/types";
     import { getDisplayPath } from "src/utils";
     import { onDestroy } from "svelte";
     import { slide } from "svelte/transition";
@@ -17,7 +16,7 @@
     import PulledFileComponent from "./components/pulledFileComponent.svelte";
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
     import TreeComponent from "./components/treeComponent.svelte";
-    import GitView from "./sourceControl";
+    import type GitView from "./sourceControl";
 
     export let plugin: ObsidianGit;
     export let view: GitView;

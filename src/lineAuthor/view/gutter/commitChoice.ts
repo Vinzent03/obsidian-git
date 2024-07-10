@@ -1,5 +1,5 @@
-import { LineAuthoring } from "src/lineAuthor/model";
-import { BlameCommit } from "src/types";
+import type { LineAuthoring } from "src/lineAuthor/model";
+import type { BlameCommit } from "src/types";
 
 /**
  * Chooses the newest commit from the {@link LineAuthoring} for the

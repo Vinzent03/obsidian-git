@@ -1,17 +1,19 @@
 import { Errors } from "isomorphic-git";
-import {
-    debounce,
+import type {
     Debouncer,
     EventRef,
-    MarkdownView,
     Menu,
+    TAbstractFile,
+    WorkspaceLeaf,
+} from "obsidian";
+import {
+    debounce,
+    MarkdownView,
     normalizePath,
     Notice,
     Platform,
     Plugin,
-    TAbstractFile,
     TFile,
-    WorkspaceLeaf,
 } from "obsidian";
 import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
 import { pluginRef } from "src/pluginGlobalRef";
@@ -26,20 +28,19 @@ import {
     HISTORY_VIEW_CONFIG,
     SOURCE_CONTROL_VIEW_CONFIG,
 } from "./constants";
-import { GitManager } from "./gitManager/gitManager";
+import type { GitManager } from "./gitManager/gitManager";
 import { IsomorphicGit } from "./gitManager/isomorphicGit";
 import { SimpleGit } from "./gitManager/simpleGit";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
-import {
+import type {
     DiffViewState,
     FileStatusResult,
-    mergeSettingsByPriority,
     ObsidianGitSettings,
-    PluginState,
     Status,
     UnstagedFile,
 } from "./types";
+import { mergeSettingsByPriority, PluginState } from "./types";
 import DiffView from "./ui/diff/diffView";
 import HistoryView from "./ui/history/historyView";
 import { BranchModal } from "./ui/modals/branchModal";

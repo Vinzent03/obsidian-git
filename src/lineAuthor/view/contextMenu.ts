@@ -1,9 +1,9 @@
-import { Editor, MarkdownView, Menu } from "obsidian";
+import type { Editor, MarkdownView, Menu } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
-import { LineAuthorSettings } from "src/lineAuthor/model";
+import type { LineAuthorSettings } from "src/lineAuthor/model";
 import { findGutterElementUnderMouse } from "src/lineAuthor/view/gutter/gutterElementSearch";
 import { pluginRef } from "src/pluginGlobalRef";
-import { BlameCommit } from "src/types";
+import type { BlameCommit } from "src/types";
 import { impossibleBranch } from "src/utils";
 
 type ContextMenuConfigurableSettingsKeys =

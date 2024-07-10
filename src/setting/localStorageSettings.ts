@@ -1,4 +1,4 @@
-import ObsidianGit from "../main";
+import type ObsidianGit from "../main";
 export class LocalStorageSettings {
     private prefix: string;
     constructor(private readonly plugin: ObsidianGit) {

@@ -1,10 +1,14 @@
-import { Extension, Range, RangeSet, Text } from "@codemirror/state";
-import { EditorView, gutter, GutterMarker } from "@codemirror/view";
+import type { Extension, Range, Text } from "@codemirror/state";
+import { RangeSet } from "@codemirror/state";
+import type { EditorView, GutterMarker } from "@codemirror/view";
+import { gutter } from "@codemirror/view";
+import type {
+    LineAuthoringWithChanges,
+    LineAuthorSettings,
+} from "src/lineAuthor/model";
 import {
     laStateDigest,
     latestSettings,
-    LineAuthoringWithChanges,
-    LineAuthorSettings,
     lineAuthorState,
 } from "src/lineAuthor/model";
 import {

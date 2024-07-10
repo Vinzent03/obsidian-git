@@ -1,6 +1,6 @@
-import { App } from "obsidian";
-import ObsidianGit from "../main";
-import {
+import type { App } from "obsidian";
+import type ObsidianGit from "../main";
+import type {
     BranchInfo,
     DiffFile,
     FileStatusResult,
