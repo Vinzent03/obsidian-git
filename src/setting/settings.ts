@@ -1,4 +1,4 @@
-import type { RGB } from "obsidian";
+import type { App, RGB } from "obsidian";
 import { moment, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 import {
     DATE_TIME_FORMAT_SECONDS,
@@ -30,8 +30,12 @@ const LINE_AUTHOR_FEATURE_WIKI_LINK =
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     lineAuthorColorSettings: Map<"oldest" | "newest", Setting> = new Map();
-
-    declare plugin: ObsidianGit; // narrow type from PluginSettingTab.plugin
+    constructor(
+        app: App,
+        private plugin: ObsidianGit
+    ) {
+        super(app, plugin);
+    }
 
     private get settings() {
         return this.plugin.settings;
@@ -39,23 +43,22 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl } = this;
-        const plugin: ObsidianGit = (this as any).plugin;
+        const plugin: ObsidianGit = this.plugin;
         const commitOrBackup = plugin.settings.differentIntervalCommitAndPush
             ? "commit"
             : "backup";
         const gitReady = plugin.gitReady;
 
         containerEl.empty();
-        containerEl.createEl("h2", { text: "Git Backup settings" });
         if (!gitReady) {
             containerEl.createEl("p", {
                 text: "Git is not ready. When all settings are correct you can configure auto backup, etc.",
             });
+            containerEl.createEl("br");
         }
 
         if (gitReady) {
-            containerEl.createEl("br");
-            containerEl.createEl("h3", { text: "Automatic" });
+            new Setting(containerEl).setName("Automatic").setHeading();
             new Setting(containerEl)
                 .setName("Split automatic commit and push")
                 .setDesc("Enable to use separate timer for commit and push")
@@ -277,8 +280,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         })
                 );
 
-            containerEl.createEl("br");
-            containerEl.createEl("h3", { text: "Commit message" });
+            new Setting(containerEl).setName("Commit message").setHeading();
 
             new Setting(containerEl)
                 .setName("Commit message on manual backup/commit")
@@ -349,8 +351,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         })
                 );
 
-            containerEl.createEl("br");
-            containerEl.createEl("h3", { text: "Backup" });
+            new Setting(containerEl).setName("Backup").setHeading();
 
             if (plugin.gitManager instanceof SimpleGit)
                 new Setting(containerEl)
@@ -410,15 +411,15 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             if (plugin.gitManager instanceof SimpleGit) {
-                containerEl.createEl("br");
-                containerEl.createEl("h3", { text: "Line author information" });
+                new Setting(containerEl)
+                    .setName("Line author information")
+                    .setHeading();
 
                 this.addLineAuthorInfoSettings();
             }
         }
 
-        containerEl.createEl("br");
-        containerEl.createEl("h3", { text: "History View" });
+        new Setting(containerEl).setName("History view").setHeading();
 
         new Setting(containerEl)
             .setName("Show Author")
@@ -453,12 +454,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
-        containerEl.createEl("br");
-        containerEl.createEl("h3", { text: "Source Control View" });
+        new Setting(containerEl).setName("Source control view").setHeading();
 
         new Setting(containerEl)
             .setName(
-                "Automatically refresh Source Control View on file changes"
+                "Automatically refresh source control view on file changes"
             )
             .setDesc(
                 "On slower machines this may cause lags. If so, just disable this option"
@@ -473,7 +473,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Source Control View refresh interval")
+            .setName("Source control view refresh interval")
             .setDesc(
                 "Milliseconds to wait after file change before refreshing the Source Control View"
             )
@@ -492,8 +492,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         plugin.setRefreshDebouncer();
                     })
             );
-        containerEl.createEl("br");
-        containerEl.createEl("h3", { text: "Miscellaneous" });
+        new Setting(containerEl).setName("Miscellaneous").setHeading();
 
         new Setting(containerEl)
             .setName("Disable notifications")
@@ -575,13 +574,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
-        containerEl.createEl("br");
         if (plugin.gitManager instanceof IsomorphicGit) {
-            containerEl.createEl("h3", {
-                text: "Authentication/Commit Author",
-            });
+            new Setting(containerEl)
+                .setName("Authentication/commit author")
+                .setHeading();
         } else {
-            containerEl.createEl("h3", { text: "Commit Author" });
+            new Setting(containerEl).setName("Commit author").setHeading();
         }
 
         if (plugin.gitManager instanceof IsomorphicGit)
@@ -639,8 +637,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
                 });
 
-        containerEl.createEl("br");
-        containerEl.createEl("h3", { text: "Advanced" });
+        new Setting(containerEl).setName("Advanced").setHeading();
 
         if (plugin.gitManager instanceof SimpleGit) {
             new Setting(containerEl)
