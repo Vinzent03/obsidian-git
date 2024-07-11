@@ -5,7 +5,7 @@
     import type { GitManager } from "src/gitManager/gitManager";
     import type { FileStatusResult } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
-    import { getDisplayPath, getNewLeaf } from "src/utils";
+    import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
     import type GitView from "../sourceControl";
 
     export let change: FileStatusResult;
@@ -28,7 +28,6 @@
 
     function open(event: MouseEvent) {
         const file = view.app.vault.getAbstractFileByPath(change.vault_path);
-        console.log(event);
 
         if (file instanceof TFile) {
             getNewLeaf(event)?.openFile(file);
@@ -82,7 +81,14 @@
 <main
     on:mouseover={hover}
     on:click|stopPropagation={showDiff}
-    on:auxclick|stopPropagation={showDiff}
+    on:auxclick|stopPropagation={(event) =>
+        mayTriggerFileMenu(
+            view.app,
+            event,
+            change.vault_path,
+            view.leaf,
+            "git-source-control"
+        )}
     on:focus
     class="tree-item nav-file"
 >

@@ -298,18 +298,7 @@ export default class ObsidianGit extends Plugin {
                 if (checking) {
                     return file !== null;
                 } else {
-                    this.app.vault.adapter
-                        .append(
-                            this.gitManager.getRelativeVaultPath(".gitignore"),
-                            "\n" +
-                                this.gitManager.getRelativeRepoPath(
-                                    file!.path,
-                                    true
-                                )
-                        )
-                        .then(() => {
-                            this.refresh();
-                        });
+                    this.addFileToGitignore(file!);
                 }
             },
         });
@@ -625,55 +614,83 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
+    async addFileToGitignore(file: TAbstractFile): Promise<void> {
+        await this.app.vault.adapter.append(
+            this.gitManager.getRelativeVaultPath(".gitignore"),
+            "\n" + this.gitManager.getRelativeRepoPath(file!.path, true)
+        );
+        this.refresh();
+    }
+
     handleFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
-        if (!this.settings.showFileMenu) return;
-        if (source !== "file-explorer-context-menu") {
-            return;
-        }
-        if (!file) {
-            return;
-        }
         if (!this.gitReady) return;
-        menu.addItem((item) => {
-            item.setTitle(`Git: Stage`)
-                .setIcon("plus-circle")
-                .setSection("action")
-                .onClick((_) => {
-                    this.promiseQueue.addTask(async () => {
-                        if (file instanceof TFile) {
-                            await this.gitManager.stage(file.path, true);
-                        } else {
-                            await this.gitManager.stageAll({
-                                dir: this.gitManager.getRelativeRepoPath(
-                                    file.path,
-                                    true
-                                ),
-                            });
-                        }
-                        this.displayMessage(`Staged ${file.path}`);
+        if (!this.settings.showFileMenu) return;
+        if (!file) return;
+
+        if (
+            this.settings.showFileMenu &&
+            source == "file-explorer-context-menu"
+        ) {
+            menu.addItem((item) => {
+                item.setTitle(`Git: Stage`)
+                    .setIcon("plus-circle")
+                    .setSection("action")
+                    .onClick((_) => {
+                        this.promiseQueue.addTask(async () => {
+                            if (file instanceof TFile) {
+                                await this.gitManager.stage(file.path, true);
+                            } else {
+                                await this.gitManager.stageAll({
+                                    dir: this.gitManager.getRelativeRepoPath(
+                                        file.path,
+                                        true
+                                    ),
+                                });
+                            }
+                            this.displayMessage(`Staged ${file.path}`);
+                        });
                     });
-                });
-        });
-        menu.addItem((item) => {
-            item.setTitle(`Git: Unstage`)
-                .setIcon("minus-circle")
-                .setSection("action")
-                .onClick((_) => {
-                    this.promiseQueue.addTask(async () => {
-                        if (file instanceof TFile) {
-                            await this.gitManager.unstage(file.path, true);
-                        } else {
-                            await this.gitManager.unstageAll({
-                                dir: this.gitManager.getRelativeRepoPath(
-                                    file.path,
-                                    true
-                                ),
-                            });
-                        }
-                        this.displayMessage(`Unstaged ${file.path}`);
+            });
+            menu.addItem((item) => {
+                item.setTitle(`Git: Unstage`)
+                    .setIcon("minus-circle")
+                    .setSection("action")
+                    .onClick((_) => {
+                        this.promiseQueue.addTask(async () => {
+                            if (file instanceof TFile) {
+                                await this.gitManager.unstage(file.path, true);
+                            } else {
+                                await this.gitManager.unstageAll({
+                                    dir: this.gitManager.getRelativeRepoPath(
+                                        file.path,
+                                        true
+                                    ),
+                                });
+                            }
+                            this.displayMessage(`Unstaged ${file.path}`);
+                        });
                     });
-                });
-        });
+            });
+            menu.addItem((item) => {
+                item.setTitle(`Git: Add to .gitignore`)
+                    .setIcon("file-x")
+                    .setSection("action")
+                    .onClick((_) => {
+                        this.addFileToGitignore(file);
+                    });
+            });
+        }
+
+        if (source == "git-source-control") {
+            menu.addItem((item) => {
+                item.setTitle(`Git: Add to .gitignore`)
+                    .setIcon("file-x")
+                    .setSection("action")
+                    .onClick((_) => {
+                        this.addFileToGitignore(file);
+                    });
+            });
+        }
     }
 
     async migrateSettings(): Promise<void> {

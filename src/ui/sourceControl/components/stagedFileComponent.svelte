@@ -4,7 +4,7 @@
     import { DIFF_VIEW_CONFIG } from "src/constants";
     import type { GitManager } from "src/gitManager/gitManager";
     import type { FileStatusResult } from "src/types";
-    import { getDisplayPath, getNewLeaf } from "src/utils";
+    import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
     import type GitView from "../sourceControl";
 
     export let change: FileStatusResult;
@@ -57,7 +57,14 @@
     on:mouseover={hover}
     on:focus
     on:click|stopPropagation={showDiff}
-    on:auxclick|stopPropagation={showDiff}
+    on:auxclick|stopPropagation={(event) =>
+        mayTriggerFileMenu(
+            view.app,
+            event,
+            change.vault_path,
+            view.leaf,
+            "git-source-control"
+        )}
     class="tree-item nav-file"
 >
     <div

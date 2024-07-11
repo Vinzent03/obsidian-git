@@ -2,7 +2,7 @@
     import { setIcon, TFile } from "obsidian";
     import { DIFF_VIEW_CONFIG } from "src/constants";
     import type { DiffFile } from "src/types";
-    import { getDisplayPath, getNewLeaf } from "src/utils";
+    import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
     import type HistoryView from "../historyView";
 
     export let diff: DiffFile;
@@ -42,7 +42,14 @@
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <main
     on:click|stopPropagation={showDiff}
-    on:auxclick|stopPropagation={showDiff}
+    on:auxclick|stopPropagation={(event) =>
+        mayTriggerFileMenu(
+            view.app,
+            event,
+            diff.vault_path,
+            view.leaf,
+            "git-history"
+        )}
     on:focus
     class="tree-item nav-file"
 >
@@ -59,7 +66,7 @@
         </div>
         <div class="git-tools">
             <div class="buttons">
-                {#if view.app.vault.getAbstractFileByPath(diff.vault_path)}
+                {#if view.app.vault.getAbstractFileByPath(diff.vault_path) instanceof TFile}
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"

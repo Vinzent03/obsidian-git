@@ -2,7 +2,7 @@
     import { TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
     import type { FileStatusResult } from "src/types";
-    import { getDisplayPath, getNewLeaf } from "src/utils";
+    import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
     import type GitView from "../sourceControl";
 
     export let change: FileStatusResult;
@@ -29,7 +29,14 @@
 <main
     on:mouseover={hover}
     on:click|stopPropagation={open}
-    on:auxclick|stopPropagation={open}
+    on:auxclick|stopPropagation={(event) =>
+        mayTriggerFileMenu(
+            view.app,
+            event,
+            change.vault_path,
+            view.leaf,
+            "git-source-control"
+        )}
     on:focus
     class="tree-item nav-file"
 >

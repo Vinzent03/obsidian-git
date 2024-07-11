@@ -9,6 +9,7 @@
     import FileComponent from "./fileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";
+    import { mayTriggerFileMenu } from "src/utils";
     export let hierarchy: StatusRootTreeItem;
     export let plugin: ObsidianGit;
     export let view: GitView;
@@ -73,6 +74,14 @@
         {:else}
             <div
                 on:click|stopPropagation={() => fold(entity)}
+                on:auxclick|stopPropagation={(event) =>
+                    mayTriggerFileMenu(
+                        view.app,
+                        event,
+                        entity.vaultPath,
+                        view.leaf,
+                        "git-source-control"
+                    )}
                 class="tree-item nav-folder"
                 class:is-collapsed={closed[entity.title]}
             >
