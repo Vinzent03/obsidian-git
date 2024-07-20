@@ -198,7 +198,7 @@ export class SimpleGit extends GitManager {
             });
 
             await this.git.subModule(["foreach", "--recursive", ""]);
-            this.git.outputHandler(() => {});
+            this.git.outputHandler(() => { });
         });
     }
 
@@ -817,7 +817,7 @@ export class SimpleGit extends GitManager {
         return await this.git.diff([`${commit1}..${commit2}`, "--", file]);
     }
 
-    private async getSubmoduleOfFile(
+    async getSubmoduleOfFile(
         repositoryRelativeFile: string
     ): Promise<{ submodule: string; relativeFilepath: string } | undefined> {
         // Documentation: https://git-scm.com/docs/git-rev-parse
@@ -933,7 +933,7 @@ function parseBlame(blameOutputUnnormalized: string): Blame {
     };
 
     let line = 1;
-    for (let bi = 0; bi < blameLines.length; ) {
+    for (let bi = 0; bi < blameLines.length;) {
         if (startsWithNonWhitespace(blameLines[bi])) {
             const lineInfo = blameLines[bi].split(" ");
 

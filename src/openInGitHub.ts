@@ -1,31 +1,31 @@
 import type { Editor, TFile } from "obsidian";
 import { Notice } from "obsidian";
 import type { GitManager } from "./gitManager/gitManager";
+import { SimpleGit } from "./gitManager/simpleGit";
 
 export async function openLineInGitHub(
     editor: Editor,
     file: TFile,
     manager: GitManager
 ) {
-    const data = await getData(manager);
+    const data = await getData(file, manager);
 
     if (data.result === "failure") {
         new Notice(data.reason);
         return;
     }
 
-    const { isGitHub, branch, repo, user } = data;
+    const { isGitHub, branch, repo, user, filePath } = data;
     if (isGitHub) {
-        const path = manager.getRelativeRepoPath(file.path);
         const from = editor.getCursor("from").line + 1;
         const to = editor.getCursor("to").line + 1;
         if (from === to) {
             window.open(
-                `https://github.com/${user}/${repo}/blob/${branch}/${path}?plain=1#L${from}`
+                `https://github.com/${user}/${repo}/blob/${branch}/${filePath}?plain=1#L${from}`
             );
         } else {
             window.open(
-                `https://github.com/${user}/${repo}/blob/${branch}/${path}?plain=1#L${from}-L${to}`
+                `https://github.com/${user}/${repo}/blob/${branch}/${filePath}?plain=1#L${from}-L${to}`
             );
         }
     } else {
@@ -34,38 +34,72 @@ export async function openLineInGitHub(
 }
 
 export async function openHistoryInGitHub(file: TFile, manager: GitManager) {
-    const data = await getData(manager);
+    const data = await getData(file, manager);
 
     if (data.result === "failure") {
         new Notice(data.reason);
         return;
     }
 
-    const { isGitHub, branch, repo, user } = data;
-    const path = manager.getRelativeRepoPath(file.path);
+    const { isGitHub, branch, repo, user, filePath } = data;
 
     if (isGitHub) {
         window.open(
-            `https://github.com/${user}/${repo}/commits/${branch}/${path}`
+            `https://github.com/${user}/${repo}/commits/${branch}/${filePath}`
         );
     } else {
         new Notice("It seems like you are not using GitHub");
     }
 }
 
-async function getData(manager: GitManager): Promise<
+async function getData(file: TFile, manager: GitManager): Promise<
     | {
-          result: "success";
-          isGitHub: boolean;
-          user: string;
-          repo: string;
-          branch: string;
-      }
+        result: "success";
+        isGitHub: boolean;
+        user: string;
+        repo: string;
+        branch: string;
+        filePath: string;
+    }
     | { result: "failure"; reason: string }
 > {
     const branchInfo = await manager.branchInfo();
-    const remoteBranch = branchInfo.tracking;
-    const branch = branchInfo.current;
+    let remoteBranch = branchInfo.tracking;
+    let branch = branchInfo.current;
+    let remoteUrl: string | undefined = undefined;
+    let filePath = manager.getRelativeRepoPath(file.path);
+
+    if (manager instanceof SimpleGit) {
+        const submodule = await manager.getSubmoduleOfFile(manager.getRelativeRepoPath(file.path));
+        if (submodule) {
+            filePath = submodule.relativeFilepath;
+            const status = await manager.git.cwd({
+                path: submodule.submodule,
+                root: false,
+            }).status();
+
+            remoteBranch = status.tracking || undefined;
+            branch = status.current || undefined;
+            if (remoteBranch) {
+                const remote = remoteBranch.substring(0, remoteBranch.indexOf("/"));
+
+                const config = await manager.git.cwd({
+                    path: submodule.submodule,
+                    root: false,
+                }).getConfig(`remote.${remote}.url`, "local")
+
+                if (config.value != null) {
+                    remoteUrl = config.value;
+                } else {
+                    return {
+                        result: "failure",
+                        reason: "Failed to get remote url of submodule",
+                    }
+                }
+
+            }
+        }
+    }
 
     if (remoteBranch == null) {
         return {
@@ -81,10 +115,18 @@ async function getData(manager: GitManager): Promise<
         };
     }
 
-    const remote = remoteBranch.substring(0, remoteBranch.indexOf("/"));
-    const remoteUrl = (await manager.getConfig(
-        `remote.${remote}.url`
-    )) as string;
+    if (remoteUrl == null) {
+        const remote = remoteBranch.substring(0, remoteBranch.indexOf("/"));
+        remoteUrl = (await manager.getConfig(
+            `remote.${remote}.url`
+        ));
+        if (remoteUrl == null) {
+            return {
+                result: "failure",
+                reason: "Failed to get remote url",
+            };
+        }
+    }
     // TODO: This process always causes a runtime error if the remote url is not github.com, so it should be fixed.
     // However, this runtime error does not have a fatal negative impact, so we temporary ignore.
     // @ts-ignore
@@ -97,5 +139,6 @@ async function getData(manager: GitManager): Promise<
         repo: httpsRepo || sshRepo,
         user: httpsUser || sshUser,
         branch: branch,
+        filePath: filePath
     };
 }
