@@ -198,7 +198,7 @@ export class SimpleGit extends GitManager {
             });
 
             await this.git.subModule(["foreach", "--recursive", ""]);
-            this.git.outputHandler(() => { });
+            this.git.outputHandler(() => {});
         });
     }
 
@@ -933,7 +933,7 @@ function parseBlame(blameOutputUnnormalized: string): Blame {
     };
 
     let line = 1;
-    for (let bi = 0; bi < blameLines.length;) {
+    for (let bi = 0; bi < blameLines.length; ) {
         if (startsWithNonWhitespace(blameLines[bi])) {
             const lineInfo = blameLines[bi].split(" ");
 

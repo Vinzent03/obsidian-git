@@ -52,15 +52,18 @@ export async function openHistoryInGitHub(file: TFile, manager: GitManager) {
     }
 }
 
-async function getData(file: TFile, manager: GitManager): Promise<
+async function getData(
+    file: TFile,
+    manager: GitManager
+): Promise<
     | {
-        result: "success";
-        isGitHub: boolean;
-        user: string;
-        repo: string;
-        branch: string;
-        filePath: string;
-    }
+          result: "success";
+          isGitHub: boolean;
+          user: string;
+          repo: string;
+          branch: string;
+          filePath: string;
+      }
     | { result: "failure"; reason: string }
 > {
     const branchInfo = await manager.branchInfo();
@@ -70,23 +73,32 @@ async function getData(file: TFile, manager: GitManager): Promise<
     let filePath = manager.getRelativeRepoPath(file.path);
 
     if (manager instanceof SimpleGit) {
-        const submodule = await manager.getSubmoduleOfFile(manager.getRelativeRepoPath(file.path));
+        const submodule = await manager.getSubmoduleOfFile(
+            manager.getRelativeRepoPath(file.path)
+        );
         if (submodule) {
             filePath = submodule.relativeFilepath;
-            const status = await manager.git.cwd({
-                path: submodule.submodule,
-                root: false,
-            }).status();
+            const status = await manager.git
+                .cwd({
+                    path: submodule.submodule,
+                    root: false,
+                })
+                .status();
 
             remoteBranch = status.tracking || undefined;
             branch = status.current || undefined;
             if (remoteBranch) {
-                const remote = remoteBranch.substring(0, remoteBranch.indexOf("/"));
+                const remote = remoteBranch.substring(
+                    0,
+                    remoteBranch.indexOf("/")
+                );
 
-                const config = await manager.git.cwd({
-                    path: submodule.submodule,
-                    root: false,
-                }).getConfig(`remote.${remote}.url`, "local")
+                const config = await manager.git
+                    .cwd({
+                        path: submodule.submodule,
+                        root: false,
+                    })
+                    .getConfig(`remote.${remote}.url`, "local");
 
                 if (config.value != null) {
                     remoteUrl = config.value;
@@ -94,9 +106,8 @@ async function getData(file: TFile, manager: GitManager): Promise<
                     return {
                         result: "failure",
                         reason: "Failed to get remote url of submodule",
-                    }
+                    };
                 }
-
             }
         }
     }
@@ -117,9 +128,7 @@ async function getData(file: TFile, manager: GitManager): Promise<
 
     if (remoteUrl == null) {
         const remote = remoteBranch.substring(0, remoteBranch.indexOf("/"));
-        remoteUrl = (await manager.getConfig(
-            `remote.${remote}.url`
-        ));
+        remoteUrl = await manager.getConfig(`remote.${remote}.url`);
         if (remoteUrl == null) {
             return {
                 result: "failure",
@@ -139,6 +148,6 @@ async function getData(file: TFile, manager: GitManager): Promise<
         repo: httpsRepo || sshRepo,
         user: httpsUser || sshUser,
         branch: branch,
-        filePath: filePath
+        filePath: filePath,
     };
 }
