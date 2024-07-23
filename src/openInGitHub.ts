@@ -136,18 +136,23 @@ async function getData(
             };
         }
     }
-    // TODO: This process always causes a runtime error if the remote url is not github.com, so it should be fixed.
-    // However, this runtime error does not have a fatal negative impact, so we temporary ignore.
-    // @ts-ignore
-    const [isGitHub, httpsUser, httpsRepo, sshUser, sshRepo] = remoteUrl.match(
-        /(?:^https:\/\/github\.com\/(.*)\/(.*)\.git$)|(?:^[a-zA-Z]+@github\.com:(.*)\/(.*)\.git$)/
+    const res = remoteUrl.match(
+        /(?:^https:\/\/github\.com\/(.+)\/(.+?)(?:\.git)?$)|(?:^[a-zA-Z]+@github\.com:(.+)\/(.+?)(?:\.git)?$)/
     );
-    return {
-        result: "success",
-        isGitHub: !!isGitHub,
-        repo: httpsRepo || sshRepo,
-        user: httpsUser || sshUser,
-        branch: branch,
-        filePath: filePath,
-    };
+    if (res == null) {
+        return {
+            result: "failure",
+            reason: "Could not parse remote url",
+        };
+    } else {
+        const [isGitHub, httpsUser, httpsRepo, sshUser, sshRepo] = res;
+        return {
+            result: "success",
+            isGitHub: !!isGitHub,
+            repo: httpsRepo || sshRepo,
+            user: httpsUser || sshUser,
+            branch: branch,
+            filePath: filePath,
+        };
+    }
 }
