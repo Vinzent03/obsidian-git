@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.25.0](https://github.com/denolehov/obsidian-git/compare/2.24.3...2.25.0) (2024-07-23)
+
+
+### Features
+
+* add context menu to git views ([115c4ba](https://github.com/denolehov/obsidian-git/commit/115c4baccaaf0e905fa8eefee8cb5f35abfff88f)), closes [#615](https://github.com/denolehov/obsidian-git/issues/615)
+
+
+### Bug Fixes
+
+* catch sidebar leaf being null ([86065c9](https://github.com/denolehov/obsidian-git/commit/86065c987bb478cbf65b4baca1745d7162041b5d))
+* don't require .git suffix to open file on github ([9b264bf](https://github.com/denolehov/obsidian-git/commit/9b264bffb49a36d86f8af4c17435de2e6ca6c580)), closes [#753](https://github.com/denolehov/obsidian-git/issues/753)
+* open file on github from submodule ([4981f8b](https://github.com/denolehov/obsidian-git/commit/4981f8bcc2eacda44fcebf8a95f458acd514febc)), closes [#592](https://github.com/denolehov/obsidian-git/issues/592)
+* use active color for buttons in file component ([c28d44b](https://github.com/denolehov/obsidian-git/commit/c28d44b1c6f358cdb0113ebcc4b1634a161dfdf2))
+
 ### [2.24.3](https://github.com/denolehov/obsidian-git/compare/2.24.2...2.24.3) (2024-06-22)
 
 
