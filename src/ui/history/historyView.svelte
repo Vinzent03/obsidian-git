@@ -82,11 +82,9 @@
     <div class="nav-files-container" style="position: relative;">
         {#if logs}
             <div class="tree-item nav-folder mod-root">
-                <div class="tree-item-children nav-folder-children">
-                    {#each logs as log}
-                        <LogComponent {view} {showTree} {log} {plugin} />
-                    {/each}
-                </div>
+                {#each logs as log}
+                    <LogComponent {view} {showTree} {log} {plugin} />
+                {/each}
             </div>
         {/if}
     </div>
