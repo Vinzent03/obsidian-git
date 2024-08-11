@@ -774,6 +774,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
+        new Setting(containerEl).setName("Support").setHeading();
         new Setting(containerEl)
             .setName("Donate")
             .setDesc(
@@ -784,18 +785,42 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     "<a href='https://ko-fi.com/F1F195IQ5' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://cdn.ko-fi.com/cdn/kofi3.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>";
             });
 
-        const info = containerEl.createDiv();
-        info.setAttr("align", "center");
-        info.setText(
-            "Debugging and logging:\nYou can always see the logs of this and every other plugin by opening the console with"
-        );
-        const keys = containerEl.createDiv();
-        keys.setAttr("align", "center");
-        keys.addClass("obsidian-git-shortcuts");
-        if (Platform.isMacOS === true) {
-            keys.createEl("kbd", { text: "CMD (⌘) + OPTION (⌥) + I" });
-        } else {
-            keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
+        const debugDiv = containerEl.createDiv();
+        debugDiv.setAttr("align", "center");
+        debugDiv.setAttr("style", "margin: var(--size-4-2)");
+
+        const debugButton = debugDiv.createEl("button");
+        debugButton.setText("Copy Debug Information");
+        debugButton.onclick = () => {
+            window.navigator.clipboard.writeText(
+                JSON.stringify(
+                    {
+                        settings: this.plugin.settings,
+                        pluginVersion: this.plugin.manifest.version,
+                    },
+                    null,
+                    4
+                )
+            );
+            new Notice(
+                "Debug information copied to clipboard. May contain sensitive information!"
+            );
+        };
+
+        if (Platform.isDesktopApp) {
+            const info = containerEl.createDiv();
+            info.setAttr("align", "center");
+            info.setText(
+                "Debugging and logging:\nYou can always see the logs of this and every other plugin by opening the console with"
+            );
+            const keys = containerEl.createDiv();
+            keys.setAttr("align", "center");
+            keys.addClass("obsidian-git-shortcuts");
+            if (Platform.isMacOS === true) {
+                keys.createEl("kbd", { text: "CMD (⌘) + OPTION (⌥) + I" });
+            } else {
+                keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
+            }
         }
     }
 
