@@ -122,7 +122,13 @@ export default class ObsidianGit extends Plugin {
     }
 
     async onload() {
-        console.log("loading " + this.manifest.name + " plugin");
+        console.log(
+            "loading " +
+                this.manifest.name +
+                " plugin: v" +
+                this.manifest.version
+        );
+
         pluginRef.plugin = this;
 
         this.localStorage = new LocalStorageSettings(this);
@@ -153,6 +159,30 @@ export default class ObsidianGit extends Plugin {
         this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {
             return new DiffView(leaf, this);
         });
+
+        this.addRibbonIcon(
+            "git-pull-request",
+            "Open Git source control",
+            async () => {
+                const leafs = this.app.workspace.getLeavesOfType(
+                    SOURCE_CONTROL_VIEW_CONFIG.type
+                );
+                let leaf: WorkspaceLeaf;
+                if (leafs.length === 0) {
+                    leaf =
+                        this.app.workspace.getRightLeaf(false) ??
+                        this.app.workspace.getLeaf();
+                    await leaf.setViewState({
+                        type: SOURCE_CONTROL_VIEW_CONFIG.type,
+                    });
+                } else {
+                    leaf = leafs.first()!;
+                }
+                this.app.workspace.revealLeaf(leaf);
+
+                dispatchEvent(new CustomEvent("git-refresh"));
+            }
+        );
 
         this.lineAuthoringFeature.onLoadPlugin();
 
