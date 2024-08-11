@@ -42,14 +42,17 @@
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <main
     on:click|stopPropagation={showDiff}
-    on:auxclick|stopPropagation={(event) =>
-        mayTriggerFileMenu(
-            view.app,
-            event,
-            diff.vault_path,
-            view.leaf,
-            "git-history"
-        )}
+    on:auxclick|stopPropagation={(event) => {
+        if (event.button == 2)
+            mayTriggerFileMenu(
+                view.app,
+                event,
+                diff.vault_path,
+                view.leaf,
+                "git-history"
+            );
+        else showDiff(event);
+    }}
     on:focus
     class="tree-item nav-file"
 >

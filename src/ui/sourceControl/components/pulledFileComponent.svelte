@@ -29,14 +29,17 @@
 <main
     on:mouseover={hover}
     on:click|stopPropagation={open}
-    on:auxclick|stopPropagation={(event) =>
-        mayTriggerFileMenu(
-            view.app,
-            event,
-            change.vault_path,
-            view.leaf,
-            "git-source-control"
-        )}
+    on:auxclick|stopPropagation={(event) => {
+        if (event.button == 2)
+            mayTriggerFileMenu(
+                view.app,
+                event,
+                change.vault_path,
+                view.leaf,
+                "git-source-control"
+            );
+        else open(event);
+    }}
     on:focus
     class="tree-item nav-file"
 >

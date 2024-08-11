@@ -20,7 +20,7 @@
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
-        if (app.vault.getAbstractFileByPath(change.vault_path)) {
+        if (view.app.vault.getFileByPath(change.vault_path)) {
             hoverPreview(event, view as any, change.vault_path);
         }
     }
@@ -57,14 +57,17 @@
     on:mouseover={hover}
     on:focus
     on:click|stopPropagation={showDiff}
-    on:auxclick|stopPropagation={(event) =>
-        mayTriggerFileMenu(
-            view.app,
-            event,
-            change.vault_path,
-            view.leaf,
-            "git-source-control"
-        )}
+    on:auxclick|stopPropagation={(event) => {
+        if (event.button == 2)
+            mayTriggerFileMenu(
+                view.app,
+                event,
+                change.vault_path,
+                view.leaf,
+                "git-source-control"
+            );
+        else showDiff(event);
+    }}
     class="tree-item nav-file"
 >
     <div
@@ -82,7 +85,7 @@
         </div>
         <div class="git-tools">
             <div class="buttons">
-                {#if view.app.vault.getAbstractFileByPath(change.vault_path)}
+                {#if view.app.vault.getAbstractFileByPath(change.vault_path) instanceof TFile}
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"
