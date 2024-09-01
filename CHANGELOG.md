@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.26.0](https://github.com/denolehov/obsidian-git/compare/2.25.0...2.26.0) (2024-09-01)
+
+
+### Features
+
+* open source control view with ribbon button ([dea4d6f](https://github.com/denolehov/obsidian-git/commit/dea4d6f915492ecc3d43b259fbe8764b9c6210a4))
+
+
+### Bug Fixes
+
+* open diffs in new split with middle click ([65ef5ba](https://github.com/denolehov/obsidian-git/commit/65ef5ba2fa783717baaea24d05c6dcc8e760596d))
+* remove root folding line in git views ([b2df0ed](https://github.com/denolehov/obsidian-git/commit/b2df0ed27b2af948df06dcc45021005b8c54e363))
+
 ## [2.25.0](https://github.com/denolehov/obsidian-git/compare/2.24.3...2.25.0) (2024-07-23)
 
 
