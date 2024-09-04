@@ -79,6 +79,9 @@ export default class DiffView extends ItemView {
                 );
                 this.contentEl.empty();
 
+                const vaultPath = this.plugin.gitManager.getRelativeVaultPath(
+                    this.state.file
+                );
                 if (!diff) {
                     if (
                         this.plugin.gitManager instanceof SimpleGit &&
@@ -86,17 +89,15 @@ export default class DiffView extends ItemView {
                             this.state.file
                         ))
                     ) {
+                        // File is tracked but no changes
                         diff = [
                             `--- ${this.state.file}`,
                             `+++ ${this.state.file}`,
                             "",
                         ].join("\n");
-                    } else {
-                        const content = await this.app.vault.adapter.read(
-                            this.plugin.gitManager.getRelativeVaultPath(
-                                this.state.file
-                            )
-                        );
+                    } else if (await this.app.vault.adapter.exists(vaultPath)) {
+                        const content =
+                            await this.app.vault.adapter.read(vaultPath);
                         const header = `--- /dev/null
 +++ ${this.state.file}
 @@ -0,0 +1,${content.split("\n").length} @@`;
@@ -105,17 +106,28 @@ export default class DiffView extends ItemView {
                             ...header.split("\n"),
                             ...content.split("\n").map((line) => `+${line}`),
                         ].join("\n");
+                    } else {
                     }
                 }
 
-                const diffEl = this.parser
-                    .parseFromString(html(diff), "text/html")
-                    .querySelector(".d2h-file-diff");
-                this.contentEl.append(diffEl!);
-                // const div = this.contentEl.createDiv({ cls: 'diff-err' });
-                // div.createSpan({ text: '⚠️', cls: 'diff-err-sign' });
-                // div.createEl('br');
-                // div.createSpan({ text: 'No changes to ' + this.state.file });
+                if (diff) {
+                    const diffEl = this.parser
+                        .parseFromString(html(diff), "text/html")
+                        .querySelector(".d2h-file-diff");
+                    this.contentEl.append(diffEl!);
+                } else {
+                    const div = this.contentEl.createDiv({
+                        cls: "obsidian-git-center",
+                    });
+                    div.createSpan({
+                        text: "⚠️",
+                        attr: { style: "font-size: 2em" },
+                    });
+                    div.createEl("br");
+                    div.createSpan({
+                        text: "File not found: " + this.state.file,
+                    });
+                }
             } finally {
                 this.gettingDiff = false;
             }
