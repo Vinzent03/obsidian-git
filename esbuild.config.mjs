@@ -42,6 +42,7 @@ const context = await esbuild.context({
     sourcemap: prod ? false : "inline",
     treeShaking: true,
     platform: "browser",
+    minify: prod,
     plugins: [
         esbuildSvelte({
             compilerOptions: {
