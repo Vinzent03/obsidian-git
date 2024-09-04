@@ -65,8 +65,7 @@ export default class ObsidianGit extends Plugin {
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
     conflictOutputFile = "conflict-files-obsidian-git.md";
-    autoBackupDebouncer: Debouncer<any, void>;
-    onFileModifyEventRef?: EventRef;
+    autoBackupDebouncer: Debouncer<any, void> | undefined;
     offlineMode = false;
     loading = false;
     cachedStatus: Status | undefined;
@@ -848,15 +847,19 @@ export default class ObsidianGit extends Plugin {
 
                     this.modifyEvent = this.app.vault.on("modify", () => {
                         this.debRefresh();
+                        this.autoBackupDebouncer?.();
                     });
                     this.deleteEvent = this.app.vault.on("delete", () => {
                         this.debRefresh();
+                        this.autoBackupDebouncer?.();
                     });
                     this.createEvent = this.app.vault.on("create", () => {
                         this.debRefresh();
+                        this.autoBackupDebouncer?.();
                     });
                     this.renameEvent = this.app.vault.on("rename", () => {
                         this.debRefresh();
+                        this.autoBackupDebouncer?.();
                     });
 
                     this.registerEvent(this.modifyEvent);
@@ -1494,7 +1497,7 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
-        if (!this.timeoutIDBackup && !this.onFileModifyEventRef) {
+        if (!this.timeoutIDBackup && !this.autoBackupDebouncer) {
             const lastAutos = this.loadLastAuto();
 
             if (this.settings.autoSaveInterval > 0) {
@@ -1560,9 +1563,6 @@ export default class ObsidianGit extends Plugin {
             if (minutes === 0) {
                 this.doAutoBackup();
             } else {
-                this.onFileModifyEventRef = this.app.vault.on("modify", () =>
-                    this.autoBackupDebouncer()
-                );
                 this.autoBackupDebouncer = debounce(
                     () => this.doAutoBackup(),
                     time,
@@ -1626,10 +1626,9 @@ export default class ObsidianGit extends Plugin {
             this.timeoutIDBackup = undefined;
             wasActive = true;
         }
-        if (this.onFileModifyEventRef) {
+        if (this.autoBackupDebouncer) {
             this.autoBackupDebouncer?.cancel();
-            this.app.vault.offref(this.onFileModifyEventRef);
-            this.onFileModifyEventRef = undefined;
+            this.autoBackupDebouncer = undefined;
             wasActive = true;
         }
         return wasActive;
