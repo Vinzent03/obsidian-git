@@ -49,10 +49,12 @@ import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { splitRemoteBranch } from "./utils";
+import Tools from "./tools";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
     automaticsManager: AutomaticsManager;
+    tools = new Tools(this);
     localStorage: LocalStorageSettings;
     settings: ObsidianGitSettings;
     settingsTab?: ObsidianGitSettingsTab;
@@ -393,7 +395,9 @@ export default class ObsidianGit extends Plugin {
             const result = await this.gitManager.checkRequirements();
             switch (result) {
                 case "missing-git":
-                    this.displayError("Cannot run git command");
+                    this.displayError(
+                        `Cannot run git command. Trying to run: '${this.localStorage.getGitPath() || "git"}' .`
+                    );
                     break;
                 case "missing-repo":
                     new Notice(
@@ -447,7 +451,7 @@ export default class ObsidianGit extends Plugin {
                     await this.automaticsManager.init();
                     break;
                 default:
-                    console.log(
+                    this.log(
                         "Something weird happened. The 'checkRequirements' result is " +
                             result
                     );
@@ -711,7 +715,7 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
-        if (await this.hasTooBigFiles(changedFiles)) {
+        if (await this.tools.hasTooBigFiles(changedFiles)) {
             this.setState(PluginState.idle);
             return false;
         }
@@ -787,40 +791,6 @@ export default class ObsidianGit extends Plugin {
         return true;
     }
 
-    async hasTooBigFiles(files: { vault_path: string }[]): Promise<boolean> {
-        const branchInfo = await this.gitManager.branchInfo();
-        const remote = branchInfo.tracking
-            ? splitRemoteBranch(branchInfo.tracking)[0]
-            : null;
-
-        if (remote) {
-            const remoteUrl = await this.gitManager.getRemoteUrl(remote);
-
-            //Check for files >100mb on GitHub remote
-            if (remoteUrl?.includes("github.com")) {
-                const tooBigFiles = files.filter((f) => {
-                    const file = this.app.vault.getAbstractFileByPath(
-                        f.vault_path
-                    );
-                    if (file instanceof TFile) {
-                        return file.stat.size >= 100000000;
-                    }
-                    return false;
-                });
-                if (tooBigFiles.length > 0) {
-                    this.displayError(
-                        `Did not commit, because following files are too big: ${tooBigFiles.map(
-                            (e) => e.vault_path
-                        )}. Please remove them.`
-                    );
-
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     async push(): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
         if (!(await this.remotesAreSet())) {
@@ -848,11 +818,11 @@ export default class ObsidianGit extends Plugin {
             this.setState(PluginState.conflicted);
             return false;
         }
-        console.log("Pushing....");
+        this.log("Pushing....");
         const pushedFiles = await this.gitManager.push();
 
         if (pushedFiles !== undefined) {
-            console.log("Pushed!", pushedFiles);
+            this.log("Pushed!", pushedFiles);
             if (pushedFiles > 0) {
                 this.displayMessage(
                     `Pushed ${pushedFiles} ${
@@ -1098,7 +1068,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
 \`\`\``,
             ];
         }
-        this.writeAndOpenFile(lines?.join("\n"));
+        this.tools.writeAndOpenFile(lines?.join("\n"));
     }
 
     async editRemotes(): Promise<string | undefined> {
@@ -1173,24 +1143,6 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         }
     }
 
-    async writeAndOpenFile(text?: string) {
-        if (text !== undefined) {
-            await this.app.vault.adapter.write(CONFLICT_OUTPUT_FILE, text);
-        }
-        let fileIsAlreadyOpened = false;
-        this.app.workspace.iterateAllLeaves((leaf) => {
-            if (
-                leaf.getDisplayText() != "" &&
-                CONFLICT_OUTPUT_FILE.startsWith(leaf.getDisplayText())
-            ) {
-                fileIsAlreadyOpened = true;
-            }
-        });
-        if (!fileIsAlreadyOpened) {
-            this.app.workspace.openLinkText(CONFLICT_OUTPUT_FILE, "/", true);
-        }
-    }
-
     handleViewActiveState(leaf: WorkspaceLeaf | null): void {
         // Prevent removing focus when switching to other panes than file panes like search or GitView
         if (!leaf?.view.getState().file) return;
@@ -1261,11 +1213,11 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         // Some errors might not be of type string
         message = message.toString();
         new Notice(message, timeout);
-        console.log(`git obsidian error: ${message}`);
+        this.log(`error: ${message}`);
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
     }
 
-    log(message: string) {
-        console.log(`${this.manifest.id}: ` + message);
+    log(...data: any[]) {
+        console.log(`${this.manifest.id}:`, ...data);
     }
 }

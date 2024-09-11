@@ -56,7 +56,7 @@
     async function commit() {
         loading = true;
         if (status) {
-            if (await plugin.hasTooBigFiles(status.staged)) {
+            if (await plugin.tools.hasTooBigFiles(status.staged)) {
                 plugin.setState(PluginState.idle);
                 return false;
             }
