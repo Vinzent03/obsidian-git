@@ -269,6 +269,13 @@ export class SimpleGit extends GitManager {
     }
 
     async isTracked(path: string): Promise<boolean> {
+        const pathExists = await this.app.vault.adapter.exists(
+            this.getRelativeVaultPath(path)
+        );
+        if (!pathExists) {
+            return false;
+        }
+
         const inSubmodule = await this.getSubmoduleOfFile(path);
         const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
         const relativePath = inSubmodule ? inSubmodule.relativeFilepath : path;
@@ -365,7 +372,16 @@ export class SimpleGit extends GitManager {
 
     async discard(filepath: string): Promise<void> {
         this.plugin.setState(PluginState.add);
-        await this.git.checkout(["--", filepath], (err) => this.onError(err));
+        if (await this.isTracked(filepath)) {
+            await this.git.checkout(["--", filepath], (err) =>
+                this.onError(err)
+            );
+        } else {
+            await this.app.vault.adapter.rmdir(
+                this.getRelativeVaultPath(filepath),
+                true
+            );
+        }
         this.plugin.setState(PluginState.idle);
     }
 
