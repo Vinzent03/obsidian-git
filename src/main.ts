@@ -58,14 +58,14 @@ export default class ObsidianGit extends Plugin {
     statusBar?: StatusBar;
     branchBar?: BranchStatusBar;
     state: PluginState;
-    timeoutIDBackup?: number;
+    timeoutIDCommitAndSync?: number;
     timeoutIDPush?: number;
     timeoutIDPull?: number;
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
     conflictOutputFile = "conflict-files-obsidian-git.md";
-    autoBackupDebouncer: Debouncer<any, void> | undefined;
+    autoCommitDebouncer: Debouncer<any, void> | undefined;
     offlineMode = false;
     loading = false;
     cachedStatus: Status | undefined;
@@ -308,7 +308,7 @@ export default class ObsidianGit extends Plugin {
 
         this.addCommand({
             id: "fetch",
-            name: "fetch",
+            name: "Fetch",
             callback: () => this.promiseQueue.addTask(() => this.fetch()),
         });
 
@@ -334,26 +334,28 @@ export default class ObsidianGit extends Plugin {
 
         this.addCommand({
             id: "push",
-            name: "Create backup",
+            name: "Commit-and-sync",
             callback: () =>
-                this.promiseQueue.addTask(() => this.createBackup(false)),
+                this.promiseQueue.addTask(() => this.commitAndSync(false)),
         });
 
         this.addCommand({
             id: "backup-and-close",
-            name: "Create backup and close",
+            name: "Commit-and-sync and then close Obsidian",
             callback: () =>
                 this.promiseQueue.addTask(async () => {
-                    await this.createBackup(false);
+                    await this.commitAndSync(false);
                     window.close();
                 }),
         });
 
         this.addCommand({
             id: "commit-push-specified-message",
-            name: "Create backup with specific message",
+            name: "Commit-and-sync with specific message",
             callback: () =>
-                this.promiseQueue.addTask(() => this.createBackup(false, true)),
+                this.promiseQueue.addTask(() =>
+                    this.commitAndSync(false, true)
+                ),
         });
 
         this.addCommand({
@@ -361,7 +363,7 @@ export default class ObsidianGit extends Plugin {
             name: "Commit all changes",
             callback: () =>
                 this.promiseQueue.addTask(() =>
-                    this.commit({ fromAutoBackup: false })
+                    this.commit({ fromAuto: false })
                 ),
         });
 
@@ -371,7 +373,7 @@ export default class ObsidianGit extends Plugin {
             callback: () =>
                 this.promiseQueue.addTask(() =>
                     this.commit({
-                        fromAutoBackup: false,
+                        fromAuto: false,
                         requestCustomMessage: true,
                     })
                 ),
@@ -383,7 +385,7 @@ export default class ObsidianGit extends Plugin {
             callback: () =>
                 this.promiseQueue.addTask(() =>
                     this.commit({
-                        fromAutoBackup: false,
+                        fromAuto: false,
                         requestCustomMessage: false,
                         onlyStaged: true,
                     })
@@ -397,7 +399,7 @@ export default class ObsidianGit extends Plugin {
                 callback: () =>
                     this.promiseQueue.addTask(() =>
                         this.commit({
-                            fromAutoBackup: false,
+                            fromAuto: false,
                             requestCustomMessage: true,
                             onlyStaged: true,
                             amend: true,
@@ -412,7 +414,7 @@ export default class ObsidianGit extends Plugin {
             callback: () =>
                 this.promiseQueue.addTask(() =>
                     this.commit({
-                        fromAutoBackup: false,
+                        fromAuto: false,
                         requestCustomMessage: true,
                         onlyStaged: true,
                     })
@@ -753,7 +755,7 @@ export default class ObsidianGit extends Plugin {
         this.lineAuthoringFeature.deactivateFeature();
         this.clearAutoPull();
         this.clearAutoPush();
-        this.clearAutoBackup();
+        this.clearAutoCommitAndSync();
         removeEventListener("git-refresh", this.refresh.bind(this));
         removeEventListener(
             "git-head-update",
@@ -847,19 +849,19 @@ export default class ObsidianGit extends Plugin {
 
                     this.modifyEvent = this.app.vault.on("modify", () => {
                         this.debRefresh();
-                        this.autoBackupDebouncer?.();
+                        this.autoCommitDebouncer?.();
                     });
                     this.deleteEvent = this.app.vault.on("delete", () => {
                         this.debRefresh();
-                        this.autoBackupDebouncer?.();
+                        this.autoCommitDebouncer?.();
                     });
                     this.createEvent = this.app.vault.on("create", () => {
                         this.debRefresh();
-                        this.autoBackupDebouncer?.();
+                        this.autoCommitDebouncer?.();
                     });
                     this.renameEvent = this.app.vault.on("rename", () => {
                         this.debRefresh();
-                        this.autoBackupDebouncer?.();
+                        this.autoCommitDebouncer?.();
                     });
 
                     this.registerEvent(this.modifyEvent);
@@ -1006,7 +1008,7 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.isAllInitialized())) return;
 
         const filesUpdated = await this.pull();
-        this.setUpAutoBackup();
+        this.setUpAutoCommitAndSync();
         if (filesUpdated === false) {
             return;
         }
@@ -1030,7 +1032,7 @@ export default class ObsidianGit extends Plugin {
         this.setState(PluginState.idle);
     }
 
-    async createBackup(
+    async commitAndSync(
         fromAutoBackup: boolean,
         requestCustomMessage = false,
         commitMessage?: string
@@ -1046,7 +1048,7 @@ export default class ObsidianGit extends Plugin {
 
         if (
             !(await this.commit({
-                fromAutoBackup,
+                fromAuto: fromAutoBackup,
                 requestCustomMessage,
                 commitMessage,
             }))
@@ -1077,13 +1079,13 @@ export default class ObsidianGit extends Plugin {
 
     // Returns true if commit was successfully
     async commit({
-        fromAutoBackup,
+        fromAuto,
         requestCustomMessage = false,
         onlyStaged = false,
         commitMessage,
         amend = false,
     }: {
-        fromAutoBackup: boolean;
+        fromAuto: boolean;
         requestCustomMessage?: boolean;
         onlyStaged?: boolean;
         commitMessage?: string;
@@ -1108,7 +1110,7 @@ export default class ObsidianGit extends Plugin {
             }
 
             // check for conflict files on auto backup
-            if (fromAutoBackup && status.conflicted.length > 0) {
+            if (fromAuto && status.conflicted.length > 0) {
                 this.displayError(
                     `Did not commit, because you have conflicts in ${
                         status.conflicted.length
@@ -1120,7 +1122,7 @@ export default class ObsidianGit extends Plugin {
                 return false;
             }
             changedFiles = [...status.changed, ...status.staged];
-        } else if (fromAutoBackup && hadConflict) {
+        } else if (fromAuto && hadConflict) {
             this.setState(PluginState.conflicted);
             this.displayError(
                 `Did not commit, because you have conflicts. Please resolve them and commit per command.`
@@ -1151,14 +1153,14 @@ export default class ObsidianGit extends Plugin {
         }
 
         if (changedFiles.length !== 0 || hadConflict) {
-            let cmtMessage = (commitMessage ??= fromAutoBackup
+            let cmtMessage = (commitMessage ??= fromAuto
                 ? this.settings.autoCommitMessage
                 : this.settings.commitMessage);
             if (
-                (fromAutoBackup && this.settings.customMessageOnAutoBackup) ||
+                (fromAuto && this.settings.customMessageOnAutoBackup) ||
                 requestCustomMessage
             ) {
-                if (!this.settings.disablePopups && fromAutoBackup) {
+                if (!this.settings.disablePopups && fromAuto) {
                     new Notice(
                         "Auto backup: Please enter a custom commit message. Leave empty to abort"
                     );
@@ -1206,7 +1208,7 @@ export default class ObsidianGit extends Plugin {
                 roughly = true;
                 committedFiles = changedFiles.length;
             }
-            this.setUpAutoBackup();
+            this.setUpAutoCommitAndSync();
             this.displayMessage(
                 `Committed${roughly ? " approx." : ""} ${committedFiles} ${
                     committedFiles == 1 ? "file" : "files"
@@ -1488,16 +1490,16 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async setUpAutoBackup() {
+    async setUpAutoCommitAndSync() {
         if (this.settings.setLastSaveToLastCommit) {
-            this.clearAutoBackup();
+            this.clearAutoCommitAndSync();
             const lastCommitDate = await this.gitManager.getLastCommitTime();
             if (lastCommitDate) {
                 this.localStorage.setLastAutoBackup(lastCommitDate.toString());
             }
         }
 
-        if (!this.timeoutIDBackup && !this.autoBackupDebouncer) {
+        if (!this.timeoutIDCommitAndSync && !this.autoCommitDebouncer) {
             const lastAutos = this.loadLastAuto();
 
             if (this.settings.autoSaveInterval > 0) {
@@ -1508,13 +1510,13 @@ export default class ObsidianGit extends Plugin {
                     Math.round(
                         (now.getTime() - lastAutos.backup.getTime()) / 1000 / 60
                     );
-                this.startAutoBackup(diff <= 0 ? 0 : diff);
+                this.startAutoCommitAndSync(diff <= 0 ? 0 : diff);
             }
         }
     }
 
     async setUpAutos() {
-        this.setUpAutoBackup();
+        this.setUpAutoCommitAndSync();
         const lastAutos = this.loadLastAuto();
 
         if (
@@ -1552,19 +1554,19 @@ export default class ObsidianGit extends Plugin {
     }
 
     clearAutos(): void {
-        this.clearAutoBackup();
+        this.clearAutoCommitAndSync();
         this.clearAutoPush();
         this.clearAutoPull();
     }
 
-    startAutoBackup(minutes?: number) {
+    startAutoCommitAndSync(minutes?: number) {
         let time = (minutes ?? this.settings.autoSaveInterval) * 60000;
         if (this.settings.autoBackupAfterFileChange) {
             if (minutes === 0) {
-                this.doAutoBackup();
+                this.doAutoCommitAndSync();
             } else {
-                this.autoBackupDebouncer = debounce(
-                    () => this.doAutoBackup(),
+                this.autoCommitDebouncer = debounce(
+                    () => this.doAutoCommitAndSync(),
                     time,
                     true
                 );
@@ -1572,25 +1574,25 @@ export default class ObsidianGit extends Plugin {
         } else {
             // max timeout in js
             if (time > 2147483647) time = 2147483647;
-            this.timeoutIDBackup = window.setTimeout(
-                () => this.doAutoBackup(),
+            this.timeoutIDCommitAndSync = window.setTimeout(
+                () => this.doAutoCommitAndSync(),
                 time
             );
         }
     }
 
-    // This is used for both auto backup and commit
-    doAutoBackup(): void {
+    // This is used for both auto commit-and-sync and commit only
+    doAutoCommitAndSync(): void {
         this.promiseQueue.addTask(() => {
             if (this.settings.differentIntervalCommitAndPush) {
-                return this.commit({ fromAutoBackup: true });
+                return this.commit({ fromAuto: true });
             } else {
-                return this.createBackup(true);
+                return this.commitAndSync(true);
             }
         });
         this.saveLastAuto(new Date(), "backup");
         this.saveSettings();
-        this.startAutoBackup();
+        this.startAutoCommitAndSync();
     }
 
     startAutoPull(minutes?: number) {
@@ -1619,16 +1621,16 @@ export default class ObsidianGit extends Plugin {
         }, time);
     }
 
-    clearAutoBackup(): boolean {
+    clearAutoCommitAndSync(): boolean {
         let wasActive = false;
-        if (this.timeoutIDBackup) {
-            window.clearTimeout(this.timeoutIDBackup);
-            this.timeoutIDBackup = undefined;
+        if (this.timeoutIDCommitAndSync) {
+            window.clearTimeout(this.timeoutIDCommitAndSync);
+            this.timeoutIDCommitAndSync = undefined;
             wasActive = true;
         }
-        if (this.autoBackupDebouncer) {
-            this.autoBackupDebouncer?.cancel();
-            this.autoBackupDebouncer = undefined;
+        if (this.autoCommitDebouncer) {
+            this.autoCommitDebouncer?.cancel();
+            this.autoCommitDebouncer = undefined;
             wasActive = true;
         }
         return wasActive;

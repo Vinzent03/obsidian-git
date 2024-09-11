@@ -67,7 +67,7 @@
                         if (commitMessage !== plugin.settings.commitMessage) {
                             commitMessage = "";
                         }
-                        plugin.setUpAutoBackup();
+                        plugin.setUpAutoCommitAndSync();
                     })
                     .finally(triggerRefresh)
             );
@@ -79,7 +79,7 @@
         if (status) {
             plugin.promiseQueue.addTask(() =>
                 plugin
-                    .createBackup(false, false, commitMessage)
+                    .commitAndSync(false, false, commitMessage)
                     .then(() => {
                         if (commitMessage !== plugin.settings.commitMessage) {
                             commitMessage = "";
@@ -233,7 +233,7 @@
                 id="backup-btn"
                 data-icon="arrow-up-circle"
                 class="clickable-icon nav-action-button"
-                aria-label="Backup"
+                aria-label="Commit-and-sync"
                 bind:this={buttons[5]}
                 on:click={backup}
             />

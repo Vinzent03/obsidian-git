@@ -3,7 +3,7 @@ aliases:
   - "01 Start here"
 ---
 
-# Obsidian-Git Documentation
+# Git plugin Documentation
 
 ## Topics
 - [[Installation|Installation]]
@@ -32,7 +32,15 @@ Git itself only manages a local repository. It becomes really handy in conjuncti
 
 Git is primarily used by developers and thus the command line is sometimes needed. Obsidian-Git is a plugin for Obsidian that allows you to use Git from within Obsidian without always having to use the command line or leaving Obsidian.
 
-## Terminology
+## Terminology and concepts
 
-### Backup
-For simplification, the term "Backup" refers to staging everything -> commiting -> pulling -> pushing.
+### Backup - no longer in use
+For simplification, the term "Backup" refers to staging everything -> committing -> pulling -> pushing.
+
+### Sync
+
+Syncing is the process of pulling and pushing changes to and from a remote repository. This is done to keep your local repository up to date with the remote repository on e.g. GitHub. 
+
+### Commit-and-sync
+
+Commit-and-sync is the process of staging everything -> committing -> pulling -> pushing. Ideally this is a single action that you do regularly to keep your local and remote repository in sync. It's recommended you set it up from the plugin's settings to be run automatically every X minutes. You can also disable the pulling or pushing part from the "Commit-and-sync" section in the plugin's settings. This reduces the "commit-and-sync" action to either a "commit and pull" or just commit action.

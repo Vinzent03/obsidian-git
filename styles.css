@@ -39,6 +39,10 @@
     margin-right: auto;
 }
 
+.obsidian-git-disabled {
+    opacity: 0.5;
+}
+
 .obsidian-git-center-button {
     display: block;
     margin: 20px auto;

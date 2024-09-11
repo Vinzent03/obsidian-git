@@ -44,24 +44,32 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         const plugin: ObsidianGit = this.plugin;
-        const commitOrBackup = plugin.settings.differentIntervalCommitAndPush
-            ? "commit"
-            : "backup";
+
+        let commitOrSync: string;
+        if (plugin.settings.differentIntervalCommitAndPush) {
+            commitOrSync = "commit";
+        } else {
+            commitOrSync = "commit-and-sync";
+        }
+
         const gitReady = plugin.gitReady;
 
         containerEl.empty();
         if (!gitReady) {
             containerEl.createEl("p", {
-                text: "Git is not ready. When all settings are correct you can configure auto backup, etc.",
+                text: "Git is not ready. When all settings are correct you can configure commit-sync, etc.",
             });
             containerEl.createEl("br");
         }
 
+        let setting: Setting;
         if (gitReady) {
             new Setting(containerEl).setName("Automatic").setHeading();
             new Setting(containerEl)
-                .setName("Split automatic commit and push")
-                .setDesc("Enable to use separate timer for commit and push")
+                .setName("Split timers for automatic commit and sync")
+                .setDesc(
+                    "Enable to use one interval for commit and another for sync."
+                )
                 .addToggle((toggle) =>
                     toggle
                         .setValue(
@@ -71,10 +79,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.settings.differentIntervalCommitAndPush =
                                 value;
                             plugin.saveSettings();
-                            plugin.clearAutoBackup();
+                            plugin.clearAutoCommitAndSync();
                             plugin.clearAutoPush();
                             if (plugin.settings.autoSaveInterval > 0) {
-                                plugin.startAutoBackup(
+                                plugin.startAutoCommitAndSync(
                                     plugin.settings.autoSaveInterval
                                 );
                             }
@@ -88,12 +96,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             new Setting(containerEl)
-                .setName(`Vault ${commitOrBackup} interval (minutes)`)
+                .setName(`Auto ${commitOrSync} interval (minutes)`)
                 .setDesc(
                     `${
                         plugin.settings.differentIntervalCommitAndPush
                             ? "Commit"
-                            : "Commit and push"
+                            : "Commit and sync"
                     } changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)`
                 )
                 .addText((text) =>
@@ -106,21 +114,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 plugin.saveSettings();
 
                                 if (plugin.settings.autoSaveInterval > 0) {
-                                    plugin.clearAutoBackup();
-                                    plugin.startAutoBackup(
+                                    plugin.clearAutoCommitAndSync();
+                                    plugin.startAutoCommitAndSync(
                                         plugin.settings.autoSaveInterval
                                     );
                                     new Notice(
-                                        `Automatic ${commitOrBackup} enabled! Every ${formatMinutes(
+                                        `Automatic ${commitOrSync} enabled! Every ${formatMinutes(
                                             plugin.settings.autoSaveInterval
                                         )}.`
                                     );
                                 } else if (
                                     plugin.settings.autoSaveInterval <= 0
                                 ) {
-                                    plugin.clearAutoBackup() &&
+                                    plugin.clearAutoCommitAndSync() &&
                                         new Notice(
-                                            `Automatic ${commitOrBackup} disabled!`
+                                            `Automatic ${commitOrSync} disabled!`
                                         );
                                 }
                             } else {
@@ -129,92 +137,95 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         })
                 );
 
-            if (!plugin.settings.setLastSaveToLastCommit)
-                new Setting(containerEl)
-                    .setName(`Auto Backup after stopping file edits`)
-                    .setDesc(
-                        `Requires the ${commitOrBackup} interval not to be 0.
-                        If turned on, do auto ${commitOrBackup} every ${formatMinutes(
+            setting = new Setting(containerEl)
+                .setName(`Auto ${commitOrSync} after stopping file edits`)
+                .setDesc(
+                    `Requires the ${commitOrSync} interval not to be 0.
+                        If turned on, do auto ${commitOrSync} every ${formatMinutes(
                             plugin.settings.autoSaveInterval
                         )} after stopping file edits.
-                        This also prevents auto ${commitOrBackup} while editing a file. If turned off, it's independent from the last change.`
-                    )
-                    .addToggle((toggle) =>
-                        toggle
-                            .setValue(plugin.settings.autoBackupAfterFileChange)
-                            .onChange((value) => {
-                                plugin.settings.autoBackupAfterFileChange =
-                                    value;
-                                this.display();
+                        This also prevents auto ${commitOrSync} while editing a file. If turned off, it's independent from the last file edit.`
+                )
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.autoBackupAfterFileChange)
+                        .onChange((value) => {
+                            plugin.settings.autoBackupAfterFileChange = value;
+                            this.display();
+                            plugin.saveSettings();
+                            plugin.clearAutoCommitAndSync();
+                            if (plugin.settings.autoSaveInterval > 0) {
+                                plugin.startAutoCommitAndSync(
+                                    plugin.settings.autoSaveInterval
+                                );
+                            }
+                        })
+                );
+            this.mayDisableSetting(
+                setting,
+                plugin.settings.setLastSaveToLastCommit
+            );
+
+            setting = new Setting(containerEl)
+                .setName(`Auto ${commitOrSync} after latest commit`)
+                .setDesc(
+                    `If turned on, sets last auto ${commitOrSync} timestamp to the latest commit timestamp. This reduces the frequency of auto ${commitOrSync} when doing manual commits.`
+                )
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.setLastSaveToLastCommit)
+                        .onChange(async (value) => {
+                            plugin.settings.setLastSaveToLastCommit = value;
+                            plugin.saveSettings();
+                            this.display();
+                            plugin.clearAutoCommitAndSync();
+                            await plugin.setUpAutoCommitAndSync();
+                        })
+                );
+            this.mayDisableSetting(
+                setting,
+                plugin.settings.autoBackupAfterFileChange
+            );
+
+            setting = new Setting(containerEl)
+                .setName(`Auto push interval (minutes)`)
+                .setDesc(
+                    "Push commits every X minutes. Set to 0 (default) to disable."
+                )
+                .addText((text) =>
+                    text
+                        .setValue(String(plugin.settings.autoPushInterval))
+                        .onChange((value) => {
+                            if (!isNaN(Number(value))) {
+                                plugin.settings.autoPushInterval =
+                                    Number(value);
                                 plugin.saveSettings();
-                                plugin.clearAutoBackup();
-                                if (plugin.settings.autoSaveInterval > 0) {
-                                    plugin.startAutoBackup(
-                                        plugin.settings.autoSaveInterval
+
+                                if (plugin.settings.autoPushInterval > 0) {
+                                    plugin.clearAutoPush();
+                                    plugin.startAutoPush(
+                                        plugin.settings.autoPushInterval
                                     );
-                                }
-                            })
-                    );
-
-            if (!plugin.settings.autoBackupAfterFileChange)
-                new Setting(containerEl)
-                    .setName(`Auto ${commitOrBackup} after latest commit`)
-                    .setDesc(
-                        `If turned on, set last auto ${commitOrBackup} time to latest commit`
-                    )
-                    .addToggle((toggle) =>
-                        toggle
-                            .setValue(plugin.settings.setLastSaveToLastCommit)
-                            .onChange(async (value) => {
-                                plugin.settings.setLastSaveToLastCommit = value;
-                                plugin.saveSettings();
-                                this.display();
-                                plugin.clearAutoBackup();
-                                await plugin.setUpAutoBackup();
-                            })
-                    );
-
-            if (plugin.settings.differentIntervalCommitAndPush) {
-                new Setting(containerEl)
-                    .setName(`Vault push interval (minutes)`)
-                    .setDesc(
-                        "Push changes every X minutes. Set to 0 (default) to disable."
-                    )
-                    .addText((text) =>
-                        text
-                            .setValue(String(plugin.settings.autoPushInterval))
-                            .onChange((value) => {
-                                if (!isNaN(Number(value))) {
-                                    plugin.settings.autoPushInterval =
-                                        Number(value);
-                                    plugin.saveSettings();
-
-                                    if (plugin.settings.autoPushInterval > 0) {
-                                        plugin.clearAutoPush();
-                                        plugin.startAutoPush(
-                                            plugin.settings.autoPushInterval
-                                        );
-                                        new Notice(
-                                            `Automatic push enabled! Every ${formatMinutes(
-                                                plugin.settings.autoPushInterval
-                                            )}.`
-                                        );
-                                    } else if (
-                                        plugin.settings.autoPushInterval <= 0
-                                    ) {
-                                        plugin.clearAutoPush() &&
-                                            new Notice(
-                                                "Automatic push disabled!"
-                                            );
-                                    }
-                                } else {
                                     new Notice(
-                                        "Please specify a valid number."
+                                        `Automatic push enabled! Every ${formatMinutes(
+                                            plugin.settings.autoPushInterval
+                                        )}.`
                                     );
+                                } else if (
+                                    plugin.settings.autoPushInterval <= 0
+                                ) {
+                                    plugin.clearAutoPush() &&
+                                        new Notice("Automatic push disabled!");
                                 }
-                            })
-                    );
-            }
+                            } else {
+                                new Notice("Please specify a valid number.");
+                            }
+                        })
+                );
+            this.mayDisableSetting(
+                setting,
+                !plugin.settings.differentIntervalCommitAndPush
+            );
 
             new Setting(containerEl)
                 .setName("Auto pull interval (minutes)")
@@ -253,22 +264,25 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             new Setting(containerEl)
-                .setName("Specify custom commit message on auto backup")
-                .setDesc("You will get a pop up to specify your message")
+                .setName(
+                    `Specify custom commit message on auto ${commitOrSync}`
+                )
+                .setDesc("You will get a pop up to specify your message.")
                 .addToggle((toggle) =>
                     toggle
                         .setValue(plugin.settings.customMessageOnAutoBackup)
                         .onChange((value) => {
                             plugin.settings.customMessageOnAutoBackup = value;
                             plugin.saveSettings();
+                            this.display();
                         })
                 );
 
-            new Setting(containerEl)
-                .setName("Commit message on auto backup/commit")
+            setting = new Setting(containerEl)
+                .setName(`Commit message on auto ${commitOrSync}`)
                 .setDesc(
                     "Available placeholders: {{date}}" +
-                        " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)"
+                        " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)."
                 )
                 .addTextArea((text) =>
                     text
@@ -279,14 +293,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.saveSettings();
                         })
                 );
+            this.mayDisableSetting(
+                setting,
+                plugin.settings.customMessageOnAutoBackup
+            );
 
             new Setting(containerEl).setName("Commit message").setHeading();
 
             new Setting(containerEl)
-                .setName("Commit message on manual backup/commit")
+                .setName("Commit message on manual commit")
                 .setDesc(
                     "Available placeholders: {{date}}" +
-                        " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)"
+                        " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)."
                 )
                 .addTextArea((text) =>
                     text
@@ -304,9 +322,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             const datePlaceholderSetting = new Setting(containerEl)
                 .setName("{{date}} placeholder format")
-                .addText((text) =>
+                .addMomentFormat((text) =>
                     text
-                        .setPlaceholder(plugin.settings.commitDateFormat)
+                        .setDefaultFormat(plugin.settings.commitDateFormat)
                         .setValue(plugin.settings.commitDateFormat)
                         .onChange(async (value) => {
                             plugin.settings.commitDateFormat = value;
@@ -351,13 +369,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         })
                 );
 
-            new Setting(containerEl).setName("Backup").setHeading();
+            new Setting(containerEl).setName("Pull").setHeading();
 
             if (plugin.gitManager instanceof SimpleGit)
                 new Setting(containerEl)
-                    .setName("Sync Method")
+                    .setName("Merge strategy")
                     .setDesc(
-                        "Selects the method used for handling new changes found in your remote git repository."
+                        "Decide how to integrate commits from your remote branch into your local branch."
                     )
                     .addDropdown((dropdown) => {
                         const options: Record<SyncMethod, string> = {
@@ -375,8 +393,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
 
             new Setting(containerEl)
-                .setName("Pull updates on startup")
-                .setDesc("Automatically pull updates when Obsidian starts")
+                .setName("Pull on startup")
+                .setDesc("Automatically pull commits when Obsidian starts.")
                 .addToggle((toggle) =>
                     toggle
                         .setValue(plugin.settings.autoPullOnBoot)
@@ -387,8 +405,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             new Setting(containerEl)
-                .setName("Push on backup")
-                .setDesc("Disable to only commit changes")
+                .setName("Commit-and-sync")
+                .setDesc(
+                    "Commit-and-sync with default settings means staging everything -> committing -> pulling -> pushing. Ideally this is a single action that you do regularly to keep your local and remote repository in sync."
+                )
+                .setHeading();
+
+            setting = new Setting(containerEl)
+                .setName("Push on commit-and-sync")
+                .setDesc(
+                    "Most of the time you want to push after committing. Turning this off turns a commit-and-sync action into commit only. It will still be called commit-and-sync."
+                )
                 .addToggle((toggle) =>
                     toggle
                         .setValue(!plugin.settings.disablePush)
@@ -399,8 +426,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             new Setting(containerEl)
-                .setName("Pull changes before push")
-                .setDesc("Commit -> pull -> push (Only if pushing is enabled)")
+                .setName("Pull on commit-and-sync")
+                .setDesc(
+                    "On commit-and-sync, pull commits before pushing. Turning this off turns a commit-and-sync action into commit and push only."
+                )
                 .addToggle((toggle) =>
                     toggle
                         .setValue(plugin.settings.pullBeforePush)
@@ -423,7 +452,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Show Author")
-            .setDesc("Show the author of the commit in the history view")
+            .setDesc("Show the author of the commit in the history view.")
             .addDropdown((dropdown) => {
                 const options: Record<ShowAuthorInHistoryView, string> = {
                     hide: "Hide",
@@ -461,7 +490,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 "Automatically refresh source control view on file changes"
             )
             .setDesc(
-                "On slower machines this may cause lags. If so, just disable this option"
+                "On slower machines this may cause lags. If so, just disable this option."
             )
             .addToggle((toggle) =>
                 toggle
@@ -475,7 +504,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Source control view refresh interval")
             .setDesc(
-                "Milliseconds to wait after file change before refreshing the Source Control View"
+                "Milliseconds to wait after file change before refreshing the Source Control View."
             )
             .addText((toggle) =>
                 toggle
@@ -497,7 +526,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Disable notifications")
             .setDesc(
-                "Disable notifications for git operations to minimize distraction (refer to status bar for updates). Errors are still shown as notifications even if you enable this setting"
+                "Disable notifications for git operations to minimize distraction (refer to status bar for updates). Errors are still shown as notifications even if you enable this setting."
             )
             .addToggle((toggle) =>
                 toggle
@@ -513,7 +542,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Hide notifications for no changes")
                 .setDesc(
-                    "Don't show notifications when there are no changes to commit/push"
+                    "Don't show notifications when there are no changes to commit or push."
                 )
                 .addToggle((toggle) =>
                     toggle
@@ -527,7 +556,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Show status bar")
             .setDesc(
-                "Obsidian must be restarted for the changes to take affect"
+                "Obsidian must be restarted for the changes to take affect."
             )
             .addToggle((toggle) =>
                 toggle
@@ -552,7 +581,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Show branch status bar")
             .setDesc(
-                "Obsidian must be restarted for the changes to take affect"
+                "Obsidian must be restarted for the changes to take affect."
             )
             .addToggle((toggle) =>
                 toggle
@@ -637,13 +666,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
                 });
 
-        new Setting(containerEl).setName("Advanced").setHeading();
+        new Setting(containerEl)
+            .setName("Advanced")
+            .setDesc(
+                "These settings usually don't need to be changed, but may be requried for special setups."
+            )
+            .setHeading();
 
         if (plugin.gitManager instanceof SimpleGit) {
             new Setting(containerEl)
                 .setName("Update submodules")
                 .setDesc(
-                    '"Create backup" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule'
+                    '"Commit-and-sync" and "pull" takes care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule.'
                 )
                 .addToggle((toggle) =>
                     toggle
@@ -687,7 +721,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Additional environment variables")
                 .setDesc(
-                    "Use each line for a new environment variable in the format KEY=VALUE"
+                    "Use each line for a new environment variable in the format KEY=VALUE ."
                 )
                 .addTextArea((cb) => {
                     cb.setPlaceholder("GIT_DIR=/path/to/git/dir");
@@ -769,7 +803,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.loadPlugin();
                         }
                         new Notice(
-                            "Obsidian must be restarted for the changes to take affect"
+                            "Obsidian must be restarted for the changes to take affect."
                         );
                     })
             );
@@ -821,6 +855,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             } else {
                 keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
             }
+        }
+    }
+
+    mayDisableSetting(setting: Setting, disable: boolean) {
+        if (disable) {
+            setting.setDisabled(disable);
+            setting.setClass("obsidian-git-disabled");
         }
     }
 

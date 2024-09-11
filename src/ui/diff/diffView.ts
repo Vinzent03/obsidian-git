@@ -106,7 +106,6 @@ export default class DiffView extends ItemView {
                             ...header.split("\n"),
                             ...content.split("\n").map((line) => `+${line}`),
                         ].join("\n");
-                    } else {
                     }
                 }
 
