@@ -67,7 +67,7 @@
                         if (commitMessage !== plugin.settings.commitMessage) {
                             commitMessage = "";
                         }
-                        plugin.setUpAutoCommitAndSync();
+                        plugin.automaticsManager.setUpAutoCommitAndSync();
                     })
                     .finally(triggerRefresh)
             );

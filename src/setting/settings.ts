@@ -79,18 +79,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.settings.differentIntervalCommitAndPush =
                                 value;
                             plugin.saveSettings();
-                            plugin.clearAutoCommitAndSync();
-                            plugin.clearAutoPush();
-                            if (plugin.settings.autoSaveInterval > 0) {
-                                plugin.startAutoCommitAndSync(
-                                    plugin.settings.autoSaveInterval
-                                );
-                            }
-                            if (value && plugin.settings.autoPushInterval > 0) {
-                                plugin.startAutoPush(
-                                    plugin.settings.autoPushInterval
-                                );
-                            }
+                            plugin.automaticsManager.reload("commit", "push");
                             this.display();
                         })
                 );
@@ -113,11 +102,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     Number(value);
                                 plugin.saveSettings();
 
+                                plugin.automaticsManager.reload("commit");
                                 if (plugin.settings.autoSaveInterval > 0) {
-                                    plugin.clearAutoCommitAndSync();
-                                    plugin.startAutoCommitAndSync(
-                                        plugin.settings.autoSaveInterval
-                                    );
                                     new Notice(
                                         `Automatic ${commitOrSync} enabled! Every ${formatMinutes(
                                             plugin.settings.autoSaveInterval
@@ -126,10 +112,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 } else if (
                                     plugin.settings.autoSaveInterval <= 0
                                 ) {
-                                    plugin.clearAutoCommitAndSync() &&
-                                        new Notice(
-                                            `Automatic ${commitOrSync} disabled!`
-                                        );
+                                    new Notice(
+                                        `Automatic ${commitOrSync} disabled!`
+                                    );
                                 }
                             } else {
                                 new Notice("Please specify a valid number.");
@@ -153,12 +138,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.settings.autoBackupAfterFileChange = value;
                             this.display();
                             plugin.saveSettings();
-                            plugin.clearAutoCommitAndSync();
-                            if (plugin.settings.autoSaveInterval > 0) {
-                                plugin.startAutoCommitAndSync(
-                                    plugin.settings.autoSaveInterval
-                                );
-                            }
+                            plugin.automaticsManager.reload("commit");
                         })
                 );
             this.mayDisableSetting(
@@ -177,9 +157,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         .onChange(async (value) => {
                             plugin.settings.setLastSaveToLastCommit = value;
                             plugin.saveSettings();
+                            plugin.automaticsManager.reload("commit");
                             this.display();
-                            plugin.clearAutoCommitAndSync();
-                            await plugin.setUpAutoCommitAndSync();
                         })
                 );
             this.mayDisableSetting(
@@ -202,10 +181,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 plugin.saveSettings();
 
                                 if (plugin.settings.autoPushInterval > 0) {
-                                    plugin.clearAutoPush();
-                                    plugin.startAutoPush(
-                                        plugin.settings.autoPushInterval
-                                    );
+                                    plugin.automaticsManager.reload("push");
                                     new Notice(
                                         `Automatic push enabled! Every ${formatMinutes(
                                             plugin.settings.autoPushInterval
@@ -214,8 +190,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 } else if (
                                     plugin.settings.autoPushInterval <= 0
                                 ) {
-                                    plugin.clearAutoPush() &&
-                                        new Notice("Automatic push disabled!");
+                                    new Notice("Automatic push disabled!");
                                 }
                             } else {
                                 new Notice("Please specify a valid number.");
@@ -242,10 +217,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 plugin.saveSettings();
 
                                 if (plugin.settings.autoPullInterval > 0) {
-                                    plugin.clearAutoPull();
-                                    plugin.startAutoPull(
-                                        plugin.settings.autoPullInterval
-                                    );
+                                    plugin.automaticsManager.reload("pull");
                                     new Notice(
                                         `Automatic pull enabled! Every ${formatMinutes(
                                             plugin.settings.autoPullInterval
@@ -254,8 +226,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 } else if (
                                     plugin.settings.autoPullInterval <= 0
                                 ) {
-                                    plugin.clearAutoPull() &&
-                                        new Notice("Automatic pull disabled!");
+                                    new Notice("Automatic pull disabled!");
                                 }
                             } else {
                                 new Notice("Please specify a valid number.");

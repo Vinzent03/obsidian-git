@@ -162,7 +162,7 @@ export class SimpleGit extends GitManager {
 
     async getSubmodulePaths(): Promise<string[]> {
         return new Promise<string[]>(async (resolve) => {
-            this.git.outputHandler(async (cmd, stdout, stderr, args) => {
+            this.git.outputHandler(async (_cmd, stdout, _stderr, args) => {
                 // Do not run this handler on other commands
                 if (!(args.contains("submodule") && args.contains("foreach"))) {
                     return;

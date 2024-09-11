@@ -20,9 +20,11 @@ import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/setting/settings";
 import { StatusBar } from "src/statusBar";
-import { ChangedFilesModal } from "src/ui/modals/changedFilesModal";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
+import AutomaticsManager from "./automaticsManager";
+import { addCommmands } from "./commands";
 import {
+    CONFLICT_OUTPUT_FILE,
     DEFAULT_SETTINGS,
     DIFF_VIEW_CONFIG,
     HISTORY_VIEW_CONFIG,
@@ -31,7 +33,6 @@ import {
 import type { GitManager } from "./gitManager/gitManager";
 import { IsomorphicGit } from "./gitManager/isomorphicGit";
 import { SimpleGit } from "./gitManager/simpleGit";
-import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
 import type {
     DiffViewState,
@@ -45,26 +46,22 @@ import DiffView from "./ui/diff/diffView";
 import HistoryView from "./ui/history/historyView";
 import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
-import { IgnoreModal } from "./ui/modals/ignoreModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
-import { getNewLeaf, splitRemoteBranch } from "./utils";
+import { splitRemoteBranch } from "./utils";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
+    automaticsManager: AutomaticsManager;
     localStorage: LocalStorageSettings;
     settings: ObsidianGitSettings;
     settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
     branchBar?: BranchStatusBar;
     state: PluginState;
-    timeoutIDCommitAndSync?: number;
-    timeoutIDPush?: number;
-    timeoutIDPull?: number;
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
-    conflictOutputFile = "conflict-files-obsidian-git.md";
     autoCommitDebouncer: Debouncer<any, void> | undefined;
     offlineMode = false;
     loading = false;
@@ -185,404 +182,14 @@ export default class ObsidianGit extends Plugin {
 
         this.lineAuthoringFeature.onLoadPlugin();
 
-        (this.app.workspace as any).registerHoverLinkSource(
-            SOURCE_CONTROL_VIEW_CONFIG.type,
-            {
-                display: "Git View",
-                defaultMod: true,
-            }
-        );
+        this.registerHoverLinkSource(SOURCE_CONTROL_VIEW_CONFIG.type, {
+            display: "Git View",
+            defaultMod: true,
+        });
 
         this.setRefreshDebouncer();
 
-        this.addCommand({
-            id: "edit-gitignore",
-            name: "Edit .gitignore",
-            callback: async () => {
-                const path = this.gitManager.getRelativeVaultPath(".gitignore");
-                if (!(await this.app.vault.adapter.exists(path))) {
-                    this.app.vault.adapter.write(path, "");
-                }
-                const content = await this.app.vault.adapter.read(path);
-                const modal = new IgnoreModal(this.app, content);
-                const res = await modal.open();
-                if (res !== undefined) {
-                    await this.app.vault.adapter.write(path, res);
-                    this.refresh();
-                }
-            },
-        });
-        this.addCommand({
-            id: "open-git-view",
-            name: "Open source control view",
-            callback: async () => {
-                const leafs = this.app.workspace.getLeavesOfType(
-                    SOURCE_CONTROL_VIEW_CONFIG.type
-                );
-                let leaf: WorkspaceLeaf;
-                if (leafs.length === 0) {
-                    leaf =
-                        this.app.workspace.getRightLeaf(false) ??
-                        this.app.workspace.getLeaf();
-                    await leaf.setViewState({
-                        type: SOURCE_CONTROL_VIEW_CONFIG.type,
-                    });
-                } else {
-                    leaf = leafs.first()!;
-                }
-                this.app.workspace.revealLeaf(leaf);
-
-                dispatchEvent(new CustomEvent("git-refresh"));
-            },
-        });
-        this.addCommand({
-            id: "open-history-view",
-            name: "Open history view",
-            callback: async () => {
-                const leafs = this.app.workspace.getLeavesOfType(
-                    HISTORY_VIEW_CONFIG.type
-                );
-                let leaf: WorkspaceLeaf;
-                if (leafs.length === 0) {
-                    leaf =
-                        this.app.workspace.getRightLeaf(false) ??
-                        this.app.workspace.getLeaf();
-                    await leaf.setViewState({
-                        type: HISTORY_VIEW_CONFIG.type,
-                    });
-                } else {
-                    leaf = leafs.first()!;
-                }
-                this.app.workspace.revealLeaf(leaf);
-
-                dispatchEvent(new CustomEvent("git-refresh"));
-            },
-        });
-
-        this.addCommand({
-            id: "open-diff-view",
-            name: "Open diff view",
-            checkCallback: (checking) => {
-                const file = this.app.workspace.getActiveFile();
-                if (checking) {
-                    return file !== null;
-                } else {
-                    getNewLeaf()?.setViewState({
-                        type: DIFF_VIEW_CONFIG.type,
-                        active: true,
-                        state: {
-                            staged: false,
-                            file: this.gitManager.getRelativeRepoPath(
-                                file!.path,
-                                true
-                            ),
-                        },
-                    });
-                }
-            },
-        });
-
-        this.addCommand({
-            id: "view-file-on-github",
-            name: "Open file on GitHub",
-            editorCallback: (editor, { file }) => {
-                if (file)
-                    return openLineInGitHub(editor, file, this.gitManager);
-            },
-        });
-
-        this.addCommand({
-            id: "view-history-on-github",
-            name: "Open file history on GitHub",
-            editorCallback: (_, { file }) => {
-                if (file) return openHistoryInGitHub(file, this.gitManager);
-            },
-        });
-
-        this.addCommand({
-            id: "pull",
-            name: "Pull",
-            callback: () =>
-                this.promiseQueue.addTask(() => this.pullChangesFromRemote()),
-        });
-
-        this.addCommand({
-            id: "fetch",
-            name: "Fetch",
-            callback: () => this.promiseQueue.addTask(() => this.fetch()),
-        });
-
-        this.addCommand({
-            id: "switch-to-remote-branch",
-            name: "Switch to remote branch",
-            callback: () =>
-                this.promiseQueue.addTask(() => this.switchRemoteBranch()),
-        });
-
-        this.addCommand({
-            id: "add-to-gitignore",
-            name: "Add file to gitignore",
-            checkCallback: (checking) => {
-                const file = this.app.workspace.getActiveFile();
-                if (checking) {
-                    return file !== null;
-                } else {
-                    this.addFileToGitignore(file!);
-                }
-            },
-        });
-
-        this.addCommand({
-            id: "push",
-            name: "Commit-and-sync",
-            callback: () =>
-                this.promiseQueue.addTask(() => this.commitAndSync(false)),
-        });
-
-        this.addCommand({
-            id: "backup-and-close",
-            name: "Commit-and-sync and then close Obsidian",
-            callback: () =>
-                this.promiseQueue.addTask(async () => {
-                    await this.commitAndSync(false);
-                    window.close();
-                }),
-        });
-
-        this.addCommand({
-            id: "commit-push-specified-message",
-            name: "Commit-and-sync with specific message",
-            callback: () =>
-                this.promiseQueue.addTask(() =>
-                    this.commitAndSync(false, true)
-                ),
-        });
-
-        this.addCommand({
-            id: "commit",
-            name: "Commit all changes",
-            callback: () =>
-                this.promiseQueue.addTask(() =>
-                    this.commit({ fromAuto: false })
-                ),
-        });
-
-        this.addCommand({
-            id: "commit-specified-message",
-            name: "Commit all changes with specific message",
-            callback: () =>
-                this.promiseQueue.addTask(() =>
-                    this.commit({
-                        fromAuto: false,
-                        requestCustomMessage: true,
-                    })
-                ),
-        });
-
-        this.addCommand({
-            id: "commit-staged",
-            name: "Commit staged",
-            callback: () =>
-                this.promiseQueue.addTask(() =>
-                    this.commit({
-                        fromAuto: false,
-                        requestCustomMessage: false,
-                        onlyStaged: true,
-                    })
-                ),
-        });
-
-        if (Platform.isDesktopApp) {
-            this.addCommand({
-                id: "commit-amend-staged-specified-message",
-                name: "Commit Amend",
-                callback: () =>
-                    this.promiseQueue.addTask(() =>
-                        this.commit({
-                            fromAuto: false,
-                            requestCustomMessage: true,
-                            onlyStaged: true,
-                            amend: true,
-                        })
-                    ),
-            });
-        }
-
-        this.addCommand({
-            id: "commit-staged-specified-message",
-            name: "Commit staged with specific message",
-            callback: () =>
-                this.promiseQueue.addTask(() =>
-                    this.commit({
-                        fromAuto: false,
-                        requestCustomMessage: true,
-                        onlyStaged: true,
-                    })
-                ),
-        });
-
-        this.addCommand({
-            id: "push2",
-            name: "Push",
-            callback: () => this.promiseQueue.addTask(() => this.push()),
-        });
-
-        this.addCommand({
-            id: "stage-current-file",
-            name: "Stage current file",
-            checkCallback: (checking) => {
-                const file = this.app.workspace.getActiveFile();
-                if (checking) {
-                    return file !== null;
-                } else {
-                    this.promiseQueue.addTask(() => this.stageFile(file!));
-                }
-            },
-        });
-
-        this.addCommand({
-            id: "unstage-current-file",
-            name: "Unstage current file",
-            checkCallback: (checking) => {
-                const file = this.app.workspace.getActiveFile();
-                if (checking) {
-                    return file !== null;
-                } else {
-                    this.promiseQueue.addTask(() => this.unstageFile(file!));
-                }
-            },
-        });
-
-        this.addCommand({
-            id: "edit-remotes",
-            name: "Edit remotes",
-            callback: async () => this.editRemotes(),
-        });
-
-        this.addCommand({
-            id: "remove-remote",
-            name: "Remove remote",
-            callback: async () => this.removeRemote(),
-        });
-
-        this.addCommand({
-            id: "set-upstream-branch",
-            name: "Set upstream branch",
-            callback: async () => this.setUpstreamBranch(),
-        });
-
-        this.addCommand({
-            id: "delete-repo",
-            name: "CAUTION: Delete repository",
-            callback: async () => {
-                const repoExists = await this.app.vault.adapter.exists(
-                    `${this.settings.basePath}/.git`
-                );
-                if (repoExists) {
-                    const modal = new GeneralModal({
-                        options: ["NO", "YES"],
-                        placeholder:
-                            "Do you really want to delete the repository (.git directory)? This action cannot be undone.",
-                        onlySelection: true,
-                    });
-                    const shouldDelete = (await modal.open()) === "YES";
-                    if (shouldDelete) {
-                        await this.app.vault.adapter.rmdir(
-                            `${this.settings.basePath}/.git`,
-                            true
-                        );
-                        new Notice(
-                            "Successfully deleted repository. Reloading plugin..."
-                        );
-                        this.unloadPlugin();
-                        this.init();
-                    }
-                } else {
-                    new Notice("No repository found");
-                }
-            },
-        });
-
-        this.addCommand({
-            id: "init-repo",
-            name: "Initialize a new repo",
-            callback: async () => this.createNewRepo(),
-        });
-
-        this.addCommand({
-            id: "clone-repo",
-            name: "Clone an existing remote repo",
-            callback: async () => this.cloneNewRepo(),
-        });
-
-        this.addCommand({
-            id: "list-changed-files",
-            name: "List changed files",
-            callback: async () => {
-                if (!(await this.isAllInitialized())) return;
-
-                const status = await this.gitManager.status();
-                console.log(status);
-                this.setState(PluginState.idle);
-                if (status.changed.length + status.staged.length > 500) {
-                    this.displayError("Too many changes to display");
-                    return;
-                }
-
-                new ChangedFilesModal(this, status.all).open();
-            },
-        });
-
-        this.addCommand({
-            id: "switch-branch",
-            name: "Switch branch",
-            callback: () => {
-                this.switchBranch();
-            },
-        });
-
-        this.addCommand({
-            id: "create-branch",
-            name: "Create new branch",
-            callback: () => {
-                this.createBranch();
-            },
-        });
-
-        this.addCommand({
-            id: "delete-branch",
-            name: "Delete branch",
-            callback: () => {
-                this.deleteBranch();
-            },
-        });
-
-        this.addCommand({
-            id: "discard-all",
-            name: "CAUTION: Discard all changes",
-            callback: async () => {
-                if (!(await this.isAllInitialized())) return false;
-                const modal = new GeneralModal({
-                    options: ["NO", "YES"],
-                    placeholder:
-                        "Do you want to discard all changes to tracked files? This action cannot be undone.",
-                    onlySelection: true,
-                });
-                const shouldDiscardAll = (await modal.open()) === "YES";
-                if (shouldDiscardAll) {
-                    this.promiseQueue.addTask(() => this.discardAll());
-                }
-            },
-        });
-
-        this.addCommand({
-            id: "toggle-line-author-info",
-            name: "Toggle line author information",
-            callback: () =>
-                this.settingsTab?.configureLineAuthorShowStatus(
-                    !this.settings.lineAuthor.show
-                ),
-        });
+        addCommmands(this);
 
         this.registerEvent(
             this.app.workspace.on("file-menu", (menu, file, source) => {
@@ -621,28 +228,6 @@ export default class ObsidianGit extends Plugin {
             this.settings.refreshSourceControlTimer,
             true
         );
-    }
-
-    async showNotices(): Promise<void> {
-        const length = 10000;
-        if (
-            this.manifest.id === "obsidian-git" &&
-            Platform.isDesktopApp &&
-            !this.settings.showedMobileNotice
-        ) {
-            new Notice(
-                "Git is now available on mobile! Please read the plugin's README for more information.",
-                length
-            );
-            this.settings.showedMobileNotice = true;
-            await this.saveSettings();
-        }
-        if (this.manifest.id === "obsidian-git-isomorphic") {
-            new Notice(
-                "Git Mobile is now deprecated. Please uninstall it and install Git instead.",
-                length
-            );
-        }
     }
 
     async addFileToGitignore(file: TAbstractFile): Promise<void> {
@@ -753,9 +338,7 @@ export default class ObsidianGit extends Plugin {
         dispatchEvent(new CustomEvent("git-refresh"));
 
         this.lineAuthoringFeature.deactivateFeature();
-        this.clearAutoPull();
-        this.clearAutoPush();
-        this.clearAutoCommitAndSync();
+        this.automaticsManager.unload();
         removeEventListener("git-refresh", this.refresh.bind(this));
         removeEventListener(
             "git-head-update",
@@ -794,31 +377,11 @@ export default class ObsidianGit extends Plugin {
         await this.saveData(this.settings);
     }
 
-    saveLastAuto(date: Date, mode: "backup" | "pull" | "push") {
-        if (mode === "backup") {
-            this.localStorage.setLastAutoBackup(date.toString());
-        } else if (mode === "pull") {
-            this.localStorage.setLastAutoPull(date.toString());
-        } else if (mode === "push") {
-            this.localStorage.setLastAutoPush(date.toString());
-        }
-    }
-
-    loadLastAuto(): { backup: Date; pull: Date; push: Date } {
-        return {
-            backup: new Date(this.localStorage.getLastAutoBackup() ?? ""),
-            pull: new Date(this.localStorage.getLastAutoPull() ?? ""),
-            push: new Date(this.localStorage.getLastAutoPush() ?? ""),
-        };
-    }
-
     get useSimpleGit(): boolean {
         return Platform.isDesktopApp;
     }
 
     async init(): Promise<void> {
-        this.showNotices();
-
         try {
             if (this.useSimpleGit) {
                 this.gitManager = new SimpleGit(this);
@@ -880,7 +443,8 @@ export default class ObsidianGit extends Plugin {
                             this.pullChangesFromRemote()
                         );
                     }
-                    this.setUpAutos();
+                    this.automaticsManager = new AutomaticsManager(this);
+                    await this.automaticsManager.init();
                     break;
                 default:
                     console.log(
@@ -927,7 +491,7 @@ export default class ObsidianGit extends Plugin {
                 if (dir === ".") {
                     const modal = new GeneralModal({
                         options: ["NO", "YES"],
-                        placeholder: `Does your remote repo contain a ${app.vault.configDir} directory at the root?`,
+                        placeholder: `Does your remote repo contain a ${this.app.vault.configDir} directory at the root?`,
                         onlySelection: true,
                     });
                     const containsConflictDir = await modal.open();
@@ -939,14 +503,14 @@ export default class ObsidianGit extends Plugin {
                             "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
                         const modal = new GeneralModal({
                             options: ["Abort clone", confirmOption],
-                            placeholder: `To avoid conflicts, the local ${app.vault.configDir} directory needs to be deleted.`,
+                            placeholder: `To avoid conflicts, the local ${this.app.vault.configDir} directory needs to be deleted.`,
                             onlySelection: true,
                         });
                         const shouldDelete =
                             (await modal.open()) === confirmOption;
                         if (shouldDelete) {
                             await this.app.vault.adapter.rmdir(
-                                app.vault.configDir,
+                                this.app.vault.configDir,
                                 true
                             );
                         } else {
@@ -1008,7 +572,7 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.isAllInitialized())) return;
 
         const filesUpdated = await this.pull();
-        this.setUpAutoCommitAndSync();
+        this.automaticsManager.setUpAutoCommitAndSync();
         if (filesUpdated === false) {
             return;
         }
@@ -1208,7 +772,7 @@ export default class ObsidianGit extends Plugin {
                 roughly = true;
                 committedFiles = changedFiles.length;
             }
-            this.setUpAutoCommitAndSync();
+            this.automaticsManager.setUpAutoCommitAndSync();
             this.displayMessage(
                 `Committed${roughly ? " approx." : ""} ${committedFiles} ${
                     committedFiles == 1 ? "file" : "files"
@@ -1340,9 +904,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async mayDeleteConflictFile(): Promise<void> {
-        const file = this.app.vault.getAbstractFileByPath(
-            this.conflictOutputFile
-        );
+        const file = this.app.vault.getAbstractFileByPath(CONFLICT_OUTPUT_FILE);
         if (file) {
             this.app.workspace.iterateAllLeaves((leaf) => {
                 if (
@@ -1490,60 +1052,6 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async setUpAutoCommitAndSync() {
-        if (this.settings.setLastSaveToLastCommit) {
-            this.clearAutoCommitAndSync();
-            const lastCommitDate = await this.gitManager.getLastCommitTime();
-            if (lastCommitDate) {
-                this.localStorage.setLastAutoBackup(lastCommitDate.toString());
-            }
-        }
-
-        if (!this.timeoutIDCommitAndSync && !this.autoCommitDebouncer) {
-            const lastAutos = this.loadLastAuto();
-
-            if (this.settings.autoSaveInterval > 0) {
-                const now = new Date();
-
-                const diff =
-                    this.settings.autoSaveInterval -
-                    Math.round(
-                        (now.getTime() - lastAutos.backup.getTime()) / 1000 / 60
-                    );
-                this.startAutoCommitAndSync(diff <= 0 ? 0 : diff);
-            }
-        }
-    }
-
-    async setUpAutos() {
-        this.setUpAutoCommitAndSync();
-        const lastAutos = this.loadLastAuto();
-
-        if (
-            this.settings.differentIntervalCommitAndPush &&
-            this.settings.autoPushInterval > 0
-        ) {
-            const now = new Date();
-
-            const diff =
-                this.settings.autoPushInterval -
-                Math.round(
-                    (now.getTime() - lastAutos.push.getTime()) / 1000 / 60
-                );
-            this.startAutoPush(diff <= 0 ? 0 : diff);
-        }
-        if (this.settings.autoPullInterval > 0) {
-            const now = new Date();
-
-            const diff =
-                this.settings.autoPullInterval -
-                Math.round(
-                    (now.getTime() - lastAutos.pull.getTime()) / 1000 / 60
-                );
-            this.startAutoPull(diff <= 0 ? 0 : diff);
-        }
-    }
-
     async discardAll() {
         await this.gitManager.discardAll({
             status: this.cachedStatus,
@@ -1551,107 +1059,6 @@ export default class ObsidianGit extends Plugin {
         new Notice(
             "All local changes have been discarded. New files remain untouched."
         );
-    }
-
-    clearAutos(): void {
-        this.clearAutoCommitAndSync();
-        this.clearAutoPush();
-        this.clearAutoPull();
-    }
-
-    startAutoCommitAndSync(minutes?: number) {
-        let time = (minutes ?? this.settings.autoSaveInterval) * 60000;
-        if (this.settings.autoBackupAfterFileChange) {
-            if (minutes === 0) {
-                this.doAutoCommitAndSync();
-            } else {
-                this.autoCommitDebouncer = debounce(
-                    () => this.doAutoCommitAndSync(),
-                    time,
-                    true
-                );
-            }
-        } else {
-            // max timeout in js
-            if (time > 2147483647) time = 2147483647;
-            this.timeoutIDCommitAndSync = window.setTimeout(
-                () => this.doAutoCommitAndSync(),
-                time
-            );
-        }
-    }
-
-    // This is used for both auto commit-and-sync and commit only
-    doAutoCommitAndSync(): void {
-        this.promiseQueue.addTask(() => {
-            if (this.settings.differentIntervalCommitAndPush) {
-                return this.commit({ fromAuto: true });
-            } else {
-                return this.commitAndSync(true);
-            }
-        });
-        this.saveLastAuto(new Date(), "backup");
-        this.saveSettings();
-        this.startAutoCommitAndSync();
-    }
-
-    startAutoPull(minutes?: number) {
-        let time = (minutes ?? this.settings.autoPullInterval) * 60000;
-        // max timeout in js
-        if (time > 2147483647) time = 2147483647;
-
-        this.timeoutIDPull = window.setTimeout(() => {
-            this.promiseQueue.addTask(() => this.pullChangesFromRemote());
-            this.saveLastAuto(new Date(), "pull");
-            this.saveSettings();
-            this.startAutoPull();
-        }, time);
-    }
-
-    startAutoPush(minutes?: number) {
-        let time = (minutes ?? this.settings.autoPushInterval) * 60000;
-        // max timeout in js
-        if (time > 2147483647) time = 2147483647;
-
-        this.timeoutIDPush = window.setTimeout(() => {
-            this.promiseQueue.addTask(() => this.push());
-            this.saveLastAuto(new Date(), "push");
-            this.saveSettings();
-            this.startAutoPush();
-        }, time);
-    }
-
-    clearAutoCommitAndSync(): boolean {
-        let wasActive = false;
-        if (this.timeoutIDCommitAndSync) {
-            window.clearTimeout(this.timeoutIDCommitAndSync);
-            this.timeoutIDCommitAndSync = undefined;
-            wasActive = true;
-        }
-        if (this.autoCommitDebouncer) {
-            this.autoCommitDebouncer?.cancel();
-            this.autoCommitDebouncer = undefined;
-            wasActive = true;
-        }
-        return wasActive;
-    }
-
-    clearAutoPull(): boolean {
-        if (this.timeoutIDPull) {
-            window.clearTimeout(this.timeoutIDPull);
-            this.timeoutIDPull = undefined;
-            return true;
-        }
-        return false;
-    }
-
-    clearAutoPush(): boolean {
-        if (this.timeoutIDPush) {
-            window.clearTimeout(this.timeoutIDPush);
-            this.timeoutIDPush = undefined;
-            return true;
-        }
-        return false;
     }
 
     async handleConflict(conflicted?: string[]): Promise<void> {
@@ -1768,19 +1175,19 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
 
     async writeAndOpenFile(text?: string) {
         if (text !== undefined) {
-            await this.app.vault.adapter.write(this.conflictOutputFile, text);
+            await this.app.vault.adapter.write(CONFLICT_OUTPUT_FILE, text);
         }
         let fileIsAlreadyOpened = false;
         this.app.workspace.iterateAllLeaves((leaf) => {
             if (
                 leaf.getDisplayText() != "" &&
-                this.conflictOutputFile.startsWith(leaf.getDisplayText())
+                CONFLICT_OUTPUT_FILE.startsWith(leaf.getDisplayText())
             ) {
                 fileIsAlreadyOpened = true;
             }
         });
         if (!fileIsAlreadyOpened) {
-            this.app.workspace.openLinkText(this.conflictOutputFile, "/", true);
+            this.app.workspace.openLinkText(CONFLICT_OUTPUT_FILE, "/", true);
         }
     }
 
