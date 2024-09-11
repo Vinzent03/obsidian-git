@@ -51,8 +51,6 @@ export function addCommmands(plugin: ObsidianGit) {
                 leaf = leafs.first()!;
             }
             app.workspace.revealLeaf(leaf);
-
-            dispatchEvent(new CustomEvent("git-refresh"));
         },
     });
     plugin.addCommand({
@@ -74,8 +72,6 @@ export function addCommmands(plugin: ObsidianGit) {
                 leaf = leafs.first()!;
             }
             app.workspace.revealLeaf(leaf);
-
-            dispatchEvent(new CustomEvent("git-refresh"));
         },
     });
 

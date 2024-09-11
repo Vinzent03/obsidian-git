@@ -22,6 +22,7 @@
         }
     }
     addEventListener("git-view-refresh", refresh);
+    refresh();
     //This should go in the onMount callback, for some reason it doesn't fire though
     //setTimeout's callback will execute after the current event loop finishes.
     plugin.app.workspace.onLayoutReady(() => {
@@ -39,6 +40,10 @@
     }
 
     async function refresh() {
+        if (!plugin.gitReady) {
+            logs = undefined;
+            return;
+        }
         loading = true;
         const isSimpleGit = plugin.gitManager instanceof SimpleGit;
         logs = await plugin.gitManager.log(
