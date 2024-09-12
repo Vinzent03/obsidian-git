@@ -269,13 +269,6 @@ export class SimpleGit extends GitManager {
     }
 
     async isTracked(path: string): Promise<boolean> {
-        const pathExists = await this.app.vault.adapter.exists(
-            this.getRelativeVaultPath(path)
-        );
-        if (!pathExists) {
-            return false;
-        }
-
         const inSubmodule = await this.getSubmoduleOfFile(path);
         const args = inSubmodule ? ["-C", inSubmodule.submodule] : [];
         const relativePath = inSubmodule ? inSubmodule.relativeFilepath : path;
@@ -837,6 +830,14 @@ export class SimpleGit extends GitManager {
         repositoryRelativeFile: string
     ): Promise<{ submodule: string; relativeFilepath: string } | undefined> {
         // Documentation: https://git-scm.com/docs/git-rev-parse
+
+        if (
+            !(await this.app.vault.adapter.exists(
+                path.dirname(repositoryRelativeFile)
+            ))
+        ) {
+            return undefined;
+        }
 
         // git -C <dir-of-file> rev-parse --show-toplevel
         // returns the submodules repository root as an absolute path
