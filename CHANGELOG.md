@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.27.0](https://github.com/denolehov/obsidian-git/compare/2.26.0...2.27.0) (2024-09-18)
+
+
+### Features
+
+* rename backup to commit-and-sync and better settings page ([cd9ffc2](https://github.com/denolehov/obsidian-git/commit/cd9ffc2ebe964dc59c8ce5d114f444222eb1d068))
+
+
+### Bug Fixes
+
+* discard deleted files ([42bf536](https://github.com/denolehov/obsidian-git/commit/42bf536b7973ef35a251a88fa61127b9a3b9972d))
+* discard not tracked directory ([183929b](https://github.com/denolehov/obsidian-git/commit/183929b0cf3da47670faf930d3b6700df65db5c4))
+* don't refresh views if git client is not ready ([7887c7f](https://github.com/denolehov/obsidian-git/commit/7887c7f4518fd2f1f83810ad3fc13cb53af4fe19))
+* refresh data on view loading ([73d2c29](https://github.com/denolehov/obsidian-git/commit/73d2c299298d3b11dd5a0e976b1187d46d17041e))
+* show better diff view for non existing file ([07d9fce](https://github.com/denolehov/obsidian-git/commit/07d9fce47306a3315128327bec6e50ac351d9bff))
+* trigger vault backup after edit on file rename ([d1ad3d4](https://github.com/denolehov/obsidian-git/commit/d1ad3d49a116db03c926df26044e181f9a53a3a0)), closes [#765](https://github.com/denolehov/obsidian-git/issues/765)
+
 ## [2.26.0](https://github.com/denolehov/obsidian-git/compare/2.25.0...2.26.0) (2024-09-01)
 
 
