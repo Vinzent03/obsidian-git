@@ -90,6 +90,8 @@ export default class ObsidianGit extends Plugin {
     }
 
     async refresh() {
+        if (!this.gitReady) return;
+
         const gitView = this.app.workspace.getLeavesOfType(
             SOURCE_CONTROL_VIEW_CONFIG.type
         );
