@@ -863,6 +863,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     public configureGlobalEnableStatus(toggle: boolean) {
         this.settings.globalEnable = toggle;
         this.plugin.saveSettings();
+        if (toggle) new Notice(`Commit-routine enabled.`);
+        else new Notice(`Commit-routine disabled.`)
         this.plugin.automaticsManager.reload("commit", "push");
 
         // if (show) this.plugin.lineAuthoringFeature.activateFeature();
