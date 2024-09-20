@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
         refreshSourceControl: Platform.isDesktopApp,
         basePath: "",
         differentIntervalCommitAndPush: false,
+        globalEnable: true,
         changedFilesInStatusBar: false,
         showedMobileNotice: false,
         refreshSourceControlTimer: 7000,

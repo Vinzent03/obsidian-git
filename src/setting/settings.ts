@@ -64,6 +64,23 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         let setting: Setting;
         if (gitReady) {
+            new Setting(containerEl).setName("Activation").setHeading();
+            new Setting(containerEl)
+                .setName("Enable plugin")
+                .setDesc("Enable plugin routines regardless of timers set below. Note: experimental feature")
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(
+                            plugin.settings.globalEnable
+                        )
+                        .onChange((value) => {
+                            plugin.settings.globalEnable = value;
+                            // figure out how to enable/disable plugin logic/where to insert the boolean configured above
+                            plugin.saveSettings();
+                            plugin.automaticsManager.reload("commit", "push");
+                            this.display();
+                        })
+                );
             new Setting(containerEl).setName("Automatic").setHeading();
             new Setting(containerEl)
                 .setName("Split timers for automatic commit and sync")
