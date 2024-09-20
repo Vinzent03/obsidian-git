@@ -860,6 +860,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (show) this.plugin.lineAuthoringFeature.activateFeature();
         else this.plugin.lineAuthoringFeature.deactivateFeature();
     }
+    public configureGlobalEnableStatus(toggle: boolean) {
+        this.settings.globalEnable = toggle;
+        this.plugin.saveSettings();
+        this.plugin.automaticsManager.reload("commit", "push");
+
+        // if (show) this.plugin.lineAuthoringFeature.activateFeature();
+        // else this.plugin.lineAuthoringFeature.deactivateFeature();
+    }
 
     /**
      * Persists the setting {@link key} with value {@link value} and

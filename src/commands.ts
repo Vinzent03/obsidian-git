@@ -391,8 +391,18 @@ export function addCommmands(plugin: ObsidianGit) {
     });
 
     plugin.addCommand({
+        id: "toggle-git-global-enable",
+        name: "Toggle global git enable state",
+        callback: () =>
+            plugin.settingsTab?.configureGlobalEnableStatus(
+                !plugin.settings.globalEnable
+            ),
+    });
+
+    plugin.addCommand({
         id: "toggle-line-author-info",
         name: "Toggle line author information",
+        
         callback: () =>
             plugin.settingsTab?.configureLineAuthorShowStatus(
                 !plugin.settings.lineAuthor.show
