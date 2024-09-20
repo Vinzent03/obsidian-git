@@ -662,6 +662,7 @@ export default class ObsidianGit extends Plugin {
         amend?: boolean;
     }): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
+        if (!(this.settings.globalEnable)) return false; // if globalEnable-checkbox is disabled, return without committing
 
         let hadConflict = this.localStorage.getConflict();
 
