@@ -339,7 +339,12 @@ export function addCommmands(plugin: ObsidianGit) {
             const status = await plugin.gitManager.status();
             console.log(status);
             plugin.setState(PluginState.idle);
-            if (status.changed.length + status.staged.length > 500) {
+            if (
+                status.changed.length + status.staged.length >
+                (plugin.settings.maxFileCount == 0
+                    ? 500
+                    : plugin.settings.maxFileCount)
+            ) {
                 plugin.displayError("Too many changes to display");
                 return;
             }

@@ -374,7 +374,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.saveSettings();
                         })
                 );
-
+            
             new Setting(containerEl)
                 .setName("Commit-and-sync")
                 .setDesc(
@@ -420,6 +420,37 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         }
 
         new Setting(containerEl).setName("History view").setHeading();
+
+        new Setting(containerEl)
+                .setName(`Display max file count`)
+                .setDesc(
+                    "This setting controls the maximum number of files displayed in the change list. Be cautious when adjusting this value, as it may impact performance"
+                )
+                .addText((text) =>
+                    text
+                        .setValue(String(plugin.settings.maxFileCount))
+                        .onChange((value) => {
+                            if (!isNaN(Number(value))) {
+                                if(Number(value) < 0)
+                                {
+                                    plugin.settings.maxFileCount = 0;
+
+                                    new Notice("Max File count set to default");
+                                }
+                                else
+                                {
+                                    plugin.settings.maxFileCount = Number(value);
+                                }
+                                
+                                plugin.saveSettings();
+
+                                plugin.refresh();
+
+                            } else {
+                                new Notice("Please specify a valid number.");
+                            }
+                        })
+                );
 
         new Setting(containerEl)
             .setName("Show Author")

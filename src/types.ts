@@ -8,6 +8,7 @@ export interface ObsidianGitSettings {
     autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
+    maxFileCount:number;
     syncMethod: SyncMethod;
     disablePush: boolean;
     pullBeforePush: boolean;
