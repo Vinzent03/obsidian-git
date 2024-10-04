@@ -138,7 +138,12 @@
             };
             status.changed.sort(sort);
             status.staged.sort(sort);
-            if (status.changed.length + status.staged.length > 500) {
+            if (
+                status.changed.length + status.staged.length >
+                (plugin.settings.maxFileCount == 0
+                    ? 500
+                    : plugin.settings.maxFileCount)
+            ) {
                 status = undefined;
                 if (!plugin.loading) {
                     plugin.displayError("Too many changes to display");
