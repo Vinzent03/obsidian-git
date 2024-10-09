@@ -83,7 +83,7 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                getNewLeaf()?.setViewState({
+                getNewLeaf(app)?.setViewState({
                     type: DIFF_VIEW_CONFIG.type,
                     active: true,
                     state: {
@@ -294,7 +294,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 `${plugin.settings.basePath}/.git`
             );
             if (repoExists) {
-                const modal = new GeneralModal({
+                const modal = new GeneralModal(plugin, {
                     options: ["NO", "YES"],
                     placeholder:
                         "Do you really want to delete the repository (.git directory)? plugin action cannot be undone.",
@@ -377,7 +377,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "CAUTION: Discard all changes",
         callback: async () => {
             if (!(await plugin.isAllInitialized())) return false;
-            const modal = new GeneralModal({
+            const modal = new GeneralModal(plugin, {
                 options: ["NO", "YES"],
                 placeholder:
                     "Do you want to discard all changes to tracked files? plugin action cannot be undone.",

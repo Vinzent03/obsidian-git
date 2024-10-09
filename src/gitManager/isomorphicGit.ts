@@ -81,11 +81,11 @@ export class IsomorphicGit extends GitManager {
                 new Notice(
                     "Authentication failed. Please try with different credentials"
                 );
-                const username = await new GeneralModal({
+                const username = await new GeneralModal(this.plugin, {
                     placeholder: "Specify your username",
                 }).open();
                 if (username) {
-                    const password = await new GeneralModal({
+                    const password = await new GeneralModal(this.plugin, {
                         placeholder:
                             "Specify your password/personal access token",
                     }).open();

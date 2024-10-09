@@ -20,12 +20,12 @@
         const file = view.app.vault.getAbstractFileByPath(diff.vault_path);
 
         if (file instanceof TFile) {
-            getNewLeaf(event)?.openFile(file);
+            getNewLeaf(view.app, event)?.openFile(file);
         }
     }
 
     function showDiff(event: MouseEvent) {
-        getNewLeaf(event)?.setViewState({
+        getNewLeaf(view.app, event)?.setViewState({
             type: DIFF_VIEW_CONFIG.type,
             active: true,
             state: {

@@ -14,7 +14,10 @@ export const worthWalking = (filepath: string, root?: string) => {
     }
 };
 
-export function getNewLeaf(event?: MouseEvent): WorkspaceLeaf | undefined {
+export function getNewLeaf(
+    app: App,
+    event?: MouseEvent
+): WorkspaceLeaf | undefined {
     let leaf: WorkspaceLeaf | undefined;
     if (event) {
         if (event.button === 0 || event.button === 1) {

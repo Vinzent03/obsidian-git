@@ -1,12 +1,16 @@
 import { FuzzySuggestModal } from "obsidian";
+import type ObsidianGit from "src/main";
 
 export class BranchModal extends FuzzySuggestModal<string> {
     resolve: (
         value: string | undefined | PromiseLike<string | undefined>
     ) => void;
 
-    constructor(private readonly branches: string[]) {
-        super(app);
+    constructor(
+        plugin: ObsidianGit,
+        private readonly branches: string[]
+    ) {
+        super(plugin.app);
         this.setPlaceholder("Select branch to checkout");
     }
 

@@ -1,4 +1,5 @@
 import { SuggestModal } from "obsidian";
+import type ObsidianGit from "src/main";
 
 export interface OptionalGeneralModalConfig {
     options?: string[];
@@ -29,8 +30,8 @@ export class GeneralModal extends SuggestModal<string> {
     ) => void;
     config: GeneralModalConfig;
 
-    constructor(config: OptionalGeneralModalConfig) {
-        super(app);
+    constructor(plugin: ObsidianGit, config: OptionalGeneralModalConfig) {
+        super(plugin.app);
         this.config = { ...generalModalConfigDefaults, ...config };
         this.setPlaceholder(this.config.placeholder);
     }
