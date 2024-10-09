@@ -20,9 +20,6 @@
             "ES7"
         ],
         "skipLibCheck": true,
-        "types": [
-            "svelte"
-        ],
         "noUnusedLocals": false
     },
     "include": [

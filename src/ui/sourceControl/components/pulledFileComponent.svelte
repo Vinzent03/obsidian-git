@@ -7,19 +7,22 @@
 
     export let change: FileStatusResult;
     export let view: GitView;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
         if (view.app.vault.getAbstractFileByPath(change.vault_path)) {
-            hoverPreview(event, view as any, change.vault_path);
+            hoverPreview(event, view, change.vault_path);
         }
     }
 
     function open(event: MouseEvent) {
         const file = view.app.vault.getAbstractFileByPath(change.vault_path);
         if (file instanceof TFile) {
-            getNewLeaf(view.app, event)?.openFile(file);
+            getNewLeaf(view.app, event)
+                ?.openFile(file)
+                .catch((e) => view.plugin.displayError(e));
         }
     }
 </script>

@@ -18,6 +18,7 @@
         children: plugin.gitManager.getTreeStructure(log.diff.files),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
     let isCollapsed = true;
 

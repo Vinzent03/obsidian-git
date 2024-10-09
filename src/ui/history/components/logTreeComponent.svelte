@@ -10,6 +10,8 @@
     export let view: HistoryView;
     export let topLevel = false;
     const closed: Record<string, boolean> = {};
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
     function fold(item: TreeItem) {

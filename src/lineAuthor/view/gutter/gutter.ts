@@ -46,8 +46,8 @@ export class TextGutter extends GutterMarker {
         super();
     }
 
-    eq(other: GutterMarker): boolean {
-        return this.text === (<any>other)?.text;
+    eq(other: TextGutter): boolean {
+        return other instanceof TextGutter && this.text === other.text;
     }
 
     toDOM() {
@@ -306,11 +306,13 @@ export class LineAuthoringGutter extends GutterMarker {
                 authoringDate = authoringDate.utcOffset(
                     nonZeroCommit.author.tz
                 );
-                dateTimeFormatting += " Z"; // add explicit time-zone, as this is not clear now.
+                if (typeof dateTimeFormatting === "string")
+                    dateTimeFormatting += " Z"; // add explicit time-zone, as this is not clear now.
                 break;
             case "utc0000":
                 authoringDate = authoringDate.utc(); // convert to utc
-                dateTimeFormatting += "[Z]"; // add "Z" to indicate, that this is UTC+0000 time.
+                if (typeof dateTimeFormatting === "string")
+                    dateTimeFormatting += "[Z]"; // add "Z" to indicate, that this is UTC+0000 time.
                 break;
             default:
                 return impossibleBranch(dateTimeTimezone);

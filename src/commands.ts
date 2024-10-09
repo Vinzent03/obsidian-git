@@ -21,14 +21,14 @@ export function addCommmands(plugin: ObsidianGit) {
         callback: async () => {
             const path = plugin.gitManager.getRelativeVaultPath(".gitignore");
             if (!(await app.vault.adapter.exists(path))) {
-                app.vault.adapter.write(path, "");
+                await app.vault.adapter.write(path, "");
             }
             const content = await app.vault.adapter.read(path);
             const modal = new IgnoreModal(app, content);
-            const res = await modal.open();
+            const res = await modal.openAndGetReslt();
             if (res !== undefined) {
                 await app.vault.adapter.write(path, res);
-                plugin.refresh();
+                await plugin.refresh();
             }
         },
     });
@@ -50,7 +50,7 @@ export function addCommmands(plugin: ObsidianGit) {
             } else {
                 leaf = leafs.first()!;
             }
-            app.workspace.revealLeaf(leaf);
+            await app.workspace.revealLeaf(leaf);
         },
     });
     plugin.addCommand({
@@ -71,7 +71,7 @@ export function addCommmands(plugin: ObsidianGit) {
             } else {
                 leaf = leafs.first()!;
             }
-            app.workspace.revealLeaf(leaf);
+            await app.workspace.revealLeaf(leaf);
         },
     });
 
@@ -83,7 +83,7 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                getNewLeaf(app)?.setViewState({
+                void getNewLeaf(app)?.setViewState({
                     type: DIFF_VIEW_CONFIG.type,
                     active: true,
                     state: {
@@ -142,7 +142,9 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                plugin.addFileToGitignore(file!);
+                plugin
+                    .addFileToGitignore(file!)
+                    .catch((e) => plugin.displayError(e));
             }
         },
     });
@@ -300,7 +302,7 @@ export function addCommmands(plugin: ObsidianGit) {
                         "Do you really want to delete the repository (.git directory)? plugin action cannot be undone.",
                     onlySelection: true,
                 });
-                const shouldDelete = (await modal.open()) === "YES";
+                const shouldDelete = (await modal.openAndGetResult()) === "YES";
                 if (shouldDelete) {
                     await app.vault.adapter.rmdir(
                         `${plugin.settings.basePath}/.git`,
@@ -310,7 +312,7 @@ export function addCommmands(plugin: ObsidianGit) {
                         "Successfully deleted repository. Reloading plugin..."
                     );
                     plugin.unloadPlugin();
-                    plugin.init();
+                    await plugin.init();
                 }
             } else {
                 new Notice("No repository found");
@@ -352,7 +354,7 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "switch-branch",
         name: "Switch branch",
         callback: () => {
-            plugin.switchBranch();
+            plugin.switchBranch().catch((e) => plugin.displayError(e));
         },
     });
 
@@ -360,7 +362,7 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "create-branch",
         name: "Create new branch",
         callback: () => {
-            plugin.createBranch();
+            plugin.createBranch().catch((e) => plugin.displayError(e));
         },
     });
 
@@ -368,7 +370,7 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "delete-branch",
         name: "Delete branch",
         callback: () => {
-            plugin.deleteBranch();
+            plugin.deleteBranch().catch((e) => plugin.displayError(e));
         },
     });
 
@@ -383,7 +385,7 @@ export function addCommmands(plugin: ObsidianGit) {
                     "Do you want to discard all changes to tracked files? plugin action cannot be undone.",
                 onlySelection: true,
             });
-            const shouldDiscardAll = (await modal.open()) === "YES";
+            const shouldDiscardAll = (await modal.openAndGetResult()) === "YES";
             if (shouldDiscardAll) {
                 plugin.promiseQueue.addTask(() => plugin.discardAll());
             }

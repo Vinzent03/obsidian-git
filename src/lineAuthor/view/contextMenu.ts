@@ -68,7 +68,7 @@ function addConfigurableLineAuthorSettings(
 
     if (key === "showCommitHash") {
         title = "Show commit hash";
-        actionNewValue = <LineAuthorSettings["showCommitHash"]>!currentValue;
+        actionNewValue = <LineAuthorSettings["showCommitHash"]>currentValue;
     } else if (key === "authorDisplay") {
         const showOption = settings.lastShownAuthorDisplay ?? defaultValue;
         title = "Show author " + (currentlyShown ? currentValue : showOption);
@@ -114,5 +114,7 @@ export function enrichCommitInfoForContextMenu(
 
 function getCommitInfo(elt: HTMLElement): CtxMenuCommitInfo | undefined {
     const commitInfoStr = elt.getAttr(COMMIT_ATTR);
-    return commitInfoStr ? JSON.parse(commitInfoStr) : undefined;
+    return commitInfoStr
+        ? (JSON.parse(commitInfoStr) as CtxMenuCommitInfo)
+        : undefined;
 }

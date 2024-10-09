@@ -1,18 +1,21 @@
 export class PromiseQueue {
-    tasks: (() => Promise<any>)[] = [];
+    tasks: (() => Promise<unknown>)[] = [];
 
-    addTask(task: () => Promise<any>) {
+    addTask(task: () => Promise<unknown>) {
         this.tasks.push(task);
         if (this.tasks.length === 1) {
             this.handleTask();
         }
     }
-    async handleTask() {
+
+    handleTask() {
         if (this.tasks.length > 0) {
-            this.tasks[0]().finally(() => {
-                this.tasks.shift();
-                this.handleTask();
-            });
+            this.tasks[0]()
+                .catch(console.error)
+                .finally(() => {
+                    this.tasks.shift();
+                    this.handleTask();
+                });
         }
     }
 }

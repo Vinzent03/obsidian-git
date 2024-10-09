@@ -52,7 +52,7 @@ export default class DiffView extends ItemView {
         return DIFF_VIEW_CONFIG.icon;
     }
 
-    async setState(state: any, result: ViewStateResult): Promise<void> {
+    async setState(state: DiffViewState, _: ViewStateResult): Promise<void> {
         this.state = state;
 
         if (Platform.isMobile) {

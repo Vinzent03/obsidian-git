@@ -114,7 +114,7 @@ export class LocalStorageSettings {
     getEnvVars(): string[] {
         return JSON.parse(
             this.app.loadLocalStorage(this.prefix + "envVars") ?? "[]"
-        );
+        ) as string[];
     }
 
     setEnvVars(value: string[]): void {

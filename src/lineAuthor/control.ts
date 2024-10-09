@@ -1,7 +1,7 @@
 import type { EditorState } from "@codemirror/state";
 import { StateField } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
-import { editorEditorField, editorViewField } from "obsidian";
+import { editorEditorField, editorInfoField } from "obsidian";
 import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
 import type { LineAuthoring, LineAuthoringId } from "src/lineAuthor/model";
 import { newComputationResultAsTransaction } from "src/lineAuthor/model";
@@ -23,7 +23,7 @@ export class LineAuthoringSubscriber {
         this.subscribeMe();
     }
 
-    public async notifyLineAuthoring(id: LineAuthoringId, la: LineAuthoring) {
+    public notifyLineAuthoring(id: LineAuthoringId, la: LineAuthoring) {
         if (this.view === undefined) {
             console.warn(
                 `Git: View is not defined for editor cache key. Unforeseen situation. id: ${id}`
@@ -54,7 +54,8 @@ export class LineAuthoringSubscriber {
     }
 
     public removeIfStale(): void {
-        if ((<any>this.view).destroyed) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        if ((this.view as any).destroyed) {
             this.unsubscribeMe(this.lastSeenPath);
         }
     }
@@ -77,7 +78,7 @@ export class LineAuthoringSubscriber {
     }
 
     private get filepath(): string | undefined {
-        return this.state.field(editorViewField)?.file?.path;
+        return this.state.field(editorInfoField)?.file?.path;
     }
 
     private get view(): EditorView | undefined {

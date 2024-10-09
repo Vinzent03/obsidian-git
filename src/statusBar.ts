@@ -1,4 +1,4 @@
-import { setIcon } from "obsidian";
+import { setIcon, moment } from "obsidian";
 import type ObsidianGit from "./main";
 import { PluginState } from "./types";
 
@@ -23,7 +23,11 @@ export class StatusBar {
     ) {
         this.statusBarEl.setAttribute("data-tooltip-position", "top");
 
-        addEventListener("git-refresh", this.refreshCommitTimestamp.bind(this));
+        plugin.registerEvent(
+            plugin.app.workspace.on("obsidian-git:refresh", () => {
+                this.refreshCommitTimestamp().catch(console.error);
+            })
+        );
     }
 
     public displayMessage(message: string, timeout: number) {
@@ -113,7 +117,6 @@ export class StatusBar {
     private displayFromNow(): void {
         const timestamp = this.lastCommitTimestamp;
         if (timestamp) {
-            const moment = (window as any).moment;
             const fromNow = moment(timestamp).fromNow();
             this.statusBarEl.ariaLabel = `${
                 this.plugin.offlineMode ? "Offline: " : ""

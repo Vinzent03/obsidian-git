@@ -7,7 +7,7 @@
         "dev": "node esbuild.config.mjs dev",
         "build": "node esbuild.config.mjs production",
         "release": "standard-version",
-        "lint": "eslint",
+        "lint": "eslint src",
         "format": "prettier --check src",
         "tsc": "tsc --noEmit",
         "svelte": "svelte-check",

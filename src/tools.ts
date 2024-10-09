@@ -28,9 +28,9 @@ export default class Tools {
                 });
                 if (tooBigFiles.length > 0) {
                     this.plugin.displayError(
-                        `Did not commit, because following files are too big: ${tooBigFiles.map(
-                            (e) => e.vault_path
-                        )}. Please remove them.`
+                        `Did not commit, because following files are too big: ${tooBigFiles
+                            .map((e) => e.vault_path)
+                            .join("\n")}. Please remove them.`
                     );
 
                     return true;
@@ -56,7 +56,7 @@ export default class Tools {
             }
         });
         if (!fileIsAlreadyOpened) {
-            this.plugin.app.workspace.openLinkText(
+            await this.plugin.app.workspace.openLinkText(
                 CONFLICT_OUTPUT_FILE,
                 "/",
                 true

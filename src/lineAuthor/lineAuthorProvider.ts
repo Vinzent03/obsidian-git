@@ -28,8 +28,9 @@ export class LineAuthorProvider {
     constructor(private plugin: ObsidianGit) {}
 
     public async trackChanged(file: TFile) {
-        this.trackChangedHelper(file).catch((reason) => {
+        return this.trackChangedHelper(file).catch((reason) => {
             console.warn("Git: Error in trackChanged." + reason);
+            // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
             return Promise.reject(reason);
         });
     }
@@ -44,7 +45,7 @@ export class LineAuthorProvider {
             return;
         }
 
-        this.computeLineAuthorInfo(file.path);
+        return this.computeLineAuthorInfo(file.path);
     }
 
     public destroy() {
@@ -91,7 +92,7 @@ export class LineAuthorProvider {
     ) {
         eventsPerFilePathSingleton.ifFilepathDefinedTransformSubscribers(
             filepath,
-            async (subs) =>
+            (subs) =>
                 subs.forEach((sub) =>
                     sub.notifyLineAuthoring(key, this.lineAuthorings.get(key)!)
                 )
