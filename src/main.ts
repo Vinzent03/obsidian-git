@@ -221,7 +221,10 @@ export default class ObsidianGit extends Plugin {
             const branchStatusBarEl = this.addStatusBarItem();
             this.branchBar = new BranchStatusBar(branchStatusBarEl, this);
             this.registerInterval(
-                window.setInterval(() => this.branchBar?.display(), 60000)
+                window.setInterval(
+                    () => void this.branchBar?.display().catch(console.error),
+                    60000
+                )
             );
         }
 
@@ -233,7 +236,7 @@ export default class ObsidianGit extends Plugin {
         this.debRefresh = debounce(
             () => {
                 if (this.settings.refreshSourceControl) {
-                    this.refresh();
+                    this.refresh().catch(console.error);
                 }
             },
             this.settings.refreshSourceControlTimer,
@@ -244,9 +247,9 @@ export default class ObsidianGit extends Plugin {
     async addFileToGitignore(file: TAbstractFile): Promise<void> {
         await this.app.vault.adapter.append(
             this.gitManager.getRelativeVaultPath(".gitignore"),
-            "\n" + this.gitManager.getRelativeRepoPath(file!.path, true)
+            "\n" + this.gitManager.getRelativeRepoPath(file.path, true)
         );
-        this.refresh();
+        return this.refresh();
     }
 
     handleFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
@@ -303,7 +306,9 @@ export default class ObsidianGit extends Plugin {
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
-                        this.addFileToGitignore(file);
+                        this.addFileToGitignore(file).catch((e) =>
+                            this.displayError(e)
+                        );
                     });
             });
         }
@@ -314,7 +319,9 @@ export default class ObsidianGit extends Plugin {
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
-                        this.addFileToGitignore(file);
+                        this.addFileToGitignore(file).catch((e) =>
+                            this.displayError(e)
+                        );
                     });
             });
         }
@@ -359,10 +366,6 @@ export default class ObsidianGit extends Plugin {
     }
 
     onunload() {
-        (this.app.workspace as any).unregisterHoverLinkSource(
-            SOURCE_CONTROL_VIEW_CONFIG.type
-        );
-
         this.unloadPlugin();
 
         console.log("unloading " + this.manifest.name + " plugin");
@@ -440,7 +443,7 @@ export default class ObsidianGit extends Plugin {
                     this.registerEvent(this.createEvent);
                     this.registerEvent(this.renameEvent);
 
-                    this.branchBar?.display();
+                    await this.branchBar?.display();
 
                     this.lineAuthoringFeature.conditionallyActivateBySettings();
 
@@ -457,6 +460,7 @@ export default class ObsidianGit extends Plugin {
                 default:
                     this.log(
                         "Something weird happened. The 'checkRequirements' result is " +
+                            /* eslint-disable-next-line @typescript-eslint/restrict-plus-operands */
                             result
                     );
             }
@@ -476,7 +480,7 @@ export default class ObsidianGit extends Plugin {
         const modal = new GeneralModal(this, {
             placeholder: "Enter remote URL",
         });
-        const url = await modal.open();
+        const url = await modal.openAndGetResult();
         if (url) {
             const confirmOption = "Vault Root";
             let dir = await new GeneralModal(this, {
@@ -487,7 +491,7 @@ export default class ObsidianGit extends Plugin {
                 placeholder:
                     "Enter directory for clone. It needs to be empty or not existent.",
                 allowEmpty: this.gitManager instanceof IsomorphicGit,
-            }).open();
+            }).openAndGetResult();
             if (dir !== undefined) {
                 if (dir === confirmOption) {
                     dir = ".";
@@ -504,7 +508,7 @@ export default class ObsidianGit extends Plugin {
                         placeholder: `Does your remote repo contain a ${this.app.vault.configDir} directory at the root?`,
                         onlySelection: true,
                     });
-                    const containsConflictDir = await modal.open();
+                    const containsConflictDir = await modal.openAndGetResult();
                     if (containsConflictDir === undefined) {
                         new Notice("Aborted clone");
                         return;
@@ -517,7 +521,7 @@ export default class ObsidianGit extends Plugin {
                             onlySelection: true,
                         });
                         const shouldDelete =
-                            (await modal.open()) === confirmOption;
+                            (await modal.openAndGetResult()) === confirmOption;
                         if (shouldDelete) {
                             await this.app.vault.adapter.rmdir(
                                 this.app.vault.configDir,
@@ -533,7 +537,7 @@ export default class ObsidianGit extends Plugin {
                     placeholder:
                         "Specify depth of clone. Leave empty for full clone.",
                     allowEmpty: true,
-                }).open();
+                }).openAndGetResult();
                 let depthInt = undefined;
                 if (depth !== "") {
                     depthInt = parseInt(depth);
@@ -553,14 +557,14 @@ export default class ObsidianGit extends Plugin {
                     await this.gitManager.clone(url, dir, depthInt);
                 } catch (error) {
                     this.settings.basePath = oldBase;
-                    this.saveSettings();
+                    await this.saveSettings();
                     throw error;
                 }
                 new Notice("Cloned new repo.");
                 new Notice("Please restart Obsidian");
 
                 if (customDir) {
-                    this.saveSettings();
+                    await this.saveSettings();
                 }
             }
         }
@@ -582,7 +586,7 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.isAllInitialized())) return;
 
         const filesUpdated = await this.pull();
-        this.automaticsManager.setUpAutoCommitAndSync();
+        await this.automaticsManager.setUpAutoCommitAndSync();
         if (filesUpdated === false) {
             return;
         }
@@ -598,7 +602,7 @@ export default class ObsidianGit extends Plugin {
                         status.conflicted.length == 1 ? "file" : "files"
                     }`
                 );
-                this.handleConflict(status.conflicted);
+                await this.handleConflict(status.conflicted);
             }
         }
 
@@ -674,7 +678,7 @@ export default class ObsidianGit extends Plugin {
         let unstagedFiles: UnstagedFile[] | undefined;
 
         if (this.gitManager instanceof SimpleGit) {
-            this.mayDeleteConflictFile();
+            await this.mayDeleteConflictFile();
             status = await this.updateCachedStatus();
 
             //Should not be necessary, but just in case
@@ -692,7 +696,7 @@ export default class ObsidianGit extends Plugin {
                         status.conflicted.length == 1 ? "file" : "files"
                     }. Please resolve them and commit per command.`
                 );
-                this.handleConflict(status.conflicted);
+                await this.handleConflict(status.conflicted);
                 return false;
             }
             changedFiles = [...status.changed, ...status.staged];
@@ -740,9 +744,8 @@ export default class ObsidianGit extends Plugin {
                     );
                 }
                 const tempMessage = await new CustomMessageModal(
-                    this,
-                    true
-                ).open();
+                    this
+                ).openAndGetResult();
 
                 if (
                     tempMessage != undefined &&
@@ -782,7 +785,7 @@ export default class ObsidianGit extends Plugin {
                 roughly = true;
                 committedFiles = changedFiles.length;
             }
-            this.automaticsManager.setUpAutoCommitAndSync();
+            await this.automaticsManager.setUpAutoCommitAndSync();
             this.displayMessage(
                 `Committed${roughly ? " approx." : ""} ${committedFiles} ${
                     committedFiles == 1 ? "file" : "files"
@@ -807,7 +810,7 @@ export default class ObsidianGit extends Plugin {
             await this.mayDeleteConflictFile();
 
         // Refresh because of pull
-        let status: any;
+        let status: Status;
         if (
             this.gitManager instanceof SimpleGit &&
             (status = await this.updateCachedStatus()).conflicted.length > 0
@@ -817,7 +820,7 @@ export default class ObsidianGit extends Plugin {
                     status.conflicted.length
                 } ${status.conflicted.length == 1 ? "file" : "files"}`
             );
-            this.handleConflict(status.conflicted);
+            await this.handleConflict(status.conflicted);
             return false;
         } else if (this.gitManager instanceof IsomorphicGit && hadConflict) {
             this.displayError(`Cannot push. You have conflicts`);
@@ -925,12 +928,12 @@ export default class ObsidianGit extends Plugin {
         const selectedBranch = await new BranchModal(
             this,
             branchInfo.branches
-        ).open();
+        ).openAndGetReslt();
 
         if (selectedBranch != undefined) {
             await this.gitManager.checkout(selectedBranch);
             this.displayMessage(`Switched to ${selectedBranch}`);
-            this.branchBar?.display();
+            await this.branchBar?.display();
             return selectedBranch;
         }
     }
@@ -945,7 +948,7 @@ export default class ObsidianGit extends Plugin {
         if (branch != undefined && remote != undefined) {
             await this.gitManager.checkout(branch, remote);
             this.displayMessage(`Switched to ${selectedBranch}`);
-            this.branchBar?.display();
+            await this.branchBar?.display();
             return selectedBranch;
         }
     }
@@ -955,11 +958,11 @@ export default class ObsidianGit extends Plugin {
 
         const newBranch = await new GeneralModal(this, {
             placeholder: "Create new branch",
-        }).open();
+        }).openAndGetResult();
         if (newBranch != undefined) {
             await this.gitManager.createBranch(newBranch);
             this.displayMessage(`Created new branch ${newBranch}`);
-            this.branchBar?.display();
+            await this.branchBar?.display();
             return newBranch;
         }
     }
@@ -973,7 +976,7 @@ export default class ObsidianGit extends Plugin {
             options: branchInfo.branches,
             placeholder: "Delete branch",
             onlySelection: true,
-        }).open();
+        }).openAndGetResult();
         if (branch != undefined) {
             let force = false;
             const merged = await this.gitManager.branchIsMerged(branch);
@@ -984,7 +987,7 @@ export default class ObsidianGit extends Plugin {
                     placeholder:
                         "This branch isn't merged into HEAD. Force delete?",
                     onlySelection: true,
-                }).open();
+                }).openAndGetResult();
                 if (forceAnswer !== "YES") {
                     return;
                 }
@@ -992,7 +995,7 @@ export default class ObsidianGit extends Plugin {
             }
             await this.gitManager.deleteBranch(branch, force);
             this.displayMessage(`Deleted branch ${branch}`);
-            this.branchBar?.display();
+            await this.branchBar?.display();
             return branch;
         }
     }
@@ -1075,7 +1078,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
 \`\`\``,
             ];
         }
-        this.tools.writeAndOpenFile(lines?.join("\n"));
+        await this.tools.writeAndOpenFile(lines?.join("\n"));
     }
 
     async editRemotes(): Promise<string | undefined> {
@@ -1088,14 +1091,14 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             placeholder:
                 "Select or create a new remote by typing its name and selecting it",
         });
-        const remoteName = await nameModal.open();
+        const remoteName = await nameModal.openAndGetResult();
 
         if (remoteName) {
             const oldUrl = await this.gitManager.getRemoteUrl(remoteName);
 
             const urlModal = new GeneralModal(this, { initialValue: oldUrl });
             // urlModal.inputEl.setText(oldUrl ?? "");
-            const remoteURL = await urlModal.open();
+            const remoteURL = await urlModal.openAndGetResult();
             if (remoteURL) {
                 await this.gitManager.setRemote(remoteName, remoteURL);
                 return remoteName;
@@ -1118,7 +1121,8 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             placeholder:
                 "Select or create a new remote by typing its name and selecting it",
         });
-        const remoteName = selectedRemote ?? (await nameModal.open());
+        const remoteName =
+            selectedRemote ?? (await nameModal.openAndGetResult());
 
         if (remoteName) {
             this.displayMessage("Fetching remote branches");
@@ -1130,7 +1134,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
                 placeholder:
                     "Select or create a new remote branch by typing its name and selecting it",
             });
-            return await branchModal.open();
+            return await branchModal.openAndGetResult();
         }
     }
 
@@ -1143,10 +1147,10 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             options: remotes,
             placeholder: "Select a remote",
         });
-        const remoteName = await nameModal.open();
+        const remoteName = await nameModal.openAndGetResult();
 
         if (remoteName) {
-            this.gitManager.removeRemote(remoteName);
+            await this.gitManager.removeRemote(remoteName);
         }
     }
 
@@ -1217,10 +1221,13 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             new Notice("Aborted");
             return;
         }
+        if (data != null && typeof data == "object" && "message" in data) {
+            data = data.message;
+        }
         // Some errors might not be of type string
         const message = String(data);
         new Notice(message, timeout);
-        this.log(`error: ${message}`);
+        console.error(`${this.manifest.id}:`, data);
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
     }
 

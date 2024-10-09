@@ -11,6 +11,7 @@
     export let view: GitView;
     export let manager: GitManager;
     let buttons: HTMLElement[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
     window.setTimeout(
@@ -21,19 +22,21 @@
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
         if (view.app.vault.getFileByPath(change.vault_path)) {
-            hoverPreview(event, view as any, change.vault_path);
+            hoverPreview(event, view, change.vault_path);
         }
     }
 
     function open(event: MouseEvent) {
         const file = view.app.vault.getAbstractFileByPath(change.vault_path);
         if (file instanceof TFile) {
-            getNewLeaf(view.app, event)?.openFile(file);
+            getNewLeaf(view.app, event)
+                ?.openFile(file)
+                .catch((e) => view.plugin.displayError(e));
         }
     }
 
     function showDiff(event: MouseEvent) {
-        getNewLeaf(view.app, event)?.setViewState({
+        void getNewLeaf(view.app, event)?.setViewState({
             type: DIFF_VIEW_CONFIG.type,
             active: true,
             state: {
@@ -44,9 +47,12 @@
     }
 
     function unstage() {
-        manager.unstage(change.path, false).finally(() => {
-            view.app.workspace.trigger("obsidian-git:refresh");
-        });
+        manager
+            .unstage(change.path, false)
+            .catch((e) => view.plugin.displayError(e))
+            .finally(() => {
+                view.app.workspace.trigger("obsidian-git:refresh");
+            });
     }
 </script>
 

@@ -16,24 +16,30 @@
     export let fileType: FileType;
     export let topLevel = false;
     const closed: Record<string, boolean> = {};
+    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
     function stage(path: string) {
-        plugin.gitManager.stageAll({ dir: path }).finally(() => {
-            view.app.workspace.trigger("obsidian-git:refresh");
-        });
+        plugin.gitManager
+            .stageAll({ dir: path })
+            .catch((e) => plugin.displayError(e))
+            .finally(() => {
+                view.app.workspace.trigger("obsidian-git:refresh");
+            });
     }
     function unstage(path: string) {
-        plugin.gitManager.unstageAll({ dir: path }).finally(() => {
-            view.app.workspace.trigger("obsidian-git:refresh");
-        });
+        plugin.gitManager
+            .unstageAll({ dir: path })
+            .catch((e) => plugin.displayError(e))
+            .finally(() => {
+                view.app.workspace.trigger("obsidian-git:refresh");
+            });
     }
     function discard(item: TreeItem) {
-        new DiscardModal(view.app, false, item.vaultPath)
-            .myOpen()
-            .then((shouldDiscard) => {
+        new DiscardModal(view.app, false, item.vaultPath).myOpen().then(
+            (shouldDiscard) => {
                 if (shouldDiscard === true) {
-                    plugin.gitManager
+                    return plugin.gitManager
                         .discardAll({
                             dir: item.path,
                             status: plugin.cachedStatus,
@@ -42,7 +48,9 @@
                             view.app.workspace.trigger("obsidian-git:refresh");
                         });
                 }
-            });
+            },
+            (e) => plugin.displayError(e)
+        );
     }
     function fold(item: TreeItem) {
         closed[item.title] = !closed[item.title];

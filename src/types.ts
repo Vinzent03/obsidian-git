@@ -273,6 +273,8 @@ declare module "obsidian" {
     interface App {
         loadLocalStorage(key: string): string | null;
         saveLocalStorage(key: string, value: string | undefined): void;
+        openWithDefaultApp(path: string): void;
+        getTheme(): "obsidian" | "moonstone";
     }
     interface View {
         titleEl: HTMLElement;

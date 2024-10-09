@@ -1,6 +1,6 @@
 import type { Extension } from "@codemirror/state";
 import type { EventRef, TAbstractFile, WorkspaceLeaf } from "obsidian";
-import { Platform, TFile } from "obsidian";
+import { MarkdownView, Platform, TFile } from "obsidian";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import {
     LineAuthorProvider,
@@ -38,7 +38,7 @@ export class LineAuthoringFeature {
             () => this.plg.settings.lineAuthor,
             (laSettings: LineAuthorSettings) => {
                 this.plg.settings.lineAuthor = laSettings;
-                this.plg.saveSettings();
+                void this.plg.saveSettings();
             }
         );
     }
@@ -156,24 +156,33 @@ export class LineAuthoringFeature {
     }
 
     private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
-        const obsView = <any>leaf?.view;
-        const file = obsView?.file;
-
         if (!this.lineAuthorInfoProvider) {
             console.warn(
                 "Git: undefined lineAuthorInfoProvider. Unexpected situation."
             );
             return;
         }
+        const obsView = leaf?.view;
 
-        if (file === undefined || obsView?.allowNoFile === true) return;
+        if (
+            !(obsView instanceof MarkdownView) ||
+            obsView.file == null ||
+            obsView?.allowNoFile === true
+        )
+            return;
 
-        this.lineAuthorInfoProvider.trackChanged(file);
+        this.lineAuthorInfoProvider
+            .trackChanged(obsView.file)
+            .catch(console.error);
     };
 
     private createFileOpenEvent(): EventRef {
-        return this.plg.app.workspace.on("file-open", (file: TFile) =>
-            this.lineAuthorInfoProvider?.trackChanged(file)
+        return this.plg.app.workspace.on(
+            "file-open",
+            (file: TFile) =>
+                void this.lineAuthorInfoProvider
+                    ?.trackChanged(file)
+                    .catch(console.error)
         );
     }
 

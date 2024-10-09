@@ -20,20 +20,21 @@ export class BranchModal extends FuzzySuggestModal<string> {
     getItemText(item: string): string {
         return item;
     }
-    onChooseItem(item: string, evt: MouseEvent | KeyboardEvent): void {
+    onChooseItem(item: string, _: MouseEvent | KeyboardEvent): void {
         this.resolve(item);
     }
 
-    open(): Promise<string> {
-        super.open();
+    openAndGetReslt(): Promise<string> {
         return new Promise((resolve) => {
             this.resolve = resolve;
+            this.open();
         });
     }
 
-    async onClose() {
+    onClose() {
         //onClose gets called before onChooseItem
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        if (this.resolve) this.resolve(undefined);
+        void new Promise((resolve) => setTimeout(resolve, 10)).then(() => {
+            if (this.resolve) this.resolve(undefined);
+        });
     }
 }

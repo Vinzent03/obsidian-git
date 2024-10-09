@@ -32,11 +32,11 @@ export class DiscardModal extends Modal {
             cls: "mod-warning",
             text: this.deletion ? "Delete" : "Discard",
         });
-        discard.addEventListener("click", async () => {
+        discard.addEventListener("click", () => {
             if (this.resolve) this.resolve(true);
             this.close();
         });
-        discard.addEventListener("keypress", async () => {
+        discard.addEventListener("keypress", () => {
             if (this.resolve) this.resolve(true);
             this.close();
         });

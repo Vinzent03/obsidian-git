@@ -223,9 +223,12 @@ function computeLineAuthoringGutterMarkersRangeSet(
 function computeLineMappingForUnsavedChanges(
     docLastLine: number,
     optLA: LineAuthoringWithChanges | undefined
-) {
+): (number | undefined)[] {
     if (!optLA?.lineOffsetsFromUnsavedChanges) {
-        return Array.from(new Array(docLastLine + 1), (ln) => ln);
+        return Array.from(
+            new Array<number | undefined>(docLastLine + 1),
+            (ln) => ln
+        );
     }
 
     const lineFrom: (number | undefined)[] = [undefined];
@@ -265,9 +268,8 @@ function computeLineMappingForUnsavedChanges(
 function temporaryWorkaroundGutterSpacingForRenderedLineAuthoring(
     view: EditorView
 ) {
-    const guttersContainers = view.dom.querySelectorAll(
-        ".cm-gutters"
-    ) as NodeListOf<HTMLElement>;
+    const guttersContainers =
+        view.dom.querySelectorAll<HTMLElement>(".cm-gutters");
     guttersContainers.forEach((cont) => {
         if (!cont?.style) return;
         if (!cont.style.marginLeft) {

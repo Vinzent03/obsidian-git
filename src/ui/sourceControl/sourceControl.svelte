@@ -41,8 +41,11 @@
             setIcon(layoutBtn, showTree ? "list" : "folder");
         }
     }
-    refreshRef = view.app.workspace.on("obsidian-git:view-refresh", refresh);
-    refresh();
+    refreshRef = view.app.workspace.on(
+        "obsidian-git:view-refresh",
+        () => void refresh().catch(console.error)
+    );
+    refresh().catch(console.error);
     //This should go in the onMount callback, for some reason it doesn't fire though
     //setTimeout's callback will execute after the current event loop finishes.
     plugin.app.workspace.onLayoutReady(() => {
@@ -65,18 +68,18 @@
             plugin.promiseQueue.addTask(() =>
                 plugin.gitManager
                     .commit({ message: commitMessage })
-                    .then(() => {
+                    .then(async () => {
                         if (commitMessage !== plugin.settings.commitMessage) {
                             commitMessage = "";
                         }
-                        plugin.automaticsManager.setUpAutoCommitAndSync();
+                        await plugin.automaticsManager.setUpAutoCommitAndSync();
                     })
                     .finally(triggerRefresh)
             );
         }
     }
 
-    async function backup() {
+    function backup() {
         loading = true;
         if (status) {
             plugin.promiseQueue.addTask(() =>
@@ -92,7 +95,7 @@
         }
     }
 
-    async function refresh() {
+    async function refresh(): Promise<void> {
         if (!plugin.gitReady) {
             status = undefined;
             return;
@@ -222,7 +225,7 @@
                             })
                     );
                 }
-            });
+            }, console.error);
     }
 
     $: rows = (commitMessage.match(/\n/g) || []).length + 1 || 1;
@@ -289,7 +292,7 @@
                 on:click={() => {
                     showTree = !showTree;
                     plugin.settings.treeStructure = showTree;
-                    plugin.saveSettings();
+                    void plugin.saveSettings();
                 }}
             />
             <div

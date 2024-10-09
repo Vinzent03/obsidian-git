@@ -41,9 +41,9 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
                 ""
             ) == null
         ) {
-            (this.app as any).openWithDefaultApp(item.vault_path);
+            this.app.openWithDefaultApp(item.vault_path);
         } else {
-            this.plugin.app.workspace.openLinkText(item.vault_path, "/");
+            void this.plugin.app.workspace.openLinkText(item.vault_path, "/");
         }
     }
 }

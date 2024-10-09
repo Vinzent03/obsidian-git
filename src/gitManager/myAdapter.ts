@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/only-throw-error */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { DataAdapter, Vault } from "obsidian";
 import { normalizePath, TFile } from "obsidian";
 import type ObsidianGit from "../main";
@@ -6,7 +11,7 @@ export class MyAdapter {
     promises: any = {};
     adapter: DataAdapter;
     vault: Vault;
-    index: any;
+    index: Buffer | undefined;
     indexctime: number | undefined;
     indexmtime: number | undefined;
     lastBasePath: string | undefined;
@@ -60,7 +65,7 @@ export class MyAdapter {
             }
         }
     }
-    async writeFile(path: string, data: any) {
+    async writeFile(path: string, data: string | Buffer) {
         this.maybeLog("Write: " + path);
 
         if (typeof data === "string") {
@@ -103,6 +108,7 @@ export class MyAdapter {
         return this.adapter.mkdir(path);
     }
     async rmdir(path: string, opts: any) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         return this.adapter.rmdir(path, opts?.options?.recursive ?? false);
     }
     async stat(path: string) {
@@ -210,7 +216,7 @@ export class MyAdapter {
         return this.plugin.settings.gitDir || ".git";
     }
 
-    private maybeLog(text: string) {
+    private maybeLog(_: string) {
         // console.log(text);
     }
 }

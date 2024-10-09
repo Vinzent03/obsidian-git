@@ -161,8 +161,8 @@ export class SimpleGit extends GitManager {
     }
 
     async getSubmodulePaths(): Promise<string[]> {
-        return new Promise<string[]>(async (resolve) => {
-            this.git.outputHandler(async (_cmd, stdout, _stderr, args) => {
+        return new Promise<string[]>((resolve) => {
+            this.git.outputHandler((_cmd, stdout, _stderr, args) => {
                 // Do not run this handler on other commands
                 if (!(args.contains("submodule") && args.contains("foreach"))) {
                     return;
@@ -176,10 +176,10 @@ export class SimpleGit extends GitManager {
                     (this.plugin.settings.basePath
                         ? "/" + this.plugin.settings.basePath
                         : "");
-                stdout.on("data", (chunk) => {
+                stdout.on("data", (chunk: Buffer) => {
                     body += chunk.toString("utf8");
                 });
-                stdout.on("end", async () => {
+                stdout.on("end", () => {
                     const submods = body.split("\n");
 
                     // Remove words like `Entering` in front of each line and filter empty lines
@@ -197,8 +197,12 @@ export class SimpleGit extends GitManager {
                 });
             });
 
-            await this.git.subModule(["foreach", "--recursive", ""]);
-            this.git.outputHandler(() => {});
+            this.git.subModule(["foreach", "--recursive", ""]).then(
+                () => {
+                    this.git.outputHandler(() => {});
+                },
+                (e) => this.plugin.displayError(e)
+            );
         });
     }
 
@@ -391,11 +395,9 @@ export class SimpleGit extends GitManager {
         args.push("hash-object", "--", relativeFilepath);
 
         const revision = this.git.raw(args);
-        revision.catch(
-            (err) =>
-                err &&
-                console.warn("obsidian-git. hash-object failed:", err?.message)
-        );
+        revision.catch((err) => {
+            this.onError(err);
+        });
         return revision;
     }
 
@@ -445,7 +447,8 @@ export class SimpleGit extends GitManager {
                     }
                 } catch (err) {
                     this.plugin.displayError(
-                        `Pull failed (${this.plugin.settings.syncMethod}): ${err.message}`
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        `Pull failed (${this.plugin.settings.syncMethod}): ${"message" in err ? err.message : err}`
                     );
                     return;
                 }
@@ -462,7 +465,8 @@ export class SimpleGit extends GitManager {
                     await this.unstageAll({});
                 } catch (err) {
                     this.plugin.displayError(
-                        `Sync failed (${this.plugin.settings.syncMethod}): ${err.message}`
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        `Sync failed (${this.plugin.settings.syncMethod}): ${"message" in err ? err.message : err}`
                     );
                 }
             }
@@ -600,7 +604,7 @@ export class SimpleGit extends GitManager {
             return (await this.git.remote(["get-url", remote])) || undefined;
         } catch (error) {
             // Verify the error is at least not about git is not found or similar. Checks if the remote exists or not
-            if (error.toString().contains(remote)) {
+            if (String(error).contains(remote)) {
                 return undefined;
             } else {
                 this.onError(error);
@@ -716,7 +720,7 @@ export class SimpleGit extends GitManager {
         );
     }
 
-    async setConfig(path: string, value: any): Promise<void> {
+    async setConfig(path: string, value: string): Promise<void> {
         if (value == undefined) {
             await this.git.raw(["config", "--local", "--unset", path]);
         } else {
@@ -724,11 +728,19 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async getConfig(path: string): Promise<any> {
+    async getConfig(path: string): Promise<string> {
         const config = await this.git.listConfig("local", (err) =>
             this.onError(err)
         );
-        return config.all[path];
+        const res = config.all[path];
+        if (typeof res === "string") {
+            return res;
+        } else {
+            const error = new Error("Config value is not a string");
+
+            this.onError(error);
+            throw error;
+        }
     }
 
     async fetch(remote?: string): Promise<void> {
@@ -788,10 +800,9 @@ export class SimpleGit extends GitManager {
                 console.error(e);
                 // fallback
                 await this.git.push(
-                    // A type error occurs here because the third element could be undefined.
+                    // @ts-expect-error A type error occurs here because the third element could be undefined.
                     // However, it is unlikely to be undefined due to the `remoteBranch`'s format, and error handling is in place.
                     // Therefore, we temporarily ignore the error.
-                    // @ts-ignore
                     ["--set-upstream", ...splitRemoteBranch(remoteBranch)],
                     (err) => this.onError(err)
                 );
@@ -799,12 +810,12 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    updateGitPath(_: string) {
-        this.setGitInstance();
+    updateGitPath(_: string): Promise<void> {
+        return this.setGitInstance();
     }
 
-    updateBasePath(_: string) {
-        this.setGitInstance(true);
+    updateBasePath(_: string): Promise<void> {
+        return this.setGitInstance(true);
     }
 
     async getDiffString(
@@ -901,22 +912,26 @@ export class SimpleGit extends GitManager {
         return true;
     }
 
-    private onError(error: Error | null) {
+    private onError(error: unknown) {
         if (error) {
-            const networkFailure =
-                error.message.contains("Could not resolve host") ||
-                error.message.contains("Unable to resolve host") ||
-                error.message.match(
-                    /ssh: connect to host .*? port .*?: Operation timed out/
-                ) ||
-                error.message.match(
-                    /ssh: connect to host .*? port .*?: Network is unreachable/
-                ) ||
-                error.message.match(
-                    /ssh: connect to host .*? port .*?: Undefined error: 0/
-                );
+            let networkFailure = false;
+            if (typeof error == "object" && "message" in error) {
+                const message = String(error.message);
+                networkFailure =
+                    message.contains("Could not resolve host") ||
+                    message.contains("Unable to resolve host") ||
+                    message.match(
+                        /ssh: connect to host .*? port .*?: Operation timed out/
+                    ) != null ||
+                    message.match(
+                        /ssh: connect to host .*? port .*?: Network is unreachable/
+                    ) != null ||
+                    message.match(
+                        /ssh: connect to host .*? port .*?: Undefined error: 0/
+                    ) != null;
+            }
             if (!networkFailure) {
-                this.plugin.displayError(error.message);
+                this.plugin.displayError(error);
                 this.plugin.setState(PluginState.idle);
             } else if (!this.plugin.offlineMode) {
                 this.plugin.displayError(
@@ -987,7 +1002,7 @@ function parseLineInfoInto(lineInfo: string[], line: number, result: Blame) {
     result.hashPerLine.push(hash);
     result.originalFileLineNrPerLine.push(parseInt(lineInfo[1]));
     result.finalFileLineNrPerLine.push(parseInt(lineInfo[2]));
-    lineInfo.length >= 4 &&
+    if (lineInfo.length >= 4)
         result.groupSizePerStartingLine.set(line, parseInt(lineInfo[3]));
 
     if (parseInt(lineInfo[2]) !== line) {

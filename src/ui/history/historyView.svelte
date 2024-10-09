@@ -22,8 +22,11 @@
             setIcon(layoutBtn, showTree ? "list" : "folder");
         }
     }
-    refreshRef = view.app.workspace.on("obsidian-git:view-refresh", refresh);
-    refresh();
+    refreshRef = view.app.workspace.on(
+        "obsidian-git:view-refresh",
+        () => void refresh().catch(console.error)
+    );
+    refresh().catch(console.error);
     //This should go in the onMount callback, for some reason it doesn't fire though
     //setTimeout's callback will execute after the current event loop finishes.
     plugin.app.workspace.onLayoutReady(() => {
@@ -69,7 +72,7 @@
                 on:click={() => {
                     showTree = !showTree;
                     plugin.settings.treeStructure = showTree;
-                    plugin.saveSettings();
+                    void plugin.saveSettings();
                 }}
             />
             <div

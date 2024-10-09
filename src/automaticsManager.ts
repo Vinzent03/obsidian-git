@@ -29,7 +29,7 @@ export default class AutomaticsManager {
     }
 
     async init() {
-        this.setUpAutoCommitAndSync();
+        await this.setUpAutoCommitAndSync();
         const lastAutos = this.loadLastAuto();
 
         if (
@@ -155,7 +155,6 @@ export default class AutomaticsManager {
             }
         });
         this.saveLastAuto(new Date(), "backup");
-        this.plugin.saveSettings();
         this.startAutoCommitAndSync();
     }
 
@@ -169,7 +168,6 @@ export default class AutomaticsManager {
                 this.plugin.pullChangesFromRemote()
             );
             this.saveLastAuto(new Date(), "pull");
-            this.plugin.saveSettings();
             this.startAutoPull();
         }, time);
     }
@@ -182,7 +180,6 @@ export default class AutomaticsManager {
         this.timeoutIDPush = window.setTimeout(() => {
             this.plugin.promiseQueue.addTask(() => this.plugin.push());
             this.saveLastAuto(new Date(), "push");
-            this.plugin.saveSettings();
             this.startAutoPush();
         }, time);
     }

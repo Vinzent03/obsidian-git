@@ -55,6 +55,7 @@ export function mayTriggerFileMenu(
  * During runtime, an error will be thrown, if executed.
  */
 export function impossibleBranch(x: never): never {
+    /* eslint-disable-next-line @typescript-eslint/restrict-plus-operands */
     throw new Error("Impossible branch: " + x);
 }
 

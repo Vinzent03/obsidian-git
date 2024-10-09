@@ -9,6 +9,7 @@
     export let view: HistoryView;
     let buttons: HTMLElement[] = [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
     window.setTimeout(
@@ -20,12 +21,14 @@
         const file = view.app.vault.getAbstractFileByPath(diff.vault_path);
 
         if (file instanceof TFile) {
-            getNewLeaf(view.app, event)?.openFile(file);
+            getNewLeaf(view.app, event)
+                ?.openFile(file)
+                .catch((e) => view.plugin.displayError(e));
         }
     }
 
     function showDiff(event: MouseEvent) {
-        getNewLeaf(view.app, event)?.setViewState({
+        void getNewLeaf(view.app, event)?.setViewState({
             type: DIFF_VIEW_CONFIG.type,
             active: true,
             state: {
