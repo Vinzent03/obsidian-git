@@ -45,7 +45,7 @@
 
     function unstage() {
         manager.unstage(change.path, false).finally(() => {
-            dispatchEvent(new CustomEvent("git-refresh"));
+            view.app.workspace.trigger("obsidian-git:refresh");
         });
     }
 </script>

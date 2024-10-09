@@ -1,5 +1,5 @@
 import { html } from "diff2html";
-import type { ViewStateResult, WorkspaceLeaf } from "obsidian";
+import type { EventRef, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { ItemView, Platform } from "obsidian";
 import { DIFF_VIEW_CONFIG } from "src/constants";
 import { SimpleGit } from "src/gitManager/simpleGit";
@@ -10,8 +10,8 @@ export default class DiffView extends ItemView {
     parser: DOMParser;
     gettingDiff = false;
     state: DiffViewState;
-    gitRefreshBind = this.refresh.bind(this);
-    gitViewRefreshBind = this.refresh.bind(this);
+    gitRefreshRef: EventRef;
+    gitViewRefreshRef: EventRef;
 
     constructor(
         leaf: WorkspaceLeaf,
@@ -20,8 +20,18 @@ export default class DiffView extends ItemView {
         super(leaf);
         this.parser = new DOMParser();
         this.navigation = true;
-        addEventListener("git-refresh", this.gitRefreshBind);
-        addEventListener("git-view-refresh", this.gitViewRefreshBind);
+        this.gitRefreshRef = this.app.workspace.on(
+            "obsidian-git:refresh",
+            () => {
+                this.refresh().catch(console.error);
+            }
+        );
+        this.gitViewRefreshRef = this.app.workspace.on(
+            "obsidian-git:view-refresh",
+            () => {
+                this.refresh().catch(console.error);
+            }
+        );
     }
 
     getViewType(): string {
@@ -58,13 +68,13 @@ export default class DiffView extends ItemView {
     }
 
     onClose(): Promise<void> {
-        removeEventListener("git-refresh", this.gitRefreshBind);
-        removeEventListener("git-view-refresh", this.gitViewRefreshBind);
+        this.app.workspace.offref(this.gitRefreshRef);
+        this.app.workspace.offref(this.gitViewRefreshRef);
         return super.onClose();
     }
 
-    onOpen(): Promise<void> {
-        this.refresh();
+    async onOpen(): Promise<void> {
+        await this.refresh();
         return super.onOpen();
     }
 

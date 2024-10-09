@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { setIcon } from "obsidian";
+    import { setIcon, type EventRef } from "obsidian";
     import { SimpleGit } from "src/gitManager/simpleGit";
     import type ObsidianGit from "src/main";
     import type { LogEntry } from "src/types";
@@ -13,6 +13,7 @@
     let buttons: HTMLElement[] = [];
     let logs: LogEntry[] | undefined;
     let showTree: boolean = plugin.settings.treeStructure;
+    let refreshRef: EventRef;
 
     let layoutBtn: HTMLElement;
     $: {
@@ -21,7 +22,7 @@
             setIcon(layoutBtn, showTree ? "list" : "folder");
         }
     }
-    addEventListener("git-view-refresh", refresh);
+    refreshRef = view.app.workspace.on("obsidian-git:view-refresh", refresh);
     refresh();
     //This should go in the onMount callback, for some reason it doesn't fire though
     //setTimeout's callback will execute after the current event loop finishes.
@@ -32,11 +33,11 @@
         }, 0);
     });
     onDestroy(() => {
-        removeEventListener("git-view-refresh", refresh);
+        view.app.workspace.offref(refreshRef);
     });
 
     function triggerRefresh() {
-        dispatchEvent(new CustomEvent("git-refresh"));
+        view.app.workspace.trigger("obsidian-git:refresh");
     }
 
     async function refresh() {

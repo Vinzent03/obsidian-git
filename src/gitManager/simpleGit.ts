@@ -304,7 +304,7 @@ export class SimpleGit extends GitManager {
             await this.formatCommitMessage(message),
             (err) => this.onError(err)
         );
-        dispatchEvent(new CustomEvent("git-head-update"));
+        this.app.workspace.trigger("obsidian-git:head-change");
 
         return res.summary.changes;
     }
@@ -325,7 +325,7 @@ export class SimpleGit extends GitManager {
                 (err) => this.onError(err)
             )
         ).summary.changes;
-        dispatchEvent(new CustomEvent("git-head-update"));
+        this.app.workspace.trigger("obsidian-git:head-change");
 
         this.plugin.setState(PluginState.idle);
         return res;
@@ -466,7 +466,7 @@ export class SimpleGit extends GitManager {
                     );
                 }
             }
-            dispatchEvent(new CustomEvent("git-head-update"));
+            this.app.workspace.trigger("obsidian-git:head-change");
 
             const afterMergeCommit = await this.git.revparse(
                 [branchInfo.current!],

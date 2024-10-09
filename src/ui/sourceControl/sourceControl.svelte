@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Platform, setIcon } from "obsidian";
+    import { Platform, setIcon, type EventRef } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import type ObsidianGit from "src/main";
     import type {
@@ -34,13 +34,14 @@
 
     let showTree = plugin.settings.treeStructure;
     let layoutBtn: HTMLElement;
+    let refreshRef: EventRef;
     $: {
         if (layoutBtn) {
             layoutBtn.empty();
             setIcon(layoutBtn, showTree ? "list" : "folder");
         }
     }
-    addEventListener("git-view-refresh", refresh);
+    refreshRef = view.app.workspace.on("obsidian-git:view-refresh", refresh);
     refresh();
     //This should go in the onMount callback, for some reason it doesn't fire though
     //setTimeout's callback will execute after the current event loop finishes.
@@ -51,7 +52,7 @@
         }, 0);
     });
     onDestroy(() => {
-        removeEventListener("git-view-refresh", refresh);
+        view.app.workspace.offref(refreshRef);
     });
 
     async function commit() {
@@ -167,7 +168,7 @@
     }
 
     function triggerRefresh() {
-        dispatchEvent(new CustomEvent("git-refresh"));
+        view.app.workspace.trigger("obsidian-git:refresh");
     }
 
     function stageAll() {
@@ -215,7 +216,9 @@
                                 status: plugin.cachedStatus,
                             })
                             .finally(() => {
-                                dispatchEvent(new CustomEvent("git-refresh"));
+                                view.app.workspace.trigger(
+                                    "obsidian-git:refresh"
+                                );
                             })
                     );
                 }
@@ -519,7 +522,6 @@
                                         {change}
                                         {view}
                                         manager={plugin.gitManager}
-                                        on:git-refresh={triggerRefresh}
                                     />
                                 {/each}
                             {/if}
@@ -579,11 +581,7 @@
                                     />
                                 {:else}
                                     {#each lastPulledFiles as change}
-                                        <PulledFileComponent
-                                            {change}
-                                            {view}
-                                            on:git-refresh={triggerRefresh}
-                                        />
+                                        <PulledFileComponent {change} {view} />
                                     {/each}
                                 {/if}
                             </div>

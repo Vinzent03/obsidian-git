@@ -20,12 +20,12 @@
 
     function stage(path: string) {
         plugin.gitManager.stageAll({ dir: path }).finally(() => {
-            dispatchEvent(new CustomEvent("git-refresh"));
+            view.app.workspace.trigger("obsidian-git:refresh");
         });
     }
     function unstage(path: string) {
         plugin.gitManager.unstageAll({ dir: path }).finally(() => {
-            dispatchEvent(new CustomEvent("git-refresh"));
+            view.app.workspace.trigger("obsidian-git:refresh");
         });
     }
     function discard(item: TreeItem) {
@@ -39,7 +39,7 @@
                             status: plugin.cachedStatus,
                         })
                         .finally(() => {
-                            dispatchEvent(new CustomEvent("git-refresh"));
+                            view.app.workspace.trigger("obsidian-git:refresh");
                         });
                 }
             });

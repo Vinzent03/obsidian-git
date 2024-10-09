@@ -36,7 +36,7 @@
 
     function stage() {
         manager.stage(change.path, false).finally(() => {
-            dispatchEvent(new CustomEvent("git-refresh"));
+            view.app.workspace.trigger("obsidian-git:refresh");
         });
     }
 
@@ -61,11 +61,13 @@
                         view.app.vault.adapter
                             .remove(change.vault_path)
                             .finally(() => {
-                                dispatchEvent(new CustomEvent("git-refresh"));
+                                view.app.workspace.trigger(
+                                    "obsidian-git:refresh"
+                                );
                             });
                     } else {
                         manager.discard(change.path).finally(() => {
-                            dispatchEvent(new CustomEvent("git-refresh"));
+                            view.app.workspace.trigger("obsidian-git:refresh");
                         });
                     }
                 }

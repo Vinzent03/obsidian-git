@@ -35,7 +35,6 @@ import { IsomorphicGit } from "./gitManager/isomorphicGit";
 import { SimpleGit } from "./gitManager/simpleGit";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
 import type {
-    DiffViewState,
     FileStatusResult,
     ObsidianGitSettings,
     Status,
@@ -64,7 +63,7 @@ export default class ObsidianGit extends Plugin {
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
-    autoCommitDebouncer: Debouncer<any, void> | undefined;
+    autoCommitDebouncer: Debouncer<[], void> | undefined;
     offlineMode = false;
     loading = false;
     cachedStatus: Status | undefined;
@@ -77,7 +76,7 @@ export default class ObsidianGit extends Plugin {
     renameEvent: EventRef;
     lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(this);
 
-    debRefresh: Debouncer<any, void>;
+    debRefresh: Debouncer<[], void>;
 
     setState(state: PluginState): void {
         this.state = state;
@@ -105,11 +104,11 @@ export default class ObsidianGit extends Plugin {
             historyView.length > 0
         ) {
             this.loading = true;
-            dispatchEvent(new CustomEvent("git-view-refresh"));
+            this.app.workspace.trigger("obsidian-git:view-refresh");
 
             await this.updateCachedStatus();
             this.loading = false;
-            dispatchEvent(new CustomEvent("git-view-refresh"));
+            this.app.workspace.trigger("obsidian-git:view-refresh");
         }
 
         // We don't put a line authoring refresh here, as it would force a re-loading
@@ -117,7 +116,7 @@ export default class ObsidianGit extends Plugin {
         // ui after every rename event.
     }
 
-    async refreshUpdatedHead() {
+    refreshUpdatedHead() {
         this.lineAuthoringFeature.refreshLineAuthorViews();
     }
 
@@ -135,7 +134,7 @@ export default class ObsidianGit extends Plugin {
 
         this.localStorage.migrate();
         await this.loadSettings();
-        this.migrateSettings();
+        await this.migrateSettings();
 
         this.settingsTab = new ObsidianGitSettingsTab(this.app, this);
         this.addSettingTab(this.settingsTab);
@@ -145,9 +144,17 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async loadPlugin() {
-        addEventListener("git-refresh", this.refresh.bind(this));
-        addEventListener("git-head-update", this.refreshUpdatedHead.bind(this));
+    loadPlugin() {
+        this.registerEvent(
+            this.app.workspace.on("obsidian-git:refresh", () => {
+                this.refresh().catch((e) => this.displayError(e));
+            })
+        );
+        this.registerEvent(
+            this.app.workspace.on("obsidian-git:head-change", () => {
+                this.refreshUpdatedHead();
+            })
+        );
 
         this.registerView(SOURCE_CONTROL_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
@@ -178,9 +185,9 @@ export default class ObsidianGit extends Plugin {
                 } else {
                     leaf = leafs.first()!;
                 }
-                this.app.workspace.revealLeaf(leaf);
+                await this.app.workspace.revealLeaf(leaf);
 
-                dispatchEvent(new CustomEvent("git-refresh"));
+                this.app.workspace.trigger("obsidian-git:refresh");
             }
         );
 
@@ -339,15 +346,10 @@ export default class ObsidianGit extends Plugin {
 
     unloadPlugin() {
         this.gitReady = false;
-        dispatchEvent(new CustomEvent("git-refresh"));
+        this.app.workspace.trigger("obsidian-git:refresh");
 
         this.lineAuthoringFeature.deactivateFeature();
         this.automaticsManager.unload();
-        removeEventListener("git-refresh", this.refresh.bind(this));
-        removeEventListener(
-            "git-head-update",
-            this.refreshUpdatedHead.bind(this)
-        );
         this.app.workspace.offref(this.openEvent);
         this.app.metadataCache.offref(this.modifyEvent);
         this.app.metadataCache.offref(this.deleteEvent);
@@ -356,7 +358,7 @@ export default class ObsidianGit extends Plugin {
         this.debRefresh.cancel();
     }
 
-    async onunload() {
+    onunload() {
         (this.app.workspace as any).unregisterHoverLinkSource(
             SOURCE_CONTROL_VIEW_CONFIG.type
         );
@@ -442,7 +444,7 @@ export default class ObsidianGit extends Plugin {
 
                     this.lineAuthoringFeature.conditionallyActivateBySettings();
 
-                    dispatchEvent(new CustomEvent("git-refresh"));
+                    this.app.workspace.trigger("obsidian-git:refresh");
 
                     if (this.settings.autoPullOnBoot) {
                         this.promiseQueue.addTask(() =>
@@ -600,7 +602,7 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
-        dispatchEvent(new CustomEvent("git-refresh"));
+        this.app.workspace.trigger("obsidian-git:refresh");
         this.setState(PluginState.idle);
     }
 
@@ -789,7 +791,7 @@ export default class ObsidianGit extends Plugin {
         } else {
             this.displayMessage("No changes to commit");
         }
-        dispatchEvent(new CustomEvent("git-refresh"));
+        this.app.workspace.trigger("obsidian-git:refresh");
 
         this.setState(PluginState.idle);
         return true;
@@ -839,7 +841,7 @@ export default class ObsidianGit extends Plugin {
         }
         this.offlineMode = false;
         this.setState(PluginState.idle);
-        dispatchEvent(new CustomEvent("git-refresh"));
+        this.app.workspace.trigger("obsidian-git:refresh");
 
         return true;
     }
@@ -874,7 +876,7 @@ export default class ObsidianGit extends Plugin {
 
         this.displayMessage(`Fetched from remote`);
         this.offlineMode = false;
-        dispatchEvent(new CustomEvent("git-refresh"));
+        this.app.workspace.trigger("obsidian-git:refresh");
     }
 
     async mayDeleteConflictFile(): Promise<void> {
@@ -898,7 +900,7 @@ export default class ObsidianGit extends Plugin {
         await this.gitManager.stage(file.path, true);
         this.displayMessage(`Staged ${file.path}`);
 
-        dispatchEvent(new CustomEvent("git-refresh"));
+        this.app.workspace.trigger("obsidian-git:refresh");
 
         this.setState(PluginState.idle);
         return true;
@@ -910,7 +912,7 @@ export default class ObsidianGit extends Plugin {
         await this.gitManager.unstage(file.path, true);
         this.displayMessage(`Unstaged ${file.path}`);
 
-        dispatchEvent(new CustomEvent("git-refresh"));
+        this.app.workspace.trigger("obsidian-git:refresh");
 
         this.setState(PluginState.idle);
         return true;
@@ -1210,19 +1212,19 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         this.log(message);
     }
 
-    displayError(message: any, timeout: number = 10 * 1000): void {
-        if (message instanceof Errors.UserCanceledError) {
+    displayError(data: unknown, timeout: number = 10 * 1000): void {
+        if (data instanceof Errors.UserCanceledError) {
             new Notice("Aborted");
             return;
         }
         // Some errors might not be of type string
-        message = message.toString();
+        const message = String(data);
         new Notice(message, timeout);
         this.log(`error: ${message}`);
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
     }
 
-    log(...data: any[]) {
+    log(...data: unknown[]) {
         console.log(`${this.manifest.id}:`, ...data);
     }
 }

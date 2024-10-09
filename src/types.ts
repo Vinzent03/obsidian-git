@@ -277,4 +277,26 @@ declare module "obsidian" {
     interface View {
         titleEl: HTMLElement;
     }
+    interface Workspace {
+        on(
+            name: "obsidian-git:refresh",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+        on(
+            name: "obsidian-git:view-refresh",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+        on(
+            name: "obsidian-git:head-change",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+
+        trigger(name: string, ...data: unknown[]): void;
+        trigger(name: "obsidian-git:refresh"): void;
+        trigger(name: "obsidian-git:view-refresh"): void;
+        trigger(name: "obsidian-git:head-change"): void;
+    }
 }
