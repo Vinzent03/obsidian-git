@@ -91,17 +91,17 @@ export default class ObsidianGit extends Plugin {
     async refresh() {
         if (!this.gitReady) return;
 
-        const gitView = this.app.workspace.getLeavesOfType(
+        const gitViews = this.app.workspace.getLeavesOfType(
             SOURCE_CONTROL_VIEW_CONFIG.type
         );
-        const historyView = this.app.workspace.getLeavesOfType(
+        const historyViews = this.app.workspace.getLeavesOfType(
             HISTORY_VIEW_CONFIG.type
         );
 
         if (
             this.settings.changedFilesInStatusBar ||
-            gitView.length > 0 ||
-            historyView.length > 0
+            gitViews.some((leaf) => !(leaf.isDeferred ?? false)) ||
+            historyViews.some((leaf) => !(leaf.isDeferred ?? false))
         ) {
             this.loading = true;
             this.app.workspace.trigger("obsidian-git:view-refresh");
