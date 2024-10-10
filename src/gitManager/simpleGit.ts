@@ -638,7 +638,7 @@ export class SimpleGit extends GitManager {
             diff: {
                 ...e.diff!,
                 files:
-                    e.diff?.files.map((f) => ({
+                    e.diff?.files.map((f: simple.DiffResultNameStatusFile) => ({
                         ...f,
                         status: f.status!,
                         path: f.file,

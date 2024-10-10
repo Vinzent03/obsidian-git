@@ -36,8 +36,8 @@ importers:
         specifier: github:Vinzent03/obsidian-community-lib#upgrade
         version: https://codeload.github.com/Vinzent03/obsidian-community-lib/tar.gz/e663de4f95c879b40613090da78ea599ff621d24(@codemirror/state@6.4.1)(@codemirror/view@6.34.1)
       simple-git:
-        specifier: github:Vinzent03/git-js#release
-        version: https://codeload.github.com/Vinzent03/git-js/tar.gz/6b9a2d899bc8256e38a1d6f0b8a88116ba2bf56a(supports-color@9.4.0)
+        specifier: ^3.27.0
+        version: 3.27.0(supports-color@9.4.0)
       supports-color:
         specifier: ^9.4.0
         version: 9.4.0
@@ -1713,9 +1713,8 @@ packages:
   simple-get@4.0.1:
     resolution: {integrity: sha512-brv7p5WgH0jmQJr1ZDDfKDOSeWWg+OVypG99A/5vYGPqJ6pxiaHLy8nxtFjBA7oMa01ebA9gfh1uMCFqOuXxvA==}
 
-  simple-git@https://codeload.github.com/Vinzent03/git-js/tar.gz/6b9a2d899bc8256e38a1d6f0b8a88116ba2bf56a:
-    resolution: {tarball: https://codeload.github.com/Vinzent03/git-js/tar.gz/6b9a2d899bc8256e38a1d6f0b8a88116ba2bf56a}
-    version: 3.16.1
+  simple-git@3.27.0:
+    resolution: {integrity: sha512-ivHoFS9Yi9GY49ogc6/YAi3Fl9ROnF4VyubNylgCkA+RVqLaKWnDSzXOVzya8csELIaWaYNutsEuAhZrtOjozA==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -3627,7 +3626,7 @@ snapshots:
       once: 1.4.0
       simple-concat: 1.0.1
 
-  simple-git@https://codeload.github.com/Vinzent03/git-js/tar.gz/6b9a2d899bc8256e38a1d6f0b8a88116ba2bf56a(supports-color@9.4.0):
+  simple-git@3.27.0(supports-color@9.4.0):
     dependencies:
       '@kwsites/file-exists': 1.1.1(supports-color@9.4.0)
       '@kwsites/promise-deferred': 1.1.1

@@ -24,6 +24,7 @@ const context = await esbuild.context({
         "fs",
         "path",
         "moment",
+        "node:events",
         "@codemirror/autocomplete",
         "@codemirror/collab",
         "@codemirror/commands",
