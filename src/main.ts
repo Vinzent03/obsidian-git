@@ -40,7 +40,7 @@ import type {
     Status,
     UnstagedFile,
 } from "./types";
-import { mergeSettingsByPriority, PluginState } from "./types";
+import { mergeSettingsByPriority, NoNetworkError, PluginState } from "./types";
 import DiffView from "./ui/diff/diffView";
 import HistoryView from "./ui/history/historyView";
 import { BranchModal } from "./ui/modals/branchModal";
@@ -806,45 +806,56 @@ export default class ObsidianGit extends Plugin {
             return false;
         }
         const hadConflict = this.localStorage.getConflict();
-        if (this.gitManager instanceof SimpleGit)
-            await this.mayDeleteConflictFile();
+        try {
+            if (this.gitManager instanceof SimpleGit)
+                await this.mayDeleteConflictFile();
 
-        // Refresh because of pull
-        let status: Status;
-        if (
-            this.gitManager instanceof SimpleGit &&
-            (status = await this.updateCachedStatus()).conflicted.length > 0
-        ) {
-            this.displayError(
-                `Cannot push. You have conflicts in ${
-                    status.conflicted.length
-                } ${status.conflicted.length == 1 ? "file" : "files"}`
-            );
-            await this.handleConflict(status.conflicted);
-            return false;
-        } else if (this.gitManager instanceof IsomorphicGit && hadConflict) {
-            this.displayError(`Cannot push. You have conflicts`);
-            this.setState(PluginState.conflicted);
-            return false;
-        }
-        this.log("Pushing....");
-        const pushedFiles = await this.gitManager.push();
-
-        if (pushedFiles !== undefined) {
-            this.log("Pushed!", pushedFiles);
-            if (pushedFiles > 0) {
-                this.displayMessage(
-                    `Pushed ${pushedFiles} ${
-                        pushedFiles == 1 ? "file" : "files"
-                    } to remote`
+            // Refresh because of pull
+            let status: Status;
+            if (
+                this.gitManager instanceof SimpleGit &&
+                (status = await this.updateCachedStatus()).conflicted.length > 0
+            ) {
+                this.displayError(
+                    `Cannot push. You have conflicts in ${
+                        status.conflicted.length
+                    } ${status.conflicted.length == 1 ? "file" : "files"}`
                 );
+                await this.handleConflict(status.conflicted);
+                return false;
+            } else if (
+                this.gitManager instanceof IsomorphicGit &&
+                hadConflict
+            ) {
+                this.displayError(`Cannot push. You have conflicts`);
+                this.setState(PluginState.conflicted);
+                return false;
+            }
+            this.log("Pushing....");
+            const pushedFiles = await this.gitManager.push();
+
+            if (pushedFiles !== undefined) {
+                this.log("Pushed!", pushedFiles);
+                if (pushedFiles > 0) {
+                    this.displayMessage(
+                        `Pushed ${pushedFiles} ${
+                            pushedFiles == 1 ? "file" : "files"
+                        } to remote`
+                    );
+                } else {
+                    this.displayMessage(`No changes to push`);
+                }
+            }
+            this.offlineMode = false;
+            this.setState(PluginState.idle);
+            this.app.workspace.trigger("obsidian-git:refresh");
+        } catch (e) {
+            if (e instanceof NoNetworkError) {
+                this.handleNoNetworkError(e);
             } else {
-                this.displayMessage(`No changes to push`);
+                this.displayError(e);
             }
         }
-        this.offlineMode = false;
-        this.setState(PluginState.idle);
-        this.app.workspace.trigger("obsidian-git:refresh");
 
         return true;
     }
@@ -1200,6 +1211,19 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         }
     }
 
+    handleNoNetworkError(_: NoNetworkError): void {
+        if (!this.offlineMode) {
+            this.displayError(
+                "Git: Going into offline mode. Future network errors will no longer be displayed.",
+                2000
+            );
+        } else {
+            this.log("Encountered network error, but already in offline mode");
+        }
+        this.offlineMode = true;
+        this.setState(PluginState.idle);
+    }
+
     // region: displaying / formatting messages
     displayMessage(message: string, timeout: number = 4 * 1000): void {
         this.statusBar?.displayMessage(message.toLowerCase(), timeout);
@@ -1221,14 +1245,15 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             new Notice("Aborted");
             return;
         }
-        if (data != null && typeof data == "object" && "message" in data) {
-            data = data.message;
+        let error: Error;
+        if (data instanceof Error) {
+            error = data;
+        } else {
+            error = new Error(String(data));
         }
-        // Some errors might not be of type string
-        const message = String(data);
-        new Notice(message, timeout);
-        console.error(`${this.manifest.id}:`, data);
-        this.statusBar?.displayMessage(message.toLowerCase(), timeout);
+        new Notice(error.message, timeout);
+        console.error(`${this.manifest.id}:`, error.stack);
+        this.statusBar?.displayMessage(error.message.toLowerCase(), timeout);
     }
 
     log(...data: unknown[]) {

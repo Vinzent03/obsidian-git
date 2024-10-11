@@ -340,15 +340,18 @@ export function addCommmands(plugin: ObsidianGit) {
         callback: async () => {
             if (!(await plugin.isAllInitialized())) return;
 
-            const status = await plugin.gitManager.status();
-            console.log(status);
-            plugin.setState(PluginState.idle);
-            if (status.changed.length + status.staged.length > 500) {
-                plugin.displayError("Too many changes to display");
-                return;
-            }
+            try {
+                const status = await plugin.gitManager.status();
+                plugin.setState(PluginState.idle);
+                if (status.changed.length + status.staged.length > 500) {
+                    plugin.displayError("Too many changes to display");
+                    return;
+                }
 
-            new ChangedFilesModal(plugin, status.all).open();
+                new ChangedFilesModal(plugin, status.all).open();
+            } catch (e) {
+                plugin.displayError(e);
+            }
         },
     });
 

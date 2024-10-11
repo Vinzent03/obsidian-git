@@ -269,6 +269,12 @@ export enum FileType {
     pulled,
 }
 
+export class NoNetworkError extends Error {
+    constructor(public readonly originalError: string) {
+        super("No network connection available");
+    }
+}
+
 declare module "obsidian" {
     interface App {
         loadLocalStorage(key: string): string | null;
