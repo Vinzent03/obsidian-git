@@ -10,12 +10,17 @@
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";
     import { mayTriggerFileMenu } from "src/utils";
+    import TooManyFilesComponent from "./tooManyFilesComponent.svelte";
     export let hierarchy: StatusRootTreeItem;
     export let plugin: ObsidianGit;
     export let view: GitView;
     export let fileType: FileType;
     export let topLevel = false;
     const closed: Record<string, boolean> = {};
+
+    for (const entity of hierarchy.children) {
+        closed[entity.title] = (entity.children?.length ?? 0) > 100;
+    }
     /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
     $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
 
@@ -60,7 +65,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <main class:topLevel>
-    {#each hierarchy.children as entity}
+    {#each hierarchy.children.slice(0, 500) as entity}
         {#if entity.data}
             <div>
                 {#if fileType == FileType.staged}
@@ -227,6 +232,8 @@
             </div>
         {/if}
     {/each}
+
+    <TooManyFilesComponent files={hierarchy.children} />
 </main>
 
 <style lang="scss">

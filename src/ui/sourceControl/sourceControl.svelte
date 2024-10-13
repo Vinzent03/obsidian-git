@@ -17,6 +17,7 @@
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
     import TreeComponent from "./components/treeComponent.svelte";
     import type GitView from "./sourceControl";
+    import TooManyFilesComponent from "./components/tooManyFilesComponent.svelte";
 
     export let plugin: ObsidianGit;
     export let view: GitView;
@@ -142,27 +143,18 @@
             };
             status.changed.sort(sort);
             status.staged.sort(sort);
-            if (status.changed.length + status.staged.length > 500) {
-                status = undefined;
-                if (!plugin.loading) {
-                    plugin.displayError("Too many changes to display");
-                }
-            } else {
-                changeHierarchy = {
-                    title: "",
-                    path: "",
-                    vaultPath: "",
-                    children: plugin.gitManager.getTreeStructure(
-                        status.changed
-                    ),
-                };
-                stagedHierarchy = {
-                    title: "",
-                    path: "",
-                    vaultPath: "",
-                    children: plugin.gitManager.getTreeStructure(status.staged),
-                };
-            }
+            changeHierarchy = {
+                title: "",
+                path: "",
+                vaultPath: "",
+                children: plugin.gitManager.getTreeStructure(status.changed),
+            };
+            stagedHierarchy = {
+                title: "",
+                path: "",
+                vaultPath: "",
+                children: plugin.gitManager.getTreeStructure(status.staged),
+            };
         } else {
             changeHierarchy = undefined;
             stagedHierarchy = undefined;
@@ -404,13 +396,14 @@
                                     topLevel={true}
                                 />
                             {:else}
-                                {#each status.staged as stagedFile}
+                                {#each status.staged.slice(0, 500) as stagedFile}
                                     <StagedFileComponent
                                         change={stagedFile}
                                         {view}
                                         manager={plugin.gitManager}
                                     />
                                 {/each}
+                                <TooManyFilesComponent files={status.staged} />
                             {/if}
                         </div>
                     {/if}
@@ -520,13 +513,14 @@
                                     topLevel={true}
                                 />
                             {:else}
-                                {#each status.changed as change}
+                                {#each status.changed.slice(0, 500) as change}
                                     <FileComponent
                                         {change}
                                         {view}
                                         manager={plugin.gitManager}
                                     />
                                 {/each}
+                                <TooManyFilesComponent files={status.changed} />
                             {/if}
                         </div>
                     {/if}
@@ -586,6 +580,9 @@
                                     {#each lastPulledFiles as change}
                                         <PulledFileComponent {change} {view} />
                                     {/each}
+                                    <TooManyFilesComponent
+                                        files={lastPulledFiles}
+                                    />
                                 {/if}
                             </div>
                         {/if}
