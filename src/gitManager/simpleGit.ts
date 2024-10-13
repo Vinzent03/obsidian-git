@@ -17,7 +17,7 @@ import type {
     LogEntry,
     Status,
 } from "../types";
-import { NoNetworkError, PluginState } from "../types";
+import { NoNetworkError, CurrentGitAction } from "../types";
 import { impossibleBranch, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 
@@ -119,9 +119,9 @@ export class SimpleGit extends GitManager {
     }
 
     async status(): Promise<Status> {
-        this.plugin.setState(PluginState.status);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
         const status = await this.git.status();
-        this.plugin.setState(PluginState.idle);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
 
         const allFilesFormatted = status.files.map<FileStatusResult>((e) => {
             const res = this.formatPath(e);
@@ -280,7 +280,7 @@ export class SimpleGit extends GitManager {
 
     async commitAll({ message }: { message: string }): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
-            this.plugin.setState(PluginState.commit);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
             const submodulePaths = await this.getSubmodulePaths();
             for (const item of submodulePaths) {
                 await this.git.cwd({ path: item, root: false }).add("-A");
@@ -289,11 +289,11 @@ export class SimpleGit extends GitManager {
                     .commit(await this.formatCommitMessage(message));
             }
         }
-        this.plugin.setState(PluginState.add);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
 
         await this.git.add("-A");
 
-        this.plugin.setState(PluginState.commit);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
 
         const res = await this.git.commit(
             await this.formatCommitMessage(message)
@@ -310,7 +310,7 @@ export class SimpleGit extends GitManager {
         message: string;
         amend?: boolean;
     }): Promise<number> {
-        this.plugin.setState(PluginState.commit);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
 
         const res = (
             await this.git.commit(
@@ -320,42 +320,42 @@ export class SimpleGit extends GitManager {
         ).summary.changes;
         this.app.workspace.trigger("obsidian-git:head-change");
 
-        this.plugin.setState(PluginState.idle);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         return res;
     }
 
     async stage(path: string, relativeToVault: boolean): Promise<void> {
-        this.plugin.setState(PluginState.add);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
 
         path = this.getRelativeRepoPath(path, relativeToVault);
         await this.git.add(["--", path]);
 
-        this.plugin.setState(PluginState.idle);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async stageAll({ dir }: { dir?: string }): Promise<void> {
-        this.plugin.setState(PluginState.add);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
         await this.git.add(dir ?? "-A");
-        this.plugin.setState(PluginState.idle);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async unstageAll({ dir }: { dir?: string }): Promise<void> {
-        this.plugin.setState(PluginState.add);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
         await this.git.reset(dir != undefined ? ["--", dir] : []);
-        this.plugin.setState(PluginState.idle);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async unstage(path: string, relativeToVault: boolean): Promise<void> {
-        this.plugin.setState(PluginState.add);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
 
         path = this.getRelativeRepoPath(path, relativeToVault);
         await this.git.reset(["--", path]);
 
-        this.plugin.setState(PluginState.idle);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async discard(filepath: string): Promise<void> {
-        this.plugin.setState(PluginState.add);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
         if (await this.isTracked(filepath)) {
             await this.git.checkout(["--", filepath]);
         } else {
@@ -364,7 +364,7 @@ export class SimpleGit extends GitManager {
                 true
             );
         }
-        this.plugin.setState(PluginState.idle);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async hashObject(filepath: string): Promise<string> {
@@ -388,7 +388,7 @@ export class SimpleGit extends GitManager {
     }
 
     async pull(): Promise<FileStatusResult[] | undefined> {
-        this.plugin.setState(PluginState.pull);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
         try {
             if (this.plugin.settings.updateSubmodules)
                 await this.git.subModule([
@@ -478,7 +478,7 @@ export class SimpleGit extends GitManager {
     }
 
     async push(): Promise<number | undefined> {
-        this.plugin.setState(PluginState.push);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.push });
         try {
             if (this.plugin.settings.updateSubmodules) {
                 const res = await this.git

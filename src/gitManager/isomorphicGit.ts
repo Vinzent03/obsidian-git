@@ -20,7 +20,7 @@ import type {
     UnstagedFile,
     WalkDifference,
 } from "../types";
-import { PluginState } from "../types";
+import { CurrentGitAction } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
@@ -154,7 +154,7 @@ export class IsomorphicGit extends GitManager {
             );
         }, 20000);
         try {
-            this.plugin.setState(PluginState.status);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
             const status = (
                 await this.wrapFS(git.statusMatrix({ ...this.getRepo() }))
             ).map((row) => this.getFileStatusResult(row));
@@ -206,7 +206,7 @@ export class IsomorphicGit extends GitManager {
     }): Promise<undefined> {
         try {
             await this.checkAuthorInfo();
-            this.plugin.setState(PluginState.commit);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
             const formatMessage = await this.formatCommitMessage(message);
             const hadConflict = this.plugin.localStorage.getConflict();
             let parent: string[] | undefined = undefined;
@@ -240,7 +240,7 @@ export class IsomorphicGit extends GitManager {
             vaultPath = this.getRelativeVaultPath(filepath);
         }
         try {
-            this.plugin.setState(PluginState.add);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
             if (await this.app.vault.adapter.exists(vaultPath)) {
                 await this.wrapFS(
                     git.add({ ...this.getRepo(), filepath: gitPath })
@@ -303,7 +303,7 @@ export class IsomorphicGit extends GitManager {
 
     async unstage(filepath: string, relativeToVault: boolean): Promise<void> {
         try {
-            this.plugin.setState(PluginState.add);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
             filepath = this.getRelativeRepoPath(filepath, relativeToVault);
             await this.wrapFS(
                 git.resetIndex({ ...this.getRepo(), filepath: filepath })
@@ -344,7 +344,7 @@ export class IsomorphicGit extends GitManager {
 
     async discard(filepath: string): Promise<void> {
         try {
-            this.plugin.setState(PluginState.add);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
             await this.wrapFS(
                 git.checkout({
                     ...this.getRepo(),
@@ -415,7 +415,7 @@ export class IsomorphicGit extends GitManager {
     async pull(): Promise<FileStatusResult[]> {
         const progressNotice = this.showNotice("Initializing pull");
         try {
-            this.plugin.setState(PluginState.pull);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
 
             const localCommit = await this.resolveRef("HEAD");
             await this.fetch();
@@ -483,7 +483,7 @@ export class IsomorphicGit extends GitManager {
         }
         const progressNotice = this.showNotice("Initializing push");
         try {
-            this.plugin.setState(PluginState.status);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
             const status = await this.branchInfo();
             const trackingBranch = status.tracking;
             const currentBranch = status.current;
@@ -491,7 +491,7 @@ export class IsomorphicGit extends GitManager {
                 await this.getFileChangesCount(currentBranch!, trackingBranch!)
             ).length;
 
-            this.plugin.setState(PluginState.push);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.push });
 
             await this.wrapFS(
                 git.push({

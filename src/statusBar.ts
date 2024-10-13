@@ -1,6 +1,6 @@
 import { setIcon, moment } from "obsidian";
 import type ObsidianGit from "./main";
-import { PluginState } from "./types";
+import { CurrentGitAction } from "./types";
 
 interface StatusBarMessage {
     message: string;
@@ -15,6 +15,7 @@ export class StatusBar {
     public lastMessageTimestamp: number | null;
     private base = "obsidian-git-statusbar-";
     private iconEl: HTMLElement;
+    private conflictEl: HTMLElement;
     private textEl: HTMLElement;
 
     constructor(
@@ -65,46 +66,57 @@ export class StatusBar {
         ) {
             this.statusBarEl.empty();
 
+            this.conflictEl = this.statusBarEl.createDiv();
+            this.conflictEl.setAttribute("data-tooltip-position", "top");
+            this.conflictEl.style.float = "left";
+
             this.iconEl = this.statusBarEl.createDiv();
+            this.iconEl.style.float = "left";
+
             this.textEl = this.statusBarEl.createDiv();
             this.textEl.style.float = "right";
             this.textEl.style.marginLeft = "5px";
-            this.iconEl.style.float = "left";
         }
 
-        switch (this.plugin.state) {
-            case PluginState.idle:
+        if (this.plugin.localStorage.getConflict()) {
+            setIcon(this.conflictEl, "alert-circle");
+            this.conflictEl.ariaLabel =
+                "You have merge conflicts. Resolve them and commit afterwards.";
+            this.conflictEl.style.marginRight = "5px";
+            this.conflictEl.addClass(this.base + "conflict");
+        } else {
+            this.conflictEl.empty();
+
+            this.conflictEl.style.marginRight = "";
+        }
+        switch (this.plugin.state.gitAction) {
+            case CurrentGitAction.idle:
                 this.displayFromNow();
                 break;
-            case PluginState.status:
+            case CurrentGitAction.status:
                 this.statusBarEl.ariaLabel = "Checking repository status...";
                 setIcon(this.iconEl, "refresh-cw");
                 this.statusBarEl.addClass(this.base + "status");
                 break;
-            case PluginState.add:
+            case CurrentGitAction.add:
                 this.statusBarEl.ariaLabel = "Adding files...";
-                setIcon(this.iconEl, "refresh-w");
+                setIcon(this.iconEl, "archive");
                 this.statusBarEl.addClass(this.base + "add");
                 break;
-            case PluginState.commit:
+            case CurrentGitAction.commit:
                 this.statusBarEl.ariaLabel = "Committing changes...";
                 setIcon(this.iconEl, "git-commit");
                 this.statusBarEl.addClass(this.base + "commit");
                 break;
-            case PluginState.push:
+            case CurrentGitAction.push:
                 this.statusBarEl.ariaLabel = "Pushing changes...";
                 setIcon(this.iconEl, "upload");
                 this.statusBarEl.addClass(this.base + "push");
                 break;
-            case PluginState.pull:
+            case CurrentGitAction.pull:
                 this.statusBarEl.ariaLabel = "Pulling changes...";
                 setIcon(this.iconEl, "download");
                 this.statusBarEl.addClass(this.base + "pull");
-                break;
-            case PluginState.conflicted:
-                this.statusBarEl.ariaLabel = "You have conflict files...";
-                setIcon(this.iconEl, "alert-circle");
-                this.statusBarEl.addClass(this.base + "conflict");
                 break;
             default:
                 this.statusBarEl.ariaLabel = "Failed on initialization!";
@@ -116,22 +128,23 @@ export class StatusBar {
 
     private displayFromNow(): void {
         const timestamp = this.lastCommitTimestamp;
+        const offlineMode = this.plugin.state.offlineMode;
         if (timestamp) {
             const fromNow = moment(timestamp).fromNow();
             this.statusBarEl.ariaLabel = `${
-                this.plugin.offlineMode ? "Offline: " : ""
+                offlineMode ? "Offline: " : ""
             }Last Commit: ${fromNow}`;
 
             if (this.unPushedCommits ?? 0 > 0) {
                 this.statusBarEl.ariaLabel += `\n(${this.unPushedCommits} unpushed commits)`;
             }
         } else {
-            this.statusBarEl.ariaLabel = this.plugin.offlineMode
+            this.statusBarEl.ariaLabel = offlineMode
                 ? "Git is offline"
                 : "Git is ready";
         }
 
-        if (this.plugin.offlineMode) {
+        if (offlineMode) {
             setIcon(this.iconEl, "globe");
         } else {
             setIcon(this.iconEl, "check");

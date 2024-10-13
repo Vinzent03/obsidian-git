@@ -5,7 +5,6 @@ import {
     DIFF_VIEW_CONFIG,
 } from "./constants";
 import { openLineInGitHub, openHistoryInGitHub } from "./openInGitHub";
-import { PluginState } from "./types";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
@@ -275,19 +274,22 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "edit-remotes",
         name: "Edit remotes",
-        callback: async () => plugin.editRemotes(),
+        callback: () =>
+            plugin.editRemotes().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
         id: "remove-remote",
         name: "Remove remote",
-        callback: async () => plugin.removeRemote(),
+        callback: () =>
+            plugin.removeRemote().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
         id: "set-upstream-branch",
         name: "Set upstream branch",
-        callback: async () => plugin.setUpstreamBranch(),
+        callback: () =>
+            plugin.setUpstreamBranch().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
@@ -325,13 +327,15 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "init-repo",
         name: "Initialize a new repo",
-        callback: async () => plugin.createNewRepo(),
+        callback: () =>
+            plugin.createNewRepo().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
         id: "clone-repo",
         name: "Clone an existing remote repo",
-        callback: async () => plugin.cloneNewRepo(),
+        callback: () =>
+            plugin.cloneNewRepo().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
@@ -341,8 +345,7 @@ export function addCommmands(plugin: ObsidianGit) {
             if (!(await plugin.isAllInitialized())) return;
 
             try {
-                const status = await plugin.gitManager.status();
-                plugin.setState(PluginState.idle);
+                const status = await plugin.updateCachedStatus();
                 if (status.changed.length + status.staged.length > 500) {
                     plugin.displayError("Too many changes to display");
                     return;

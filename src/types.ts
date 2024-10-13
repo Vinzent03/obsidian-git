@@ -72,6 +72,10 @@ export interface Status {
     all: FileStatusResult[];
     changed: FileStatusResult[];
     staged: FileStatusResult[];
+
+    /*
+     * Only available for `SimpleGit` gitManager
+     */
     conflicted: string[];
 }
 
@@ -191,14 +195,21 @@ export interface FileStatusResult {
     working_dir: string;
 }
 
-export enum PluginState {
+export interface PluginState {
+    offlineMode: boolean;
+    gitAction: CurrentGitAction;
+    /* Currently refreshing the cached status
+     */
+    loading: boolean;
+}
+
+export enum CurrentGitAction {
     idle,
     status,
     pull,
     add,
     commit,
     push,
-    conflicted,
 }
 
 export interface LogEntry {

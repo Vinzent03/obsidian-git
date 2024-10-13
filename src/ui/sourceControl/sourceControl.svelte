@@ -7,7 +7,7 @@
         Status,
         StatusRootTreeItem,
     } from "src/types";
-    import { FileType, PluginState } from "src/types";
+    import { CurrentGitAction, FileType } from "src/types";
     import { getDisplayPath } from "src/utils";
     import { onDestroy } from "svelte";
     import { slide } from "svelte/transition";
@@ -62,7 +62,7 @@
         loading = true;
         if (status) {
             if (await plugin.tools.hasTooBigFiles(status.staged)) {
-                plugin.setState(PluginState.idle);
+                plugin.setPluginState({ gitAction: CurrentGitAction.idle });
                 return false;
             }
             plugin.promiseQueue.addTask(() =>

@@ -37,10 +37,15 @@ import { LocalStorageSettings } from "./setting/localStorageSettings";
 import type {
     FileStatusResult,
     ObsidianGitSettings,
+    PluginState,
     Status,
     UnstagedFile,
 } from "./types";
-import { mergeSettingsByPriority, NoNetworkError, PluginState } from "./types";
+import {
+    mergeSettingsByPriority,
+    NoNetworkError,
+    CurrentGitAction,
+} from "./types";
 import DiffView from "./ui/diff/diffView";
 import HistoryView from "./ui/history/historyView";
 import { BranchModal } from "./ui/modals/branchModal";
@@ -59,12 +64,15 @@ export default class ObsidianGit extends Plugin {
     settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
     branchBar?: BranchStatusBar;
-    state: PluginState;
+    state: PluginState = {
+        gitAction: CurrentGitAction.idle,
+        loading: false,
+        offlineMode: false,
+    };
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
-    promiseQueue: PromiseQueue = new PromiseQueue();
+    promiseQueue: PromiseQueue = new PromiseQueue(this);
     autoCommitDebouncer: Debouncer<[], void> | undefined;
-    offlineMode = false;
     loading = false;
     cachedStatus: Status | undefined;
     // Used to store the path of the file that is currently shown in the diff view.
@@ -78,13 +86,21 @@ export default class ObsidianGit extends Plugin {
 
     debRefresh: Debouncer<[], void>;
 
-    setState(state: PluginState): void {
-        this.state = state;
+    setPluginState(state: Partial<PluginState>): void {
+        this.state = Object.assign(this.state, state);
         this.statusBar?.display();
     }
 
     async updateCachedStatus(): Promise<Status> {
         this.cachedStatus = await this.gitManager.status();
+        if (this.cachedStatus.conflicted.length > 0) {
+            this.localStorage.setConflict(true);
+            await this.branchBar?.display();
+        } else {
+            this.localStorage.setConflict(false);
+            await this.branchBar?.display();
+        }
+
         return this.cachedStatus;
     }
 
@@ -106,7 +122,7 @@ export default class ObsidianGit extends Plugin {
             this.loading = true;
             this.app.workspace.trigger("obsidian-git:view-refresh");
 
-            await this.updateCachedStatus();
+            await this.updateCachedStatus().catch((e) => this.displayError(e));
             this.loading = false;
             this.app.workspace.trigger("obsidian-git:view-refresh");
         }
@@ -414,7 +430,7 @@ export default class ObsidianGit extends Plugin {
                     break;
                 case "valid":
                     this.gitReady = true;
-                    this.setState(PluginState.idle);
+                    this.setPluginState({ gitAction: CurrentGitAction.idle });
 
                     this.openEvent = this.app.workspace.on(
                         "active-leaf-change",
@@ -471,9 +487,13 @@ export default class ObsidianGit extends Plugin {
     }
 
     async createNewRepo() {
-        await this.gitManager.init();
-        new Notice("Initialized new repo");
-        await this.init();
+        try {
+            await this.gitManager.init();
+            new Notice("Initialized new repo");
+            await this.init();
+        } catch (e) {
+            this.displayError(e);
+        }
     }
 
     async cloneNewRepo() {
@@ -492,80 +512,79 @@ export default class ObsidianGit extends Plugin {
                     "Enter directory for clone. It needs to be empty or not existent.",
                 allowEmpty: this.gitManager instanceof IsomorphicGit,
             }).openAndGetResult();
-            if (dir !== undefined) {
-                if (dir === confirmOption) {
-                    dir = ".";
-                }
+            if (dir == undefined) return;
+            if (dir === confirmOption) {
+                dir = ".";
+            }
 
-                dir = normalizePath(dir);
-                if (dir === "/") {
-                    dir = ".";
-                }
+            dir = normalizePath(dir);
+            if (dir === "/") {
+                dir = ".";
+            }
 
-                if (dir === ".") {
+            if (dir === ".") {
+                const modal = new GeneralModal(this, {
+                    options: ["NO", "YES"],
+                    placeholder: `Does your remote repo contain a ${this.app.vault.configDir} directory at the root?`,
+                    onlySelection: true,
+                });
+                const containsConflictDir = await modal.openAndGetResult();
+                if (containsConflictDir === undefined) {
+                    new Notice("Aborted clone");
+                    return;
+                } else if (containsConflictDir === "YES") {
+                    const confirmOption =
+                        "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
                     const modal = new GeneralModal(this, {
-                        options: ["NO", "YES"],
-                        placeholder: `Does your remote repo contain a ${this.app.vault.configDir} directory at the root?`,
+                        options: ["Abort clone", confirmOption],
+                        placeholder: `To avoid conflicts, the local ${this.app.vault.configDir} directory needs to be deleted.`,
                         onlySelection: true,
                     });
-                    const containsConflictDir = await modal.openAndGetResult();
-                    if (containsConflictDir === undefined) {
+                    const shouldDelete =
+                        (await modal.openAndGetResult()) === confirmOption;
+                    if (shouldDelete) {
+                        await this.app.vault.adapter.rmdir(
+                            this.app.vault.configDir,
+                            true
+                        );
+                    } else {
                         new Notice("Aborted clone");
                         return;
-                    } else if (containsConflictDir === "YES") {
-                        const confirmOption =
-                            "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
-                        const modal = new GeneralModal(this, {
-                            options: ["Abort clone", confirmOption],
-                            placeholder: `To avoid conflicts, the local ${this.app.vault.configDir} directory needs to be deleted.`,
-                            onlySelection: true,
-                        });
-                        const shouldDelete =
-                            (await modal.openAndGetResult()) === confirmOption;
-                        if (shouldDelete) {
-                            await this.app.vault.adapter.rmdir(
-                                this.app.vault.configDir,
-                                true
-                            );
-                        } else {
-                            new Notice("Aborted clone");
-                            return;
-                        }
                     }
                 }
-                const depth = await new GeneralModal(this, {
-                    placeholder:
-                        "Specify depth of clone. Leave empty for full clone.",
-                    allowEmpty: true,
-                }).openAndGetResult();
-                let depthInt = undefined;
-                if (depth !== "") {
-                    depthInt = parseInt(depth);
-                    if (isNaN(depthInt)) {
-                        new Notice("Invalid depth. Aborting clone.");
-                        return;
-                    }
+            }
+            const depth = await new GeneralModal(this, {
+                placeholder:
+                    "Specify depth of clone. Leave empty for full clone.",
+                allowEmpty: true,
+            }).openAndGetResult();
+            let depthInt = undefined;
+            if (depth !== "") {
+                depthInt = parseInt(depth);
+                if (isNaN(depthInt)) {
+                    new Notice("Invalid depth. Aborting clone.");
+                    return;
                 }
-                new Notice(`Cloning new repo into "${dir}"`);
-                const oldBase = this.settings.basePath;
-                const customDir = dir && dir !== ".";
-                //Set new base path before clone to ensure proper .git/index file location in isomorphic-git
-                if (customDir) {
-                    this.settings.basePath = dir;
-                }
-                try {
-                    await this.gitManager.clone(url, dir, depthInt);
-                } catch (error) {
-                    this.settings.basePath = oldBase;
-                    await this.saveSettings();
-                    throw error;
-                }
+            }
+            new Notice(`Cloning new repo into "${dir}"`);
+            const oldBase = this.settings.basePath;
+            const customDir = dir && dir !== ".";
+            //Set new base path before clone to ensure proper .git/index file location in isomorphic-git
+            if (customDir) {
+                this.settings.basePath = dir;
+            }
+            try {
+                await this.gitManager.clone(url, dir, depthInt);
                 new Notice("Cloned new repo.");
                 new Notice("Please restart Obsidian");
 
                 if (customDir) {
                     await this.saveSettings();
                 }
+            } catch (error) {
+                this.displayError(error);
+                this.settings.basePath = oldBase;
+                await this.saveSettings();
             }
         }
     }
@@ -595,7 +614,7 @@ export default class ObsidianGit extends Plugin {
         }
 
         if (this.gitManager instanceof SimpleGit) {
-            const status = await this.gitManager.status();
+            const status = await this.updateCachedStatus();
             if (status.conflicted.length > 0) {
                 this.displayError(
                     `You have conflicts in ${status.conflicted.length} ${
@@ -607,7 +626,7 @@ export default class ObsidianGit extends Plugin {
         }
 
         this.app.workspace.trigger("obsidian-git:refresh");
-        this.setState(PluginState.idle);
+        this.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async commitAndSync(
@@ -624,13 +643,12 @@ export default class ObsidianGit extends Plugin {
             await this.pull();
         }
 
-        if (
-            !(await this.commit({
-                fromAuto: fromAutoBackup,
-                requestCustomMessage,
-                commitMessage,
-            }))
-        ) {
+        const commitSuccessful = await this.commit({
+            fromAuto: fromAutoBackup,
+            requestCustomMessage,
+            commitMessage,
+        });
+        if (!commitSuccessful) {
             return;
         }
 
@@ -652,7 +670,7 @@ export default class ObsidianGit extends Plugin {
                 this.displayMessage("No changes to push");
             }
         }
-        this.setState(PluginState.idle);
+        this.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     // Returns true if commit was successfully
@@ -670,136 +688,141 @@ export default class ObsidianGit extends Plugin {
         amend?: boolean;
     }): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
+        try {
+            let hadConflict = this.localStorage.getConflict();
 
-        let hadConflict = this.localStorage.getConflict();
+            let changedFiles: { vault_path: string }[];
+            let status: Status | undefined;
+            let unstagedFiles: UnstagedFile[] | undefined;
 
-        let changedFiles: { vault_path: string }[];
-        let status: Status | undefined;
-        let unstagedFiles: UnstagedFile[] | undefined;
+            if (this.gitManager instanceof SimpleGit) {
+                await this.mayDeleteConflictFile();
+                status = await this.updateCachedStatus();
 
-        if (this.gitManager instanceof SimpleGit) {
-            await this.mayDeleteConflictFile();
-            status = await this.updateCachedStatus();
-
-            //Should not be necessary, but just in case
-            if (status.conflicted.length == 0) {
-                this.localStorage.setConflict(false);
-                hadConflict = false;
-            }
-
-            // check for conflict files on auto backup
-            if (fromAuto && status.conflicted.length > 0) {
-                this.displayError(
-                    `Did not commit, because you have conflicts in ${
-                        status.conflicted.length
-                    } ${
-                        status.conflicted.length == 1 ? "file" : "files"
-                    }. Please resolve them and commit per command.`
-                );
-                await this.handleConflict(status.conflicted);
-                return false;
-            }
-            changedFiles = [...status.changed, ...status.staged];
-        } else if (fromAuto && hadConflict) {
-            this.setState(PluginState.conflicted);
-            this.displayError(
-                `Did not commit, because you have conflicts. Please resolve them and commit per command.`
-            );
-            return false;
-        } else if (hadConflict) {
-            await this.mayDeleteConflictFile();
-            status = await this.updateCachedStatus();
-            changedFiles = [...status.changed, ...status.staged];
-        } else {
-            if (onlyStaged) {
-                changedFiles = await (
-                    this.gitManager as IsomorphicGit
-                ).getStagedFiles();
-            } else {
-                unstagedFiles = await (
-                    this.gitManager as IsomorphicGit
-                ).getUnstagedFiles();
-                changedFiles = unstagedFiles.map(({ filepath }) => ({
-                    vault_path: this.gitManager.getRelativeVaultPath(filepath),
-                }));
-            }
-        }
-
-        if (await this.tools.hasTooBigFiles(changedFiles)) {
-            this.setState(PluginState.idle);
-            return false;
-        }
-
-        if (changedFiles.length !== 0 || hadConflict) {
-            let cmtMessage = (commitMessage ??= fromAuto
-                ? this.settings.autoCommitMessage
-                : this.settings.commitMessage);
-            if (
-                (fromAuto && this.settings.customMessageOnAutoBackup) ||
-                requestCustomMessage
-            ) {
-                if (!this.settings.disablePopups && fromAuto) {
-                    new Notice(
-                        "Auto backup: Please enter a custom commit message. Leave empty to abort"
-                    );
+                //Should not be necessary, but just in case
+                if (status.conflicted.length == 0) {
+                    hadConflict = false;
                 }
-                const tempMessage = await new CustomMessageModal(
-                    this
-                ).openAndGetResult();
 
-                if (
-                    tempMessage != undefined &&
-                    tempMessage != "" &&
-                    tempMessage != "..."
-                ) {
-                    cmtMessage = tempMessage;
-                } else {
-                    this.setState(PluginState.idle);
+                // check for conflict files on auto backup
+                if (fromAuto && status.conflicted.length > 0) {
+                    this.displayError(
+                        `Did not commit, because you have conflicts in ${
+                            status.conflicted.length
+                        } ${
+                            status.conflicted.length == 1 ? "file" : "files"
+                        }. Please resolve them and commit per command.`
+                    );
+                    await this.handleConflict(status.conflicted);
                     return false;
                 }
-            }
-            let committedFiles: number | undefined;
-            if (onlyStaged) {
-                committedFiles = await this.gitManager.commit({
-                    message: cmtMessage,
-                    amend,
-                });
+                changedFiles = [...status.changed, ...status.staged];
+            } else if (fromAuto && hadConflict) {
+                this.displayError(
+                    `Did not commit, because you have conflicts. Please resolve them and commit per command.`
+                );
+                return false;
+            } else if (hadConflict) {
+                await this.mayDeleteConflictFile();
+                status = await this.updateCachedStatus();
+                changedFiles = [...status.changed, ...status.staged];
             } else {
-                committedFiles = await this.gitManager.commitAll({
-                    message: cmtMessage,
-                    status,
-                    unstagedFiles,
-                    amend,
-                });
-            }
-
-            //Handle resolved conflict after commit
-            if (this.gitManager instanceof SimpleGit) {
-                if ((await this.updateCachedStatus()).conflicted.length == 0) {
-                    this.localStorage.setConflict(false);
+                if (onlyStaged) {
+                    changedFiles = await (
+                        this.gitManager as IsomorphicGit
+                    ).getStagedFiles();
+                } else {
+                    unstagedFiles = await (
+                        this.gitManager as IsomorphicGit
+                    ).getUnstagedFiles();
+                    changedFiles = unstagedFiles.map(({ filepath }) => ({
+                        vault_path:
+                            this.gitManager.getRelativeVaultPath(filepath),
+                    }));
                 }
             }
 
-            let roughly = false;
-            if (committedFiles === undefined) {
-                roughly = true;
-                committedFiles = changedFiles.length;
+            if (await this.tools.hasTooBigFiles(changedFiles)) {
+                this.setPluginState({ gitAction: CurrentGitAction.idle });
+                return false;
             }
-            await this.automaticsManager.setUpAutoCommitAndSync();
-            this.displayMessage(
-                `Committed${roughly ? " approx." : ""} ${committedFiles} ${
-                    committedFiles == 1 ? "file" : "files"
-                }`
-            );
-        } else {
-            this.displayMessage("No changes to commit");
-        }
-        this.app.workspace.trigger("obsidian-git:refresh");
 
-        this.setState(PluginState.idle);
-        return true;
+            if (changedFiles.length !== 0 || hadConflict) {
+                let cmtMessage = (commitMessage ??= fromAuto
+                    ? this.settings.autoCommitMessage
+                    : this.settings.commitMessage);
+                if (
+                    (fromAuto && this.settings.customMessageOnAutoBackup) ||
+                    requestCustomMessage
+                ) {
+                    if (!this.settings.disablePopups && fromAuto) {
+                        new Notice(
+                            "Auto backup: Please enter a custom commit message. Leave empty to abort"
+                        );
+                    }
+                    const tempMessage = await new CustomMessageModal(
+                        this
+                    ).openAndGetResult();
+
+                    if (
+                        tempMessage != undefined &&
+                        tempMessage != "" &&
+                        tempMessage != "..."
+                    ) {
+                        cmtMessage = tempMessage;
+                    } else {
+                        this.setPluginState({
+                            gitAction: CurrentGitAction.idle,
+                        });
+                        return false;
+                    }
+                }
+                let committedFiles: number | undefined;
+                if (onlyStaged) {
+                    committedFiles = await this.gitManager.commit({
+                        message: cmtMessage,
+                        amend,
+                    });
+                } else {
+                    committedFiles = await this.gitManager.commitAll({
+                        message: cmtMessage,
+                        status,
+                        unstagedFiles,
+                        amend,
+                    });
+                }
+
+                // Handle eventually resolved conflicts
+                if (this.gitManager instanceof SimpleGit) {
+                    await this.updateCachedStatus();
+                }
+
+                let roughly = false;
+                if (committedFiles === undefined) {
+                    roughly = true;
+                    committedFiles = changedFiles.length;
+                }
+                await this.automaticsManager.setUpAutoCommitAndSync();
+                this.displayMessage(
+                    `Committed${roughly ? " approx." : ""} ${committedFiles} ${
+                        committedFiles == 1 ? "file" : "files"
+                    }`
+                );
+            } else {
+                this.displayMessage("No changes to commit");
+            }
+            this.app.workspace.trigger("obsidian-git:refresh");
+
+            return true;
+        } catch (error) {
+            this.displayError(error);
+            return false;
+        }
     }
 
+    /*
+     * Returns true if push was successful
+     */
     async push(): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
         if (!(await this.remotesAreSet())) {
@@ -828,14 +851,12 @@ export default class ObsidianGit extends Plugin {
                 hadConflict
             ) {
                 this.displayError(`Cannot push. You have conflicts`);
-                this.setState(PluginState.conflicted);
                 return false;
             }
             this.log("Pushing....");
             const pushedFiles = await this.gitManager.push();
 
             if (pushedFiles !== undefined) {
-                this.log("Pushed!", pushedFiles);
                 if (pushedFiles > 0) {
                     this.displayMessage(
                         `Pushed ${pushedFiles} ${
@@ -846,18 +867,17 @@ export default class ObsidianGit extends Plugin {
                     this.displayMessage(`No changes to push`);
                 }
             }
-            this.offlineMode = false;
-            this.setState(PluginState.idle);
+            this.setPluginState({ offlineMode: false });
             this.app.workspace.trigger("obsidian-git:refresh");
+            return true;
         } catch (e) {
             if (e instanceof NoNetworkError) {
                 this.handleNoNetworkError(e);
             } else {
                 this.displayError(e);
             }
+            return false;
         }
-
-        return true;
     }
 
     /** Used for internals
@@ -868,29 +888,39 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.remotesAreSet())) {
             return false;
         }
-        const pulledFiles = (await this.gitManager.pull()) || [];
-        this.offlineMode = false;
+        try {
+            const pulledFiles = (await this.gitManager.pull()) || [];
+            this.setPluginState({ offlineMode: false });
 
-        if (pulledFiles.length > 0) {
-            this.displayMessage(
-                `Pulled ${pulledFiles.length} ${
-                    pulledFiles.length == 1 ? "file" : "files"
-                } from remote`
-            );
-            this.lastPulledFiles = pulledFiles;
+            if (pulledFiles.length > 0) {
+                this.displayMessage(
+                    `Pulled ${pulledFiles.length} ${
+                        pulledFiles.length == 1 ? "file" : "files"
+                    } from remote`
+                );
+                this.lastPulledFiles = pulledFiles;
+            }
+            return pulledFiles.length;
+        } catch (e) {
+            this.displayError(e);
+
+            return false;
         }
-        return pulledFiles.length;
     }
 
     async fetch(): Promise<void> {
         if (!(await this.remotesAreSet())) {
             return;
         }
-        await this.gitManager.fetch();
+        try {
+            await this.gitManager.fetch();
 
-        this.displayMessage(`Fetched from remote`);
-        this.offlineMode = false;
-        this.app.workspace.trigger("obsidian-git:refresh");
+            this.displayMessage(`Fetched from remote`);
+            this.setPluginState({ offlineMode: false });
+            this.app.workspace.trigger("obsidian-git:refresh");
+        } catch (error) {
+            this.displayError(error);
+        }
     }
 
     async mayDeleteConflictFile(): Promise<void> {
@@ -916,7 +946,7 @@ export default class ObsidianGit extends Plugin {
 
         this.app.workspace.trigger("obsidian-git:refresh");
 
-        this.setState(PluginState.idle);
+        this.setPluginState({ gitAction: CurrentGitAction.idle });
         return true;
     }
 
@@ -928,7 +958,7 @@ export default class ObsidianGit extends Plugin {
 
         this.app.workspace.trigger("obsidian-git:refresh");
 
-        this.setState(PluginState.idle);
+        this.setPluginState({ gitAction: CurrentGitAction.idle });
         return true;
     }
 
@@ -1033,12 +1063,12 @@ export default class ObsidianGit extends Plugin {
 
         if (remoteBranch == undefined) {
             this.displayError("Aborted. No upstream-branch is set!", 10000);
-            this.setState(PluginState.idle);
+            this.setPluginState({ gitAction: CurrentGitAction.idle });
             return false;
         } else {
             await this.gitManager.updateUpstreamBranch(remoteBranch);
             this.displayMessage(`Set upstream branch to ${remoteBranch}`);
-            this.setState(PluginState.idle);
+            this.setPluginState({ gitAction: CurrentGitAction.idle });
             return true;
         }
     }
@@ -1053,8 +1083,6 @@ export default class ObsidianGit extends Plugin {
     }
 
     async handleConflict(conflicted?: string[]): Promise<void> {
-        this.setState(PluginState.conflicted);
-
         this.localStorage.setConflict(true);
         let lines: string[] | undefined;
         if (conflicted !== undefined) {
@@ -1212,7 +1240,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
     }
 
     handleNoNetworkError(_: NoNetworkError): void {
-        if (!this.offlineMode) {
+        if (!this.state.offlineMode) {
             this.displayError(
                 "Git: Going into offline mode. Future network errors will no longer be displayed.",
                 2000
@@ -1220,8 +1248,8 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         } else {
             this.log("Encountered network error, but already in offline mode");
         }
-        this.offlineMode = true;
-        this.setState(PluginState.idle);
+        this.setPluginState({ offlineMode: true });
+        this.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     // region: displaying / formatting messages
@@ -1251,6 +1279,8 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         } else {
             error = new Error(String(data));
         }
+
+        this.setPluginState({ gitAction: CurrentGitAction.idle });
         new Notice(error.message, timeout);
         console.error(`${this.manifest.id}:`, error.stack);
         this.statusBar?.displayMessage(error.message.toLowerCase(), timeout);
