@@ -213,7 +213,7 @@ export function addCommmands(plugin: ObsidianGit) {
     if (Platform.isDesktopApp) {
         plugin.addCommand({
             id: "commit-amend-staged-specified-message",
-            name: "Commit Amend",
+            name: "Amend staged",
             callback: () =>
                 plugin.promiseQueue.addTask(() =>
                     plugin.commit({

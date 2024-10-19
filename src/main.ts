@@ -667,7 +667,7 @@ export default class ObsidianGit extends Plugin {
             ) {
                 await this.push();
             } else {
-                this.displayMessage("No changes to push");
+                this.displayMessage("No commits to push");
             }
         }
         this.setPluginState({ gitAction: CurrentGitAction.idle });
@@ -717,28 +717,33 @@ export default class ObsidianGit extends Plugin {
                     return false;
                 }
                 changedFiles = [...status.changed, ...status.staged];
-            } else if (fromAuto && hadConflict) {
-                this.displayError(
-                    `Did not commit, because you have conflicts. Please resolve them and commit per command.`
-                );
-                return false;
-            } else if (hadConflict) {
-                await this.mayDeleteConflictFile();
-                status = await this.updateCachedStatus();
-                changedFiles = [...status.changed, ...status.staged];
             } else {
-                if (onlyStaged) {
-                    changedFiles = await (
-                        this.gitManager as IsomorphicGit
-                    ).getStagedFiles();
+                // isomorphic-git section
+
+                if (fromAuto && hadConflict) {
+                    // isomorphic-git doesn't have a way to detect current
+                    // conflicts, they are only detected on commit
+                    //
+                    // Conflicts should only be resolved by manually committing.
+                    this.displayError(
+                        `Did not commit, because you have conflicts. Please resolve them and commit per command.`
+                    );
+                    return false;
+                } else if (hadConflict) {
+                    await this.mayDeleteConflictFile();
+                    status = await this.updateCachedStatus();
+                    changedFiles = [...status.changed, ...status.staged];
                 } else {
-                    unstagedFiles = await (
-                        this.gitManager as IsomorphicGit
-                    ).getUnstagedFiles();
-                    changedFiles = unstagedFiles.map(({ filepath }) => ({
-                        vault_path:
-                            this.gitManager.getRelativeVaultPath(filepath),
-                    }));
+                    const gitManager = this.gitManager as IsomorphicGit;
+                    if (onlyStaged) {
+                        changedFiles = await gitManager.getStagedFiles();
+                    } else {
+                        unstagedFiles = await gitManager.getUnstagedFiles();
+                        changedFiles = unstagedFiles.map(({ filepath }) => ({
+                            vault_path:
+                                this.gitManager.getRelativeVaultPath(filepath),
+                        }));
+                    }
                 }
             }
 
@@ -864,7 +869,7 @@ export default class ObsidianGit extends Plugin {
                         } to remote`
                     );
                 } else {
-                    this.displayMessage(`No changes to push`);
+                    this.displayMessage(`No commits to push`);
                 }
             }
             this.setPluginState({ offlineMode: false });
@@ -1250,8 +1255,10 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         } else {
             this.log("Encountered network error, but already in offline mode");
         }
-        this.setPluginState({ offlineMode: true });
-        this.setPluginState({ gitAction: CurrentGitAction.idle });
+        this.setPluginState({
+            gitAction: CurrentGitAction.idle,
+            offlineMode: true,
+        });
     }
 
     // region: displaying / formatting messages
