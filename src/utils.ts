@@ -85,6 +85,17 @@ export function strictDeepEqual<T>(a: T, b: T): boolean {
     return deepEqual(a, b, { strict: true });
 }
 
+export function arrayProxyWithNewLength<T>(array: T[], length: number): T[] {
+    return new Proxy(array, {
+        get(target, prop) {
+            if (prop === "length") {
+                return Math.min(length, target.length);
+            }
+            return target[prop as keyof T[]];
+        },
+    });
+}
+
 export function resizeToLength(
     original: string,
     desiredLength: number,

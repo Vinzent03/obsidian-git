@@ -9,7 +9,7 @@
     import FileComponent from "./fileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";
-    import { mayTriggerFileMenu } from "src/utils";
+    import { arrayProxyWithNewLength, mayTriggerFileMenu } from "src/utils";
     import TooManyFilesComponent from "./tooManyFilesComponent.svelte";
     export let hierarchy: StatusRootTreeItem;
     export let plugin: ObsidianGit;
@@ -65,7 +65,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <main class:topLevel>
-    {#each hierarchy.children.slice(0, 500) as entity}
+    {#each arrayProxyWithNewLength(hierarchy.children, 500) as entity}
         {#if entity.data}
             <div>
                 {#if fileType == FileType.staged}

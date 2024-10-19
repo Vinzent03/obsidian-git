@@ -8,7 +8,7 @@
         StatusRootTreeItem,
     } from "src/types";
     import { CurrentGitAction, FileType } from "src/types";
-    import { getDisplayPath } from "src/utils";
+    import { arrayProxyWithNewLength, getDisplayPath } from "src/utils";
     import { onDestroy } from "svelte";
     import { slide } from "svelte/transition";
     import { DiscardModal } from "../modals/discardModal";
@@ -396,7 +396,7 @@
                                     topLevel={true}
                                 />
                             {:else}
-                                {#each status.staged.slice(0, 500) as stagedFile}
+                                {#each arrayProxyWithNewLength(status.staged, 500) as stagedFile}
                                     <StagedFileComponent
                                         change={stagedFile}
                                         {view}
@@ -513,7 +513,7 @@
                                     topLevel={true}
                                 />
                             {:else}
-                                {#each status.changed.slice(0, 500) as change}
+                                {#each arrayProxyWithNewLength(status.changed, 500) as change}
                                     <FileComponent
                                         {change}
                                         {view}
