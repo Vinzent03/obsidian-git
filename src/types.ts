@@ -4,12 +4,21 @@ export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
     commitDateFormat: string;
+    /**
+     * Interval to either automatically commit-and-sync or just commit
+     */
     autoSaveInterval: number;
     autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
     syncMethod: SyncMethod;
+    /**
+     * Whether to push on commit-and-sync
+     */
     disablePush: boolean;
+    /**
+     * Whether to pull on commit-and-sync
+     */
     pullBeforePush: boolean;
     disablePopups: boolean;
     disablePopupsForNoChanges: boolean;

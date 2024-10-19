@@ -385,13 +385,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             setting = new Setting(containerEl)
                 .setName("Push on commit-and-sync")
                 .setDesc(
-                    "Most of the time you want to push after committing. Turning this off turns a commit-and-sync action into commit only. It will still be called commit-and-sync."
+                    `Most of the time you want to push after committing. Turning this off turns a commit-and-rync action into commit ${plugin.settings.pullBeforePush ? "and pull " : ""}only. It will rtill be called commit-and-sync.`
                 )
                 .addToggle((toggle) =>
                     toggle
                         .setValue(!plugin.settings.disablePush)
                         .onChange(async (value) => {
                             plugin.settings.disablePush = !value;
+                            this.display();
                             await plugin.saveSettings();
                         })
                 );
@@ -399,13 +400,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Pull on commit-and-sync")
                 .setDesc(
-                    "On commit-and-sync, pull commits before pushing. Turning this off turns a commit-and-sync action into commit and push only."
+                    `On commit-and-sync, pull commits as well. Turning this off turns a commit-and-sync action into commit ${plugin.settings.disablePush ? "" : "and push "}only.`
                 )
                 .addToggle((toggle) =>
                     toggle
                         .setValue(plugin.settings.pullBeforePush)
                         .onChange(async (value) => {
                             plugin.settings.pullBeforePush = value;
+                            this.display();
                             await plugin.saveSettings();
                         })
                 );

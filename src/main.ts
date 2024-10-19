@@ -652,19 +652,19 @@ export default class ObsidianGit extends Plugin {
             return;
         }
 
+        if (
+            this.settings.syncMethod != "reset" &&
+            this.settings.pullBeforePush
+        ) {
+            await this.pull();
+        }
+
         if (!this.settings.disablePush) {
-            // Prevent plugin to pull/push at every call of createBackup. Only if unpushed commits are present
+            // Prevent trying to push every time. Only if unpushed commits are present
             if (
                 (await this.remotesAreSet()) &&
                 (await this.gitManager.canPush())
             ) {
-                if (
-                    this.settings.syncMethod != "reset" &&
-                    this.settings.pullBeforePush
-                ) {
-                    await this.pull();
-                }
-
                 await this.push();
             } else {
                 this.displayMessage("No changes to push");
@@ -889,6 +889,7 @@ export default class ObsidianGit extends Plugin {
             return false;
         }
         try {
+            this.log("Pulling....");
             const pulledFiles = (await this.gitManager.pull()) || [];
             this.setPluginState({ offlineMode: false });
 
@@ -1041,12 +1042,13 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    // Ensures that the upstream branch is set.
-    // If not, it will prompt the user to set it.
-    //
-    // An exception is when the user has submodules enabled.
-    // In this case, the upstream branch is not required,
-    // to allow pulling/pushing only the submodules and not the outer repo.
+    /** Ensures that the upstream branch is set.
+     * If not, it will prompt the user to set it.
+     *
+     * An exception is when the user has submodules enabled.
+     * In this case, the upstream branch is not required,
+     * to allow pulling/pushing only the submodules and not the outer repo.
+     */
     async remotesAreSet(): Promise<boolean> {
         if (this.settings.updateSubmodules) {
             return true;
