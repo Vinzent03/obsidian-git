@@ -6,7 +6,7 @@ import HistoryViewComponent from "./historyView.svelte";
 
 export default class HistoryView extends ItemView implements HoverParent {
     plugin: ObsidianGit;
-    private _view: HistoryViewComponent;
+    private _view: HistoryViewComponent | undefined;
     hoverPopover: HoverPopover | null;
 
     constructor(leaf: WorkspaceLeaf, plugin: ObsidianGit) {
@@ -28,11 +28,12 @@ export default class HistoryView extends ItemView implements HoverParent {
     }
 
     onClose(): Promise<void> {
-        this._view.$destroy();
+        this._view?.$destroy();
         return super.onClose();
     }
 
-    onOpen(): Promise<void> {
+    reload(): void {
+        this._view?.$destroy();
         this._view = new HistoryViewComponent({
             target: this.contentEl,
             props: {
@@ -40,6 +41,17 @@ export default class HistoryView extends ItemView implements HoverParent {
                 view: this,
             },
         });
+        this._view = new HistoryViewComponent({
+            target: this.contentEl,
+            props: {
+                plugin: this.plugin,
+                view: this,
+            },
+        });
+    }
+
+    onOpen(): Promise<void> {
+        this.reload();
         return super.onOpen();
     }
 }

@@ -777,7 +777,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         if (value) {
                             plugin.unloadPlugin();
                         } else {
-                            plugin.loadPlugin();
+                            plugin.init().catch((e) => plugin.displayError(e));
                         }
                         new Notice(
                             "Obsidian must be restarted for the changes to take affect."

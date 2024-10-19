@@ -166,4 +166,8 @@ export class StatusBar {
         this.unPushedCommits =
             await this.plugin.gitManager.getUnpushedCommits();
     }
+
+    public remove() {
+        this.statusBarEl.remove();
+    }
 }

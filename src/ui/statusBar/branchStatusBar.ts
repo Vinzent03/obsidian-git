@@ -23,4 +23,8 @@ export class BranchStatusBar {
             this.statusBarEl.empty();
         }
     }
+
+    remove() {
+        this.statusBarEl.remove();
+    }
 }

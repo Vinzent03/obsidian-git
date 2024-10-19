@@ -104,6 +104,8 @@
         const unPushedCommits = await plugin.gitManager.getUnpushedCommits();
 
         buttons.forEach((btn) => {
+            // when reloading the view from settings change, the btn are null at first
+            if (!btn) return;
             if (Platform.isMobile) {
                 btn.removeClass("button-border");
                 if (btn.id == "push" && unPushedCommits > 0) {

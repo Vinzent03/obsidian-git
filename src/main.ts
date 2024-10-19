@@ -1,11 +1,5 @@
 import { Errors } from "isomorphic-git";
-import type {
-    Debouncer,
-    EventRef,
-    Menu,
-    TAbstractFile,
-    WorkspaceLeaf,
-} from "obsidian";
+import type { Debouncer, Menu, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import {
     debounce,
     MarkdownView,
@@ -77,11 +71,7 @@ export default class ObsidianGit extends Plugin {
     cachedStatus: Status | undefined;
     // Used to store the path of the file that is currently shown in the diff view.
     lastDiffViewState: Record<string, unknown> | undefined;
-    openEvent: EventRef;
-    modifyEvent: EventRef;
-    deleteEvent: EventRef;
-    createEvent: EventRef;
-    renameEvent: EventRef;
+    intervalsToClear: number[] = [];
     lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(this);
 
     debRefresh: Debouncer<[], void>;
@@ -156,11 +146,62 @@ export default class ObsidianGit extends Plugin {
         this.addSettingTab(this.settingsTab);
 
         if (!this.localStorage.getPluginDisabled()) {
-            this.loadPlugin();
+            this.registerStuff();
+
+            this.app.workspace.onLayoutReady(() =>
+                this.init({ fromReload: false }).catch((e) =>
+                    this.displayError(e)
+                )
+            );
         }
     }
 
-    loadPlugin() {
+    onExternalSettingsChange() {
+        this.reloadSettings().catch((e) => this.displayError(e));
+    }
+
+    /** Reloads the settings from disk and applies them by unloading the plugin
+     * and initializing it again.
+     */
+    async reloadSettings(): Promise<void> {
+        const previousSettings = JSON.stringify(this.settings);
+
+        await this.loadSettings();
+
+        const newSettings = JSON.stringify(this.settings);
+
+        // Only reload plugin if the settings have actually changed
+        if (previousSettings !== newSettings) {
+            this.log("Reloading settings");
+
+            this.unloadPlugin();
+
+            await this.init({ fromReload: true });
+
+            this.app.workspace
+                .getLeavesOfType(SOURCE_CONTROL_VIEW_CONFIG.type)
+                .forEach((leaf) => {
+                    if (!(leaf.isDeferred ?? false))
+                        return (leaf.view as GitView).reload();
+                });
+
+            this.app.workspace
+                .getLeavesOfType(HISTORY_VIEW_CONFIG.type)
+                .forEach((leaf) => {
+                    if (!(leaf.isDeferred ?? false))
+                        return (leaf.view as HistoryView).reload();
+                });
+        }
+    }
+
+    /** This method only registers events, views, commands and more.
+     *
+     * This only needs to be called once since the registered events are
+     * unregistered when the plugin is unloaded.
+     *
+     * This mustn't depend on the plugin's settings.
+     */
+    registerStuff(): void {
         this.registerEvent(
             this.app.workspace.on("obsidian-git:refresh", () => {
                 this.refresh().catch((e) => this.displayError(e));
@@ -172,9 +213,46 @@ export default class ObsidianGit extends Plugin {
             })
         );
 
+        this.registerEvent(
+            this.app.workspace.on("file-menu", (menu, file, source) => {
+                this.handleFileMenu(menu, file, source);
+            })
+        );
+
+        this.registerEvent(
+            this.app.workspace.on("active-leaf-change", (leaf) => {
+                this.handleViewActiveState(leaf);
+            })
+        );
+        this.registerEvent(
+            this.app.vault.on("modify", () => {
+                this.debRefresh();
+                this.autoCommitDebouncer?.();
+            })
+        );
+        this.registerEvent(
+            this.app.vault.on("delete", () => {
+                this.debRefresh();
+                this.autoCommitDebouncer?.();
+            })
+        );
+        this.registerEvent(
+            this.app.vault.on("create", () => {
+                this.debRefresh();
+                this.autoCommitDebouncer?.();
+            })
+        );
+        this.registerEvent(
+            this.app.vault.on("rename", () => {
+                this.debRefresh();
+                this.autoCommitDebouncer?.();
+            })
+        );
+
         this.registerView(SOURCE_CONTROL_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
         });
+
         this.registerView(HISTORY_VIEW_CONFIG.type, (leaf) => {
             return new HistoryView(leaf, this);
         });
@@ -207,44 +285,16 @@ export default class ObsidianGit extends Plugin {
             }
         );
 
-        this.lineAuthoringFeature.onLoadPlugin();
-
         this.registerHoverLinkSource(SOURCE_CONTROL_VIEW_CONFIG.type, {
             display: "Git View",
             defaultMod: true,
         });
 
+        this.lineAuthoringFeature.onLoadPlugin();
+
         this.setRefreshDebouncer();
 
         addCommmands(this);
-
-        this.registerEvent(
-            this.app.workspace.on("file-menu", (menu, file, source) => {
-                this.handleFileMenu(menu, file, source);
-            })
-        );
-
-        if (this.settings.showStatusBar) {
-            // init statusBar
-            const statusBarEl = this.addStatusBarItem();
-            this.statusBar = new StatusBar(statusBarEl, this);
-            this.registerInterval(
-                window.setInterval(() => this.statusBar?.display(), 1000)
-            );
-        }
-
-        if (Platform.isDesktop && this.settings.showBranchStatusBar) {
-            const branchStatusBarEl = this.addStatusBarItem();
-            this.branchBar = new BranchStatusBar(branchStatusBarEl, this);
-            this.registerInterval(
-                window.setInterval(
-                    () => void this.branchBar?.display().catch(console.error),
-                    60000
-                )
-            );
-        }
-
-        this.app.workspace.onLayoutReady(() => this.init());
     }
 
     setRefreshDebouncer(): void {
@@ -373,11 +423,14 @@ export default class ObsidianGit extends Plugin {
 
         this.lineAuthoringFeature.deactivateFeature();
         this.automaticsManager.unload();
-        this.app.workspace.offref(this.openEvent);
-        this.app.metadataCache.offref(this.modifyEvent);
-        this.app.metadataCache.offref(this.deleteEvent);
-        this.app.metadataCache.offref(this.createEvent);
-        this.app.metadataCache.offref(this.renameEvent);
+        this.branchBar?.remove();
+        this.statusBar?.remove();
+
+        for (const interval of this.intervalsToClear) {
+            window.clearInterval(interval);
+        }
+        this.intervalsToClear = [];
+
         this.debRefresh.cancel();
     }
 
@@ -406,7 +459,15 @@ export default class ObsidianGit extends Plugin {
         return Platform.isDesktopApp;
     }
 
-    async init(): Promise<void> {
+    async init({ fromReload = false }): Promise<void> {
+        if (this.settings.showStatusBar) {
+            const statusBarEl = this.addStatusBarItem();
+            this.statusBar = new StatusBar(statusBarEl, this);
+            this.intervalsToClear.push(
+                window.setInterval(() => this.statusBar?.display(), 1000)
+            );
+        }
+
         try {
             if (this.useSimpleGit) {
                 this.gitManager = new SimpleGit(this);
@@ -432,40 +493,32 @@ export default class ObsidianGit extends Plugin {
                     this.gitReady = true;
                     this.setPluginState({ gitAction: CurrentGitAction.idle });
 
-                    this.openEvent = this.app.workspace.on(
-                        "active-leaf-change",
-                        (leaf) => this.handleViewActiveState(leaf)
-                    );
-
-                    this.modifyEvent = this.app.vault.on("modify", () => {
-                        this.debRefresh();
-                        this.autoCommitDebouncer?.();
-                    });
-                    this.deleteEvent = this.app.vault.on("delete", () => {
-                        this.debRefresh();
-                        this.autoCommitDebouncer?.();
-                    });
-                    this.createEvent = this.app.vault.on("create", () => {
-                        this.debRefresh();
-                        this.autoCommitDebouncer?.();
-                    });
-                    this.renameEvent = this.app.vault.on("rename", () => {
-                        this.debRefresh();
-                        this.autoCommitDebouncer?.();
-                    });
-
-                    this.registerEvent(this.modifyEvent);
-                    this.registerEvent(this.deleteEvent);
-                    this.registerEvent(this.createEvent);
-                    this.registerEvent(this.renameEvent);
-
+                    if (
+                        Platform.isDesktop &&
+                        this.settings.showBranchStatusBar
+                    ) {
+                        const branchStatusBarEl = this.addStatusBarItem();
+                        this.branchBar = new BranchStatusBar(
+                            branchStatusBarEl,
+                            this
+                        );
+                        this.intervalsToClear.push(
+                            window.setInterval(
+                                () =>
+                                    void this.branchBar
+                                        ?.display()
+                                        .catch(console.error),
+                                60000
+                            )
+                        );
+                    }
                     await this.branchBar?.display();
 
                     this.lineAuthoringFeature.conditionallyActivateBySettings();
 
                     this.app.workspace.trigger("obsidian-git:refresh");
 
-                    if (this.settings.autoPullOnBoot) {
+                    if (!fromReload && this.settings.autoPullOnBoot) {
                         this.promiseQueue.addTask(() =>
                             this.pullChangesFromRemote()
                         );
@@ -490,7 +543,7 @@ export default class ObsidianGit extends Plugin {
         try {
             await this.gitManager.init();
             new Notice("Initialized new repo");
-            await this.init();
+            await this.init({ fromReload: true });
         } catch (e) {
             this.displayError(e);
         }
@@ -595,7 +648,7 @@ export default class ObsidianGit extends Plugin {
      */
     async isAllInitialized(): Promise<boolean> {
         if (!this.gitReady) {
-            await this.init();
+            await this.init({ fromReload: true });
         }
         return this.gitReady;
     }
