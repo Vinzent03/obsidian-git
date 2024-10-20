@@ -43,4 +43,4 @@ Syncing is the process of pulling and pushing changes to and from a remote repos
 
 ### Commit-and-sync
 
-Commit-and-sync is the process of staging everything -> committing -> pulling -> pushing. Ideally this is a single action that you do regularly to keep your local and remote repository in sync. It's recommended you set it up from the plugin's settings to be run automatically every X minutes. You can also disable the pulling or pushing part from the "Commit-and-sync" section in the plugin's settings. This reduces the "commit-and-sync" action to either a "commit and pull" or just commit action.
+Commit-and-sync is the process of staging everything -> committing -> pulling -> pushing. Ideally this is a single action that you do regularly to keep your local and remote repository in sync. It's recommended you set it up from the plugin's settings to be run automatically every X minutes. You can also disable the pulling or pushing part from the "Commit-and-sync" section in the plugin's settings. This reduces the "commit-and-sync" action to either a "commit and pull", "commit and push" or just commit action.

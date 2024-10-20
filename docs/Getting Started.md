@@ -64,14 +64,14 @@ The instructions assume you are using [GitHub](https://github.com), but can be e
 8. Under the "Authentication/Commit Author" section, fill in the username on your git server and your password/personal access token.
 9. Don't touch any settings under "Advanced"
 10. Exit plugin settings, open command palette, choose "Git: Clone existing remote repo".
-11. Fill in repo URL in the text field and press the repo URL button below it. The repo URL is NOT the URL in the browser. You have to append `.git`. - `https://github.com/<username>/<repo>.git
+11. Fill in repo URL in the text field and press the repo URL button below it. The repo URL is NOT the URL in the browser. You have to append `.git`. - `https://github.com/<username>/<repo>.git`
     - E.g. `https://github.com/denolehov/obsidian-git.git`
 12. Follow instructions to determine the folder to place repo in and whether an `.obsidian` directory already exits.
 13. Clone should start. Popup notifications (if not disabled) will display the progress. Do not exit until a popup appears requesting that you "Restart Obsidian".
 
 ### Clone via Working Copy on iOS
 
-Depending on the size of your repository and your device, Obsidian may crash during clone via the plugin. Alternatively, the initial clone can be done via [Working Copy](https://workingcopy.app/). None that this a paid app. The usual backup in can then be done via the plugin. The following guide assumes you don't commit your `.obsidian` directory.
+Depending on the size of your repository and your device, Obsidian may crash during clone via the plugin. Alternatively, the initial clone can be done via [Working Copy](https://workingcopy.app/). None that this a paid app. The usual commit-and-sync can then be done via the plugin. The following guide assumes you don't commit your `.obsidian` directory.
 
 1. Make sure any outstanding changes on all devices are pushed and reconciled with the remote repo.
 2. Install Obsidian for Android or iOS.
