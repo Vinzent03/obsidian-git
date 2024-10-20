@@ -316,7 +316,7 @@ export function addCommmands(plugin: ObsidianGit) {
                         "Successfully deleted repository. Reloading plugin..."
                     );
                     plugin.unloadPlugin();
-                    await plugin.init();
+                    await plugin.init({ fromReload: true });
                 }
             } else {
                 new Notice("No repository found");
