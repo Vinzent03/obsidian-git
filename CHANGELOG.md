@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.28.0](https://github.com/denolehov/obsidian-git/compare/2.27.0...2.28.0) (2024-10-26)
+
+
+### Features
+
+* pull on commit-and-sync even if no commit happened ([263e675](https://github.com/denolehov/obsidian-git/commit/263e675ead38fba8a7d5a5f3349830477817ca25)), closes [#787](https://github.com/denolehov/obsidian-git/issues/787)
+* reload settings on file change ([d453c6f](https://github.com/denolehov/obsidian-git/commit/d453c6fe85143b6afcd672e3fd65ef7851dd9ae3)), closes [#779](https://github.com/denolehov/obsidian-git/issues/779)
+
+
+### Bug Fixes
+
+* recognize more errors as network issues ([4aceed3](https://github.com/denolehov/obsidian-git/commit/4aceed30c5b349431f7a5ed21c4d3b4bdabb88e7)), closes [#735](https://github.com/denolehov/obsidian-git/issues/735)
+* refresh status after opening source control view ([666b8a8](https://github.com/denolehov/obsidian-git/commit/666b8a8f263ce49a3d02dbfb040aa774cce95db2))
+* rework errors ([ee3eff4](https://github.com/denolehov/obsidian-git/commit/ee3eff46e0d98999e6ab312971392adc008d4f6e))
+* strip files list after 500 entries in source control view ([fe1aedb](https://github.com/denolehov/obsidian-git/commit/fe1aedb0a12d4e0b5d4a81821a8d08c1417dd6b8))
+* typo in settings ([1e6c3dd](https://github.com/denolehov/obsidian-git/commit/1e6c3dddae7f5cd3b8393f36817fba94ed3cd12d))
+
 ## [2.27.0](https://github.com/denolehov/obsidian-git/compare/2.26.0...2.27.0) (2024-09-18)
 
 
