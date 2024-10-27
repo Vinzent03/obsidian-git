@@ -44,6 +44,7 @@ export class GeneralModal extends SuggestModal<string> {
 
         return new Promise((resolve) => {
             this.resolve = resolve;
+            this.open();
         });
     }
 
