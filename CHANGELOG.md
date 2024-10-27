@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.28.1](https://github.com/denolehov/obsidian-git/compare/2.28.0...2.28.1) (2024-10-27)
+
+
+### Bug Fixes
+
+* open general modal ([2a0bbd1](https://github.com/denolehov/obsidian-git/commit/2a0bbd13aaff41bf08386133441b4681983538a2)), closes [#798](https://github.com/denolehov/obsidian-git/issues/798)
+
 ## [2.28.0](https://github.com/denolehov/obsidian-git/compare/2.27.0...2.28.0) (2024-10-26)
 
 
