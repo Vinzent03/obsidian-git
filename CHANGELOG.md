@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.28.2](https://github.com/denolehov/obsidian-git/compare/2.28.1...2.28.2) (2024-10-30)
+
+
+### Bug Fixes
+
+* duplicated history view ([ec0668d](https://github.com/denolehov/obsidian-git/commit/ec0668d6a69e9907aa8174976e3030f8c289be90)), closes [#800](https://github.com/denolehov/obsidian-git/issues/800)
+
 ### [2.28.1](https://github.com/denolehov/obsidian-git/compare/2.28.0...2.28.1) (2024-10-27)
 
 
