@@ -41,13 +41,6 @@ export default class HistoryView extends ItemView implements HoverParent {
                 view: this,
             },
         });
-        this._view = new HistoryViewComponent({
-            target: this.contentEl,
-            props: {
-                plugin: this.plugin,
-                view: this,
-            },
-        });
     }
 
     onOpen(): Promise<void> {
