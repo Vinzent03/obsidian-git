@@ -1157,7 +1157,7 @@ export class IsomorphicGit extends GitManager {
         const email = await this.getConfig("user.email");
         if (!name || !email) {
             throw Error(
-                "Git author information is not set. Please set it in the settings."
+                "Git author name and email are not set. Please set both fields in the settings."
             );
         }
     }
