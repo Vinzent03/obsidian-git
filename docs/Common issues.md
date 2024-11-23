@@ -30,7 +30,7 @@ Run `chmod 600 ~/.ssh/config` in the terminal.
 
 Since the plugin uses the native git installation, I can assure you that if the `.gitignore` file is properly written and git is correctly used, everything should work.
 
-It's important to note that once a file is committed (or staged) changing the `.gitignroe` doesn't help. You have to delete the file from your repo manually to ignore the file properly:
+It's important to note that once a file is committed (or staged) changing the `.gitignore` doesn't help. You have to delete the file from your repo manually to ignore the file properly:
 1. Run `git rm --cached <file>` in your terminal. The file will stay on your file system. It's just deleted in your repo.
 2. The file should be listed as deleted in `git status`
 3. Commit the deletion
