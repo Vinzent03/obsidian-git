@@ -37,14 +37,13 @@ export class GeneralModal extends SuggestModal<string> {
     }
 
     openAndGetResult(): Promise<string> {
-        if (this.config.initialValue != undefined) {
-            this.inputEl.value = this.config.initialValue;
-            this.inputEl.dispatchEvent(new Event("input"));
-        }
-
         return new Promise((resolve) => {
             this.resolve = resolve;
             this.open();
+            if (this.config.initialValue != undefined) {
+                this.inputEl.value = this.config.initialValue;
+                this.inputEl.dispatchEvent(new Event("input"));
+            }
         });
     }
 

@@ -824,11 +824,18 @@ export class IsomorphicGit extends GitManager {
         const [remote, branch] = splitRemoteBranch(remoteBranch);
         const branchInfo = await this.branchInfo();
 
+        await this.wrapFS(
+            git.push({
+                ...this.getRepo(),
+                remote: remote,
+                remoteRef: branch,
+            })
+        );
+
         await this.setConfig(
             `branch.${branchInfo.current}.merge`,
             `refs/heads/${branch}`
         );
-        await this.setConfig(`branch.${branch}.remote`, remote);
     }
 
     updateGitPath(_: string): Promise<void> {

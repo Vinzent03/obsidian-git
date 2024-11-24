@@ -829,14 +829,12 @@ export class SimpleGit extends GitManager {
         try {
             // git 1.8+
             await this.git.branch(["--set-upstream-to", remoteBranch]);
-        } catch (e) {
-            console.error(e);
+        } catch {
             try {
                 // git 1.7 - 1.8
                 await this.git.branch(["--set-upstream", remoteBranch]);
-            } catch (e) {
-                console.error(e);
-                // fallback
+            } catch {
+                // fallback for when setting upstream branch to a branch that does not exist on the remote yet. Setting it with push instead.
                 await this.git.push(
                     // @ts-expect-error A type error occurs here because the third element could be undefined.
                     // However, it is unlikely to be undefined due to the `remoteBranch`'s format, and error handling is in place.
