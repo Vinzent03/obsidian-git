@@ -426,6 +426,7 @@ export default class ObsidianGit extends Plugin {
         this.branchBar?.remove();
         this.statusBar?.remove();
         this.gitManager.unload();
+        this.promiseQueue.clear();
 
         for (const interval of this.intervalsToClear) {
             window.clearInterval(interval);
@@ -664,7 +665,7 @@ export default class ObsidianGit extends Plugin {
             return;
         }
         if (!filesUpdated) {
-            this.displayMessage("Everything is up-to-date");
+            this.displayMessage("Pull: Everything is up-to-date");
         }
 
         if (this.gitManager instanceof SimpleGit) {

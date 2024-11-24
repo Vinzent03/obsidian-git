@@ -22,4 +22,8 @@ export class PromiseQueue {
                 });
         }
     }
+
+    clear() {
+        this.tasks = [];
+    }
 }

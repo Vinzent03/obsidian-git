@@ -180,8 +180,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     Number(value);
                                 await plugin.saveSettings();
 
+                                plugin.automaticsManager.reload("push");
                                 if (plugin.settings.autoPushInterval > 0) {
-                                    plugin.automaticsManager.reload("push");
                                     new Notice(
                                         `Automatic push enabled! Every ${formatMinutes(
                                             plugin.settings.autoPushInterval
@@ -216,8 +216,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     Number(value);
                                 await plugin.saveSettings();
 
+                                plugin.automaticsManager.reload("pull");
                                 if (plugin.settings.autoPullInterval > 0) {
-                                    plugin.automaticsManager.reload("pull");
                                     new Notice(
                                         `Automatic pull enabled! Every ${formatMinutes(
                                             plugin.settings.autoPullInterval
