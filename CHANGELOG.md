@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.29.0](https://github.com/denolehov/obsidian-git/compare/2.28.2...2.29.0) (2024-11-24)
+
+
+### Features
+
+* provide a GIT_ASKPASS handler via Obsidian modal ([1a788b0](https://github.com/denolehov/obsidian-git/commit/1a788b01af7cab7ad6d5a850f68a905ec680a2d2))
+
+
+### Bug Fixes
+
+* Clarification which information was not set ([#802](https://github.com/denolehov/obsidian-git/issues/802)) ([45ba119](https://github.com/denolehov/obsidian-git/commit/45ba119fff28547772c59856f2abf8700e544149))
+* create new upstream branch ([c5a95c1](https://github.com/denolehov/obsidian-git/commit/c5a95c1ac9d9a0788d3ae053e83a11dbc30e590d)), closes [#808](https://github.com/denolehov/obsidian-git/issues/808)
+* get unset config values ([e229c22](https://github.com/denolehov/obsidian-git/commit/e229c227acd21d0a1674218b2a778726c3849908))
+* Make the spelling of .gitignore consistent ([#805](https://github.com/denolehov/obsidian-git/issues/805)) ([8366927](https://github.com/denolehov/obsidian-git/commit/836692735d1cadb0023cd503573a58a14c76299e))
+* properly disable auto pull ([f8464e6](https://github.com/denolehov/obsidian-git/commit/f8464e665850c0eac301a881b40b0c74809d4478)), closes [#816](https://github.com/denolehov/obsidian-git/issues/816)
+
 ### [2.28.2](https://github.com/denolehov/obsidian-git/compare/2.28.1...2.28.2) (2024-10-30)
 
 
