@@ -75,7 +75,7 @@ export abstract class GitManager {
         value: string | number | boolean | undefined
     ): Promise<void>;
 
-    abstract getConfig(path: string): Promise<string>;
+    abstract getConfig(path: string): Promise<string | undefined>;
 
     abstract fetch(remote?: string): Promise<void>;
 

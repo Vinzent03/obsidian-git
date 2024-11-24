@@ -615,7 +615,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Author name for commit")
                 .addText(async (cb) => {
-                    cb.setValue(await plugin.gitManager.getConfig("user.name"));
+                    cb.setValue(
+                        (await plugin.gitManager.getConfig("user.name")) ?? ""
+                    );
                     cb.onChange(async (value) => {
                         await plugin.gitManager.setConfig(
                             "user.name",
@@ -629,7 +631,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setName("Author email for commit")
                 .addText(async (cb) => {
                     cb.setValue(
-                        await plugin.gitManager.getConfig("user.email")
+                        (await plugin.gitManager.getConfig("user.email")) ?? ""
                     );
                     cb.onChange(async (value) => {
                         await plugin.gitManager.setConfig(

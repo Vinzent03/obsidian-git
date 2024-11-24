@@ -684,7 +684,7 @@ export class SimpleGit extends GitManager {
         );
     }
 
-    async setConfig(path: string, value: string): Promise<void> {
+    async setConfig(path: string, value: string | undefined): Promise<void> {
         if (value == undefined) {
             await this.git.raw(["config", "--local", "--unset", path]);
         } else {
@@ -692,10 +692,10 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async getConfig(path: string): Promise<string> {
+    async getConfig(path: string): Promise<string | undefined> {
         const config = await this.git.listConfig("local");
         const res = config.all[path];
-        if (typeof res === "string") {
+        if (typeof res === "string" || res == undefined) {
             return res;
         } else {
             throw new Error("Config value is not a string");
