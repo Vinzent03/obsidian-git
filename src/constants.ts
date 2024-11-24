@@ -76,3 +76,27 @@ export const DIFF_VIEW_CONFIG = {
     name: "Diff View",
     icon: "git-pull-request",
 };
+
+export const ASK_PASS_INPUT_FILE = "git_credentials_input";
+export const ASK_PASS_SCRIPT_FILE = "obsidian_askpass.sh";
+
+export const ASK_PASS_SCRIPT = `#!/bin/sh
+
+PROMPT="$1"
+TEMP_FILE="$OBSIDIAN_GIT_CREDENTIALS_INPUT"
+
+cleanup() {
+    rm -f "$TEMP_FILE" "$TEMP_FILE.response"
+}
+trap cleanup EXIT
+
+echo "$PROMPT" > "$TEMP_FILE"
+
+while [ ! -e "$TEMP_FILE.response" ]; do
+    sleep 0.1
+done
+
+RESPONSE=$(cat "$TEMP_FILE.response")
+
+echo "$RESPONSE"
+`;

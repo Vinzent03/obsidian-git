@@ -136,6 +136,8 @@ export abstract class GitManager {
         return filePath;
     }
 
+    unload(): void {}
+
     private _getTreeStructure<T = DiffFile | FileStatusResult>(
         children: (T & { path: string })[],
         beginLength = 0

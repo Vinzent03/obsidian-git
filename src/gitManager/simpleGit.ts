@@ -1,13 +1,20 @@
 import { spawnSync } from "child_process";
 import debug from "debug";
+import * as fsPromises from "fs/promises";
 import type { FileSystemAdapter } from "obsidian";
 import { normalizePath, Notice, Platform } from "obsidian";
 import * as path from "path";
-import { sep, resolve } from "path";
+import { resolve, sep } from "path";
 import type * as simple from "simple-git";
 import simpleGit, { GitError } from "simple-git";
-import { GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH } from "src/constants";
+import {
+    ASK_PASS_INPUT_FILE,
+    ASK_PASS_SCRIPT,
+    ASK_PASS_SCRIPT_FILE,
+    GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
+} from "src/constants";
 import type { LineAuthorFollowMovement } from "src/lineAuthor/model";
+import { GeneralModal } from "src/ui/modals/generalModal";
 import type ObsidianGit from "../main";
 import type {
     Blame,
@@ -17,13 +24,14 @@ import type {
     LogEntry,
     Status,
 } from "../types";
-import { NoNetworkError, CurrentGitAction } from "../types";
+import { CurrentGitAction, NoNetworkError } from "../types";
 import { impossibleBranch, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
     absoluteRepoPath: string;
+    watchAbortController: AbortController | undefined;
     constructor(plugin: ObsidianGit) {
         super(plugin);
     }
@@ -80,6 +88,32 @@ export class SimpleGit extends GitManager {
                 this.absoluteRepoPath = absoluteRoot;
                 await this.git.cwd(absoluteRoot);
             }
+
+            const absolutePluginConfigPath = path.join(
+                vaultBasePath,
+                this.app.vault.configDir,
+                "plugins",
+                "obsidian-git"
+            );
+            const askPassPath = path.join(
+                absolutePluginConfigPath,
+                ASK_PASS_SCRIPT_FILE
+            );
+
+            if (
+                process.env["GIT_ASKPASS"] == undefined &&
+                (await this.getConfig("core.askPass")) == undefined &&
+                process.env["SSH_ASKPASS"] == undefined
+            ) {
+                process.env["GIT_ASKPASS"] = askPassPath;
+            }
+            process.env["OBSIDIAN_GIT_CREDENTIALS_INPUT"] = path.join(
+                absolutePluginConfigPath,
+                ASK_PASS_INPUT_FILE
+            );
+            if (process.env["GIT_ASKPASS"] == askPassPath) {
+                this.askpass().catch((e) => this.plugin.displayError(e));
+            }
         }
     }
 
@@ -116,6 +150,60 @@ export class SimpleGit extends GitManager {
             return res;
         }
         return filePath;
+    }
+
+    async askpass(): Promise<void> {
+        const adapter = this.app.vault.adapter as FileSystemAdapter;
+        const vaultPath = adapter.getBasePath();
+        const absPluginConfigPath = path.join(
+            vaultPath,
+            this.app.vault.configDir,
+            "plugins",
+            "obsidian-git"
+        );
+        const relPluginConfigDir =
+            this.app.vault.configDir + "/plugins/obsidian-git/";
+
+        await fsPromises.writeFile(
+            path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
+            ASK_PASS_SCRIPT
+        );
+        await fsPromises.chmod(
+            path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
+            0o755
+        );
+        this.watchAbortController = new AbortController();
+        const { signal } = this.watchAbortController;
+        try {
+            const watcher = fsPromises.watch(absPluginConfigPath, { signal });
+
+            for await (const event of watcher) {
+                if (event.filename != ASK_PASS_INPUT_FILE) continue;
+                const triggerFilePath =
+                    relPluginConfigDir + ASK_PASS_INPUT_FILE;
+                if (!(await adapter.exists(triggerFilePath))) continue;
+
+                const data = await adapter.read(triggerFilePath);
+                const response = await new GeneralModal(this.plugin, {
+                    allowEmpty: true,
+                    placeholder: data,
+                }).openAndGetResult();
+
+                await adapter.write(
+                    `${triggerFilePath}.response`,
+                    response ?? ""
+                );
+            }
+        } catch (error) {
+            this.plugin.displayError(error);
+            await new Promise((res) => setTimeout(res, 5000));
+            this.plugin.log("Retry watch for ask pass");
+            await this.askpass();
+        }
+    }
+
+    unload(): void {
+        this.watchAbortController?.abort();
     }
 
     async status(): Promise<Status> {

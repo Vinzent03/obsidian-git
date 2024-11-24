@@ -425,6 +425,7 @@ export default class ObsidianGit extends Plugin {
         this.automaticsManager.unload();
         this.branchBar?.remove();
         this.statusBar?.remove();
+        this.gitManager.unload();
 
         for (const interval of this.intervalsToClear) {
             window.clearInterval(interval);
