@@ -20,6 +20,7 @@ Go to "Settings" -> "Community plugins" -> "Browse", search for "Git", install a
 
 # Windows
 
+Installing [GitHub Desktop](https://github.com/apps/desktop) is **not** enough! You need to install regular Git as well.
 ## Git installation
 
 > [!info] 

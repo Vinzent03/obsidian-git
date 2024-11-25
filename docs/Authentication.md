@@ -31,25 +31,25 @@ git config --global credential.helper \
 
 ```
 
-### ASK_PASS Tools
-When Git is not connected to any terminal, so  you can't enter your username/password in the terminal, it relies on the `GIT_ASKPASS` environment variable to provide an interface to the user to enter those values.
+### SSH_PASS Tools
+When Git is not connected to any terminal, so  you can't enter your username/password in the terminal, it relies on the `GIT_ASKPASS`/`SSH_ASKPASS` environment variable to provide an interface to the user to enter those values.
 
-#### Native ASK_PASS
+#### Native SSH_ASKPASS
 In case you don't want to store it permanently you can install `ksshaskpass` (it's preinstalled on KDE systems) and set it as binary to ask for the password.
 
-NOTE: This changes your global config, in case you don't want that you can omit the `--global` and execute it in your existing git repository.
+To use `ksshaskpass` in Obsidian as the tool for `SSH_ASKPASS` add the following line to the "Additional Environment Variables" in the plugin's settings in the "Advanced" section.
 
-```bash
-git config --global core.askPass "ksshaskpass"
+```
+SSH_ASKPASS=ksshaskpass
 ```
 
-You should get a prompt to enter your username/password in Obsidian now.
+You should get a new window to enter your username/password when using a Git action needing authentication now.
 
-#### ASK_PASS integrated in Obsidian
-The plugin now automatically provides an integrated script for the `GIT_ASKPASS` environment variable, if no other program is set, that opens a modal in Obsidian whenever Git asks for username or password.
+#### SSH_PASS integrated in Obsidian
+The plugin now automatically provides an integrated script for the `SSH_ASKPASS` environment variable, if no other program is set, that opens a modal in Obsidian whenever Git asks for username or password.
 
 ## SSH
-With one of the above [[#ASK_PASS Tools]]  installed to enter your passphrase, you can use ssh with a passphrase. Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linuxu#adding-your-ssh-key-to-the-ssh-agent).
+With one of the above [[#SSH_PASS Tools]]  installed to enter your passphrase, you can use ssh with a passphrase. Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linuxu#adding-your-ssh-key-to-the-ssh-agent).
 
 # macOS
 
@@ -65,7 +65,7 @@ You have to do one authentication action (clone/pull/push) after setting the hel
 
 ## SSH
 
-GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#adding-your-ssh-key-to-the-ssh-agent).
+Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#adding-your-ssh-key-to-the-ssh-agent).
 
 # Windows
 
@@ -84,4 +84,4 @@ Just execute any authentication command like push/pull/clone and a pop window sh
 Alternatively, you can also leave that setting empty and always provide the username and password manually via the prompted modal in Obsidian. All available credential helpers are listed [here](https://git-scm.com/doc/credential-helpers).,
 
 ## SSH
-With one of the above [[#ASK_PASS Tools]]  installed to enter your passphrase, you can use ssh with a passphrase. Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#adding-your-ssh-key-to-the-ssh-agent).
+Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#adding-your-ssh-key-to-the-ssh-agent).
