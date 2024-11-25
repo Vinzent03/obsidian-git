@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.30.0](https://github.com/denolehov/obsidian-git/compare/2.29.0...2.30.0) (2024-11-25)
+
+
+### Features
+
+* if Git is not found in PATH on windows try default location ([4301e31](https://github.com/denolehov/obsidian-git/commit/4301e31b2b66e111826e900e2d0942e0de871c74)), closes [#489](https://github.com/denolehov/obsidian-git/issues/489)
+
+
+### Bug Fixes
+
+* set SSH_AKSPASS instead of GIT_ASKPASS and better error handling ([044cd6a](https://github.com/denolehov/obsidian-git/commit/044cd6a7ace2e2f18f146b4439344190943342ae))
+
 ## [2.29.0](https://github.com/denolehov/obsidian-git/compare/2.28.2...2.29.0) (2024-11-24)
 
 
