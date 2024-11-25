@@ -11,6 +11,7 @@ import {
     ASK_PASS_INPUT_FILE,
     ASK_PASS_SCRIPT,
     ASK_PASS_SCRIPT_FILE,
+    DEFAULT_WIN_GIT_PATH,
     GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
 } from "src/constants";
 import type { LineAuthorFollowMovement } from "src/lineAuthor/model";
@@ -32,6 +33,7 @@ export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
     absoluteRepoPath: string;
     watchAbortController: AbortController | undefined;
+    useDefaultWindowsGitPath: boolean = false;
     constructor(plugin: ObsidianGit) {
         super(plugin);
     }
@@ -60,8 +62,15 @@ export class SimpleGit extends GitManager {
 
             this.git = simpleGit({
                 baseDir: basePath,
-                binary: this.plugin.localStorage.getGitPath() || undefined,
+                binary:
+                    this.plugin.localStorage.getGitPath() ||
+                    this.useDefaultWindowsGitPath
+                        ? DEFAULT_WIN_GIT_PATH
+                        : undefined,
                 config: ["core.quotepath=off"],
+                unsafe: {
+                    allowUnsafeCustomBinary: true,
+                },
             });
             const pathPaths = this.plugin.localStorage.getPATHPaths();
             const envVars = this.plugin.localStorage.getEnvVars();
@@ -951,17 +960,31 @@ export class SimpleGit extends GitManager {
 
     private isGitInstalled(): boolean {
         // https://github.com/steveukx/git-js/issues/402
-        const command = spawnSync(
-            this.plugin.localStorage.getGitPath() || "git",
-            ["--version"],
-            {
-                stdio: "ignore",
-            }
-        );
+        const gitPath = this.plugin.localStorage.getGitPath();
+        const command = spawnSync(gitPath || "git", ["--version"], {
+            stdio: "ignore",
+        });
 
         if (command.error) {
-            console.error(command.error);
-            return false;
+            if (Platform.isWin && !gitPath) {
+                this.plugin.log(
+                    `Git not found in PATH. Checking standard installation path(${DEFAULT_WIN_GIT_PATH}) of Git for Windows.`
+                );
+                const command = spawnSync(DEFAULT_WIN_GIT_PATH, ["--version"], {
+                    stdio: "ignore",
+                });
+                if (command.error) {
+                    console.error(command.error);
+                    return false;
+                } else {
+                    this.useDefaultWindowsGitPath = true;
+                }
+            } else {
+                console.error(command.error);
+                return false;
+            }
+        } else {
+            this.useDefaultWindowsGitPath = false;
         }
         return true;
     }
