@@ -93,6 +93,10 @@ trap cleanup EXIT
 echo "$PROMPT" > "$TEMP_FILE"
 
 while [ ! -e "$TEMP_FILE.response" ]; do
+    if [ ! -e "$TEMP_FILE" ]; then
+        echo "Trigger file got removed: Abort" >&2
+        exit 1
+    fi
     sleep 0.1
 done
 
