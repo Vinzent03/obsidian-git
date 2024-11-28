@@ -1,6 +1,6 @@
 {
     "name": "obsidian-git",
-    "version": "2.30.0",
+    "version": "2.30.1",
     "description": "Integrate Git version control with automatic backup and other advanced features in Obsidian.md",
     "main": "main.js",
     "scripts": {

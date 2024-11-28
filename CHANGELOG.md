@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.30.1](https://github.com/denolehov/obsidian-git/compare/2.30.0...2.30.1) (2024-11-28)
+
+
+### Bug Fixes
+
+* use custom git path ([5346fc8](https://github.com/denolehov/obsidian-git/commit/5346fc8995d11ef46de3277f724bca30aa208a49)), closes [#820](https://github.com/denolehov/obsidian-git/issues/820)
+
 ## [2.30.0](https://github.com/denolehov/obsidian-git/compare/2.29.0...2.30.0) (2024-11-25)
 
 
