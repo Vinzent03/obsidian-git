@@ -35,3 +35,13 @@ It's important to note that once a file is committed (or staged) changing the `.
 2. The file should be listed as deleted in `git status`
 3. Commit the deletion
 4. Now any changes to the file are properly ignored.
+
+## Cannot run gpg
+
+```
+Error: error: cannot run gpg: No such file or directory
+error: gpg failed to sign the data
+fatal: failed to write commit object
+```
+
+See [[Authentication#GPG Signing]] on how to solve this.
