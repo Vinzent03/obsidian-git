@@ -64,9 +64,9 @@ export class SimpleGit extends GitManager {
                 baseDir: basePath,
                 binary:
                     this.plugin.localStorage.getGitPath() ||
-                    this.useDefaultWindowsGitPath
+                    (this.useDefaultWindowsGitPath
                         ? DEFAULT_WIN_GIT_PATH
-                        : undefined,
+                        : undefined),
                 config: ["core.quotepath=off"],
                 unsafe: {
                     allowUnsafeCustomBinary: true,
