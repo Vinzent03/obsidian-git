@@ -44,4 +44,8 @@ error: gpg failed to sign the data
 fatal: failed to write commit object
 ```
 
-See [[Authentication#GPG Signing]] on how to solve this.
+See [[Integration with other tools#GPG Signing]] on how to solve this.
+
+## This repository is configured for Git LFS but 'git-lfs' was not found on your path.
+
+See [[Integration with other tools#Git Large File Storage]] on how to solve this.
