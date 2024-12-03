@@ -17,11 +17,7 @@ export default class Tools {
 
             //Check for files >100mb on GitHub remote
             if (remoteUrl?.includes("github.com")) {
-                console.log("because remote is github we check for big files");
-                console.log(files);
                 const tooBigFiles = files.filter((f) => {
-                    //console.log("checking file", f.vault_path);
-
                     const file = this.plugin.app.vault.getAbstractFileByPath(
                         f.vault_path
                     );
