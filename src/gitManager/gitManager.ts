@@ -302,8 +302,6 @@ export abstract class GitManager {
     }
 
 
-    isFileTrackedByLFS(filePath: string): boolean {
-        return true;
-    }
+    abstract isFileTrackedByLFS(filePath: string): Promise<boolean>;
     
 }
