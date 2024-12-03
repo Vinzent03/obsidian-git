@@ -22,8 +22,7 @@ export default class Tools {
                 for (const f of files) {
                     const file = this.plugin.app.vault.getAbstractFileByPath(f.vault_path);
                     if (file instanceof TFile) {
-                        const isTrackedByLFS = await this.plugin.gitManager.isFileTrackedByLFS(f.vault_path);
-                        if (file.stat.size >= 100000000 && !isTrackedByLFS) {
+                        if (file.stat.size >= 100000000 && !(await this.plugin.gitManager.isFileTrackedByLFS(f.vault_path))) {
                             tooBigFiles.push(f);
                         }
                     }
