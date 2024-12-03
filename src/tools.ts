@@ -17,12 +17,17 @@ export default class Tools {
 
             //Check for files >100mb on GitHub remote
             if (remoteUrl?.includes("github.com")) {
+                console.log("because remote is github we check for big files");
+                console.log(files);
                 const tooBigFiles = files.filter((f) => {
+                    //console.log("checking file", f.vault_path);
+
                     const file = this.plugin.app.vault.getAbstractFileByPath(
                         f.vault_path
                     );
                     if (file instanceof TFile) {
-                        return file.stat.size >= 100000000;
+                        // if the file is bigger than 100mb and not tracked by LFS it belongs into the tooBigFiles array
+                        return file.stat.size >= 100000000 && !this.plugin.gitManager.isFileTrackedByLFS(f.vault_path);
                     }
                     return false;
                 });

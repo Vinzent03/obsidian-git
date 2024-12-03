@@ -807,6 +807,11 @@ export default class ObsidianGit extends Plugin {
                 return false;
             }
 
+            // TODO TGS, remove this, only for testing here (i do not want to commit test files and then be forced to create new test files)
+            console.log("would commit in main.ts");
+            this.displayMessage("would commit in main.ts");
+            return true;
+
             if (changedFiles.length !== 0 || hadConflict) {
                 let cmtMessage = (commitMessage ??= fromAuto
                     ? this.settings.autoCommitMessage

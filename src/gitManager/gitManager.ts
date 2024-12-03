@@ -300,4 +300,10 @@ export abstract class GitManager {
         }
         return template;
     }
+
+
+    isFileTrackedByLFS(filePath: string): boolean {
+        return true;
+    }
+    
 }
