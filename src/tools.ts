@@ -17,15 +17,17 @@ export default class Tools {
 
             //Check for files >100mb on GitHub remote
             if (remoteUrl?.includes("github.com")) {
-                const tooBigFiles = files.filter((f) => {
-                    const file = this.plugin.app.vault.getAbstractFileByPath(
-                        f.vault_path
-                    );
+                const tooBigFiles = [];
+                
+                for (const f of files) {
+                    const file = this.plugin.app.vault.getAbstractFileByPath(f.vault_path);
                     if (file instanceof TFile) {
-                        return file.stat.size >= 100000000;
+                        if (file.stat.size >= 100000000 && !(await this.plugin.gitManager.isFileTrackedByLFS(f.vault_path))) {
+                            tooBigFiles.push(f);
+                        }
                     }
-                    return false;
-                });
+                }
+
                 if (tooBigFiles.length > 0) {
                     this.plugin.displayError(
                         `Did not commit, because following files are too big: ${tooBigFiles

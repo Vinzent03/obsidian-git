@@ -1010,6 +1010,17 @@ export class SimpleGit extends GitManager {
         }
         throw error;
     }
+
+    async isFileTrackedByLFS(filePath: string): Promise<boolean> {
+        try {
+            // Checks if Gits filter attribute is set to lfs for the file, which means it is (or will be) tracked by LFS.
+            const result = await this.git.raw(['check-attr', 'filter', filePath]);
+            return result.includes('filter: lfs');
+        } catch (error) {
+            this.plugin.displayError('Error checking LFS status:', error);
+            return false;
+        }
+    }
 }
 
 export const zeroCommit: BlameCommit = {
