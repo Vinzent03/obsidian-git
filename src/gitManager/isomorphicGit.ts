@@ -1177,13 +1177,6 @@ export class IsomorphicGit extends GitManager {
             );
         }
     }
-
-    async isFileTrackedByLFS(filePath: string): Promise<boolean> {
-        // TODO TGS, not sure how to efficiently implement this...
-        // only way that comes to mind is to check the .gitattributes file and extract the LFS rules and then 
-        // manually check if the file path is in the LFS rules, that seems very error prone...
-        return false; // false to keep behavior identical to before
-    }
 }
 
 // All because we can't use (for await)...
