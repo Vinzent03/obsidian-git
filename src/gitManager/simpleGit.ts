@@ -1021,7 +1021,11 @@ export class SimpleGit extends GitManager {
             ]);
             return result.includes("filter: lfs");
         } catch (error) {
-            this.plugin.displayError("Error checking LFS status:", error);
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            this.plugin.displayError(
+                `Error checking LFS status: ${errorMessage}`
+            );
             return false;
         }
     }
