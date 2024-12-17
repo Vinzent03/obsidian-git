@@ -2,6 +2,7 @@ import { TFile } from "obsidian";
 import { CONFLICT_OUTPUT_FILE } from "./constants";
 import type ObsidianGit from "./main";
 import { splitRemoteBranch } from "./utils";
+import { SimpleGit } from "./gitManager/simpleGit";
 
 export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
@@ -17,15 +18,28 @@ export default class Tools {
 
             //Check for files >100mb on GitHub remote
             if (remoteUrl?.includes("github.com")) {
-                const tooBigFiles = files.filter((f) => {
+                const tooBigFiles = [];
+
+                for (const f of files) {
                     const file = this.plugin.app.vault.getAbstractFileByPath(
                         f.vault_path
                     );
                     if (file instanceof TFile) {
-                        return file.stat.size >= 100000000;
+                        const isFileTrackedByLfs =
+                            this.plugin.gitManager instanceof SimpleGit
+                                ? await this.plugin.gitManager.isFileTrackedByLFS(
+                                      f.vault_path
+                                  )
+                                : false;
+                        if (
+                            file.stat.size >= 100000000 &&
+                            !isFileTrackedByLfs
+                        ) {
+                            tooBigFiles.push(f);
+                        }
                     }
-                    return false;
-                });
+                }
+
                 if (tooBigFiles.length > 0) {
                     this.plugin.displayError(
                         `Did not commit, because following files are too big: ${tooBigFiles
