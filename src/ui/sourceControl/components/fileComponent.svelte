@@ -48,13 +48,10 @@
     }
 
     function showDiff(event: MouseEvent) {
-        void getNewLeaf(view.app, event)?.setViewState({
-            type: DIFF_VIEW_CONFIG.type,
-            active: true,
-            state: {
-                file: change.path,
-                staged: false,
-            },
+        view.plugin.tools.openDiff({
+            aFile: change.path,
+            aRef: "",
+            event,
         });
     }
 

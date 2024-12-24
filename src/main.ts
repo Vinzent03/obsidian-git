@@ -22,7 +22,9 @@ import {
     DEFAULT_SETTINGS,
     DIFF_VIEW_CONFIG,
     HISTORY_VIEW_CONFIG,
+    MERGE_VIEW_CONFIG,
     SOURCE_CONTROL_VIEW_CONFIG,
+    UNIFIED_VIEW_CONFIG,
 } from "./constants";
 import type { GitManager } from "./gitManager/gitManager";
 import { IsomorphicGit } from "./gitManager/isomorphicGit";
@@ -48,6 +50,8 @@ import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { splitRemoteBranch } from "./utils";
 import Tools from "./tools";
+import SplitDiffView from "./ui/diff/splitDiffView";
+import UnifiedDiffView from "./ui/diff/unifiedDiffView";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -261,6 +265,9 @@ export default class ObsidianGit extends Plugin {
             return new DiffView(leaf, this);
         });
 
+        this.registerView(SPLIT_DIFF_VIEW_CONFIG.type, (leaf) => {
+            return new SplitDiffView(leaf, this);
+        });
         this.addRibbonIcon(
             "git-pull-request",
             "Open Git source control",

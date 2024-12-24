@@ -40,6 +40,7 @@ export const DEFAULT_SETTINGS: Omit<ObsidianGitSettings, "autoCommitMessage"> =
         showFileMenu: true,
         authorInHistoryView: "hide",
         dateInHistoryView: false,
+        diffStyle: "split",
         lineAuthor: {
             show: false,
             followMovement: "inactive",
@@ -71,6 +72,11 @@ export const HISTORY_VIEW_CONFIG = {
     icon: "history",
 };
 
+export const SPLIT_DIFF_VIEW_CONFIG = {
+    type: "split-diff-view",
+    name: "Split Diff View",
+    icon: "diff",
+};
 export const DIFF_VIEW_CONFIG = {
     type: "diff-view",
     name: "Diff View",

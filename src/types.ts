@@ -55,6 +55,7 @@ export interface ObsidianGitSettings {
     showFileMenu: boolean;
     authorInHistoryView: ShowAuthorInHistoryView;
     dateInHistoryView: boolean;
+    diffStyle: "git_unified" | "split";
 }
 
 /**
@@ -283,6 +284,30 @@ export interface DiffViewState {
     hash?: string;
 }
 
+export interface SplitDiffViewState {
+    /**
+     * The repo relative file path for a
+     */
+    aFile: string;
+
+    /**
+     * The git ref to specify which state of that file should be shown.
+     * An empty string refers to the index version of a file, so you have to specifically check against undefined
+     */
+    aRef: string;
+
+    /**
+     * The repo relative file path for b
+     */
+    bFile: string;
+
+    /**
+     * The git ref to specify which state of that file should be shown.
+     * An empty string refers to the index version of a file, so you have to specifically check against undefined
+     */
+    bRef?: string;
+}
+
 export enum FileType {
     staged,
     changed,
@@ -304,6 +329,7 @@ declare module "obsidian" {
     }
     interface View {
         titleEl: HTMLElement;
+        inlineTitleEl: HTMLElement;
     }
     interface Workspace {
         on(

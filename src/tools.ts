@@ -1,7 +1,11 @@
 import { TFile } from "obsidian";
-import { CONFLICT_OUTPUT_FILE } from "./constants";
+import {
+    CONFLICT_OUTPUT_FILE,
+    DIFF_VIEW_CONFIG,
+    SPLIT_DIFF_VIEW_CONFIG,
+} from "./constants";
 import type ObsidianGit from "./main";
-import { splitRemoteBranch } from "./utils";
+import { getNewLeaf, splitRemoteBranch } from "./utils";
 
 export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
@@ -61,6 +65,43 @@ export default class Tools {
                 "/",
                 true
             );
+        }
+    }
+
+    openDiff({
+        aFile,
+        bFile,
+        aRef,
+        bRef,
+        event,
+    }: {
+        aFile: string;
+        bFile?: string;
+        aRef: string;
+        bRef?: string;
+        event?: MouseEvent;
+    }) {
+        const diffStyle = this.plugin.settings.diffStyle;
+        if (diffStyle == "split") {
+            void getNewLeaf(this.plugin.app)?.setViewState({
+                type: SPLIT_DIFF_VIEW_CONFIG.type,
+                active: true,
+                state: {
+                    aFile: aFile,
+                    bFile: bFile ?? aFile,
+                    aRef: aRef,
+                    bRef: bRef,
+                },
+            });
+        } else if (diffStyle == "git_unified") {
+            void getNewLeaf(this.plugin.app, event)?.setViewState({
+                type: DIFF_VIEW_CONFIG.type,
+                active: true,
+                state: {
+                    file: aFile,
+                    staged: aRef == "HEAD",
+                },
+            });
         }
     }
 }
