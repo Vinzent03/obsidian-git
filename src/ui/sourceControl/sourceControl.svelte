@@ -70,9 +70,7 @@
                 plugin.gitManager
                     .commit({ message: commitMessage })
                     .then(async () => {
-                        if (commitMessage !== plugin.settings.commitMessage) {
-                            commitMessage = "";
-                        }
+                        commitMessage = plugin.settings.commitMessage;
                         await plugin.automaticsManager.setUpAutoCommitAndSync();
                     })
                     .finally(triggerRefresh)
@@ -80,16 +78,14 @@
         }
     }
 
-    function backup() {
+    function commitAndSync() {
         loading = true;
         if (status) {
             plugin.promiseQueue.addTask(() =>
                 plugin
                     .commitAndSync(false, false, commitMessage)
                     .then(() => {
-                        if (commitMessage !== plugin.settings.commitMessage) {
-                            commitMessage = "";
-                        }
+                        commitMessage = plugin.settings.commitMessage;
                     })
                     .finally(triggerRefresh)
             );
@@ -236,7 +232,7 @@
                 class="clickable-icon nav-action-button"
                 aria-label="Commit-and-sync"
                 bind:this={buttons[5]}
-                on:click={backup}
+                on:click={commitAndSync}
             />
             <div
                 id="commit-btn"
