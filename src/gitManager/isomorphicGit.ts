@@ -20,7 +20,7 @@ import type {
     UnstagedFile,
     WalkDifference,
 } from "../types";
-import { CurrentGitAction } from "../types";
+import { CurrentGitAction, type DiffFile } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
@@ -796,7 +796,7 @@ export class IsomorphicGit extends GitManager {
                                 log.commit.parent.first()!,
                                 log.oid
                             )
-                        ).map((item) => {
+                        ).map<DiffFile>((item) => {
                             return {
                                 path: item.path,
                                 status: item.type,
@@ -804,7 +804,6 @@ export class IsomorphicGit extends GitManager {
                                     item.path
                                 ),
                                 hash: log.oid,
-                                binary: undefined!,
                             };
                         }),
                     },

@@ -1,4 +1,4 @@
-import { TFile } from "obsidian";
+import { Platform, TFile } from "obsidian";
 import {
     CONFLICT_OUTPUT_FILE,
     DIFF_VIEW_CONFIG,
@@ -81,26 +81,29 @@ export default class Tools {
         bRef?: string;
         event?: MouseEvent;
     }) {
-        const diffStyle = this.plugin.settings.diffStyle;
+        let diffStyle = this.plugin.settings.diffStyle;
+        if (Platform.isMobileApp) {
+            diffStyle = "git_unified";
+        }
+
+        const state = {
+            aFile: aFile,
+            bFile: bFile ?? aFile,
+            aRef: aRef,
+            bRef: bRef,
+        };
+
         if (diffStyle == "split") {
-            void getNewLeaf(this.plugin.app)?.setViewState({
+            void getNewLeaf(this.plugin.app, event)?.setViewState({
                 type: SPLIT_DIFF_VIEW_CONFIG.type,
                 active: true,
-                state: {
-                    aFile: aFile,
-                    bFile: bFile ?? aFile,
-                    aRef: aRef,
-                    bRef: bRef,
-                },
+                state: state,
             });
         } else if (diffStyle == "git_unified") {
             void getNewLeaf(this.plugin.app, event)?.setViewState({
                 type: DIFF_VIEW_CONFIG.type,
                 active: true,
-                state: {
-                    file: aFile,
-                    staged: aRef == "HEAD",
-                },
+                state: state,
             });
         }
     }

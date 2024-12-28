@@ -1,7 +1,6 @@
 <script lang="ts">
     import { setIcon, TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
-    import { DIFF_VIEW_CONFIG } from "src/constants";
     import type { GitManager } from "src/gitManager/gitManager";
     import type { FileStatusResult } from "src/types";
     import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
@@ -76,10 +75,6 @@
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
-        class:is-active={view.plugin.lastDiffViewState?.file ==
-            change.vault_path &&
-            !view.plugin.lastDiffViewState?.hash &&
-            view.plugin.lastDiffViewState?.staged}
         data-path={change.vault_path}
         data-tooltip-position={side}
         aria-label={change.vault_path}

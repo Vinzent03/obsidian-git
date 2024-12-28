@@ -1,6 +1,5 @@
 <script lang="ts">
     import { setIcon, TFile } from "obsidian";
-    import { DIFF_VIEW_CONFIG } from "src/constants";
     import type { DiffFile } from "src/types";
     import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
     import type HistoryView from "../historyView";
@@ -28,14 +27,12 @@
     }
 
     function showDiff(event: MouseEvent) {
-        void getNewLeaf(view.app, event)?.setViewState({
-            type: DIFF_VIEW_CONFIG.type,
-            active: true,
-            state: {
-                file: diff.path,
-                staged: false,
-                hash: diff.hash,
-            },
+        view.plugin.tools.openDiff({
+            event,
+            aFile: diff.fromPath ?? diff.path,
+            aRef: `${diff.hash}^`,
+            bFile: diff.path,
+            bRef: diff.hash,
         });
     }
 </script>
@@ -61,8 +58,6 @@
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
-        class:is-active={view.plugin.lastDiffViewState?.file ==
-            diff.vault_path && view.plugin.lastDiffViewState?.hash}
         data-path={diff.vault_path}
         data-tooltip-position={side}
         aria-label={diff.vault_path}

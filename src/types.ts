@@ -243,9 +243,11 @@ export interface DiffEntry {
 export interface DiffFile {
     path: string;
     vault_path: string;
+    fromPath?: string;
+    fromVaultPath?: string;
     hash: string;
     status: string;
-    binary: boolean;
+    binary?: boolean;
 }
 
 export interface WalkDifference {
@@ -279,31 +281,27 @@ export type StatusRootTreeItem = RootTreeItem<FileStatusResult>;
 export type HistoryRootTreeItem = RootTreeItem<DiffFile>;
 
 export interface DiffViewState {
-    staged: boolean;
-    file: string;
-    hash?: string;
-}
-
-export interface SplitDiffViewState {
     /**
-     * The repo relative file path for a
+     * The repo relative file path for a.
+     * For diffing a renamed file, this is the old path.
      */
     aFile: string;
 
     /**
      * The git ref to specify which state of that file should be shown.
-     * An empty string refers to the index version of a file, so you have to specifically check against undefined
+     * An empty string refers to the index version of a file, so you have to specifically check against undefined.
      */
     aRef: string;
 
     /**
-     * The repo relative file path for b
+     * The repo relative file path for b.
      */
     bFile: string;
 
     /**
      * The git ref to specify which state of that file should be shown.
-     * An empty string refers to the index version of a file, so you have to specifically check against undefined
+     * An empty string refers to the index version of a file, so you have to specifically check against undefined.
+     * `undefined` stands for the workign tree version.
      */
     bRef?: string;
 }

@@ -5,7 +5,6 @@ import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
-import { getNewLeaf } from "./utils";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;

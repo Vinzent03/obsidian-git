@@ -21,6 +21,7 @@ import type {
     Blame,
     BlameCommit,
     BranchInfo,
+    DiffFile,
     FileStatusResult,
     LogEntry,
     Status,
@@ -716,7 +717,9 @@ export class SimpleGit extends GitManager {
         const res = await this.git.log({
             file: path,
             maxCount: limit,
-            "-m": null,
+            // Ensures that the changed files are listed for merge commits as well and the commit is not repeated for each parent.
+            // This only lists the changed files for the first parent.
+            "--diff-merges": "first-parent",
             "--name-status": null,
         });
 
@@ -730,13 +733,21 @@ export class SimpleGit extends GitManager {
             diff: {
                 ...e.diff!,
                 files:
-                    e.diff?.files.map((f: simple.DiffResultNameStatusFile) => ({
-                        ...f,
-                        status: f.status!,
-                        path: f.file,
-                        hash: e.hash,
-                        vault_path: this.getRelativeVaultPath(f.file),
-                    })) ?? [],
+                    e.diff?.files.map<DiffFile>(
+                        (f: simple.DiffResultNameStatusFile) => ({
+                            ...f,
+                            status: f.status!,
+                            path: f.file,
+                            hash: e.hash,
+                            vault_path: this.getRelativeVaultPath(f.file),
+                            fromPath: f.from,
+                            fromVaultPath:
+                                f.from != undefined
+                                    ? this.getRelativeVaultPath(f.from)
+                                    : undefined,
+                            binary: f.binary,
+                        })
+                    ) ?? [],
             },
             fileName: e.diff?.files.first()?.file,
         }));

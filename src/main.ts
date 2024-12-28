@@ -22,9 +22,8 @@ import {
     DEFAULT_SETTINGS,
     DIFF_VIEW_CONFIG,
     HISTORY_VIEW_CONFIG,
-    MERGE_VIEW_CONFIG,
+    SPLIT_DIFF_VIEW_CONFIG,
     SOURCE_CONTROL_VIEW_CONFIG,
-    UNIFIED_VIEW_CONFIG,
 } from "./constants";
 import type { GitManager } from "./gitManager/gitManager";
 import { IsomorphicGit } from "./gitManager/isomorphicGit";
@@ -51,7 +50,6 @@ import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { splitRemoteBranch } from "./utils";
 import Tools from "./tools";
 import SplitDiffView from "./ui/diff/splitDiffView";
-import UnifiedDiffView from "./ui/diff/unifiedDiffView";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -225,7 +223,7 @@ export default class ObsidianGit extends Plugin {
 
         this.registerEvent(
             this.app.workspace.on("active-leaf-change", (leaf) => {
-                this.handleViewActiveState(leaf);
+                this.onActiveLeafChange(leaf);
             })
         );
         this.registerEvent(
@@ -1262,9 +1260,14 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         }
     }
 
-    handleViewActiveState(leaf: WorkspaceLeaf | null): void {
+    onActiveLeafChange(leaf: WorkspaceLeaf | null): void {
+        const view = leaf?.view;
         // Prevent removing focus when switching to other panes than file panes like search or GitView
-        if (!leaf?.view.getState().file) return;
+        if (
+            !view?.getState().file &&
+            !(view instanceof DiffView || view instanceof SplitDiffView)
+        )
+            return;
 
         const sourceControlLeaf = this.app.workspace
             .getLeavesOfType(SOURCE_CONTROL_VIEW_CONFIG.type)
@@ -1281,23 +1284,22 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             .querySelector(`div.nav-file-title.is-active`)
             ?.removeClass("is-active");
 
-        if (leaf?.view instanceof DiffView) {
-            const path = leaf.view.state.file;
+        if (
+            leaf?.view instanceof DiffView ||
+            leaf?.view instanceof SplitDiffView
+        ) {
+            const path = leaf.view.state.bFile;
             this.lastDiffViewState = leaf.view.getState();
             let el: Element | undefined | null;
-            if (sourceControlLeaf && leaf.view.state.staged) {
+            if (sourceControlLeaf && leaf.view.state.aRef == "HEAD") {
                 el = sourceControlLeaf.view.containerEl.querySelector(
                     `div.staged div.nav-file-title[data-path='${path}']`
                 );
-            } else if (
-                sourceControlLeaf &&
-                leaf.view.state.staged === false &&
-                !leaf.view.state.hash
-            ) {
+            } else if (sourceControlLeaf && leaf.view.state.aRef == "") {
                 el = sourceControlLeaf.view.containerEl.querySelector(
                     `div.changes div.nav-file-title[data-path='${path}']`
                 );
-            } else if (historyLeaf && leaf.view.state.hash) {
+            } else if (historyLeaf) {
                 el = historyLeaf.view.containerEl.querySelector(
                     `div.nav-file-title[data-path='${path}']`
                 );

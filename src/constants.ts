@@ -74,7 +74,7 @@ export const HISTORY_VIEW_CONFIG = {
 
 export const SPLIT_DIFF_VIEW_CONFIG = {
     type: "split-diff-view",
-    name: "Split Diff View",
+    name: "Diff view",
     icon: "diff",
 };
 export const DIFF_VIEW_CONFIG = {
