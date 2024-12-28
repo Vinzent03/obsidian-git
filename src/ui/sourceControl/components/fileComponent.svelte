@@ -4,7 +4,12 @@
     import type { GitManager } from "src/gitManager/gitManager";
     import type { FileStatusResult } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
-    import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
+    import {
+        fileIsBinary,
+        getDisplayPath,
+        getNewLeaf,
+        mayTriggerFileMenu,
+    } from "src/utils";
     import type GitView from "../sourceControl";
 
     export let change: FileStatusResult;
@@ -19,6 +24,14 @@
         () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
         0
     );
+
+    function mainClick(event: MouseEvent) {
+        if (fileIsBinary(change.path)) {
+            open(event);
+        } else {
+            showDiff(event);
+        }
+    }
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
@@ -86,7 +99,7 @@
 <!-- svelte-ignore a11y-unknown-aria-attribute -->
 <main
     on:mouseover={hover}
-    on:click|stopPropagation={showDiff}
+    on:click|stopPropagation={mainClick}
     on:auxclick|stopPropagation={(event) => {
         if (event.button == 2)
             mayTriggerFileMenu(
@@ -96,7 +109,7 @@
                 view.leaf,
                 "git-source-control"
             );
-        else showDiff(event);
+        else mainClick(event);
     }}
     on:focus
     class="tree-item nav-file"

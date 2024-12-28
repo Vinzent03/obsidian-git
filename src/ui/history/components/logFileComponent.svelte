@@ -1,7 +1,12 @@
 <script lang="ts">
     import { setIcon, TFile } from "obsidian";
     import type { DiffFile } from "src/types";
-    import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
+    import {
+        fileIsBinary,
+        getDisplayPath,
+        getNewLeaf,
+        mayTriggerFileMenu,
+    } from "src/utils";
     import type HistoryView from "../historyView";
 
     export let diff: DiffFile;
@@ -15,6 +20,14 @@
         () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
         0
     );
+
+    function mainClick(event: MouseEvent) {
+        if (fileIsBinary(diff.path)) {
+            open(event);
+        } else {
+            showDiff(event);
+        }
+    }
 
     function open(event: MouseEvent) {
         const file = view.app.vault.getAbstractFileByPath(diff.vault_path);
@@ -41,7 +54,7 @@
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <main
-    on:click|stopPropagation={showDiff}
+    on:click|stopPropagation={mainClick}
     on:auxclick|stopPropagation={(event) => {
         if (event.button == 2)
             mayTriggerFileMenu(
@@ -51,7 +64,7 @@
                 view.leaf,
                 "git-history"
             );
-        else showDiff(event);
+        else mainClick(event);
     }}
     on:focus
     class="tree-item nav-file"

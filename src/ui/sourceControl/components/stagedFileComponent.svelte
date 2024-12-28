@@ -3,7 +3,12 @@
     import { hoverPreview } from "obsidian-community-lib";
     import type { GitManager } from "src/gitManager/gitManager";
     import type { FileStatusResult } from "src/types";
-    import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
+    import {
+        fileIsBinary,
+        getDisplayPath,
+        getNewLeaf,
+        mayTriggerFileMenu,
+    } from "src/utils";
     import type GitView from "../sourceControl";
 
     export let change: FileStatusResult;
@@ -17,6 +22,14 @@
         () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
         0
     );
+
+    function mainClick(event: MouseEvent) {
+        if (fileIsBinary(change.path)) {
+            open(event);
+        } else {
+            showDiff(event);
+        }
+    }
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
@@ -59,7 +72,7 @@
 <main
     on:mouseover={hover}
     on:focus
-    on:click|stopPropagation={showDiff}
+    on:click|stopPropagation={mainClick}
     on:auxclick|stopPropagation={(event) => {
         if (event.button == 2)
             mayTriggerFileMenu(
@@ -69,7 +82,7 @@
                 view.leaf,
                 "git-source-control"
             );
-        else showDiff(event);
+        else mainClick(event);
     }}
     class="tree-item nav-file"
 >

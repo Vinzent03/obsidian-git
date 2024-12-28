@@ -2,6 +2,7 @@ import * as cssColorConverter from "css-color-converter";
 import deepEqual from "deep-equal";
 import type { App, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment } from "obsidian";
+import { BINARY_EXTENSIONS } from "./constants";
 
 export const worthWalking = (filepath: string, root?: string) => {
     if (filepath === "." || root == null || root.length === 0 || root === ".") {
@@ -145,4 +146,21 @@ export function getDisplayPath(path: string): string {
 export function formatMinutes(minutes: number): string {
     if (minutes === 1) return "1 minute";
     return `${minutes} minutes`;
+}
+
+export function getExtensionFromPath(path: string): string {
+    const dotIndex = path.lastIndexOf(".");
+    return path.substring(dotIndex + 1);
+}
+
+/**
+ * Decides if a file is binary based on its extension.
+ */
+export function fileIsBinary(path: string): boolean {
+    // This is the case for the most files so we can save some time
+    if (path.endsWith(".md")) return false;
+
+    const ext = getExtensionFromPath(path);
+
+    return BINARY_EXTENSIONS.includes(ext);
 }
