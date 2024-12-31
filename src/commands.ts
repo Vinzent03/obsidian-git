@@ -5,6 +5,7 @@ import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
+import { SimpleGit } from "./gitManager/simpleGit";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -388,6 +389,22 @@ export function addCommmands(plugin: ObsidianGit) {
             const shouldDiscardAll = (await modal.openAndGetResult()) === "YES";
             if (shouldDiscardAll) {
                 plugin.promiseQueue.addTask(() => plugin.discardAll());
+            }
+        },
+    });
+
+    plugin.addCommand({
+        id: "raw-command",
+        name: "Raw command",
+        checkCallback: (checking) => {
+            const gitManager = plugin.gitManager;
+            if (checking) {
+                // only available on desktop
+                return gitManager instanceof SimpleGit;
+            } else {
+                plugin.tools
+                    .runRawCommand()
+                    .catch((e) => plugin.displayError(e));
             }
         },
     });

@@ -911,6 +911,12 @@ export class SimpleGit extends GitManager {
         return await this.git.diff([`${commit1}..${commit2}`, "--", file]);
     }
 
+    async rawCommand(command: string): Promise<string> {
+        const parts = command.split(" "); // Very simple parsing, may need string-argv
+        const res = await this.git.raw(parts[0], ...parts.slice(1));
+        return res;
+    }
+
     async getSubmoduleOfFile(
         repositoryRelativeFile: string
     ): Promise<{ submodule: string; relativeFilepath: string } | undefined> {
