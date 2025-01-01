@@ -30,7 +30,7 @@
     }
 
     function open(event: MouseEvent) {
-        const file = view.app.vault.getAbstractFileByPath(diff.vault_path);
+        const file = view.app.vault.getAbstractFileByPath(diff.vaultPath);
 
         if (file instanceof TFile) {
             getNewLeaf(view.app, event)
@@ -60,7 +60,7 @@
             mayTriggerFileMenu(
                 view.app,
                 event,
-                diff.vault_path,
+                diff.vaultPath,
                 view.leaf,
                 "git-history"
             );
@@ -71,16 +71,16 @@
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
-        data-path={diff.vault_path}
+        data-path={diff.vaultPath}
         data-tooltip-position={side}
-        aria-label={diff.vault_path}
+        aria-label={diff.vaultPath}
     >
         <div class="tree-item-inner nav-file-title-content">
-            {getDisplayPath(diff.vault_path)}
+            {getDisplayPath(diff.vaultPath)}
         </div>
         <div class="git-tools">
             <div class="buttons">
-                {#if view.app.vault.getAbstractFileByPath(diff.vault_path) instanceof TFile}
+                {#if view.app.vault.getAbstractFileByPath(diff.vaultPath) instanceof TFile}
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"

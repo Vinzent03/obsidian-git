@@ -20,30 +20,30 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
     }
 
     getItemText(item: FileStatusResult): string {
-        if (item.index == "U" && item.working_dir == "U") {
-            return `Untracked | ${item.vault_path}`;
+        if (item.index == "U" && item.workingDir == "U") {
+            return `Untracked | ${item.vaultPath}`;
         }
 
-        let working_dir = "";
+        let workingDir = "";
         let index = "";
 
-        if (item.working_dir != " ")
-            working_dir = `Working Dir: ${item.working_dir} `;
+        if (item.workingDir != " ")
+            workingDir = `Working Dir: ${item.workingDir} `;
         if (item.index != " ") index = `Index: ${item.index}`;
 
-        return `${working_dir}${index} | ${item.vault_path}`;
+        return `${workingDir}${index} | ${item.vaultPath}`;
     }
 
     onChooseItem(item: FileStatusResult, _: MouseEvent | KeyboardEvent): void {
         if (
             this.plugin.app.metadataCache.getFirstLinkpathDest(
-                item.vault_path,
+                item.vaultPath,
                 ""
             ) == null
         ) {
-            this.app.openWithDefaultApp(item.vault_path);
+            this.app.openWithDefaultApp(item.vaultPath);
         } else {
-            void this.plugin.app.workspace.openLinkText(item.vault_path, "/");
+            void this.plugin.app.workspace.openLinkText(item.vaultPath, "/");
         }
     }
 }

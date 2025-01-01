@@ -12,13 +12,13 @@
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
-        if (view.app.vault.getAbstractFileByPath(change.vault_path)) {
-            hoverPreview(event, view, change.vault_path);
+        if (view.app.vault.getAbstractFileByPath(change.vaultPath)) {
+            hoverPreview(event, view, change.vaultPath);
         }
     }
 
     function open(event: MouseEvent) {
-        const file = view.app.vault.getAbstractFileByPath(change.vault_path);
+        const file = view.app.vault.getAbstractFileByPath(change.vaultPath);
         if (file instanceof TFile) {
             getNewLeaf(view.app, event)
                 ?.openFile(file)
@@ -37,7 +37,7 @@
             mayTriggerFileMenu(
                 view.app,
                 event,
-                change.vault_path,
+                change.vaultPath,
                 view.leaf,
                 "git-source-control"
             );
@@ -48,16 +48,16 @@
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
-        data-path={change.vault_path}
+        data-path={change.vaultPath}
         data-tooltip-position={side}
-        aria-label={change.vault_path}
+        aria-label={change.vaultPath}
     >
         <div class="tree-item-inner nav-file-title-content">
-            {getDisplayPath(change.vault_path)}
+            {getDisplayPath(change.vaultPath)}
         </div>
         <div class="git-tools">
-            <span class="type" data-type={change.working_dir}
-                >{change.working_dir}</span
+            <span class="type" data-type={change.workingDir}
+                >{change.workingDir}</span
             >
         </div>
     </div>

@@ -13,7 +13,7 @@ export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
 
     async hasTooBigFiles(
-        files: { vault_path: string; path: string }[]
+        files: { vaultPath: string; path: string }[]
     ): Promise<boolean> {
         const branchInfo = await this.plugin.gitManager.branchInfo();
         const remote = branchInfo.tracking
@@ -30,7 +30,7 @@ export default class Tools {
 
             for (const f of files) {
                 const file = this.plugin.app.vault.getAbstractFileByPath(
-                    f.vault_path
+                    f.vaultPath
                 );
                 if (file instanceof TFile) {
                     if (file.stat.size >= 100000000) {
@@ -50,7 +50,7 @@ export default class Tools {
             if (tooBigFiles.length > 0) {
                 this.plugin.displayError(
                     `Did not commit, because following files are too big: ${tooBigFiles
-                        .map((e) => e.vault_path)
+                        .map((e) => e.vaultPath)
                         .join("\n")}. Please remove them.`
                 );
 

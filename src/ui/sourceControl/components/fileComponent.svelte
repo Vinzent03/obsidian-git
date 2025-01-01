@@ -35,13 +35,13 @@
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
-        if (view.app.vault.getAbstractFileByPath(change.vault_path)) {
-            hoverPreview(event, view, change.vault_path);
+        if (view.app.vault.getAbstractFileByPath(change.vaultPath)) {
+            hoverPreview(event, view, change.vaultPath);
         }
     }
 
     function open(event: MouseEvent) {
-        const file = view.app.vault.getAbstractFileByPath(change.vault_path);
+        const file = view.app.vault.getAbstractFileByPath(change.vaultPath);
 
         if (file instanceof TFile) {
             getNewLeaf(view.app, event)
@@ -68,13 +68,13 @@
     }
 
     function discard() {
-        const deleteFile = change.working_dir == "U";
-        new DiscardModal(view.app, deleteFile, change.vault_path).myOpen().then(
+        const deleteFile = change.workingDir == "U";
+        new DiscardModal(view.app, deleteFile, change.vaultPath).myOpen().then(
             (shouldDiscard) => {
                 if (shouldDiscard === true) {
                     if (deleteFile) {
                         return view.app.vault.adapter
-                            .remove(change.vault_path)
+                            .remove(change.vaultPath)
                             .finally(() => {
                                 view.app.workspace.trigger(
                                     "obsidian-git:refresh"
@@ -105,7 +105,7 @@
             mayTriggerFileMenu(
                 view.app,
                 event,
-                change.vault_path,
+                change.vaultPath,
                 view.leaf,
                 "git-source-control"
             );
@@ -116,9 +116,9 @@
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
-        data-path={change.vault_path}
+        data-path={change.vaultPath}
         data-tooltip-position={side}
-        aria-label={change.vault_path}
+        aria-label={change.vaultPath}
     >
         <!-- <div
 			data-icon="folder"
@@ -126,11 +126,11 @@
 			style="padding-right: 5px; display: flex;"
 		/> -->
         <div class="tree-item-inner nav-file-title-content">
-            {getDisplayPath(change.vault_path)}
+            {getDisplayPath(change.vaultPath)}
         </div>
         <div class="git-tools">
             <div class="buttons">
-                {#if view.app.vault.getAbstractFileByPath(change.vault_path) instanceof TFile}
+                {#if view.app.vault.getAbstractFileByPath(change.vaultPath) instanceof TFile}
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"
@@ -155,8 +155,8 @@
                     class="clickable-icon"
                 />
             </div>
-            <div class="type" data-type={change.working_dir}>
-                {change.working_dir}
+            <div class="type" data-type={change.workingDir}>
+                {change.workingDir}
             </div>
         </div>
     </div>

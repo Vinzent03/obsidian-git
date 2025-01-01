@@ -134,10 +134,10 @@
         }
         if (status) {
             const sort = (a: FileStatusResult, b: FileStatusResult) => {
-                return a.vault_path
+                return a.vaultPath
                     .split("/")
                     .last()!
-                    .localeCompare(getDisplayPath(b.vault_path));
+                    .localeCompare(getDisplayPath(b.vaultPath));
             };
             status.changed.sort(sort);
             status.staged.sort(sort);

@@ -160,7 +160,7 @@ export class IsomorphicGit extends GitManager {
             ).map((row) => this.getFileStatusResult(row));
 
             const changed = status.filter(
-                (fileStatus) => fileStatus.working_dir !== " "
+                (fileStatus) => fileStatus.workingDir !== " "
             );
             const staged = status.filter(
                 (fileStatus) =>
@@ -269,7 +269,7 @@ export class IsomorphicGit extends GitManager {
             if (status) {
                 await Promise.all(
                     status.changed.map((file) =>
-                        file.working_dir !== "D"
+                        file.workingDir !== "D"
                             ? this.wrapFS(
                                   git.add({
                                       ...this.getRepo(),
@@ -456,9 +456,9 @@ export class IsomorphicGit extends GitManager {
 
             return changedFiles.map<FileStatusResult>((file) => ({
                 path: file.path,
-                working_dir: "P",
+                workingDir: "P",
                 index: "P",
-                vault_path: this.getRelativeVaultPath(file.path),
+                vaultPath: this.getRelativeVaultPath(file.path),
             }));
         } catch (error) {
             progressNotice?.hide();
@@ -798,9 +798,7 @@ export class IsomorphicGit extends GitManager {
                             return {
                                 path: item.path,
                                 status: item.type,
-                                vault_path: this.getRelativeVaultPath(
-                                    item.path
-                                ),
+                                vaultPath: this.getRelativeVaultPath(item.path),
                                 hash: log.oid,
                             };
                         }),
@@ -913,14 +911,14 @@ export class IsomorphicGit extends GitManager {
 
     async getStagedFiles(
         dir = "."
-    ): Promise<{ vault_path: string; path: string }[]> {
+    ): Promise<{ vaultPath: string; path: string }[]> {
         const res = await this.walkDifference({
             walkers: [git.TREE({ ref: "HEAD" }), git.STAGE()],
             dir,
         });
         return res.map((file) => {
             return {
-                vault_path: this.getRelativeVaultPath(file.path),
+                vaultPath: this.getRelativeVaultPath(file.path),
                 path: file.path,
             };
         });
@@ -1150,9 +1148,9 @@ export class IsomorphicGit extends GitManager {
         // status will always be two characters
         return {
             index: status[0] == "?" ? "U" : status[0],
-            working_dir: status[1] == "?" ? "U" : status[1],
+            workingDir: status[1] == "?" ? "U" : status[1],
             path: row[this.FILE],
-            vault_path: this.getRelativeVaultPath(row[this.FILE]),
+            vaultPath: this.getRelativeVaultPath(row[this.FILE]),
         };
     }
 

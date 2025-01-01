@@ -193,7 +193,7 @@ export interface Blame {
  */
 export interface FileStatusResult {
     path: string;
-    vault_path: string;
+    vaultPath: string;
     from?: string;
 
     // First digit of the status code of the file, e.g. 'M' = modified.
@@ -202,7 +202,7 @@ export interface FileStatusResult {
     index: string;
     // Second digit of the status code of the file. Represents status of the working directory
     // if no merge conflicts, otherwise represents status of other side of a merge.
-    working_dir: string;
+    workingDir: string;
 }
 
 export interface PluginState {
@@ -242,7 +242,7 @@ export interface DiffEntry {
 
 export interface DiffFile {
     path: string;
-    vault_path: string;
+    vaultPath: string;
     fromPath?: string;
     fromVaultPath?: string;
     hash: string;

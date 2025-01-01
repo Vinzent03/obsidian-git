@@ -246,13 +246,13 @@ export class SimpleGit extends GitManager {
                 path: res.path,
                 from: res.from,
                 index: e.index === "?" ? "U" : e.index,
-                working_dir: e.working_dir === "?" ? "U" : e.working_dir,
-                vault_path: this.getRelativeVaultPath(res.path),
+                workingDir: e.working_dir === "?" ? "U" : e.working_dir,
+                vaultPath: this.getRelativeVaultPath(res.path),
             };
         });
         return {
             all: allFilesFormatted,
-            changed: allFilesFormatted.filter((e) => e.working_dir !== " "),
+            changed: allFilesFormatted.filter((e) => e.workingDir !== " "),
             staged: allFilesFormatted.filter(
                 (e) => e.index !== " " && e.index != "U"
             ),
@@ -582,8 +582,8 @@ export class SimpleGit extends GitManager {
                     .map((e) => {
                         return <FileStatusResult>{
                             path: e,
-                            working_dir: "P",
-                            vault_path: this.getRelativeVaultPath(e),
+                            workingDir: "P",
+                            vaultPath: this.getRelativeVaultPath(e),
                         };
                     });
             } else {
@@ -739,7 +739,7 @@ export class SimpleGit extends GitManager {
                             status: f.status!,
                             path: f.file,
                             hash: e.hash,
-                            vault_path: this.getRelativeVaultPath(f.file),
+                            vaultPath: this.getRelativeVaultPath(f.file),
                             fromPath: f.from,
                             fromVaultPath:
                                 f.from != undefined
