@@ -746,7 +746,7 @@ export default class ObsidianGit extends Plugin {
         try {
             let hadConflict = this.localStorage.getConflict();
 
-            let changedFiles: { vault_path: string }[];
+            let changedFiles: { vault_path: string; path: string }[];
             let status: Status | undefined;
             let unstagedFiles: UnstagedFile[] | undefined;
 
@@ -794,9 +794,10 @@ export default class ObsidianGit extends Plugin {
                         changedFiles = await gitManager.getStagedFiles();
                     } else {
                         unstagedFiles = await gitManager.getUnstagedFiles();
-                        changedFiles = unstagedFiles.map(({ filepath }) => ({
+                        changedFiles = unstagedFiles.map(({ path }) => ({
                             vault_path:
-                                this.gitManager.getRelativeVaultPath(filepath),
+                                this.gitManager.getRelativeVaultPath(path),
+                            path,
                         }));
                     }
                 }
