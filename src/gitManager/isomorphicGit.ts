@@ -286,11 +286,11 @@ export class IsomorphicGit extends GitManager {
                 const filesToStage =
                     unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
                 await Promise.all(
-                    filesToStage.map(({ filepath, deleted }) =>
+                    filesToStage.map(({ path, deleted }) =>
                         deleted
-                            ? git.remove({ ...this.getRepo(), filepath })
+                            ? git.remove({ ...this.getRepo(), filepath: path })
                             : this.wrapFS(
-                                  git.add({ ...this.getRepo(), filepath })
+                                  git.add({ ...this.getRepo(), filepath: path })
                               )
                     )
                 );
@@ -327,7 +327,7 @@ export class IsomorphicGit extends GitManager {
                 staged = status.staged.map((file) => file.path);
             } else {
                 const res = await this.getStagedFiles(dir ?? ".");
-                staged = res.map(({ filepath }) => filepath);
+                staged = res.map(({ path }) => path);
             }
             await this.wrapFS(
                 Promise.all(
@@ -375,9 +375,7 @@ export class IsomorphicGit extends GitManager {
                 files = status.changed.map((file) => file.path);
             }
         } else {
-            files = (await this.getUnstagedFiles(dir)).map(
-                ({ filepath }) => filepath
-            );
+            files = (await this.getUnstagedFiles(dir)).map(({ path }) => path);
         }
 
         try {
@@ -915,7 +913,7 @@ export class IsomorphicGit extends GitManager {
 
     async getStagedFiles(
         dir = "."
-    ): Promise<{ vault_path: string; filepath: string }[]> {
+    ): Promise<{ vault_path: string; path: string }[]> {
         const res = await this.walkDifference({
             walkers: [git.TREE({ ref: "HEAD" }), git.STAGE()],
             dir,
@@ -923,7 +921,7 @@ export class IsomorphicGit extends GitManager {
         return res.map((file) => {
             return {
                 vault_path: this.getRelativeVaultPath(file.path),
-                filepath: file.path,
+                path: file.path,
             };
         });
     }
@@ -1005,14 +1003,14 @@ export class IsomorphicGit extends GitManager {
                         }
                         if (!workdirOid) {
                             return {
-                                filepath: filepath,
+                                path: filepath,
                                 deleted: true,
                             };
                         }
 
                         if (workdirOid !== stageOid) {
                             return {
-                                filepath: filepath,
+                                path: filepath,
                                 deleted: false,
                             };
                         }

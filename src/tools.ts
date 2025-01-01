@@ -5,42 +5,54 @@ import {
     SPLIT_DIFF_VIEW_CONFIG,
 } from "./constants";
 import type ObsidianGit from "./main";
-import { getNewLeaf, splitRemoteBranch } from "./utils";
 import { SimpleGit } from "./gitManager/simpleGit";
+import { getNewLeaf, splitRemoteBranch } from "./utils";
 import { GeneralModal } from "./ui/modals/generalModal";
 
 export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
 
-    async hasTooBigFiles(files: { vault_path: string }[]): Promise<boolean> {
+    async hasTooBigFiles(
+        files: { vault_path: string; path: string }[]
+    ): Promise<boolean> {
         const branchInfo = await this.plugin.gitManager.branchInfo();
         const remote = branchInfo.tracking
             ? splitRemoteBranch(branchInfo.tracking)[0]
             : null;
 
-        if (remote) {
-            const remoteUrl = await this.plugin.gitManager.getRemoteUrl(remote);
+        if (!remote) return false;
 
-            //Check for files >100mb on GitHub remote
-            if (remoteUrl?.includes("github.com")) {
-                const tooBigFiles = files.filter((f) => {
-                    const file = this.plugin.app.vault.getAbstractFileByPath(
-                        f.vault_path
-                    );
-                    if (file instanceof TFile) {
-                        return file.stat.size >= 100000000;
+        const remoteUrl = await this.plugin.gitManager.getRemoteUrl(remote);
+
+        //Check for files >100mb on GitHub remote
+        if (remoteUrl?.includes("github.com")) {
+            const tooBigFiles = [];
+
+            for (const f of files) {
+                const file = this.plugin.app.vault.getAbstractFileByPath(
+                    f.vault_path
+                );
+                if (file instanceof TFile) {
+                    const gitManager = this.plugin.gitManager;
+                    let isFileTrackedByLfs = false;
+                    if (gitManager instanceof SimpleGit) {
+                        isFileTrackedByLfs =
+                            await gitManager.isFileTrackedByLFS(f.path);
                     }
-                    return false;
-                });
-                if (tooBigFiles.length > 0) {
-                    this.plugin.displayError(
-                        `Did not commit, because following files are too big: ${tooBigFiles
-                            .map((e) => e.vault_path)
-                            .join("\n")}. Please remove them.`
-                    );
-
-                    return true;
+                    if (file.stat.size >= 100000000 && !isFileTrackedByLfs) {
+                        tooBigFiles.push(f);
+                    }
                 }
+            }
+
+            if (tooBigFiles.length > 0) {
+                this.plugin.displayError(
+                    `Did not commit, because following files are too big: ${tooBigFiles
+                        .map((e) => e.vault_path)
+                        .join("\n")}. Please remove them.`
+                );
+
+                return true;
             }
         }
         return false;

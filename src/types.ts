@@ -256,7 +256,7 @@ export interface WalkDifference {
 }
 
 export interface UnstagedFile {
-    filepath: string;
+    path: string;
     deleted: boolean;
 }
 
