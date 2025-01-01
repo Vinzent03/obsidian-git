@@ -33,14 +33,16 @@ export default class Tools {
                     f.vault_path
                 );
                 if (file instanceof TFile) {
-                    const gitManager = this.plugin.gitManager;
-                    let isFileTrackedByLfs = false;
-                    if (gitManager instanceof SimpleGit) {
-                        isFileTrackedByLfs =
-                            await gitManager.isFileTrackedByLFS(f.path);
-                    }
-                    if (file.stat.size >= 100000000 && !isFileTrackedByLfs) {
-                        tooBigFiles.push(f);
+                    if (file.stat.size >= 100000000) {
+                        const gitManager = this.plugin.gitManager;
+                        let isFileTrackedByLfs = false;
+                        if (gitManager instanceof SimpleGit) {
+                            isFileTrackedByLfs =
+                                await gitManager.isFileTrackedByLFS(f.path);
+                        }
+                        if (!isFileTrackedByLfs) {
+                            tooBigFiles.push(f);
+                        }
                     }
                 }
             }
