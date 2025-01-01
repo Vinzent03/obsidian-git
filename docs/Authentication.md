@@ -87,19 +87,3 @@ Alternatively, you can also leave that setting empty and always provide the user
 Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#adding-your-ssh-key-to-the-ssh-agent).
 
 
-# GPG Signing
-
-GitHub provides a great [documentation about GPG](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key), which should work with Obsidian as well.
-One issue you might encounter though is the following:
-```
-Error: error: cannot run gpg: No such file or directory
-error: gpg failed to sign the data
-fatal: failed to write commit object
-```
-
-This means there is no `gpg`  binary in your PATH, which you may have only properly configured for your shell. But since Obsidian is started in a different way, these PATH modifications don't affect Obsidian. To get the binary path of your `gpg` installation, run `which gpg` on Linux and Mac-OS and `where gpg` on Windows. A common location may be `/usr/local/bin/gpg`.
-
-- You can either add that to the "Additional PATH environment variables" plugin setting to provide the gpg binary to your  plugin installation only.
-- Or set it in your Git config via `git config --global gpg.program <your previous output>` to set the gpg binary globally for all git repositories.
-
-Please create an issue if you encounter any issues and the documentation needs to be improved.

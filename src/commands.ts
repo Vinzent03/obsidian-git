@@ -1,15 +1,11 @@
-import { WorkspaceLeaf, Platform, Notice } from "obsidian";
-import {
-    SOURCE_CONTROL_VIEW_CONFIG,
-    HISTORY_VIEW_CONFIG,
-    DIFF_VIEW_CONFIG,
-} from "./constants";
-import { openLineInGitHub, openHistoryInGitHub } from "./openInGitHub";
+import { Notice, Platform, WorkspaceLeaf } from "obsidian";
+import { HISTORY_VIEW_CONFIG, SOURCE_CONTROL_VIEW_CONFIG } from "./constants";
+import ObsidianGit from "./main";
+import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
-import { getNewLeaf } from "./utils";
-import ObsidianGit from "./main";
+import { SimpleGit } from "./gitManager/simpleGit";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -84,16 +80,13 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                void getNewLeaf(app)?.setViewState({
-                    type: DIFF_VIEW_CONFIG.type,
-                    active: true,
-                    state: {
-                        staged: false,
-                        file: plugin.gitManager.getRelativeRepoPath(
-                            file!.path,
-                            true
-                        ),
-                    },
+                const filePath = plugin.gitManager.getRelativeRepoPath(
+                    file!.path,
+                    true
+                );
+                plugin.tools.openDiff({
+                    aFile: filePath,
+                    aRef: "",
                 });
             }
         },
@@ -396,6 +389,22 @@ export function addCommmands(plugin: ObsidianGit) {
             const shouldDiscardAll = (await modal.openAndGetResult()) === "YES";
             if (shouldDiscardAll) {
                 plugin.promiseQueue.addTask(() => plugin.discardAll());
+            }
+        },
+    });
+
+    plugin.addCommand({
+        id: "raw-command",
+        name: "Raw command",
+        checkCallback: (checking) => {
+            const gitManager = plugin.gitManager;
+            if (checking) {
+                // only available on desktop
+                return gitManager instanceof SimpleGit;
+            } else {
+                plugin.tools
+                    .runRawCommand()
+                    .catch((e) => plugin.displayError(e));
             }
         },
     });

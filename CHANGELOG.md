@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.31.0](https://github.com/denolehov/obsidian-git/compare/2.30.1...2.31.0) (2024-12-31)
+
+
+### Features
+
+* run raw git commands ([d05b99c](https://github.com/denolehov/obsidian-git/commit/d05b99ca827b630e1c96fdb2a4dc19469b0b9b81))
+* split diff view ([8c8551f](https://github.com/denolehov/obsidian-git/commit/8c8551f05a2cdbc3f389097e870718ecaf04ff0a))
+
+
+### Bug Fixes
+
+* don't open diff for binary files, just open them instead ([4c102fb](https://github.com/denolehov/obsidian-git/commit/4c102fb881764ba30a048b765926eda577c9f5f7)), closes [#801](https://github.com/denolehov/obsidian-git/issues/801)
+* important fixes for diff view ([e5509f9](https://github.com/denolehov/obsidian-git/commit/e5509f981a51638c910f5cc960737b25d77a36ab))
+* reset commit message to template ([16f0bd9](https://github.com/denolehov/obsidian-git/commit/16f0bd9fcf7a70687b529476bb4d9d5929375dbf)), closes [#828](https://github.com/denolehov/obsidian-git/issues/828)
+
 ### [2.30.1](https://github.com/denolehov/obsidian-git/compare/2.30.0...2.30.1) (2024-11-28)
 
 

@@ -9,6 +9,7 @@ aliases:
 - [[Installation|Installation]]
 - [[Getting Started|Getting Started]]
 - [[Authentication|Authentication]]
+- [[Integration with other tools]]
 - [[Features|Features]]
 - [[Tips-and-Tricks|Tips-and-Tricks]]
 - [[Common issues|Common Issues]]
