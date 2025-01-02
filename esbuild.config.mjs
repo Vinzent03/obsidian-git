@@ -44,6 +44,7 @@ const context = await esbuild.context({
     treeShaking: true,
     platform: "browser",
     minify: prod,
+    conditions: [prod ? "production" : "development"], // https://www.npmjs.com/package/esm-env
     plugins: [
         esbuildSvelte({
             compilerOptions: {

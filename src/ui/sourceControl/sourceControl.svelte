@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { run, stopPropagation } from 'svelte/legacy';
-
     import { Platform, setIcon, type EventRef } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import type ObsidianGit from "src/main";
@@ -26,23 +24,23 @@
         view: GitView;
     }
 
-    let { plugin = $bindable(), view }: Props = $props();
-    let loading: boolean = $state();
+    let { plugin, view }: Props = $props();
+    let loading: boolean = $state(false);
     let status: Status | undefined = $state();
     let lastPulledFiles: FileStatusResult[] = $state([]);
     let commitMessage = $state(plugin.settings.commitMessage);
     let buttons: HTMLElement[] = $state([]);
     let changeHierarchy: StatusRootTreeItem | undefined = $state();
     let stagedHierarchy: StatusRootTreeItem | undefined = $state();
-    let lastPulledFilesHierarchy: StatusRootTreeItem = $state();
+    let lastPulledFilesHierarchy: StatusRootTreeItem | undefined = $state();
     let changesOpen = $state(true);
     let stagedOpen = $state(true);
     let lastPulledFilesOpen = $state(true);
 
     let showTree = $state(plugin.settings.treeStructure);
-    let layoutBtn: HTMLElement = $state();
+    let layoutBtn: HTMLElement | undefined = $state();
     let refreshRef: EventRef;
-    run(() => {
+    $effect(() => {
         if (layoutBtn) {
             layoutBtn.empty();
             setIcon(layoutBtn, showTree ? "list" : "folder");
@@ -58,7 +56,7 @@
     plugin.app.workspace.onLayoutReady(() => {
         window.setTimeout(() => {
             buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
-            setIcon(layoutBtn, showTree ? "list" : "folder");
+            setIcon(layoutBtn!, showTree ? "list" : "folder");
         }, 0);
     });
     onDestroy(() => {
@@ -200,7 +198,8 @@
             plugin.pullChangesFromRemote().finally(triggerRefresh)
         );
     }
-    function discard() {
+    function discard(event: Event) {
+        event.stopPropagation();
         new DiscardModal(
             view.app,
             false,
@@ -239,7 +238,7 @@
                 aria-label="Commit-and-sync"
                 bind:this={buttons[5]}
                 onclick={commitAndSync}
-></div>
+            ></div>
             <div
                 id="commit-btn"
                 data-icon="check"
@@ -247,7 +246,7 @@
                 aria-label="Commit"
                 bind:this={buttons[0]}
                 onclick={commit}
-></div>
+            ></div>
             <div
                 id="stage-all"
                 class="clickable-icon nav-action-button"
@@ -255,7 +254,7 @@
                 aria-label="Stage all"
                 bind:this={buttons[1]}
                 onclick={stageAll}
-></div>
+            ></div>
             <div
                 id="unstage-all"
                 class="clickable-icon nav-action-button"
@@ -263,7 +262,7 @@
                 aria-label="Unstage all"
                 bind:this={buttons[2]}
                 onclick={unstageAll}
-></div>
+            ></div>
             <div
                 id="push"
                 class="clickable-icon nav-action-button"
@@ -271,7 +270,7 @@
                 aria-label="Push"
                 bind:this={buttons[3]}
                 onclick={push}
-></div>
+            ></div>
             <div
                 id="pull"
                 class="clickable-icon nav-action-button"
@@ -279,7 +278,7 @@
                 aria-label="Pull"
                 bind:this={buttons[4]}
                 onclick={pull}
-></div>
+            ></div>
             <div
                 id="layoutChange"
                 class="clickable-icon nav-action-button"
@@ -290,7 +289,7 @@
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}
-></div>
+            ></div>
             <div
                 id="refresh"
                 class="clickable-icon nav-action-button"
@@ -300,7 +299,7 @@
                 style="margin: 1px;"
                 bind:this={buttons[6]}
                 onclick={triggerRefresh}
-></div>
+            ></div>
         </div>
     </div>
     <div class="git-commit-msg">
@@ -310,13 +309,13 @@
             spellcheck="true"
             placeholder="Commit Message"
             bind:value={commitMessage}
-></textarea>
+        ></textarea>
         {#if commitMessage}
             <div
                 class="git-commit-msg-clear-button"
                 onclick={() => (commitMessage = "")}
                 aria-label={"Clear"}
-></div>
+            ></div>
         {/if}
     </div>
 
@@ -359,7 +358,7 @@
                                     data-icon="minus"
                                     aria-label="Unstage"
                                     bind:this={buttons[8]}
-                                    onclick={stopPropagation(unstageAll)}
+                                    onclick={unstageAll}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -447,7 +446,7 @@
                                 <div
                                     data-icon="undo"
                                     aria-label="Discard"
-                                    onclick={stopPropagation(discard)}
+                                    onclick={discard}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -470,7 +469,7 @@
                                     data-icon="plus"
                                     aria-label="Stage"
                                     bind:this={buttons[9]}
-                                    onclick={stopPropagation(stageAll)}
+                                    onclick={stageAll}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -529,7 +528,7 @@
                         </div>
                     {/if}
                 </div>
-                {#if lastPulledFiles.length > 0}
+                {#if lastPulledFiles.length > 0 && lastPulledFilesHierarchy}
                     <div
                         class="pulled nav-folder"
                         class:is-collapsed={!lastPulledFilesOpen}

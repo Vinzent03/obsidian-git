@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { run } from 'svelte/legacy';
-
     import { setIcon, type EventRef } from "obsidian";
     import { SimpleGit } from "src/gitManager/simpleGit";
     import type ObsidianGit from "src/main";
@@ -15,14 +13,14 @@
     }
 
     let { plugin = $bindable(), view }: Props = $props();
-    let loading: boolean = $state();
+    let loading: boolean = $state(false);
     let buttons: HTMLElement[] = $state([]);
     let logs: LogEntry[] | undefined = $state();
     let showTree: boolean = $state(plugin.settings.treeStructure);
     let refreshRef: EventRef;
 
-    let layoutBtn: HTMLElement = $state();
-    run(() => {
+    let layoutBtn: HTMLElement | undefined = $state();
+    $effect(() => {
         if (layoutBtn) {
             layoutBtn.empty();
             setIcon(layoutBtn, showTree ? "list" : "folder");
@@ -38,7 +36,7 @@
     plugin.app.workspace.onLayoutReady(() => {
         window.setTimeout(() => {
             buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
-            setIcon(layoutBtn, showTree ? "list" : "folder");
+            setIcon(layoutBtn!, showTree ? "list" : "folder");
         }, 0);
     });
     onDestroy(() => {
@@ -80,7 +78,7 @@
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}
-></div>
+            ></div>
             <div
                 id="refresh"
                 class="clickable-icon nav-action-button"
@@ -90,7 +88,7 @@
                 style="margin: 1px;"
                 bind:this={buttons[6]}
                 onclick={triggerRefresh}
-></div>
+            ></div>
         </div>
     </div>
 

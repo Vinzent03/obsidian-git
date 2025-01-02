@@ -1,7 +1,4 @@
 <script lang="ts">
-    import { stopPropagation, createBubbler } from 'svelte/legacy';
-
-    const bubble = createBubbler();
     import { setIcon, TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
     import type { GitManager } from "src/gitManager/gitManager";
@@ -24,8 +21,10 @@
     let { change, view, manager }: Props = $props();
     let buttons: HTMLElement[] = $state([]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
+    let side = $derived(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
+    );
 
     window.setTimeout(
         () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
@@ -33,6 +32,7 @@
     );
 
     function mainClick(event: MouseEvent) {
+        event.stopPropagation();
         if (fileIsBinary(change.path)) {
             open(event);
         } else {
@@ -48,6 +48,7 @@
     }
 
     function open(event: MouseEvent) {
+        event.stopPropagation();
         const file = view.app.vault.getAbstractFileByPath(change.vaultPath);
 
         if (file instanceof TFile) {
@@ -57,7 +58,8 @@
         }
     }
 
-    function stage() {
+    function stage(event: MouseEvent) {
+        event.stopPropagation();
         manager
             .stage(change.path, false)
             .catch((e) => view.plugin.displayError(e))
@@ -67,6 +69,7 @@
     }
 
     function showDiff(event: MouseEvent) {
+        event.stopPropagation();
         view.plugin.tools.openDiff({
             aFile: change.path,
             aRef: "",
@@ -74,7 +77,8 @@
         });
     }
 
-    function discard() {
+    function discard(event: MouseEvent) {
+        event.stopPropagation();
         const deleteFile = change.workingDir == "U";
         new DiscardModal(view.app, deleteFile, change.vaultPath).myOpen().then(
             (shouldDiscard) => {
@@ -104,10 +108,12 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_unknown_aria_attribute -->
+<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 <main
     onmouseover={hover}
-    onclick={stopPropagation(mainClick)}
-    onauxclick={stopPropagation((event) => {
+    onclick={mainClick}
+    onauxclick={(event) => {
+        event.stopPropagation();
         if (event.button == 2)
             mayTriggerFileMenu(
                 view.app,
@@ -117,8 +123,7 @@
                 "git-source-control"
             );
         else mainClick(event);
-    })}
-    onfocus={bubble('focus')}
+    }}
     class="tree-item nav-file"
 >
     <div
@@ -142,25 +147,25 @@
                         data-icon="go-to-file"
                         aria-label="Open File"
                         bind:this={buttons[1]}
-                        onauxclick={stopPropagation(open)}
-                        onclick={stopPropagation(open)}
+                        onauxclick={open}
+                        onclick={open}
                         class="clickable-icon"
-></div>
+                    ></div>
                 {/if}
                 <div
                     data-icon="undo"
                     aria-label="Discard"
                     bind:this={buttons[0]}
-                    onclick={stopPropagation(discard)}
+                    onclick={discard}
                     class="clickable-icon"
-></div>
+                ></div>
                 <div
                     data-icon="plus"
                     aria-label="Stage"
                     bind:this={buttons[2]}
-                    onclick={stopPropagation(stage)}
+                    onclick={stage}
                     class="clickable-icon"
-></div>
+                ></div>
             </div>
             <div class="type" data-type={change.workingDir}>
                 {change.workingDir}

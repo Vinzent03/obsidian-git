@@ -1,11 +1,12 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
-    import LogTreeComponent from './logTreeComponent.svelte';
+    import LogTreeComponent from "./logTreeComponent.svelte";
     import type ObsidianGit from "src/main";
     import type { HistoryRootTreeItem, TreeItem } from "src/types";
     import { slide } from "svelte/transition";
     import type HistoryView from "../historyView";
     import LogFileComponent from "./logFileComponent.svelte";
+
     interface Props {
         hierarchy: HistoryRootTreeItem;
         plugin: ObsidianGit;
@@ -13,16 +14,13 @@
         topLevel?: boolean;
     }
 
-    let {
-        hierarchy,
-        plugin,
-        view,
-        topLevel = false
-    }: Props = $props();
+    let { hierarchy, plugin, view, topLevel = false }: Props = $props();
     const closed: Record<string, boolean> = $state({});
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
+    let side = $derived(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
+    );
 
     function fold(item: TreeItem) {
         closed[item.title] = !closed[item.title];
@@ -51,7 +49,7 @@
                     <div
                         data-icon="folder"
                         style="padding-right: 5px; display: flex; "
-></div>
+                    ></div>
                     <div
                         class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
                         class:is-collapsed={closed[entity.title]}
@@ -80,7 +78,11 @@
                         class="tree-item-children nav-folder-children"
                         transition:slide|local={{ duration: 150 }}
                     >
-                        <LogTreeComponent hierarchy={entity} {plugin} {view} />
+                        <LogTreeComponent
+                            hierarchy={entity as HistoryRootTreeItem}
+                            {plugin}
+                            {view}
+                        />
                     </div>
                 {/if}
             </div>

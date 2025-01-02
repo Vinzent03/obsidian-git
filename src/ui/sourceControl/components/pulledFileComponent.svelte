@@ -1,7 +1,4 @@
 <script lang="ts">
-    import { stopPropagation, createBubbler } from 'svelte/legacy';
-
-    const bubble = createBubbler();
     import { TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
     import type { FileStatusResult } from "src/types";
@@ -14,8 +11,10 @@
     }
 
     let { change, view }: Props = $props();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
+    let side = $derived(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
+    );
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
@@ -25,6 +24,7 @@
     }
 
     function open(event: MouseEvent) {
+        event.stopPropagation();
         const file = view.app.vault.getAbstractFileByPath(change.vaultPath);
         if (file instanceof TFile) {
             getNewLeaf(view.app, event)
@@ -36,10 +36,12 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 <main
     onmouseover={hover}
-    onclick={stopPropagation(open)}
-    onauxclick={stopPropagation((event) => {
+    onclick={open}
+    onauxclick={(event) => {
+        event.stopPropagation();
         if (event.button == 2)
             mayTriggerFileMenu(
                 view.app,
@@ -49,8 +51,7 @@
                 "git-source-control"
             );
         else open(event);
-    })}
-    onfocus={bubble('focus')}
+    }}
     class="tree-item nav-file"
 >
     <div

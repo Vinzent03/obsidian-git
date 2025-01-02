@@ -14,12 +14,7 @@
         plugin: ObsidianGit;
     }
 
-    let {
-        log,
-        view,
-        showTree,
-        plugin
-    }: Props = $props();
+    let { log, view, showTree, plugin }: Props = $props();
     let logsHierarchy = $derived({
         title: "",
         path: "",
@@ -27,8 +22,10 @@
         children: plugin.gitManager.getTreeStructure(log.diff.files),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
+    let side = $derived(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
+    );
     let isCollapsed = $state(true);
 
     function authorToString(log: LogEntry) {
