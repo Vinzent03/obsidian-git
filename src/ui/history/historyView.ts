@@ -7,7 +7,7 @@ import { mount, unmount } from "svelte";
 
 export default class HistoryView extends ItemView implements HoverParent {
     plugin: ObsidianGit;
-    private _view: Record<string, any> | undefined;
+    private _view: Record<string, unknown> | undefined;
     hoverPopover: HoverPopover | null;
 
     constructor(leaf: WorkspaceLeaf, plugin: ObsidianGit) {
