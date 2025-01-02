@@ -1,4 +1,7 @@
 <script lang="ts">
+    import { stopPropagation, createBubbler } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { setIcon, TFile } from "obsidian";
     import type { DiffFile } from "src/types";
     import {
@@ -9,12 +12,16 @@
     } from "src/utils";
     import type HistoryView from "../historyView";
 
-    export let diff: DiffFile;
-    export let view: HistoryView;
-    let buttons: HTMLElement[] = [];
+    interface Props {
+        diff: DiffFile;
+        view: HistoryView;
+    }
+
+    let { diff, view }: Props = $props();
+    let buttons: HTMLElement[] = $state([]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
+    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
 
     window.setTimeout(
         () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
@@ -50,12 +57,12 @@
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <main
-    on:click|stopPropagation={mainClick}
-    on:auxclick|stopPropagation={(event) => {
+    onclick={stopPropagation(mainClick)}
+    onauxclick={stopPropagation((event) => {
         if (event.button == 2)
             mayTriggerFileMenu(
                 view.app,
@@ -65,8 +72,8 @@
                 "git-history"
             );
         else mainClick(event);
-    }}
-    on:focus
+    })}
+    onfocus={bubble('focus')}
     class="tree-item nav-file"
 >
     <div
@@ -85,10 +92,10 @@
                         data-icon="go-to-file"
                         aria-label="Open File"
                         bind:this={buttons[0]}
-                        on:auxclick|stopPropagation={open}
-                        on:click|stopPropagation={open}
+                        onauxclick={stopPropagation(open)}
+                        onclick={stopPropagation(open)}
                         class="clickable-icon"
-                    />
+></div>
                 {/if}
             </div>
             <span class="type" data-type={diff.status}>{diff.status}</span>

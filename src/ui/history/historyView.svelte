@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { setIcon, type EventRef } from "obsidian";
     import { SimpleGit } from "src/gitManager/simpleGit";
     import type ObsidianGit from "src/main";
@@ -7,21 +9,25 @@
     import LogComponent from "./components/logComponent.svelte";
     import type HistoryView from "./historyView";
 
-    export let plugin: ObsidianGit;
-    export let view: HistoryView;
-    let loading: boolean;
-    let buttons: HTMLElement[] = [];
-    let logs: LogEntry[] | undefined;
-    let showTree: boolean = plugin.settings.treeStructure;
+    interface Props {
+        plugin: ObsidianGit;
+        view: HistoryView;
+    }
+
+    let { plugin = $bindable(), view }: Props = $props();
+    let loading: boolean = $state();
+    let buttons: HTMLElement[] = $state([]);
+    let logs: LogEntry[] | undefined = $state();
+    let showTree: boolean = $state(plugin.settings.treeStructure);
     let refreshRef: EventRef;
 
-    let layoutBtn: HTMLElement;
-    $: {
+    let layoutBtn: HTMLElement = $state();
+    run(() => {
         if (layoutBtn) {
             layoutBtn.empty();
             setIcon(layoutBtn, showTree ? "list" : "folder");
         }
-    }
+    });
     refreshRef = view.app.workspace.on(
         "obsidian-git:view-refresh",
         () => void refresh().catch(console.error)
@@ -59,8 +65,8 @@
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <main>
     <div class="nav-header">
         <div class="nav-buttons-container">
@@ -69,12 +75,12 @@
                 class="clickable-icon nav-action-button"
                 aria-label="Change Layout"
                 bind:this={layoutBtn}
-                on:click={() => {
+                onclick={() => {
                     showTree = !showTree;
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}
-            />
+></div>
             <div
                 id="refresh"
                 class="clickable-icon nav-action-button"
@@ -83,8 +89,8 @@
                 aria-label="Refresh"
                 style="margin: 1px;"
                 bind:this={buttons[6]}
-                on:click={triggerRefresh}
-            />
+                onclick={triggerRefresh}
+></div>
         </div>
     </div>
 

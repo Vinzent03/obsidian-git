@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { run, stopPropagation } from 'svelte/legacy';
+
     import { Platform, setIcon, type EventRef } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import type ObsidianGit from "src/main";
@@ -19,29 +21,33 @@
     import type GitView from "./sourceControl";
     import TooManyFilesComponent from "./components/tooManyFilesComponent.svelte";
 
-    export let plugin: ObsidianGit;
-    export let view: GitView;
-    let loading: boolean;
-    let status: Status | undefined;
-    let lastPulledFiles: FileStatusResult[] = [];
-    let commitMessage = plugin.settings.commitMessage;
-    let buttons: HTMLElement[] = [];
-    let changeHierarchy: StatusRootTreeItem | undefined;
-    let stagedHierarchy: StatusRootTreeItem | undefined;
-    let lastPulledFilesHierarchy: StatusRootTreeItem;
-    let changesOpen = true;
-    let stagedOpen = true;
-    let lastPulledFilesOpen = true;
+    interface Props {
+        plugin: ObsidianGit;
+        view: GitView;
+    }
 
-    let showTree = plugin.settings.treeStructure;
-    let layoutBtn: HTMLElement;
+    let { plugin = $bindable(), view }: Props = $props();
+    let loading: boolean = $state();
+    let status: Status | undefined = $state();
+    let lastPulledFiles: FileStatusResult[] = $state([]);
+    let commitMessage = $state(plugin.settings.commitMessage);
+    let buttons: HTMLElement[] = $state([]);
+    let changeHierarchy: StatusRootTreeItem | undefined = $state();
+    let stagedHierarchy: StatusRootTreeItem | undefined = $state();
+    let lastPulledFilesHierarchy: StatusRootTreeItem = $state();
+    let changesOpen = $state(true);
+    let stagedOpen = $state(true);
+    let lastPulledFilesOpen = $state(true);
+
+    let showTree = $state(plugin.settings.treeStructure);
+    let layoutBtn: HTMLElement = $state();
     let refreshRef: EventRef;
-    $: {
+    run(() => {
         if (layoutBtn) {
             layoutBtn.empty();
             setIcon(layoutBtn, showTree ? "list" : "folder");
         }
-    }
+    });
     refreshRef = view.app.workspace.on(
         "obsidian-git:view-refresh",
         () => void refresh().catch(console.error)
@@ -218,11 +224,11 @@
             }, console.error);
     }
 
-    $: rows = (commitMessage.match(/\n/g) || []).length + 1 || 1;
+    let rows = $derived((commitMessage.match(/\n/g) || []).length + 1 || 1);
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <main data-type={SOURCE_CONTROL_VIEW_CONFIG.type}>
     <div class="nav-header">
         <div class="nav-buttons-container">
@@ -232,59 +238,59 @@
                 class="clickable-icon nav-action-button"
                 aria-label="Commit-and-sync"
                 bind:this={buttons[5]}
-                on:click={commitAndSync}
-            />
+                onclick={commitAndSync}
+></div>
             <div
                 id="commit-btn"
                 data-icon="check"
                 class="clickable-icon nav-action-button"
                 aria-label="Commit"
                 bind:this={buttons[0]}
-                on:click={commit}
-            />
+                onclick={commit}
+></div>
             <div
                 id="stage-all"
                 class="clickable-icon nav-action-button"
                 data-icon="plus-circle"
                 aria-label="Stage all"
                 bind:this={buttons[1]}
-                on:click={stageAll}
-            />
+                onclick={stageAll}
+></div>
             <div
                 id="unstage-all"
                 class="clickable-icon nav-action-button"
                 data-icon="minus-circle"
                 aria-label="Unstage all"
                 bind:this={buttons[2]}
-                on:click={unstageAll}
-            />
+                onclick={unstageAll}
+></div>
             <div
                 id="push"
                 class="clickable-icon nav-action-button"
                 data-icon="upload"
                 aria-label="Push"
                 bind:this={buttons[3]}
-                on:click={push}
-            />
+                onclick={push}
+></div>
             <div
                 id="pull"
                 class="clickable-icon nav-action-button"
                 data-icon="download"
                 aria-label="Pull"
                 bind:this={buttons[4]}
-                on:click={pull}
-            />
+                onclick={pull}
+></div>
             <div
                 id="layoutChange"
                 class="clickable-icon nav-action-button"
                 aria-label="Change Layout"
                 bind:this={layoutBtn}
-                on:click={() => {
+                onclick={() => {
                     showTree = !showTree;
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}
-            />
+></div>
             <div
                 id="refresh"
                 class="clickable-icon nav-action-button"
@@ -293,8 +299,8 @@
                 aria-label="Refresh"
                 style="margin: 1px;"
                 bind:this={buttons[6]}
-                on:click={triggerRefresh}
-            />
+                onclick={triggerRefresh}
+></div>
         </div>
     </div>
     <div class="git-commit-msg">
@@ -304,13 +310,13 @@
             spellcheck="true"
             placeholder="Commit Message"
             bind:value={commitMessage}
-        />
+></textarea>
         {#if commitMessage}
             <div
                 class="git-commit-msg-clear-button"
-                on:click={() => (commitMessage = "")}
+                onclick={() => (commitMessage = "")}
                 aria-label={"Clear"}
-            />
+></div>
         {/if}
     </div>
 
@@ -323,7 +329,7 @@
                 >
                     <div
                         class="tree-item-self is-clickable nav-folder-title"
-                        on:click={() => (stagedOpen = !stagedOpen)}
+                        onclick={() => (stagedOpen = !stagedOpen)}
                     >
                         <div
                             class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
@@ -353,7 +359,7 @@
                                     data-icon="minus"
                                     aria-label="Unstage"
                                     bind:this={buttons[8]}
-                                    on:click|stopPropagation={unstageAll}
+                                    onclick={stopPropagation(unstageAll)}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -411,7 +417,7 @@
                     class:is-collapsed={!changesOpen}
                 >
                     <div
-                        on:click={() => (changesOpen = !changesOpen)}
+                        onclick={() => (changesOpen = !changesOpen)}
                         class="tree-item-self is-clickable nav-folder-title"
                     >
                         <div
@@ -441,7 +447,7 @@
                                 <div
                                     data-icon="undo"
                                     aria-label="Discard"
-                                    on:click|stopPropagation={discard}
+                                    onclick={stopPropagation(discard)}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -464,7 +470,7 @@
                                     data-icon="plus"
                                     aria-label="Stage"
                                     bind:this={buttons[9]}
-                                    on:click|stopPropagation={stageAll}
+                                    onclick={stopPropagation(stageAll)}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -530,7 +536,7 @@
                     >
                         <div
                             class="tree-item-self is-clickable nav-folder-title"
-                            on:click={() =>
+                            onclick={() =>
                                 (lastPulledFilesOpen = !lastPulledFilesOpen)}
                         >
                             <div

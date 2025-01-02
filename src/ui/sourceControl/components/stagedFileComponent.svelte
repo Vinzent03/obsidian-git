@@ -1,4 +1,7 @@
 <script lang="ts">
+    import { createBubbler, stopPropagation } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { setIcon, TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
     import type { GitManager } from "src/gitManager/gitManager";
@@ -11,12 +14,16 @@
     } from "src/utils";
     import type GitView from "../sourceControl";
 
-    export let change: FileStatusResult;
-    export let view: GitView;
-    export let manager: GitManager;
-    let buttons: HTMLElement[] = [];
+    interface Props {
+        change: FileStatusResult;
+        view: GitView;
+        manager: GitManager;
+    }
+
+    let { change, view, manager }: Props = $props();
+    let buttons: HTMLElement[] = $state([]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
+    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
 
     window.setTimeout(
         () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
@@ -66,14 +73,14 @@
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <main
-    on:mouseover={hover}
-    on:focus
-    on:click|stopPropagation={mainClick}
-    on:auxclick|stopPropagation={(event) => {
+    onmouseover={hover}
+    onfocus={bubble('focus')}
+    onclick={stopPropagation(mainClick)}
+    onauxclick={stopPropagation((event) => {
         if (event.button == 2)
             mayTriggerFileMenu(
                 view.app,
@@ -83,7 +90,7 @@
                 "git-source-control"
             );
         else mainClick(event);
-    }}
+    })}
     class="tree-item nav-file"
 >
     <div
@@ -102,17 +109,17 @@
                         data-icon="go-to-file"
                         aria-label="Open File"
                         bind:this={buttons[1]}
-                        on:click|stopPropagation={open}
+                        onclick={stopPropagation(open)}
                         class="clickable-icon"
-                    />
+></div>
                 {/if}
                 <div
                     data-icon="minus"
                     aria-label="Unstage"
                     bind:this={buttons[0]}
-                    on:click|stopPropagation={unstage}
+                    onclick={stopPropagation(unstage)}
                     class="clickable-icon"
-                />
+></div>
             </div>
             <div class="type" data-type={change.index}>{change.index}</div>
         </div>

@@ -33,7 +33,7 @@
         "esbuild": "^0.24.0",
         "esbuild-svelte": "^0.8.2",
         "eslint": "^9.12.0",
-        "eslint-plugin-svelte": "^2.44.1",
+        "eslint-plugin-svelte": "^2.45.1",
         "obsidian": "^1.7.2",
         "prettier": "3.3.2",
         "prettier-plugin-svelte": "^3.2.7",
@@ -63,7 +63,7 @@
         "obsidian-community-lib": "github:Vinzent03/obsidian-community-lib#upgrade",
         "simple-git": "^3.27.0",
         "supports-color": "^9.4.0",
-        "svelte": "^4.2.19"
+        "svelte": "^5.0.0"
     },
     "moduleFileExtensions": [
         "js",

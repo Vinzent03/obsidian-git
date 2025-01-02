@@ -1,5 +1,8 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
+    import TreeComponent from './treeComponent.svelte';
+    import { stopPropagation } from 'svelte/legacy';
+
     import type ObsidianGit from "src/main";
     import type { StatusRootTreeItem, TreeItem } from "src/types";
     import { FileType } from "src/types";
@@ -11,18 +14,28 @@
     import StagedFileComponent from "./stagedFileComponent.svelte";
     import { arrayProxyWithNewLength, mayTriggerFileMenu } from "src/utils";
     import TooManyFilesComponent from "./tooManyFilesComponent.svelte";
-    export let hierarchy: StatusRootTreeItem;
-    export let plugin: ObsidianGit;
-    export let view: GitView;
-    export let fileType: FileType;
-    export let topLevel = false;
-    const closed: Record<string, boolean> = {};
+    interface Props {
+        hierarchy: StatusRootTreeItem;
+        plugin: ObsidianGit;
+        view: GitView;
+        fileType: FileType;
+        topLevel?: boolean;
+    }
+
+    let {
+        hierarchy,
+        plugin,
+        view,
+        fileType,
+        topLevel = false
+    }: Props = $props();
+    const closed: Record<string, boolean> = $state({});
 
     for (const entity of hierarchy.children) {
         closed[entity.title] = (entity.children?.length ?? 0) > 100;
     }
     /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-    $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
+    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
 
     function stage(path: string) {
         plugin.gitManager
@@ -62,8 +75,8 @@
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <main class:topLevel>
     {#each arrayProxyWithNewLength(hierarchy.children, 500) as entity}
         {#if entity.data}
@@ -86,15 +99,15 @@
             </div>
         {:else}
             <div
-                on:click|stopPropagation={() => fold(entity)}
-                on:auxclick|stopPropagation={(event) =>
+                onclick={stopPropagation(() => fold(entity))}
+                onauxclick={stopPropagation((event) =>
                     mayTriggerFileMenu(
                         view.app,
                         event,
                         entity.vaultPath,
                         view.leaf,
                         "git-source-control"
-                    )}
+                    ))}
                 class="tree-item nav-folder"
                 class:is-collapsed={closed[entity.title]}
             >
@@ -106,7 +119,7 @@
                     <div
                         data-icon="folder"
                         style="padding-right: 5px; display: flex; "
-                    />
+></div>
                     <div
                         class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
                         class:is-collapsed={closed[entity.title]}
@@ -134,8 +147,8 @@
                                 <div
                                     data-icon="minus"
                                     aria-label="Unstage"
-                                    on:click|stopPropagation={() =>
-                                        unstage(entity.path)}
+                                    onclick={stopPropagation(() =>
+                                        unstage(entity.path))}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -160,8 +173,8 @@
                                 <div
                                     data-icon="undo"
                                     aria-label="Discard"
-                                    on:click|stopPropagation={() =>
-                                        discard(entity)}
+                                    onclick={stopPropagation(() =>
+                                        discard(entity))}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -183,8 +196,8 @@
                                 <div
                                     data-icon="plus"
                                     aria-label="Stage"
-                                    on:click|stopPropagation={() =>
-                                        stage(entity.path)}
+                                    onclick={stopPropagation(() =>
+                                        stage(entity.path))}
                                     class="clickable-icon"
                                 >
                                     <svg
@@ -211,7 +224,7 @@
                                     >
                                 </div>
                             {/if}
-                            <div style="width:11px" />
+                            <div style="width:11px"></div>
                         </div>
                     </div>
                 </div>
@@ -221,7 +234,7 @@
                         class="tree-item-children nav-folder-children"
                         transition:slide|local={{ duration: 150 }}
                     >
-                        <svelte:self
+                        <TreeComponent
                             hierarchy={entity}
                             {plugin}
                             {view}

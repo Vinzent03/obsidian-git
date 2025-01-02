@@ -7,20 +7,29 @@
     import LogFileComponent from "./logFileComponent.svelte";
     import LogTreeComponent from "./logTreeComponent.svelte";
 
-    export let log: LogEntry;
-    export let view: HistoryView;
-    export let showTree: boolean;
-    export let plugin: ObsidianGit;
-    $: logsHierarchy = {
+    interface Props {
+        log: LogEntry;
+        view: HistoryView;
+        showTree: boolean;
+        plugin: ObsidianGit;
+    }
+
+    let {
+        log,
+        view,
+        showTree,
+        plugin
+    }: Props = $props();
+    let logsHierarchy = $derived({
         title: "",
         path: "",
         vaultPath: "",
         children: plugin.gitManager.getTreeStructure(log.diff.files),
-    };
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
-    let isCollapsed = true;
+    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
+    let isCollapsed = $state(true);
 
     function authorToString(log: LogEntry) {
         const name = log.author.name;
@@ -34,8 +43,8 @@
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <main>
     <div class="tree-item nav-folder" class:is-collapsed={isCollapsed}>
         <div
@@ -44,7 +53,7 @@
 ${moment(log.date).format(plugin.settings.commitDateFormat)}
 ${log.message}`}
             data-tooltip-position={side}
-            on:click={() => (isCollapsed = !isCollapsed)}
+            onclick={() => (isCollapsed = !isCollapsed)}
         >
             <div
                 class="tree-item-icon nav-folder-collapse-indicator collapse-icon"

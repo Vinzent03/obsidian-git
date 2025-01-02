@@ -1,14 +1,21 @@
 <script lang="ts">
+    import { stopPropagation, createBubbler } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
     import type { FileStatusResult } from "src/types";
     import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
     import type GitView from "../sourceControl";
 
-    export let change: FileStatusResult;
-    export let view: GitView;
+    interface Props {
+        change: FileStatusResult;
+        view: GitView;
+    }
+
+    let { change, view }: Props = $props();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
+    let side = $derived((view.leaf.getRoot() as any).side == "left" ? "right" : "left");
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
@@ -27,12 +34,12 @@
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <main
-    on:mouseover={hover}
-    on:click|stopPropagation={open}
-    on:auxclick|stopPropagation={(event) => {
+    onmouseover={hover}
+    onclick={stopPropagation(open)}
+    onauxclick={stopPropagation((event) => {
         if (event.button == 2)
             mayTriggerFileMenu(
                 view.app,
@@ -42,8 +49,8 @@
                 "git-source-control"
             );
         else open(event);
-    }}
-    on:focus
+    })}
+    onfocus={bubble('focus')}
     class="tree-item nav-file"
 >
     <div
