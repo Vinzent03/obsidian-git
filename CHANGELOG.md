@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.31.1](https://github.com/Vinzent03/obsidian-git/compare/2.31.0...2.31.1) (2025-01-04)
+
+
+### Bug Fixes
+
+* Allow commiting of files large than 100mb if handled by LFS ([#822](https://github.com/Vinzent03/obsidian-git/issues/822)) ([e67928d](https://github.com/Vinzent03/obsidian-git/commit/e67928db625a57405f0fa1711e9e031f0e89a683))
+* load more logs in history view on scroll ([a17cb55](https://github.com/Vinzent03/obsidian-git/commit/a17cb55bcffd7e0e6028c72b5b0704fb6fb3fe00)), closes [#807](https://github.com/Vinzent03/obsidian-git/issues/807)
+* more efficient too big file check ([43c70d8](https://github.com/Vinzent03/obsidian-git/commit/43c70d8c85e9471b5d859ad7026ef6e44161118c)), closes [#822](https://github.com/Vinzent03/obsidian-git/issues/822)
+
 ## [2.31.0](https://github.com/denolehov/obsidian-git/compare/2.30.1...2.31.0) (2024-12-31)
 
 
