@@ -23,7 +23,6 @@
     $effect(() => {
         if (layoutBtn) {
             layoutBtn.empty();
-            setIcon(layoutBtn, showTree ? "list" : "folder");
         }
     });
     refreshRef = view.app.workspace.on(
@@ -31,13 +30,8 @@
         () => void refresh().catch(console.error)
     );
     refresh().catch(console.error);
-    //This should go in the onMount callback, for some reason it doesn't fire though
-    //setTimeout's callback will execute after the current event loop finishes.
-    plugin.app.workspace.onLayoutReady(() => {
-        window.setTimeout(() => {
-            buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
-            setIcon(layoutBtn!, showTree ? "list" : "folder");
-        }, 0);
+    $effect(() => {
+        buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
     });
     onDestroy(() => {
         view.app.workspace.offref(refreshRef);
@@ -71,10 +65,12 @@
             <div
                 id="layoutChange"
                 class="clickable-icon nav-action-button"
+                data-icon={showTree ? "list" : "folder"}
                 aria-label="Change Layout"
-                bind:this={layoutBtn}
+                bind:this={buttons[0]}
                 onclick={() => {
                     showTree = !showTree;
+                    setIcon(buttons[0], showTree ? "list" : "folder");
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}
@@ -86,7 +82,7 @@
                 data-icon="refresh-cw"
                 aria-label="Refresh"
                 style="margin: 1px;"
-                bind:this={buttons[6]}
+                bind:this={buttons[1]}
                 onclick={triggerRefresh}
             ></div>
         </div>

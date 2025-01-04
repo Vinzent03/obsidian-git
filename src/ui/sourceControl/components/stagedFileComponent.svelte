@@ -24,10 +24,9 @@
         (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
     );
 
-    window.setTimeout(
-        () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
-        0
-    );
+    $effect(() => {
+        for (const b of buttons) if (b) setIcon(b, b.getAttr("data-icon")!);
+    });
 
     function mainClick(event: MouseEvent) {
         event.stopPropagation();
@@ -113,7 +112,7 @@
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"
-                        bind:this={buttons[1]}
+                        bind:this={buttons[0]}
                         onclick={open}
                         class="clickable-icon"
                     ></div>
@@ -121,7 +120,7 @@
                 <div
                     data-icon="minus"
                     aria-label="Unstage"
-                    bind:this={buttons[0]}
+                    bind:this={buttons[1]}
                     onclick={unstage}
                     class="clickable-icon"
                 ></div>

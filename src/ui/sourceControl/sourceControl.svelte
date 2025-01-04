@@ -38,26 +38,14 @@
     let lastPulledFilesOpen = $state(true);
 
     let showTree = $state(plugin.settings.treeStructure);
-    let layoutBtn: HTMLElement | undefined = $state();
     let refreshRef: EventRef;
-    $effect(() => {
-        if (layoutBtn) {
-            layoutBtn.empty();
-            setIcon(layoutBtn, showTree ? "list" : "folder");
-        }
-    });
     refreshRef = view.app.workspace.on(
         "obsidian-git:view-refresh",
         () => void refresh().catch(console.error)
     );
     refresh().catch(console.error);
-    //This should go in the onMount callback, for some reason it doesn't fire though
-    //setTimeout's callback will execute after the current event loop finishes.
-    plugin.app.workspace.onLayoutReady(() => {
-        window.setTimeout(() => {
-            buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
-            setIcon(layoutBtn!, showTree ? "list" : "folder");
-        }, 0);
+    $effect(() => {
+        buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
     });
     onDestroy(() => {
         view.app.workspace.offref(refreshRef);
@@ -103,6 +91,7 @@
         }
         const unPushedCommits = await plugin.gitManager.getUnpushedCommits();
 
+        // highlight push button if there are unpushed commits
         buttons.forEach((btn) => {
             // when reloading the view from settings change, the btn are null at first
             if (!btn) return;
@@ -236,7 +225,7 @@
                 data-icon="arrow-up-circle"
                 class="clickable-icon nav-action-button"
                 aria-label="Commit-and-sync"
-                bind:this={buttons[5]}
+                bind:this={buttons[0]}
                 onclick={commitAndSync}
             ></div>
             <div
@@ -244,7 +233,7 @@
                 data-icon="check"
                 class="clickable-icon nav-action-button"
                 aria-label="Commit"
-                bind:this={buttons[0]}
+                bind:this={buttons[1]}
                 onclick={commit}
             ></div>
             <div
@@ -252,7 +241,7 @@
                 class="clickable-icon nav-action-button"
                 data-icon="plus-circle"
                 aria-label="Stage all"
-                bind:this={buttons[1]}
+                bind:this={buttons[2]}
                 onclick={stageAll}
             ></div>
             <div
@@ -260,7 +249,7 @@
                 class="clickable-icon nav-action-button"
                 data-icon="minus-circle"
                 aria-label="Unstage all"
-                bind:this={buttons[2]}
+                bind:this={buttons[3]}
                 onclick={unstageAll}
             ></div>
             <div
@@ -268,7 +257,7 @@
                 class="clickable-icon nav-action-button"
                 data-icon="upload"
                 aria-label="Push"
-                bind:this={buttons[3]}
+                bind:this={buttons[4]}
                 onclick={push}
             ></div>
             <div
@@ -276,16 +265,18 @@
                 class="clickable-icon nav-action-button"
                 data-icon="download"
                 aria-label="Pull"
-                bind:this={buttons[4]}
+                bind:this={buttons[5]}
                 onclick={pull}
             ></div>
             <div
                 id="layoutChange"
                 class="clickable-icon nav-action-button"
                 aria-label="Change Layout"
-                bind:this={layoutBtn}
+                data-icon={showTree ? "list" : "folder"}
+                bind:this={buttons[6]}
                 onclick={() => {
                     showTree = !showTree;
+                    setIcon(buttons[6], showTree ? "list" : "folder");
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}
@@ -297,7 +288,7 @@
                 data-icon="refresh-cw"
                 aria-label="Refresh"
                 style="margin: 1px;"
-                bind:this={buttons[6]}
+                bind:this={buttons[7]}
                 onclick={triggerRefresh}
             ></div>
         </div>
