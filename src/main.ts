@@ -62,14 +62,12 @@ export default class ObsidianGit extends Plugin {
     branchBar?: BranchStatusBar;
     state: PluginState = {
         gitAction: CurrentGitAction.idle,
-        loading: false,
         offlineMode: false,
     };
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue(this);
     autoCommitDebouncer: Debouncer<[], void> | undefined;
-    loading = false;
     cachedStatus: Status | undefined;
     // Used to store the path of the file that is currently shown in the diff view.
     lastDiffViewState: Record<string, unknown> | undefined;
@@ -84,6 +82,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async updateCachedStatus(): Promise<Status> {
+        this.app.workspace.trigger("obsidian-git:loading-status");
         this.cachedStatus = await this.gitManager.status();
         if (this.cachedStatus.conflicted.length > 0) {
             this.localStorage.setConflict(true);
@@ -93,6 +92,10 @@ export default class ObsidianGit extends Plugin {
             await this.branchBar?.display();
         }
 
+        this.app.workspace.trigger(
+            "obsidian-git:status-changed",
+            this.cachedStatus
+        );
         return this.cachedStatus;
     }
 
@@ -111,13 +114,10 @@ export default class ObsidianGit extends Plugin {
             gitViews.some((leaf) => !(leaf.isDeferred ?? false)) ||
             historyViews.some((leaf) => !(leaf.isDeferred ?? false))
         ) {
-            this.loading = true;
-            this.app.workspace.trigger("obsidian-git:view-refresh");
-
             await this.updateCachedStatus().catch((e) => this.displayError(e));
-            this.loading = false;
-            this.app.workspace.trigger("obsidian-git:view-refresh");
         }
+
+        this.app.workspace.trigger("obsidian-git:refreshed");
 
         // We don't put a line authoring refresh here, as it would force a re-loading
         // of the line authoring feature - which would lead to a jumpy editor-view in the
@@ -285,8 +285,6 @@ export default class ObsidianGit extends Plugin {
                     leaf = leafs.first()!;
                 }
                 await this.app.workspace.revealLeaf(leaf);
-
-                this.app.workspace.trigger("obsidian-git:refresh");
             }
         );
 
@@ -424,7 +422,6 @@ export default class ObsidianGit extends Plugin {
 
     unloadPlugin() {
         this.gitReady = false;
-        this.app.workspace.trigger("obsidian-git:refresh");
 
         this.lineAuthoringFeature.deactivateFeature();
         this.automaticsManager.unload();
@@ -1041,6 +1038,7 @@ export default class ObsidianGit extends Plugin {
         if (selectedBranch != undefined) {
             await this.gitManager.checkout(selectedBranch);
             this.displayMessage(`Switched to ${selectedBranch}`);
+            this.app.workspace.trigger("obsidian-git:refresh");
             await this.branchBar?.display();
             return selectedBranch;
         }
@@ -1148,6 +1146,7 @@ export default class ObsidianGit extends Plugin {
         new Notice(
             "All local changes have been discarded. New files remain untouched."
         );
+        this.app.workspace.trigger("obsidian-git:refresh");
     }
 
     async handleConflict(conflicted?: string[]): Promise<void> {

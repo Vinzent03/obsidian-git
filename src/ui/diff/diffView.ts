@@ -21,13 +21,7 @@ export default class DiffView extends ItemView {
         this.parser = new DOMParser();
         this.navigation = true;
         this.gitRefreshRef = this.app.workspace.on(
-            "obsidian-git:refresh",
-            () => {
-                this.refresh().catch(console.error);
-            }
-        );
-        this.gitViewRefreshRef = this.app.workspace.on(
-            "obsidian-git:view-refresh",
+            "obsidian-git:status-changed",
             () => {
                 this.refresh().catch(console.error);
             }

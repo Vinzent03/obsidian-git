@@ -25,7 +25,7 @@ export class StatusBar {
         this.statusBarEl.setAttribute("data-tooltip-position", "top");
 
         plugin.registerEvent(
-            plugin.app.workspace.on("obsidian-git:refresh", () => {
+            plugin.app.workspace.on("obsidian-git:refreshed", () => {
                 this.refreshCommitTimestamp().catch(console.error);
             })
         );

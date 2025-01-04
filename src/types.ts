@@ -208,9 +208,6 @@ export interface FileStatusResult {
 export interface PluginState {
     offlineMode: boolean;
     gitAction: CurrentGitAction;
-    /* Currently refreshing the cached status
-     */
-    loading: boolean;
 }
 
 export enum CurrentGitAction {
@@ -330,25 +327,52 @@ declare module "obsidian" {
         inlineTitleEl: HTMLElement;
     }
     interface Workspace {
+        /**
+         * Emitted when some git action has been completed and plugin has been refreshed
+         */
+        on(
+            name: "obsidian-git:refreshed",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+        /**
+         * Emitted when some git action has been completed and the plugin should refresh
+         */
         on(
             name: "obsidian-git:refresh",
             callback: () => void,
             ctx?: unknown
         ): EventRef;
+        /**
+         * Emitted when the plugin is currently loading a new cached status.
+         */
         on(
-            name: "obsidian-git:view-refresh",
+            name: "obsidian-git:loading-status",
             callback: () => void,
             ctx?: unknown
         ): EventRef;
+        /**
+         * Emitted when the HEAD changed.
+         */
         on(
             name: "obsidian-git:head-change",
             callback: () => void,
             ctx?: unknown
         ): EventRef;
+        /**
+         * Emitted when a new cached status is available.
+         */
+        on(
+            name: "obsidian-git:status-changed",
+            callback: (status: Status) => void,
+            ctx?: unknown
+        ): EventRef;
 
         trigger(name: string, ...data: unknown[]): void;
+        trigger(name: "obsidian-git:refreshed"): void;
         trigger(name: "obsidian-git:refresh"): void;
-        trigger(name: "obsidian-git:view-refresh"): void;
+        trigger(name: "obsidian-git:loading-status"): void;
         trigger(name: "obsidian-git:head-change"): void;
+        trigger(name: "obsidian-git:status-changed", status: Status): void;
     }
 }

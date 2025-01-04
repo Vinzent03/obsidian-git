@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Platform, setIcon, type EventRef } from "obsidian";
+    import { Platform, setIcon } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import type ObsidianGit from "src/main";
     import type {
@@ -9,7 +9,6 @@
     } from "src/types";
     import { CurrentGitAction, FileType } from "src/types";
     import { arrayProxyWithNewLength, getDisplayPath } from "src/utils";
-    import { onDestroy } from "svelte";
     import { slide } from "svelte/transition";
     import { DiscardModal } from "../modals/discardModal";
     import FileComponent from "./components/fileComponent.svelte";
@@ -36,19 +35,50 @@
     let changesOpen = $state(true);
     let stagedOpen = $state(true);
     let lastPulledFilesOpen = $state(true);
+    let unPushedCommits = $state(0);
 
     let showTree = $state(plugin.settings.treeStructure);
-    let refreshRef: EventRef;
-    refreshRef = view.app.workspace.on(
-        "obsidian-git:view-refresh",
-        () => void refresh().catch(console.error)
+    view.registerEvent(
+        view.app.workspace.on(
+            "obsidian-git:loading-status",
+            () => (loading = true)
+        )
     );
-    refresh().catch(console.error);
+    view.registerEvent(
+        view.app.workspace.on(
+            "obsidian-git:status-changed",
+            () => void refresh().catch(console.error)
+        )
+    );
+    if (view.plugin.cachedStatus == undefined) {
+        view.plugin.refresh().catch(console.error);
+    } else {
+        refresh().catch(console.error);
+    }
     $effect(() => {
         buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
     });
-    onDestroy(() => {
-        view.app.workspace.offref(refreshRef);
+
+    $effect(() => {
+        // highlight push button if there are unpushed commits
+        buttons.forEach((btn) => {
+            // when reloading the view from settings change, the btn are null at first
+            if (!btn || btn.id != "push") return;
+            if (Platform.isMobile) {
+                btn.removeClass("button-border");
+                if (unPushedCommits > 0) {
+                    btn.addClass("button-border");
+                }
+            } else {
+                btn.firstElementChild?.removeAttribute("color");
+                if (unPushedCommits > 0) {
+                    btn.firstElementChild?.setAttr(
+                        "color",
+                        "var(--text-accent)"
+                    );
+                }
+            }
+        });
     });
 
     async function commit() {
@@ -89,29 +119,10 @@
             status = undefined;
             return;
         }
-        const unPushedCommits = await plugin.gitManager.getUnpushedCommits();
-
-        // highlight push button if there are unpushed commits
-        buttons.forEach((btn) => {
-            // when reloading the view from settings change, the btn are null at first
-            if (!btn) return;
-            if (Platform.isMobile) {
-                btn.removeClass("button-border");
-                if (btn.id == "push" && unPushedCommits > 0) {
-                    btn.addClass("button-border");
-                }
-            } else {
-                btn.firstElementChild?.removeAttribute("color");
-                if (btn.id == "push" && unPushedCommits > 0) {
-                    btn.firstElementChild?.setAttr(
-                        "color",
-                        "var(--text-accent)"
-                    );
-                }
-            }
-        });
+        unPushedCommits = await plugin.gitManager.getUnpushedCommits();
 
         status = plugin.cachedStatus;
+        loading = false;
         if (
             plugin.lastPulledFiles &&
             plugin.lastPulledFiles != lastPulledFiles
@@ -150,7 +161,6 @@
             changeHierarchy = undefined;
             stagedHierarchy = undefined;
         }
-        loading = plugin.loading;
     }
 
     function triggerRefresh() {

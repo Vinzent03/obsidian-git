@@ -26,7 +26,7 @@
         }
     });
     refreshRef = view.app.workspace.on(
-        "obsidian-git:view-refresh",
+        "obsidian-git:head-change",
         () => void refresh().catch(console.error)
     );
     refresh().catch(console.error);

@@ -39,16 +39,7 @@ export default class SplitDiffView extends ItemView {
         super(leaf);
         this.navigation = true;
         this.registerEvent(
-            this.app.workspace.on("obsidian-git:refresh", () => {
-                if (!this.mergeView) {
-                    this.createMergeView().catch(console.error);
-                } else {
-                    this.updateRefEditors().catch(console.error);
-                }
-            })
-        );
-        this.registerEvent(
-            this.app.workspace.on("obsidian-git:head-change", () => {
+            this.app.workspace.on("obsidian-git:status-changed", () => {
                 if (!this.mergeView) {
                     this.createMergeView().catch(console.error);
                 } else {
