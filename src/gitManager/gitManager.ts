@@ -88,7 +88,8 @@ export abstract class GitManager {
     abstract log(
         file: string | undefined,
         relativeToVault?: boolean,
-        limit?: number
+        limit?: number,
+        ref?: string
     ): Promise<LogEntry[]>;
 
     abstract getRemoteBranches(remote: string): Promise<string[]>;

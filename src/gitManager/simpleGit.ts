@@ -708,20 +708,25 @@ export class SimpleGit extends GitManager {
     async log(
         file: string | undefined,
         relativeToVault = true,
-        limit?: number
+        limit?: number,
+        ref?: string
     ): Promise<(LogEntry & { fileName?: string })[]> {
         let path: string | undefined;
         if (file) {
             path = this.getRelativeRepoPath(file, relativeToVault);
         }
-        const res = await this.git.log({
+        const opts: Record<string, unknown> = {
             file: path,
             maxCount: limit,
             // Ensures that the changed files are listed for merge commits as well and the commit is not repeated for each parent.
             // This only lists the changed files for the first parent.
             "--diff-merges": "first-parent",
             "--name-status": null,
-        });
+        };
+        if (ref) {
+            opts[ref] = null;
+        }
+        const res = await this.git.log(opts);
 
         return res.all.map<LogEntry>((e) => ({
             ...e,

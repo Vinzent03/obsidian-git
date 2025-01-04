@@ -53,9 +53,9 @@ import SplitDiffView from "./ui/diff/splitDiffView";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
-    automaticsManager: AutomaticsManager;
+    automaticsManager = new AutomaticsManager(this);
     tools = new Tools(this);
-    localStorage: LocalStorageSettings;
+    localStorage = new LocalStorageSettings(this);
     settings: ObsidianGitSettings;
     settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
@@ -137,8 +137,6 @@ export default class ObsidianGit extends Plugin {
         );
 
         pluginRef.plugin = this;
-
-        this.localStorage = new LocalStorageSettings(this);
 
         this.localStorage.migrate();
         await this.loadSettings();
@@ -521,13 +519,14 @@ export default class ObsidianGit extends Plugin {
                     this.lineAuthoringFeature.conditionallyActivateBySettings();
 
                     this.app.workspace.trigger("obsidian-git:refresh");
+                    /// Among other things, this notifies the history view that git is ready
+                    this.app.workspace.trigger("obsidian-git:head-change");
 
                     if (!fromReload && this.settings.autoPullOnBoot) {
                         this.promiseQueue.addTask(() =>
                             this.pullChangesFromRemote()
                         );
                     }
-                    this.automaticsManager = new AutomaticsManager(this);
                     await this.automaticsManager.init();
                     break;
                 default:

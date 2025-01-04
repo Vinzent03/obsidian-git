@@ -768,9 +768,14 @@ export class IsomorphicGit extends GitManager {
         ).filter((item) => item.remote == remote)[0]?.url;
     }
 
-    async log(_?: string, __ = true, limit?: number): Promise<LogEntry[]> {
+    async log(
+        _?: string,
+        __ = true,
+        limit?: number,
+        ref?: string
+    ): Promise<LogEntry[]> {
         const logs = await this.wrapFS(
-            git.log({ ...this.getRepo(), depth: limit })
+            git.log({ ...this.getRepo(), depth: limit, ref: ref })
         );
 
         return Promise.all(

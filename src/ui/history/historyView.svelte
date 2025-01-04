@@ -3,7 +3,7 @@
     import { SimpleGit } from "src/gitManager/simpleGit";
     import type ObsidianGit from "src/main";
     import type { LogEntry } from "src/types";
-    import { onDestroy } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import LogComponent from "./components/logComponent.svelte";
     import type HistoryView from "./historyView";
 
@@ -20,25 +20,46 @@
     let refreshRef: EventRef;
 
     let layoutBtn: HTMLElement | undefined = $state();
+
     $effect(() => {
         if (layoutBtn) {
             layoutBtn.empty();
         }
     });
+
     refreshRef = view.app.workspace.on(
         "obsidian-git:head-change",
         () => void refresh().catch(console.error)
     );
-    refresh().catch(console.error);
+
     $effect(() => {
         buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
     });
+
     onDestroy(() => {
         view.app.workspace.offref(refreshRef);
     });
 
+    onMount(() => {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !loading) {
+                appendLogs().catch(console.error);
+            }
+        });
+        const sentinel = document.querySelector("#sentinel");
+        if (sentinel) {
+            observer.observe(sentinel);
+        }
+
+        return () => {
+            observer.disconnect();
+        };
+    });
+
+    refresh().catch(console.error);
+
     function triggerRefresh() {
-        view.app.workspace.trigger("obsidian-git:refresh");
+        refresh().catch(console.error);
     }
 
     async function refresh() {
@@ -48,11 +69,32 @@
         }
         loading = true;
         const isSimpleGit = plugin.gitManager instanceof SimpleGit;
-        logs = await plugin.gitManager.log(
+        let limit;
+        if ((logs?.length ?? 0) == 0) {
+            limit = isSimpleGit ? 50 : 10;
+        } else {
+            limit = logs!.length;
+        }
+        logs = await plugin.gitManager.log(undefined, false, limit);
+        loading = false;
+    }
+
+    async function appendLogs() {
+        if (!plugin.gitReady || logs === undefined) {
+            return;
+        }
+        loading = true;
+        const isSimpleGit = plugin.gitManager instanceof SimpleGit;
+        const limit = isSimpleGit ? 50 : 10;
+        const newLogs = await plugin.gitManager.log(
             undefined,
             false,
-            isSimpleGit ? 50 : 10
+            limit,
+            logs.last()?.hash
         );
+        // Remove the first element of the new logs, as it is the same as the last element of the current logs.
+        // And don't use hash^ as it fails for the first commit.
+        logs.push(...newLogs.slice(1));
         loading = false;
     }
 </script>
@@ -97,6 +139,9 @@
             </div>
         {/if}
     </div>
+    <div id="sentinel"></div>
+    <!-- Ensure that the sentinel item is reachable with the overlaying status bar and indicate that the end of the list is reached  -->
+    <div style="margin-bottom:40px"></div>
 </main>
 
 <style lang="scss">
