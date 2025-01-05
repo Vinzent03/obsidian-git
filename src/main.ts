@@ -1,7 +1,9 @@
 import { Errors } from "isomorphic-git";
+import * as path from "path";
 import type { Debouncer, Menu, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import {
     debounce,
+    FileSystemAdapter,
     MarkdownView,
     normalizePath,
     Notice,
@@ -215,7 +217,13 @@ export default class ObsidianGit extends Plugin {
 
         this.registerEvent(
             this.app.workspace.on("file-menu", (menu, file, source) => {
-                this.handleFileMenu(menu, file, source);
+                this.handleFileMenu(menu, file, source, "file-manu");
+            })
+        );
+
+        this.registerEvent(
+            this.app.workspace.on("obsidian-git:menu", (menu, path, source) => {
+                this.handleFileMenu(menu, path, source, "obsidian-git:menu");
             })
         );
 
@@ -311,23 +319,31 @@ export default class ObsidianGit extends Plugin {
         );
     }
 
-    async addFileToGitignore(file: TAbstractFile): Promise<void> {
+    async addFileToGitignore(filePath: string): Promise<void> {
         await this.app.vault.adapter.append(
             this.gitManager.getRelativeVaultPath(".gitignore"),
-            "\n" + this.gitManager.getRelativeRepoPath(file.path, true)
+            "\n" + this.gitManager.getRelativeRepoPath(filePath, true)
         );
         return this.refresh();
     }
 
-    handleFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
+    handleFileMenu(
+        menu: Menu,
+        file: TAbstractFile | string,
+        source: string,
+        type: "file-manu" | "obsidian-git:menu"
+    ): void {
         if (!this.gitReady) return;
         if (!this.settings.showFileMenu) return;
         if (!file) return;
+        let filePath: string;
+        if (typeof file === "string") {
+            filePath = file;
+        } else {
+            filePath = file.path;
+        }
 
-        if (
-            this.settings.showFileMenu &&
-            source == "file-explorer-context-menu"
-        ) {
+        if (source == "file-explorer-context-menu") {
             menu.addItem((item) => {
                 item.setTitle(`Git: Stage`)
                     .setIcon("plus-circle")
@@ -339,12 +355,12 @@ export default class ObsidianGit extends Plugin {
                             } else {
                                 await this.gitManager.stageAll({
                                     dir: this.gitManager.getRelativeRepoPath(
-                                        file.path,
+                                        filePath,
                                         true
                                     ),
                                 });
                             }
-                            this.displayMessage(`Staged ${file.path}`);
+                            this.displayMessage(`Staged ${filePath}`);
                         });
                     });
             });
@@ -359,12 +375,12 @@ export default class ObsidianGit extends Plugin {
                             } else {
                                 await this.gitManager.unstageAll({
                                     dir: this.gitManager.getRelativeRepoPath(
-                                        file.path,
+                                        filePath,
                                         true
                                     ),
                                 });
                             }
-                            this.displayMessage(`Unstaged ${file.path}`);
+                            this.displayMessage(`Unstaged ${filePath}`);
                         });
                     });
             });
@@ -373,7 +389,7 @@ export default class ObsidianGit extends Plugin {
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
-                        this.addFileToGitignore(file).catch((e) =>
+                        this.addFileToGitignore(filePath).catch((e) =>
                             this.displayError(e)
                         );
                     });
@@ -386,11 +402,36 @@ export default class ObsidianGit extends Plugin {
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
-                        this.addFileToGitignore(file).catch((e) =>
+                        this.addFileToGitignore(filePath).catch((e) =>
                             this.displayError(e)
                         );
                     });
             });
+            const gitManager = this.app.vault.adapter;
+            if (
+                type === "obsidian-git:menu" &&
+                gitManager instanceof FileSystemAdapter
+            ) {
+                menu.addItem((item) => {
+                    item.setTitle("Open in default app")
+                        .setIcon("arrow-up-right")
+                        .setSection("action")
+                        .onClick((_) => {
+                            this.app.openWithDefaultApp(filePath);
+                        });
+                });
+                menu.addItem((item) => {
+                    item.setTitle("Show in system explorer")
+                        .setIcon("arrow-up-right")
+                        .setSection("action")
+                        .onClick((_) => {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                            (window as any).electron.shell.showItemInFolder(
+                                path.join(gitManager.getBasePath(), filePath)
+                            );
+                        });
+                });
+            }
         }
     }
 

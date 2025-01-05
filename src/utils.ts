@@ -44,6 +44,16 @@ export function mayTriggerFileMenu(
             const fileMenu = new Menu();
             app.workspace.trigger("file-menu", fileMenu, file, source, view);
             fileMenu.showAtPosition({ x: event.pageX, y: event.pageY });
+        } else {
+            const fileMenu = new Menu();
+            app.workspace.trigger(
+                "obsidian-git:menu",
+                fileMenu,
+                filePath,
+                source,
+                view
+            );
+            fileMenu.showAtPosition({ x: event.pageX, y: event.pageY });
         }
     }
 }

@@ -135,7 +135,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 return file !== null;
             } else {
                 plugin
-                    .addFileToGitignore(file!)
+                    .addFileToGitignore(file!.path)
                     .catch((e) => plugin.displayError(e));
             }
         },

@@ -368,11 +368,28 @@ declare module "obsidian" {
             ctx?: unknown
         ): EventRef;
 
+        on(
+            name: "obsidian-git:menu",
+            callback: (
+                menu: Menu,
+                path: string,
+                source: string,
+                leaf?: WorkspaceLeaf
+            ) => unknown,
+            ctx?: unknown
+        ): EventRef;
         trigger(name: string, ...data: unknown[]): void;
         trigger(name: "obsidian-git:refreshed"): void;
         trigger(name: "obsidian-git:refresh"): void;
         trigger(name: "obsidian-git:loading-status"): void;
         trigger(name: "obsidian-git:head-change"): void;
         trigger(name: "obsidian-git:status-changed", status: Status): void;
+        trigger(
+            name: "obsidian-git:menu",
+            menu: Menu,
+            path: string,
+            source: string,
+            leaf?: WorkspaceLeaf
+        ): void;
     }
 }
