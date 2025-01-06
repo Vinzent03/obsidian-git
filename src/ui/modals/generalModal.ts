@@ -1,4 +1,5 @@
 import { SuggestModal } from "obsidian";
+import type ObsidianGit from "src/main";
 
 export interface OptionalGeneralModalConfig {
     options?: string[];
@@ -29,38 +30,27 @@ export class GeneralModal extends SuggestModal<string> {
     ) => void;
     config: GeneralModalConfig;
 
-    constructor(config: OptionalGeneralModalConfig) {
-        super(app);
+    constructor(plugin: ObsidianGit, config: OptionalGeneralModalConfig) {
+        super(plugin.app);
         this.config = { ...generalModalConfigDefaults, ...config };
         this.setPlaceholder(this.config.placeholder);
     }
 
-    open(): Promise<string> {
-        super.open();
-
-        if (this.config.initialValue != undefined) {
-            this.inputEl.value = this.config.initialValue;
-            this.inputEl.dispatchEvent(new Event("input"));
-        }
-
+    openAndGetResult(): Promise<string> {
         return new Promise((resolve) => {
             this.resolve = resolve;
+            this.open();
+            if (this.config.initialValue != undefined) {
+                this.inputEl.value = this.config.initialValue;
+                this.inputEl.dispatchEvent(new Event("input"));
+            }
         });
     }
 
-    selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
-        if (this.resolve) {
-            let res;
-            if (this.config.allowEmpty && value === " ") res = "";
-            else if (value === "...") res = undefined;
-            else res = value;
-            this.resolve(res);
-        }
-        super.selectSuggestion(value, evt);
-    }
-
     onClose() {
-        if (this.resolve) this.resolve(undefined);
+        void new Promise((resolve) => setTimeout(resolve, 10)).then(() => {
+            if (this.resolve) this.resolve(undefined);
+        });
     }
 
     getSuggestions(query: string): string[] {
@@ -77,5 +67,13 @@ export class GeneralModal extends SuggestModal<string> {
         el.setText(value);
     }
 
-    onChooseSuggestion(item: string, evt: MouseEvent | KeyboardEvent) {}
+    onChooseSuggestion(value: string, _: MouseEvent | KeyboardEvent) {
+        if (this.resolve) {
+            let res;
+            if (this.config.allowEmpty && value === " ") res = "";
+            else if (value === "...") res = undefined;
+            else res = value;
+            this.resolve(res);
+        }
+    }
 }

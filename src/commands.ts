@@ -1,16 +1,11 @@
-import { WorkspaceLeaf, Platform, Notice } from "obsidian";
-import {
-    SOURCE_CONTROL_VIEW_CONFIG,
-    HISTORY_VIEW_CONFIG,
-    DIFF_VIEW_CONFIG,
-} from "./constants";
-import { openLineInGitHub, openHistoryInGitHub } from "./openInGitHub";
-import { PluginState } from "./types";
+import { Notice, Platform, WorkspaceLeaf } from "obsidian";
+import { HISTORY_VIEW_CONFIG, SOURCE_CONTROL_VIEW_CONFIG } from "./constants";
+import ObsidianGit from "./main";
+import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
-import { getNewLeaf } from "./utils";
-import ObsidianGit from "./main";
+import { SimpleGit } from "./gitManager/simpleGit";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -21,14 +16,14 @@ export function addCommmands(plugin: ObsidianGit) {
         callback: async () => {
             const path = plugin.gitManager.getRelativeVaultPath(".gitignore");
             if (!(await app.vault.adapter.exists(path))) {
-                app.vault.adapter.write(path, "");
+                await app.vault.adapter.write(path, "");
             }
             const content = await app.vault.adapter.read(path);
             const modal = new IgnoreModal(app, content);
-            const res = await modal.open();
+            const res = await modal.openAndGetReslt();
             if (res !== undefined) {
                 await app.vault.adapter.write(path, res);
-                plugin.refresh();
+                await plugin.refresh();
             }
         },
     });
@@ -50,7 +45,7 @@ export function addCommmands(plugin: ObsidianGit) {
             } else {
                 leaf = leafs.first()!;
             }
-            app.workspace.revealLeaf(leaf);
+            await app.workspace.revealLeaf(leaf);
         },
     });
     plugin.addCommand({
@@ -71,7 +66,7 @@ export function addCommmands(plugin: ObsidianGit) {
             } else {
                 leaf = leafs.first()!;
             }
-            app.workspace.revealLeaf(leaf);
+            await app.workspace.revealLeaf(leaf);
         },
     });
 
@@ -83,16 +78,13 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                getNewLeaf()?.setViewState({
-                    type: DIFF_VIEW_CONFIG.type,
-                    active: true,
-                    state: {
-                        staged: false,
-                        file: plugin.gitManager.getRelativeRepoPath(
-                            file!.path,
-                            true
-                        ),
-                    },
+                const filePath = plugin.gitManager.getRelativeRepoPath(
+                    file!.path,
+                    true
+                );
+                plugin.tools.openDiff({
+                    aFile: filePath,
+                    aRef: "",
                 });
             }
         },
@@ -136,13 +128,15 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "add-to-gitignore",
-        name: "Add file to gitignore",
+        name: "Add file to .gitignore",
         checkCallback: (checking) => {
             const file = app.workspace.getActiveFile();
             if (checking) {
                 return file !== null;
             } else {
-                plugin.addFileToGitignore(file!);
+                plugin
+                    .addFileToGitignore(file!.path)
+                    .catch((e) => plugin.displayError(e));
             }
         },
     });
@@ -210,7 +204,7 @@ export function addCommmands(plugin: ObsidianGit) {
     if (Platform.isDesktopApp) {
         plugin.addCommand({
             id: "commit-amend-staged-specified-message",
-            name: "Commit Amend",
+            name: "Amend staged",
             callback: () =>
                 plugin.promiseQueue.addTask(() =>
                     plugin.commit({
@@ -271,19 +265,22 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "edit-remotes",
         name: "Edit remotes",
-        callback: async () => plugin.editRemotes(),
+        callback: () =>
+            plugin.editRemotes().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
         id: "remove-remote",
         name: "Remove remote",
-        callback: async () => plugin.removeRemote(),
+        callback: () =>
+            plugin.removeRemote().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
         id: "set-upstream-branch",
         name: "Set upstream branch",
-        callback: async () => plugin.setUpstreamBranch(),
+        callback: () =>
+            plugin.setUpstreamBranch().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
@@ -294,13 +291,13 @@ export function addCommmands(plugin: ObsidianGit) {
                 `${plugin.settings.basePath}/.git`
             );
             if (repoExists) {
-                const modal = new GeneralModal({
+                const modal = new GeneralModal(plugin, {
                     options: ["NO", "YES"],
                     placeholder:
                         "Do you really want to delete the repository (.git directory)? plugin action cannot be undone.",
                     onlySelection: true,
                 });
-                const shouldDelete = (await modal.open()) === "YES";
+                const shouldDelete = (await modal.openAndGetResult()) === "YES";
                 if (shouldDelete) {
                     await app.vault.adapter.rmdir(
                         `${plugin.settings.basePath}/.git`,
@@ -310,7 +307,7 @@ export function addCommmands(plugin: ObsidianGit) {
                         "Successfully deleted repository. Reloading plugin..."
                     );
                     plugin.unloadPlugin();
-                    plugin.init();
+                    await plugin.init({ fromReload: true });
                 }
             } else {
                 new Notice("No repository found");
@@ -321,13 +318,15 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "init-repo",
         name: "Initialize a new repo",
-        callback: async () => plugin.createNewRepo(),
+        callback: () =>
+            plugin.createNewRepo().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
         id: "clone-repo",
         name: "Clone an existing remote repo",
-        callback: async () => plugin.cloneNewRepo(),
+        callback: () =>
+            plugin.cloneNewRepo().catch((e) => plugin.displayError(e)),
     });
 
     plugin.addCommand({
@@ -336,15 +335,17 @@ export function addCommmands(plugin: ObsidianGit) {
         callback: async () => {
             if (!(await plugin.isAllInitialized())) return;
 
-            const status = await plugin.gitManager.status();
-            console.log(status);
-            plugin.setState(PluginState.idle);
-            if (status.changed.length + status.staged.length > 500) {
-                plugin.displayError("Too many changes to display");
-                return;
-            }
+            try {
+                const status = await plugin.updateCachedStatus();
+                if (status.changed.length + status.staged.length > 500) {
+                    plugin.displayError("Too many changes to display");
+                    return;
+                }
 
-            new ChangedFilesModal(plugin, status.all).open();
+                new ChangedFilesModal(plugin, status.all).open();
+            } catch (e) {
+                plugin.displayError(e);
+            }
         },
     });
 
@@ -352,7 +353,7 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "switch-branch",
         name: "Switch branch",
         callback: () => {
-            plugin.switchBranch();
+            plugin.switchBranch().catch((e) => plugin.displayError(e));
         },
     });
 
@@ -360,7 +361,7 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "create-branch",
         name: "Create new branch",
         callback: () => {
-            plugin.createBranch();
+            plugin.createBranch().catch((e) => plugin.displayError(e));
         },
     });
 
@@ -368,7 +369,7 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "delete-branch",
         name: "Delete branch",
         callback: () => {
-            plugin.deleteBranch();
+            plugin.deleteBranch().catch((e) => plugin.displayError(e));
         },
     });
 
@@ -377,13 +378,13 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "CAUTION: Discard all changes",
         callback: async () => {
             if (!(await plugin.isAllInitialized())) return false;
-            const modal = new GeneralModal({
+            const modal = new GeneralModal(plugin, {
                 options: ["NO", "YES"],
                 placeholder:
                     "Do you want to discard all changes to tracked files? plugin action cannot be undone.",
                 onlySelection: true,
             });
-            const shouldDiscardAll = (await modal.open()) === "YES";
+            const shouldDiscardAll = (await modal.openAndGetResult()) === "YES";
             if (shouldDiscardAll) {
                 plugin.promiseQueue.addTask(() => plugin.discardAll());
             }
@@ -397,6 +398,22 @@ export function addCommmands(plugin: ObsidianGit) {
             plugin.settingsTab?.configureGlobalEnableStatus(
                 !plugin.settings.globalEnable
             ),
+    });
+
+    plugin.addCommand({
+        id: "raw-command",
+        name: "Raw command",
+        checkCallback: (checking) => {
+            const gitManager = plugin.gitManager;
+            if (checking) {
+                // only available on desktop
+                return gitManager instanceof SimpleGit;
+            } else {
+                plugin.tools
+                    .runRawCommand()
+                    .catch((e) => plugin.displayError(e));
+            }
+        },
     });
 
     plugin.addCommand({

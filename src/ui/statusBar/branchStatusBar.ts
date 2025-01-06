@@ -6,8 +6,8 @@ export class BranchStatusBar {
         private readonly plugin: ObsidianGit
     ) {
         this.statusBarEl.addClass("mod-clickable");
-        this.statusBarEl.onClickEvent((e) => {
-            this.plugin.switchBranch();
+        this.statusBarEl.onClickEvent((_) => {
+            this.plugin.switchBranch().catch((e) => plugin.displayError(e));
         });
     }
 
@@ -22,5 +22,9 @@ export class BranchStatusBar {
         } else {
             this.statusBarEl.empty();
         }
+    }
+
+    remove() {
+        this.statusBarEl.remove();
     }
 }

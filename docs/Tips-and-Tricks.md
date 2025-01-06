@@ -26,12 +26,12 @@ There's also the `Edit .gitignore` command that will open the file in a modal.
 
 ## Usage with Obsidian Sync
 
-A common use case for using git and Obsidian Sync is to use Sync to actually sync between all your devices and git as a form of backup and version history.
+A common use case for using git and Obsidian Sync is to use Obsidian Sync to actually sync between all your devices and Git as a form of backup and version history.
 
 ### Use Git plugin only on one device
 
-In case you are syncing your enabled plugins and their settings, the Git plugin is enabled and running even though the `.git` directory  doesn't exist or you don't want to run auto backups on that device. To fix this, you can enable the "Disable on this device" option under "Advanced" in the plugin settings. That setting is not synced to other devices.
+In case you are syncing your enabled plugins and their settings, the Git plugin is enabled and running even though the `.git` directory doesn't exist or you don't want to run automatics on that device. To fix this, you can enable the "Disable on this device" option under "Advanced" in the plugin settings. That setting is not synced to other devices.
 
 ### Use Git plugin, but not to pull your files
 
-Another use case might be that you don't want to update your files on pull, because Obsidian Sync already updated your files. You can still commit/push/backup. To accomplish this use "Other sync service" as "Sync Method" under "Backup". This only updates the HEAD to the latest commit on pull, but doesn't change your files at all.
+Another use case might be that you don't want to update your files on pull, because Obsidian Sync already updated your files. You can still commit/push/commit-and-sync. To accomplish this use "Other sync service" as "Merge strategy" under "Pull". This only updates the HEAD to the latest commit on pull, but doesn't change your files at all.

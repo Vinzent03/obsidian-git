@@ -2,6 +2,7 @@ import * as cssColorConverter from "css-color-converter";
 import deepEqual from "deep-equal";
 import type { App, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment } from "obsidian";
+import { BINARY_EXTENSIONS } from "./constants";
 
 export const worthWalking = (filepath: string, root?: string) => {
     if (filepath === "." || root == null || root.length === 0 || root === ".") {
@@ -14,7 +15,10 @@ export const worthWalking = (filepath: string, root?: string) => {
     }
 };
 
-export function getNewLeaf(event?: MouseEvent): WorkspaceLeaf | undefined {
+export function getNewLeaf(
+    app: App,
+    event?: MouseEvent
+): WorkspaceLeaf | undefined {
     let leaf: WorkspaceLeaf | undefined;
     if (event) {
         if (event.button === 0 || event.button === 1) {
@@ -40,6 +44,16 @@ export function mayTriggerFileMenu(
             const fileMenu = new Menu();
             app.workspace.trigger("file-menu", fileMenu, file, source, view);
             fileMenu.showAtPosition({ x: event.pageX, y: event.pageY });
+        } else {
+            const fileMenu = new Menu();
+            app.workspace.trigger(
+                "obsidian-git:menu",
+                fileMenu,
+                filePath,
+                source,
+                view
+            );
+            fileMenu.showAtPosition({ x: event.pageX, y: event.pageY });
         }
     }
 }
@@ -52,6 +66,7 @@ export function mayTriggerFileMenu(
  * During runtime, an error will be thrown, if executed.
  */
 export function impossibleBranch(x: never): never {
+    /* eslint-disable-next-line @typescript-eslint/restrict-plus-operands */
     throw new Error("Impossible branch: " + x);
 }
 
@@ -79,6 +94,17 @@ export function median(array: number[]): number | undefined {
 
 export function strictDeepEqual<T>(a: T, b: T): boolean {
     return deepEqual(a, b, { strict: true });
+}
+
+export function arrayProxyWithNewLength<T>(array: T[], length: number): T[] {
+    return new Proxy(array, {
+        get(target, prop) {
+            if (prop === "length") {
+                return Math.min(length, target.length);
+            }
+            return target[prop as keyof T[]];
+        },
+    });
 }
 
 export function resizeToLength(
@@ -130,4 +156,21 @@ export function getDisplayPath(path: string): string {
 export function formatMinutes(minutes: number): string {
     if (minutes === 1) return "1 minute";
     return `${minutes} minutes`;
+}
+
+export function getExtensionFromPath(path: string): string {
+    const dotIndex = path.lastIndexOf(".");
+    return path.substring(dotIndex + 1);
+}
+
+/**
+ * Decides if a file is binary based on its extension.
+ */
+export function fileIsBinary(path: string): boolean {
+    // This is the case for the most files so we can save some time
+    if (path.endsWith(".md")) return false;
+
+    const ext = getExtensionFromPath(path);
+
+    return BINARY_EXTENSIONS.includes(ext);
 }

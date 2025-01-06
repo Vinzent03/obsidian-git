@@ -1,109 +1,135 @@
 <script lang="ts">
     import { setIcon, TFile } from "obsidian";
     import { hoverPreview } from "obsidian-community-lib";
-    import { DIFF_VIEW_CONFIG } from "src/constants";
     import type { GitManager } from "src/gitManager/gitManager";
     import type { FileStatusResult } from "src/types";
     import { DiscardModal } from "src/ui/modals/discardModal";
-    import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
+    import {
+        fileIsBinary,
+        getDisplayPath,
+        getNewLeaf,
+        mayTriggerFileMenu,
+    } from "src/utils";
     import type GitView from "../sourceControl";
 
-    export let change: FileStatusResult;
-    export let view: GitView;
-    export let manager: GitManager;
-    let buttons: HTMLElement[] = [];
-    $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
+    interface Props {
+        change: FileStatusResult;
+        view: GitView;
+        manager: GitManager;
+    }
 
-    window.setTimeout(
-        () => buttons.forEach((b) => setIcon(b, b.getAttr("data-icon")!)),
-        0
+    let { change, view, manager }: Props = $props();
+    let buttons: HTMLElement[] = $state([]);
+
+    let side = $derived(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
     );
+
+    $effect(() => {
+        for (const b of buttons) if (b) setIcon(b, b.getAttr("data-icon")!);
+    });
+
+    function mainClick(event: MouseEvent) {
+        event.stopPropagation();
+        if (fileIsBinary(change.path)) {
+            open(event);
+        } else {
+            showDiff(event);
+        }
+    }
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
-        if (view.app.vault.getAbstractFileByPath(change.vault_path)) {
-            hoverPreview(event, view as any, change.vault_path);
+        if (view.app.vault.getAbstractFileByPath(change.vaultPath)) {
+            hoverPreview(event, view, change.vaultPath);
         }
     }
 
     function open(event: MouseEvent) {
-        const file = view.app.vault.getAbstractFileByPath(change.vault_path);
+        event.stopPropagation();
+        const file = view.app.vault.getAbstractFileByPath(change.vaultPath);
 
         if (file instanceof TFile) {
-            getNewLeaf(event)?.openFile(file);
+            getNewLeaf(view.app, event)
+                ?.openFile(file)
+                .catch((e) => view.plugin.displayError(e));
         }
     }
 
-    function stage() {
-        manager.stage(change.path, false).finally(() => {
-            dispatchEvent(new CustomEvent("git-refresh"));
-        });
+    function stage(event: MouseEvent) {
+        event.stopPropagation();
+        manager
+            .stage(change.path, false)
+            .catch((e) => view.plugin.displayError(e))
+            .finally(() => {
+                view.app.workspace.trigger("obsidian-git:refresh");
+            });
     }
 
     function showDiff(event: MouseEvent) {
-        getNewLeaf(event)?.setViewState({
-            type: DIFF_VIEW_CONFIG.type,
-            active: true,
-            state: {
-                file: change.path,
-                staged: false,
-            },
+        event.stopPropagation();
+        view.plugin.tools.openDiff({
+            aFile: change.path,
+            aRef: "",
+            event,
         });
     }
 
-    function discard() {
-        const deleteFile = change.working_dir == "U";
-        new DiscardModal(view.app, deleteFile, change.vault_path)
-            .myOpen()
-            .then((shouldDiscard) => {
+    function discard(event: MouseEvent) {
+        event.stopPropagation();
+        const deleteFile = change.workingDir == "U";
+        new DiscardModal(view.app, deleteFile, change.vaultPath).myOpen().then(
+            (shouldDiscard) => {
                 if (shouldDiscard === true) {
                     if (deleteFile) {
-                        view.app.vault.adapter
-                            .remove(change.vault_path)
+                        return view.app.vault.adapter
+                            .remove(change.vaultPath)
                             .finally(() => {
-                                dispatchEvent(new CustomEvent("git-refresh"));
+                                view.app.workspace.trigger(
+                                    "obsidian-git:refresh"
+                                );
                             });
                     } else {
-                        manager.discard(change.path).finally(() => {
-                            dispatchEvent(new CustomEvent("git-refresh"));
+                        return manager.discard(change.path).finally(() => {
+                            view.app.workspace.trigger("obsidian-git:refresh");
                         });
                     }
                 }
-            });
+            },
+            (e) => view.plugin.displayError(e)
+        );
     }
 </script>
 
 <!-- TODO: Fix arai-label for left sidebar and if it's too long -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<!-- svelte-ignore a11y-unknown-aria-attribute -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_unknown_aria_attribute -->
+<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 <main
-    on:mouseover={hover}
-    on:click|stopPropagation={showDiff}
-    on:auxclick|stopPropagation={(event) => {
+    onmouseover={hover}
+    onclick={mainClick}
+    onauxclick={(event) => {
+        event.stopPropagation();
         if (event.button == 2)
             mayTriggerFileMenu(
                 view.app,
                 event,
-                change.vault_path,
+                change.vaultPath,
                 view.leaf,
                 "git-source-control"
             );
-        else showDiff(event);
+        else mainClick(event);
     }}
-    on:focus
     class="tree-item nav-file"
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
-        class:is-active={view.plugin.lastDiffViewState?.file ==
-            change.vault_path &&
-            !view.plugin.lastDiffViewState?.hash &&
-            !view.plugin.lastDiffViewState?.staged}
-        data-path={change.vault_path}
+        data-path={change.vaultPath}
         data-tooltip-position={side}
-        aria-label={change.vault_path}
+        aria-label={change.vaultPath}
     >
         <!-- <div
 			data-icon="folder"
@@ -111,37 +137,37 @@
 			style="padding-right: 5px; display: flex;"
 		/> -->
         <div class="tree-item-inner nav-file-title-content">
-            {getDisplayPath(change.vault_path)}
+            {getDisplayPath(change.vaultPath)}
         </div>
         <div class="git-tools">
             <div class="buttons">
-                {#if view.app.vault.getAbstractFileByPath(change.vault_path) instanceof TFile}
+                {#if view.app.vault.getAbstractFileByPath(change.vaultPath) instanceof TFile}
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"
-                        bind:this={buttons[1]}
-                        on:auxclick|stopPropagation={open}
-                        on:click|stopPropagation={open}
+                        bind:this={buttons[0]}
+                        onauxclick={open}
+                        onclick={open}
                         class="clickable-icon"
-                    />
+                    ></div>
                 {/if}
                 <div
                     data-icon="undo"
                     aria-label="Discard"
-                    bind:this={buttons[0]}
-                    on:click|stopPropagation={discard}
+                    bind:this={buttons[1]}
+                    onclick={discard}
                     class="clickable-icon"
-                />
+                ></div>
                 <div
                     data-icon="plus"
                     aria-label="Stage"
                     bind:this={buttons[2]}
-                    on:click|stopPropagation={stage}
+                    onclick={stage}
                     class="clickable-icon"
-                />
+                ></div>
             </div>
-            <div class="type" data-type={change.working_dir}>
-                {change.working_dir}
+            <div class="type" data-type={change.workingDir}>
+                {change.workingDir}
             </div>
         </div>
     </div>

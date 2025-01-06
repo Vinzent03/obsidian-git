@@ -24,6 +24,7 @@ const context = await esbuild.context({
         "fs",
         "path",
         "moment",
+        "node:events",
         "@codemirror/autocomplete",
         "@codemirror/collab",
         "@codemirror/commands",
@@ -43,6 +44,7 @@ const context = await esbuild.context({
     treeShaking: true,
     platform: "browser",
     minify: prod,
+    conditions: [prod ? "production" : "development"], // https://www.npmjs.com/package/esm-env
     plugins: [
         esbuildSvelte({
             compilerOptions: {

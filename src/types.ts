@@ -4,12 +4,21 @@ export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
     commitDateFormat: string;
+    /**
+     * Interval to either automatically commit-and-sync or just commit
+     */
     autoSaveInterval: number;
     autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
     syncMethod: SyncMethod;
+    /**
+     * Whether to push on commit-and-sync
+     */
     disablePush: boolean;
+    /**
+     * Whether to pull on commit-and-sync
+     */
     pullBeforePush: boolean;
     disablePopups: boolean;
     disablePopupsForNoChanges: boolean;
@@ -47,6 +56,7 @@ export interface ObsidianGitSettings {
     showFileMenu: boolean;
     authorInHistoryView: ShowAuthorInHistoryView;
     dateInHistoryView: boolean;
+    diffStyle: "git_unified" | "split";
 }
 
 /**
@@ -73,6 +83,10 @@ export interface Status {
     all: FileStatusResult[];
     changed: FileStatusResult[];
     staged: FileStatusResult[];
+
+    /*
+     * Only available for `SimpleGit` gitManager
+     */
     conflicted: string[];
 }
 
@@ -180,7 +194,7 @@ export interface Blame {
  */
 export interface FileStatusResult {
     path: string;
-    vault_path: string;
+    vaultPath: string;
     from?: string;
 
     // First digit of the status code of the file, e.g. 'M' = modified.
@@ -189,17 +203,21 @@ export interface FileStatusResult {
     index: string;
     // Second digit of the status code of the file. Represents status of the working directory
     // if no merge conflicts, otherwise represents status of other side of a merge.
-    working_dir: string;
+    workingDir: string;
 }
 
-export enum PluginState {
+export interface PluginState {
+    offlineMode: boolean;
+    gitAction: CurrentGitAction;
+}
+
+export enum CurrentGitAction {
     idle,
     status,
     pull,
     add,
     commit,
     push,
-    conflicted,
 }
 
 export interface LogEntry {
@@ -222,10 +240,12 @@ export interface DiffEntry {
 
 export interface DiffFile {
     path: string;
-    vault_path: string;
+    vaultPath: string;
+    fromPath?: string;
+    fromVaultPath?: string;
     hash: string;
     status: string;
-    binary: boolean;
+    binary?: boolean;
 }
 
 export interface WalkDifference {
@@ -234,7 +254,7 @@ export interface WalkDifference {
 }
 
 export interface UnstagedFile {
-    filepath: string;
+    path: string;
     deleted: boolean;
 }
 
@@ -259,9 +279,29 @@ export type StatusRootTreeItem = RootTreeItem<FileStatusResult>;
 export type HistoryRootTreeItem = RootTreeItem<DiffFile>;
 
 export interface DiffViewState {
-    staged: boolean;
-    file: string;
-    hash?: string;
+    /**
+     * The repo relative file path for a.
+     * For diffing a renamed file, this is the old path.
+     */
+    aFile: string;
+
+    /**
+     * The git ref to specify which state of that file should be shown.
+     * An empty string refers to the index version of a file, so you have to specifically check against undefined.
+     */
+    aRef: string;
+
+    /**
+     * The repo relative file path for b.
+     */
+    bFile: string;
+
+    /**
+     * The git ref to specify which state of that file should be shown.
+     * An empty string refers to the index version of a file, so you have to specifically check against undefined.
+     * `undefined` stands for the workign tree version.
+     */
+    bRef?: string;
 }
 
 export enum FileType {
@@ -270,12 +310,87 @@ export enum FileType {
     pulled,
 }
 
+export class NoNetworkError extends Error {
+    constructor(public readonly originalError: string) {
+        super("No network connection available");
+    }
+}
+
 declare module "obsidian" {
     interface App {
         loadLocalStorage(key: string): string | null;
         saveLocalStorage(key: string, value: string | undefined): void;
+        openWithDefaultApp(path: string): void;
+        getTheme(): "obsidian" | "moonstone";
     }
     interface View {
         titleEl: HTMLElement;
+        inlineTitleEl: HTMLElement;
+    }
+    interface Workspace {
+        /**
+         * Emitted when some git action has been completed and plugin has been refreshed
+         */
+        on(
+            name: "obsidian-git:refreshed",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+        /**
+         * Emitted when some git action has been completed and the plugin should refresh
+         */
+        on(
+            name: "obsidian-git:refresh",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+        /**
+         * Emitted when the plugin is currently loading a new cached status.
+         */
+        on(
+            name: "obsidian-git:loading-status",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+        /**
+         * Emitted when the HEAD changed.
+         */
+        on(
+            name: "obsidian-git:head-change",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+        /**
+         * Emitted when a new cached status is available.
+         */
+        on(
+            name: "obsidian-git:status-changed",
+            callback: (status: Status) => void,
+            ctx?: unknown
+        ): EventRef;
+
+        on(
+            name: "obsidian-git:menu",
+            callback: (
+                menu: Menu,
+                path: string,
+                source: string,
+                leaf?: WorkspaceLeaf
+            ) => unknown,
+            ctx?: unknown
+        ): EventRef;
+        trigger(name: string, ...data: unknown[]): void;
+        trigger(name: "obsidian-git:refreshed"): void;
+        trigger(name: "obsidian-git:refresh"): void;
+        trigger(name: "obsidian-git:loading-status"): void;
+        trigger(name: "obsidian-git:head-change"): void;
+        trigger(name: "obsidian-git:status-changed", status: Status): void;
+        trigger(
+            name: "obsidian-git:menu",
+            menu: Menu,
+            path: string,
+            source: string,
+            leaf?: WorkspaceLeaf
+        ): void;
     }
 }

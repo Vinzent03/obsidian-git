@@ -2,6 +2,96 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.31.1](https://github.com/Vinzent03/obsidian-git/compare/2.31.0...2.31.1) (2025-01-04)
+
+
+### Bug Fixes
+
+* Allow commiting of files large than 100mb if handled by LFS ([#822](https://github.com/Vinzent03/obsidian-git/issues/822)) ([e67928d](https://github.com/Vinzent03/obsidian-git/commit/e67928db625a57405f0fa1711e9e031f0e89a683))
+* load more logs in history view on scroll ([a17cb55](https://github.com/Vinzent03/obsidian-git/commit/a17cb55bcffd7e0e6028c72b5b0704fb6fb3fe00)), closes [#807](https://github.com/Vinzent03/obsidian-git/issues/807)
+* more efficient too big file check ([43c70d8](https://github.com/Vinzent03/obsidian-git/commit/43c70d8c85e9471b5d859ad7026ef6e44161118c)), closes [#822](https://github.com/Vinzent03/obsidian-git/issues/822)
+
+## [2.31.0](https://github.com/denolehov/obsidian-git/compare/2.30.1...2.31.0) (2024-12-31)
+
+
+### Features
+
+* run raw git commands ([d05b99c](https://github.com/denolehov/obsidian-git/commit/d05b99ca827b630e1c96fdb2a4dc19469b0b9b81))
+* split diff view ([8c8551f](https://github.com/denolehov/obsidian-git/commit/8c8551f05a2cdbc3f389097e870718ecaf04ff0a))
+
+
+### Bug Fixes
+
+* don't open diff for binary files, just open them instead ([4c102fb](https://github.com/denolehov/obsidian-git/commit/4c102fb881764ba30a048b765926eda577c9f5f7)), closes [#801](https://github.com/denolehov/obsidian-git/issues/801)
+* important fixes for diff view ([e5509f9](https://github.com/denolehov/obsidian-git/commit/e5509f981a51638c910f5cc960737b25d77a36ab))
+* reset commit message to template ([16f0bd9](https://github.com/denolehov/obsidian-git/commit/16f0bd9fcf7a70687b529476bb4d9d5929375dbf)), closes [#828](https://github.com/denolehov/obsidian-git/issues/828)
+
+### [2.30.1](https://github.com/denolehov/obsidian-git/compare/2.30.0...2.30.1) (2024-11-28)
+
+
+### Bug Fixes
+
+* use custom git path ([5346fc8](https://github.com/denolehov/obsidian-git/commit/5346fc8995d11ef46de3277f724bca30aa208a49)), closes [#820](https://github.com/denolehov/obsidian-git/issues/820)
+
+## [2.30.0](https://github.com/denolehov/obsidian-git/compare/2.29.0...2.30.0) (2024-11-25)
+
+
+### Features
+
+* if Git is not found in PATH on windows try default location ([4301e31](https://github.com/denolehov/obsidian-git/commit/4301e31b2b66e111826e900e2d0942e0de871c74)), closes [#489](https://github.com/denolehov/obsidian-git/issues/489)
+
+
+### Bug Fixes
+
+* set SSH_AKSPASS instead of GIT_ASKPASS and better error handling ([044cd6a](https://github.com/denolehov/obsidian-git/commit/044cd6a7ace2e2f18f146b4439344190943342ae))
+
+## [2.29.0](https://github.com/denolehov/obsidian-git/compare/2.28.2...2.29.0) (2024-11-24)
+
+
+### Features
+
+* provide a GIT_ASKPASS handler via Obsidian modal ([1a788b0](https://github.com/denolehov/obsidian-git/commit/1a788b01af7cab7ad6d5a850f68a905ec680a2d2))
+
+
+### Bug Fixes
+
+* Clarification which information was not set ([#802](https://github.com/denolehov/obsidian-git/issues/802)) ([45ba119](https://github.com/denolehov/obsidian-git/commit/45ba119fff28547772c59856f2abf8700e544149))
+* create new upstream branch ([c5a95c1](https://github.com/denolehov/obsidian-git/commit/c5a95c1ac9d9a0788d3ae053e83a11dbc30e590d)), closes [#808](https://github.com/denolehov/obsidian-git/issues/808)
+* get unset config values ([e229c22](https://github.com/denolehov/obsidian-git/commit/e229c227acd21d0a1674218b2a778726c3849908))
+* Make the spelling of .gitignore consistent ([#805](https://github.com/denolehov/obsidian-git/issues/805)) ([8366927](https://github.com/denolehov/obsidian-git/commit/836692735d1cadb0023cd503573a58a14c76299e))
+* properly disable auto pull ([f8464e6](https://github.com/denolehov/obsidian-git/commit/f8464e665850c0eac301a881b40b0c74809d4478)), closes [#816](https://github.com/denolehov/obsidian-git/issues/816)
+
+### [2.28.2](https://github.com/denolehov/obsidian-git/compare/2.28.1...2.28.2) (2024-10-30)
+
+
+### Bug Fixes
+
+* duplicated history view ([ec0668d](https://github.com/denolehov/obsidian-git/commit/ec0668d6a69e9907aa8174976e3030f8c289be90)), closes [#800](https://github.com/denolehov/obsidian-git/issues/800)
+
+### [2.28.1](https://github.com/denolehov/obsidian-git/compare/2.28.0...2.28.1) (2024-10-27)
+
+
+### Bug Fixes
+
+* open general modal ([2a0bbd1](https://github.com/denolehov/obsidian-git/commit/2a0bbd13aaff41bf08386133441b4681983538a2)), closes [#798](https://github.com/denolehov/obsidian-git/issues/798)
+
+## [2.28.0](https://github.com/denolehov/obsidian-git/compare/2.27.0...2.28.0) (2024-10-26)
+
+
+### Features
+
+* pull on commit-and-sync even if no commit happened ([263e675](https://github.com/denolehov/obsidian-git/commit/263e675ead38fba8a7d5a5f3349830477817ca25)), closes [#787](https://github.com/denolehov/obsidian-git/issues/787)
+* reload settings on file change ([d453c6f](https://github.com/denolehov/obsidian-git/commit/d453c6fe85143b6afcd672e3fd65ef7851dd9ae3)), closes [#779](https://github.com/denolehov/obsidian-git/issues/779)
+
+
+### Bug Fixes
+
+* recognize more errors as network issues ([4aceed3](https://github.com/denolehov/obsidian-git/commit/4aceed30c5b349431f7a5ed21c4d3b4bdabb88e7)), closes [#735](https://github.com/denolehov/obsidian-git/issues/735)
+* refresh status after opening source control view ([666b8a8](https://github.com/denolehov/obsidian-git/commit/666b8a8f263ce49a3d02dbfb040aa774cce95db2))
+* rework errors ([ee3eff4](https://github.com/denolehov/obsidian-git/commit/ee3eff46e0d98999e6ab312971392adc008d4f6e))
+* strip files list after 500 entries in source control view ([fe1aedb](https://github.com/denolehov/obsidian-git/commit/fe1aedb0a12d4e0b5d4a81821a8d08c1417dd6b8))
+* typo in settings ([1e6c3dd](https://github.com/denolehov/obsidian-git/commit/1e6c3dddae7f5cd3b8393f36817fba94ed3cd12d))
+
 ## [2.27.0](https://github.com/denolehov/obsidian-git/compare/2.26.0...2.27.0) (2024-09-18)
 
 

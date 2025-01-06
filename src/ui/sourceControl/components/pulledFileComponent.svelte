@@ -5,56 +5,67 @@
     import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
     import type GitView from "../sourceControl";
 
-    export let change: FileStatusResult;
-    export let view: GitView;
-    $: side = (view.leaf.getRoot() as any).side == "left" ? "right" : "left";
+    interface Props {
+        change: FileStatusResult;
+        view: GitView;
+    }
+
+    let { change, view }: Props = $props();
+    let side = $derived(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
+    );
 
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
-        if (app.vault.getAbstractFileByPath(change.vault_path)) {
-            hoverPreview(event, view as any, change.vault_path);
+        if (view.app.vault.getAbstractFileByPath(change.vaultPath)) {
+            hoverPreview(event, view, change.vaultPath);
         }
     }
 
     function open(event: MouseEvent) {
-        const file = view.app.vault.getAbstractFileByPath(change.vault_path);
+        event.stopPropagation();
+        const file = view.app.vault.getAbstractFileByPath(change.vaultPath);
         if (file instanceof TFile) {
-            getNewLeaf(event)?.openFile(file);
+            getNewLeaf(view.app, event)
+                ?.openFile(file)
+                .catch((e) => view.plugin.displayError(e));
         }
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 <main
-    on:mouseover={hover}
-    on:click|stopPropagation={open}
-    on:auxclick|stopPropagation={(event) => {
+    onmouseover={hover}
+    onclick={open}
+    onauxclick={(event) => {
+        event.stopPropagation();
         if (event.button == 2)
             mayTriggerFileMenu(
                 view.app,
                 event,
-                change.vault_path,
+                change.vaultPath,
                 view.leaf,
                 "git-source-control"
             );
         else open(event);
     }}
-    on:focus
     class="tree-item nav-file"
 >
     <div
         class="tree-item-self is-clickable nav-file-title"
-        data-path={change.vault_path}
+        data-path={change.vaultPath}
         data-tooltip-position={side}
-        aria-label={change.vault_path}
+        aria-label={change.vaultPath}
     >
         <div class="tree-item-inner nav-file-title-content">
-            {getDisplayPath(change.vault_path)}
+            {getDisplayPath(change.vaultPath)}
         </div>
         <div class="git-tools">
-            <span class="type" data-type={change.working_dir}
-                >{change.working_dir}</span
+            <span class="type" data-type={change.workingDir}
+                >{change.workingDir}</span
             >
         </div>
     </div>

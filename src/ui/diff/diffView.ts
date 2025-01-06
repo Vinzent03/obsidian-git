@@ -1,5 +1,5 @@
 import { html } from "diff2html";
-import type { ViewStateResult, WorkspaceLeaf } from "obsidian";
+import type { EventRef, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { ItemView, Platform } from "obsidian";
 import { DIFF_VIEW_CONFIG } from "src/constants";
 import { SimpleGit } from "src/gitManager/simpleGit";
@@ -10,8 +10,8 @@ export default class DiffView extends ItemView {
     parser: DOMParser;
     gettingDiff = false;
     state: DiffViewState;
-    gitRefreshBind = this.refresh.bind(this);
-    gitViewRefreshBind = this.refresh.bind(this);
+    gitRefreshRef: EventRef;
+    gitViewRefreshRef: EventRef;
 
     constructor(
         leaf: WorkspaceLeaf,
@@ -20,8 +20,12 @@ export default class DiffView extends ItemView {
         super(leaf);
         this.parser = new DOMParser();
         this.navigation = true;
-        addEventListener("git-refresh", this.gitRefreshBind);
-        addEventListener("git-view-refresh", this.gitViewRefreshBind);
+        this.gitRefreshRef = this.app.workspace.on(
+            "obsidian-git:status-changed",
+            () => {
+                this.refresh().catch(console.error);
+            }
+        );
     }
 
     getViewType(): string {
@@ -29,11 +33,11 @@ export default class DiffView extends ItemView {
     }
 
     getDisplayText(): string {
-        if (this.state?.file != null) {
-            let fileName = this.state.file.split("/").last();
+        if (this.state?.bFile != null) {
+            let fileName = this.state.bFile.split("/").last();
             if (fileName?.endsWith(".md")) fileName = fileName.slice(0, -3);
 
-            return DIFF_VIEW_CONFIG.name + ` (${fileName})`;
+            return `Diff: ${fileName}`;
         }
         return DIFF_VIEW_CONFIG.name;
     }
@@ -42,7 +46,7 @@ export default class DiffView extends ItemView {
         return DIFF_VIEW_CONFIG.icon;
     }
 
-    async setState(state: any, result: ViewStateResult): Promise<void> {
+    async setState(state: DiffViewState, _: ViewStateResult): Promise<void> {
         this.state = state;
 
         if (Platform.isMobile) {
@@ -53,53 +57,53 @@ export default class DiffView extends ItemView {
         await this.refresh();
     }
 
-    getState() {
-        return this.state;
+    getState(): Record<string, unknown> {
+        return this.state as unknown as Record<string, unknown>;
     }
 
     onClose(): Promise<void> {
-        removeEventListener("git-refresh", this.gitRefreshBind);
-        removeEventListener("git-view-refresh", this.gitViewRefreshBind);
+        this.app.workspace.offref(this.gitRefreshRef);
+        this.app.workspace.offref(this.gitViewRefreshRef);
         return super.onClose();
     }
 
-    onOpen(): Promise<void> {
-        this.refresh();
+    async onOpen(): Promise<void> {
+        await this.refresh();
         return super.onOpen();
     }
 
     async refresh(): Promise<void> {
-        if (this.state?.file && !this.gettingDiff && this.plugin.gitManager) {
+        if (this.state?.bFile && !this.gettingDiff && this.plugin.gitManager) {
             this.gettingDiff = true;
             try {
                 let diff = await this.plugin.gitManager.getDiffString(
-                    this.state.file,
-                    this.state.staged,
-                    this.state.hash
+                    this.state.bFile,
+                    this.state.aRef == "HEAD",
+                    this.state.bRef
                 );
                 this.contentEl.empty();
 
                 const vaultPath = this.plugin.gitManager.getRelativeVaultPath(
-                    this.state.file
+                    this.state.bFile
                 );
                 if (!diff) {
                     if (
                         this.plugin.gitManager instanceof SimpleGit &&
                         (await this.plugin.gitManager.isTracked(
-                            this.state.file
+                            this.state.bFile
                         ))
                     ) {
                         // File is tracked but no changes
                         diff = [
-                            `--- ${this.state.file}`,
-                            `+++ ${this.state.file}`,
+                            `--- ${this.state.aFile}`,
+                            `+++ ${this.state.bFile}`,
                             "",
                         ].join("\n");
                     } else if (await this.app.vault.adapter.exists(vaultPath)) {
                         const content =
                             await this.app.vault.adapter.read(vaultPath);
                         const header = `--- /dev/null
-+++ ${this.state.file}
++++ ${this.state.bFile}
 @@ -0,0 +1,${content.split("\n").length} @@`;
 
                         diff = [
@@ -124,7 +128,7 @@ export default class DiffView extends ItemView {
                     });
                     div.createEl("br");
                     div.createSpan({
-                        text: "File not found: " + this.state.file,
+                        text: "File not found: " + this.state.bFile,
                     });
                 }
             } finally {

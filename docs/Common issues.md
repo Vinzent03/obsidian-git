@@ -30,8 +30,22 @@ Run `chmod 600 ~/.ssh/config` in the terminal.
 
 Since the plugin uses the native git installation, I can assure you that if the `.gitignore` file is properly written and git is correctly used, everything should work.
 
-It's important to note that once a file is committed (or staged) changing the `.gitignroe` doesn't help. You have to delete the file from your repo manually to ignore the file properly:
+It's important to note that once a file is committed (or staged) changing the `.gitignore` doesn't help. You have to delete the file from your repo manually to ignore the file properly:
 1. Run `git rm --cached <file>` in your terminal. The file will stay on your file system. It's just deleted in your repo.
 2. The file should be listed as deleted in `git status`
 3. Commit the deletion
 4. Now any changes to the file are properly ignored.
+
+## Cannot run gpg
+
+```
+Error: error: cannot run gpg: No such file or directory
+error: gpg failed to sign the data
+fatal: failed to write commit object
+```
+
+See [[Integration with other tools#GPG Signing]] on how to solve this.
+
+## This repository is configured for Git LFS but 'git-lfs' was not found on your path.
+
+See [[Integration with other tools#Git Large File Storage]] on how to solve this.

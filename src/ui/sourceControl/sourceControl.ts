@@ -3,10 +3,11 @@ import { ItemView } from "obsidian";
 import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
 import type ObsidianGit from "src/main";
 import SourceControlViewComponent from "./sourceControl.svelte";
+import { mount, unmount } from "svelte";
 
 export default class GitView extends ItemView implements HoverParent {
     plugin: ObsidianGit;
-    private _view: SourceControlViewComponent;
+    private _view: Record<string, unknown> | undefined;
     hoverPopover: HoverPopover | null;
 
     constructor(leaf: WorkspaceLeaf, plugin: ObsidianGit) {
@@ -28,17 +29,29 @@ export default class GitView extends ItemView implements HoverParent {
     }
 
     onClose(): Promise<void> {
+        if (this._view) {
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            unmount(this._view);
+        }
         return super.onClose();
     }
 
-    onOpen(): Promise<void> {
-        this._view = new SourceControlViewComponent({
+    reload(): void {
+        if (this._view) {
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            unmount(this._view);
+        }
+        this._view = mount(SourceControlViewComponent, {
             target: this.contentEl,
             props: {
                 plugin: this.plugin,
                 view: this,
             },
         });
+    }
+
+    onOpen(): Promise<void> {
+        this.reload();
         return super.onOpen();
     }
 }

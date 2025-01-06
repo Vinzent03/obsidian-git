@@ -1,4 +1,4 @@
-import type { App } from "obsidian";
+import { type App, moment } from "obsidian";
 import type ObsidianGit from "../main";
 import type {
     BranchInfo,
@@ -75,7 +75,7 @@ export abstract class GitManager {
         value: string | number | boolean | undefined
     ): Promise<void>;
 
-    abstract getConfig(path: string): Promise<any>;
+    abstract getConfig(path: string): Promise<string | undefined>;
 
     abstract fetch(remote?: string): Promise<void>;
 
@@ -88,7 +88,8 @@ export abstract class GitManager {
     abstract log(
         file: string | undefined,
         relativeToVault?: boolean,
-        limit?: number
+        limit?: number,
+        ref?: string
     ): Promise<LogEntry[]>;
 
     abstract getRemoteBranches(remote: string): Promise<string[]>;
@@ -97,9 +98,9 @@ export abstract class GitManager {
 
     abstract updateUpstreamBranch(remoteBranch: string): Promise<void>;
 
-    abstract updateGitPath(gitPath: string): void;
+    abstract updateGitPath(gitPath: string): Promise<void>;
 
-    abstract updateBasePath(basePath: string): void;
+    abstract updateBasePath(basePath: string): Promise<void>;
 
     abstract getDiffString(
         filePath: string,
@@ -135,6 +136,8 @@ export abstract class GitManager {
         }
         return filePath;
     }
+
+    unload(): void {}
 
     private _getTreeStructure<T = DiffFile | FileStatusResult>(
         children: (T & { path: string })[],
@@ -281,7 +284,6 @@ export abstract class GitManager {
             template = template.replace("{{files}}", files);
         }
 
-        const moment = (window as any).moment;
         template = template.replace(
             "{{date}}",
             moment().format(this.plugin.settings.commitDateFormat)
