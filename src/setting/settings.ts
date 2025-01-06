@@ -75,7 +75,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         )
                         .onChange((value) => {
                             plugin.settings.globalEnable = value;
-                            // figure out how to enable/disable plugin logic/where to insert the boolean configured above
                             plugin.saveSettings();
                             plugin.automaticsManager.reload("commit", "push");
                             this.display();
@@ -866,9 +865,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (toggle) new Notice(`Commit-routine enabled.`);
         else new Notice(`Commit-routine disabled.`)
         this.plugin.automaticsManager.reload("commit", "push");
-
-        // if (show) this.plugin.lineAuthoringFeature.activateFeature();
-        // else this.plugin.lineAuthoringFeature.deactivateFeature();
     }
 
     /**
