@@ -394,10 +394,17 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "toggle-git-global-enable",
         name: "Toggle global git enable state",
-        callback: () =>
-            plugin.settingsTab?.configuretemporaryDisableAutomaticsStatus(
-                !plugin.settings.temporaryDisableAutomatics
-            ),
+        callback: () => {
+            plugin.settings.temporaryDisableAutomatics = !plugin.settings.temporaryDisableAutomatics // invert settings bool
+            const _state = plugin.settings.temporaryDisableAutomatics
+            if (_state) { // state set true => reenable automatics
+                plugin.automaticsManager.reload("commit", "push", "pull")
+                new Notice(`Enabled automatic routines.`)
+            } else { // false => unload automatic routines
+                plugin.automaticsManager.unload()
+                new Notice(`Disabled automatic routines.`)
+            }
+        }
     });
 
     plugin.addCommand({
