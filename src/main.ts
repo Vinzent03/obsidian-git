@@ -785,7 +785,6 @@ export default class ObsidianGit extends Plugin {
         amend?: boolean;
     }): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
-        if (!(this.settings.temporaryDisableAutomatics)) return false; // if temporaryDisableAutomatics-checkbox is disabled, return without committing
 
         try {
             let hadConflict = this.localStorage.getConflict();
