@@ -71,10 +71,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .addToggle((toggle) =>
                     toggle
                         .setValue(
-                            plugin.settings.globalEnable
+                            plugin.settings.temporaryDisableAutomatics
                         )
                         .onChange((value) => {
-                            plugin.settings.globalEnable = value;
+                            plugin.settings.temporaryDisableAutomatics = value;
                             plugin.saveSettings();
                             plugin.automaticsManager.reload("commit", "push");
                             this.display();
@@ -894,8 +894,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (show) this.plugin.lineAuthoringFeature.activateFeature();
         else this.plugin.lineAuthoringFeature.deactivateFeature();
     }
-    public configureGlobalEnableStatus(toggle: boolean) {
-        this.settings.globalEnable = toggle;
+    public configuretemporaryDisableAutomaticsStatus(toggle: boolean) {
+        this.settings.temporaryDisableAutomatics = toggle;
         this.plugin.saveSettings();
         if (toggle) new Notice(`Commit-routine enabled.`);
         else new Notice(`Commit-routine disabled.`)

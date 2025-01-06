@@ -37,7 +37,7 @@ export interface ObsidianGitSettings {
      * @deprecated Using `localstorage` instead
      */
     username?: string;
-    globalEnable: boolean;
+    temporaryDisableAutomatics: boolean;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;
 
