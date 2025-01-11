@@ -878,13 +878,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (show) this.plugin.lineAuthoringFeature.activateFeature();
         else this.plugin.lineAuthoringFeature.deactivateFeature();
     }
-    public configuretemporaryDisableAutomaticsStatus(toggle: boolean) {
-        this.settings.temporaryDisableAutomatics = toggle;
-        this.plugin.saveSettings();
-        if (toggle) new Notice(`Commit-routine enabled.`);
-        else new Notice(`Commit-routine disabled.`)
-        this.plugin.automaticsManager.reload("commit", "push");
-    }
 
     /**
      * Persists the setting {@link key} with value {@link value} and

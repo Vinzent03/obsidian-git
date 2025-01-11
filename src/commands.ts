@@ -392,19 +392,19 @@ export function addCommmands(plugin: ObsidianGit) {
     });
 
     plugin.addCommand({
-        id: "toggle-git-global-enable",
-        name: "Toggle global git enable state",
+        id: "pause-automatic-routines",
+        name: "Pause/Resume automatic routines",
         callback: () => {
-            plugin.settings.temporaryDisableAutomatics = !plugin.settings.temporaryDisableAutomatics // invert settings bool
-            const _state = plugin.settings.temporaryDisableAutomatics
-            if (_state) { // state set true => reenable automatics
-                plugin.automaticsManager.reload("commit", "push", "pull")
-                new Notice(`Enabled automatic routines.`)
-            } else { // false => unload automatic routines
-                plugin.automaticsManager.unload()
-                new Notice(`Disabled automatic routines.`)
+            const pause = !plugin.state.pausedAutomatics;
+            plugin.setPluginState({ pausedAutomatics: pause });
+            if (pause) {
+                plugin.automaticsManager.unload();
+                new Notice(`Paused automatic routines.`);
+            } else {
+                plugin.automaticsManager.reload("commit", "push", "pull");
+                new Notice(`Resumed automatic routines.`);
             }
-        }
+        },
     });
 
     plugin.addCommand({
@@ -426,7 +426,6 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "toggle-line-author-info",
         name: "Toggle line author information",
-
         callback: () =>
             plugin.settingsTab?.configureLineAuthorShowStatus(
                 !plugin.settings.lineAuthor.show

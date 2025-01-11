@@ -65,6 +65,7 @@ export default class ObsidianGit extends Plugin {
     state: PluginState = {
         gitAction: CurrentGitAction.idle,
         offlineMode: false,
+        pausedAutomatics: false,
     };
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
@@ -785,7 +786,6 @@ export default class ObsidianGit extends Plugin {
         amend?: boolean;
     }): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
-
         try {
             let hadConflict = this.localStorage.getConflict();
 
