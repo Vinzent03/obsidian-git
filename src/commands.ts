@@ -46,6 +46,10 @@ export function addCommmands(plugin: ObsidianGit) {
                 leaf = leafs.first()!;
             }
             await app.workspace.revealLeaf(leaf);
+
+            // Is not needed for the first open, but allows to refresh the view
+            // per hotkey even if already opened
+            app.workspace.trigger("obsidian-git:refresh");
         },
     });
     plugin.addCommand({
@@ -67,6 +71,10 @@ export function addCommmands(plugin: ObsidianGit) {
                 leaf = leafs.first()!;
             }
             await app.workspace.revealLeaf(leaf);
+
+            // Is not needed for the first open, but allows to refresh the view
+            // per hotkey even if already opened
+            app.workspace.trigger("obsidian-git:refresh");
         },
     });
 
