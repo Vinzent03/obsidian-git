@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.32.0](https://github.com/waysonwong/obsidian-git/compare/2.31.1...2.32.0) (2025-01-31)
+
+
+### Features
+
+* show a mini file menu for hidden files from source control ([d2991cc](https://github.com/waysonwong/obsidian-git/commit/d2991ccedcd59c56e685c2c776159f236bad8331)), closes [#766](https://github.com/waysonwong/obsidian-git/issues/766)
+
 ### [2.31.1](https://github.com/Vinzent03/obsidian-git/compare/2.31.0...2.31.1) (2025-01-04)
 
 
