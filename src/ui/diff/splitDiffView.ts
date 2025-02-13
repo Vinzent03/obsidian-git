@@ -173,8 +173,13 @@ export default class SplitDiffView extends ItemView {
                 if (
                     error.message.includes("does not exist") ||
                     error.message.includes("unknown revision or path") ||
-                    error.message.includes("exists on disk, but not in")
+                    error.message.includes("exists on disk, but not in") ||
+                    error.message.includes("fatal: bad object")
                 ) {
+                    // Occurs when trying to run diff with an object that's actually a nested respository
+                    if (error.message.includes("fatal: bad object")) {
+                        this.plugin.displayError(error.message);
+                    }
                     // If the file does not exist in the commit, return an empty string
                     return "";
                 }
