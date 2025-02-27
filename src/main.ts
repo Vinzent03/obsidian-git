@@ -65,6 +65,7 @@ export default class ObsidianGit extends Plugin {
     state: PluginState = {
         gitAction: CurrentGitAction.idle,
         offlineMode: false,
+        pausedAutomatics: false,
     };
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
