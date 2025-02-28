@@ -28,30 +28,45 @@ export default class Tools {
         if (remoteUrl?.includes("github.com")) {
             const tooBigFiles = [];
 
+            const gitManager = this.plugin.gitManager;
             for (const f of files) {
                 const file = this.plugin.app.vault.getAbstractFileByPath(
                     f.vaultPath
                 );
+                let over100mb = false;
+
                 if (file instanceof TFile) {
+                    // Prefer the cached file size if available
                     if (file.stat.size >= 100000000) {
-                        const gitManager = this.plugin.gitManager;
-                        let isFileTrackedByLfs = false;
-                        if (gitManager instanceof SimpleGit) {
-                            isFileTrackedByLfs =
-                                await gitManager.isFileTrackedByLFS(f.path);
-                        }
-                        if (!isFileTrackedByLfs) {
-                            tooBigFiles.push(f);
-                        }
+                        over100mb = true;
+                    }
+                } else {
+                    const statRes = await this.plugin.app.vault.adapter.stat(
+                        f.vaultPath
+                    );
+                    if (statRes && statRes.size >= 100000000) {
+                        over100mb = true;
+                    }
+                }
+                if (over100mb) {
+                    let isFileTrackedByLfs = false;
+                    if (gitManager instanceof SimpleGit) {
+                        isFileTrackedByLfs =
+                            await gitManager.isFileTrackedByLFS(f.path);
+                    }
+                    if (!isFileTrackedByLfs) {
+                        tooBigFiles.push(f);
                     }
                 }
             }
 
             if (tooBigFiles.length > 0) {
                 this.plugin.displayError(
-                    `Did not commit, because following files are too big: ${tooBigFiles
+                    `Aborted commit, because the following files are too big:\n- ${tooBigFiles
                         .map((e) => e.vaultPath)
-                        .join("\n")}. Please remove them.`
+                        .join(
+                            "\n- "
+                        )}\nPlease remove them or add to .gitignore.`
                 );
 
                 return true;
