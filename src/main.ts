@@ -49,7 +49,7 @@ import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
-import { splitRemoteBranch } from "./utils";
+import { formatRemoteUrl, splitRemoteBranch } from "./utils";
 import Tools from "./tools";
 import SplitDiffView from "./ui/diff/splitDiffView";
 
@@ -671,7 +671,11 @@ export default class ObsidianGit extends Plugin {
                 this.settings.basePath = dir;
             }
             try {
-                await this.gitManager.clone(url, dir, depthInt);
+                await this.gitManager.clone(
+                    formatRemoteUrl(url),
+                    dir,
+                    depthInt
+                );
                 new Notice("Cloned new repo.");
                 new Notice("Please restart Obsidian");
 
@@ -1246,7 +1250,10 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             // urlModal.inputEl.setText(oldUrl ?? "");
             const remoteURL = await urlModal.openAndGetResult();
             if (remoteURL) {
-                await this.gitManager.setRemote(remoteName, remoteURL);
+                await this.gitManager.setRemote(
+                    remoteName,
+                    formatRemoteUrl(remoteURL)
+                );
                 return remoteName;
             }
         }

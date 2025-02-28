@@ -174,3 +174,15 @@ export function fileIsBinary(path: string): boolean {
 
     return BINARY_EXTENSIONS.includes(ext);
 }
+
+export function formatRemoteUrl(url: string): string {
+    if (
+        url.startsWith("https://github.com/") ||
+        url.startsWith("https://gitlab.com/")
+    ) {
+        if (!url.endsWith(".git")) {
+            url = url + ".git";
+        }
+    }
+    return url;
+}
