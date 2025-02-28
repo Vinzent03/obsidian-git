@@ -2,9 +2,9 @@ import { debounce } from "obsidian";
 import type ObsidianGit from "./main";
 
 export default class AutomaticsManager {
-    timeoutIDCommitAndSync?: number;
-    timeoutIDPush?: number;
-    timeoutIDPull?: number;
+    private timeoutIDCommitAndSync?: number;
+    private timeoutIDPush?: number;
+    private timeoutIDPull?: number;
 
     constructor(private readonly plugin: ObsidianGit) {}
 
@@ -147,15 +147,19 @@ export default class AutomaticsManager {
 
     // this.plugin is used for both auto commit-and-sync and commit only
     private doAutoCommitAndSync(): void {
-        this.plugin.promiseQueue.addTask(() => {
-            if (this.plugin.settings.differentIntervalCommitAndPush) {
-                return this.plugin.commit({ fromAuto: true });
-            } else {
-                return this.plugin.commitAndSync(true);
+        this.plugin.promiseQueue.addTask(
+            () => {
+                if (this.plugin.settings.differentIntervalCommitAndPush) {
+                    return this.plugin.commit({ fromAuto: true });
+                } else {
+                    return this.plugin.commitAndSync(true);
+                }
+            },
+            () => {
+                this.saveLastAuto(new Date(), "backup");
+                this.startAutoCommitAndSync();
             }
-        });
-        this.saveLastAuto(new Date(), "backup");
-        this.startAutoCommitAndSync();
+        );
     }
 
     private startAutoPull(minutes?: number) {
@@ -163,13 +167,17 @@ export default class AutomaticsManager {
         // max timeout in js
         if (time > 2147483647) time = 2147483647;
 
-        this.timeoutIDPull = window.setTimeout(() => {
-            this.plugin.promiseQueue.addTask(() =>
-                this.plugin.pullChangesFromRemote()
-            );
-            this.saveLastAuto(new Date(), "pull");
-            this.startAutoPull();
-        }, time);
+        this.timeoutIDPull = window.setTimeout(() => this.doAutoPull(), time);
+    }
+
+    private doAutoPull(): void {
+        this.plugin.promiseQueue.addTask(
+            () => this.plugin.pullChangesFromRemote(),
+            () => {
+                this.saveLastAuto(new Date(), "pull");
+                this.startAutoPull();
+            }
+        );
     }
 
     private startAutoPush(minutes?: number) {
@@ -177,11 +185,17 @@ export default class AutomaticsManager {
         // max timeout in js
         if (time > 2147483647) time = 2147483647;
 
-        this.timeoutIDPush = window.setTimeout(() => {
-            this.plugin.promiseQueue.addTask(() => this.plugin.push());
-            this.saveLastAuto(new Date(), "push");
-            this.startAutoPush();
-        }, time);
+        this.timeoutIDPush = window.setTimeout(() => this.doAutoPush(), time);
+    }
+
+    private doAutoPush(): void {
+        this.plugin.promiseQueue.addTask(
+            () => this.plugin.push(),
+            () => {
+                this.saveLastAuto(new Date(), "push");
+                this.startAutoPush();
+            }
+        );
     }
 
     private clearAutoCommitAndSync(): boolean {
