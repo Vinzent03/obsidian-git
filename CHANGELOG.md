@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.32.0](https://github.com/Vinzent03/obsidian-git/compare/2.31.1...2.32.0) (2025-03-05)
+
+
+### Features
+
+* append .git to https remote url if not present ([2aca7c8](https://github.com/Vinzent03/obsidian-git/commit/2aca7c85b40792f619c511206375f224ece5ab27)), closes [#867](https://github.com/Vinzent03/obsidian-git/issues/867)
+* show a mini file menu for hidden files from source control ([d2991cc](https://github.com/Vinzent03/obsidian-git/commit/d2991ccedcd59c56e685c2c776159f236bad8331)), closes [#766](https://github.com/Vinzent03/obsidian-git/issues/766)
+
+
+### Bug Fixes
+
+* check file size for non Obsidian files as well ([0754fd8](https://github.com/Vinzent03/obsidian-git/commit/0754fd87ba5e947096466c3a63890da12e0159ca)), closes [#859](https://github.com/Vinzent03/obsidian-git/issues/859)
+* refresh already opened views on open command ([fbb62ad](https://github.com/Vinzent03/obsidian-git/commit/fbb62ad0cece4dbf36518616312a29463c39227c)), closes [#838](https://github.com/Vinzent03/obsidian-git/issues/838)
+* schedule new automatic after it finishes ([15416cb](https://github.com/Vinzent03/obsidian-git/commit/15416cb57ce126f8cd47cc8446bab77dd751815a)), closes [#851](https://github.com/Vinzent03/obsidian-git/issues/851)
+
 ### [2.31.1](https://github.com/Vinzent03/obsidian-git/compare/2.31.0...2.31.1) (2025-01-04)
 
 
