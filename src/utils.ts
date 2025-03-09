@@ -150,7 +150,7 @@ export function splitRemoteBranch(
 
 export function getDisplayPath(path: string): string {
     if (path.endsWith("/")) return path;
-    return path.split("/").last()!.replace(".md", "");
+    return path.split("/").last()!.replace(/\.md$/, "");
 }
 
 export function formatMinutes(minutes: number): string {
