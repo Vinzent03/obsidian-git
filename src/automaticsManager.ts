@@ -95,6 +95,14 @@ export default class AutomaticsManager {
         }
     }
 
+    /**
+     * Starts the debouncer and timer with the correct remaining time.
+     *
+     * Additionally, if `setLastSaveToLastCommit` is enabled, the last auto commit-and-sync
+     * is set to the last commit time.
+     *
+     * Should be called when the latest commit time is changed. E.g. after a commit or pull.
+     */
     async setUpAutoCommitAndSync() {
         if (this.plugin.settings.setLastSaveToLastCommit) {
             this.clearAutoCommitAndSync();
