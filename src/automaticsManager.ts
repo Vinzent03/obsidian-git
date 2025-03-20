@@ -70,6 +70,8 @@ export default class AutomaticsManager {
      * Should only be used when settings are changed.
      */
     reload(...type: ("commit" | "push" | "pull")[]) {
+        if (this.plugin.state.pausedAutomatics) return;
+
         if (type.contains("commit")) {
             this.clearAutoCommitAndSync();
             if (this.plugin.settings.autoSaveInterval > 0) {
@@ -104,6 +106,8 @@ export default class AutomaticsManager {
      * Should be called when the latest commit time is changed. E.g. after a commit or pull.
      */
     async setUpAutoCommitAndSync() {
+        // If the setting is enabled, set the last auto backup to the
+        // last commit in localstorage
         if (this.plugin.settings.setLastSaveToLastCommit) {
             this.clearAutoCommitAndSync();
             const lastCommitDate =
@@ -115,7 +119,11 @@ export default class AutomaticsManager {
             }
         }
 
-        if (!this.timeoutIDCommitAndSync && !this.plugin.autoCommitDebouncer) {
+        if (
+            !this.plugin.state.pausedAutomatics &&
+            !this.timeoutIDCommitAndSync &&
+            !this.plugin.autoCommitDebouncer
+        ) {
             const lastAutos = this.loadLastAuto();
 
             if (this.plugin.settings.autoSaveInterval > 0) {
