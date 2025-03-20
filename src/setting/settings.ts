@@ -93,34 +93,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             : "Commit and sync"
                     } changes every X minutes. Set to 0 (default) to disable. (See below setting for further configuration!)`
                 )
-                .addText((text) =>
-                    text
-                        .setValue(String(plugin.settings.autoSaveInterval))
-                        .onChange(async (value) => {
-                            if (!isNaN(Number(value))) {
-                                plugin.settings.autoSaveInterval =
-                                    Number(value);
-                                await plugin.saveSettings();
-
-                                plugin.automaticsManager.reload("commit");
-                                if (plugin.settings.autoSaveInterval > 0) {
-                                    new Notice(
-                                        `Automatic ${commitOrSync} enabled! Every ${formatMinutes(
-                                            plugin.settings.autoSaveInterval
-                                        )}.`
-                                    );
-                                } else if (
-                                    plugin.settings.autoSaveInterval <= 0
-                                ) {
-                                    new Notice(
-                                        `Automatic ${commitOrSync} disabled!`
-                                    );
-                                }
-                            } else {
-                                new Notice("Please specify a valid number.");
-                            }
-                        })
-                );
+                .addText((text) => {
+                    text.inputEl.type = "number";
+                    text.setValue(String(plugin.settings.autoSaveInterval));
+                    text.setPlaceholder(
+                        String(DEFAULT_SETTINGS.autoSaveInterval)
+                    );
+                    text.onChange(async (value) => {
+                        plugin.settings.autoSaveInterval = Number(value);
+                        await plugin.saveSettings();
+                        plugin.automaticsManager.reload("commit");
+                    });
+                });
 
             setting = new Setting(containerEl)
                 .setName(`Auto ${commitOrSync} after stopping file edits`)
@@ -171,32 +155,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setDesc(
                     "Push commits every X minutes. Set to 0 (default) to disable."
                 )
-                .addText((text) =>
-                    text
-                        .setValue(String(plugin.settings.autoPushInterval))
-                        .onChange(async (value) => {
-                            if (!isNaN(Number(value))) {
-                                plugin.settings.autoPushInterval =
-                                    Number(value);
-                                await plugin.saveSettings();
-
-                                plugin.automaticsManager.reload("push");
-                                if (plugin.settings.autoPushInterval > 0) {
-                                    new Notice(
-                                        `Automatic push enabled! Every ${formatMinutes(
-                                            plugin.settings.autoPushInterval
-                                        )}.`
-                                    );
-                                } else if (
-                                    plugin.settings.autoPushInterval <= 0
-                                ) {
-                                    new Notice("Automatic push disabled!");
-                                }
-                            } else {
-                                new Notice("Please specify a valid number.");
-                            }
-                        })
-                );
+                .addText((text) => {
+                    text.inputEl.type = "number";
+                    text.setValue(String(plugin.settings.autoPushInterval));
+                    text.setPlaceholder(
+                        String(DEFAULT_SETTINGS.autoPushInterval)
+                    );
+                    text.onChange(async (value) => {
+                        plugin.settings.autoPushInterval = Number(value);
+                        await plugin.saveSettings();
+                        plugin.automaticsManager.reload("push");
+                    });
+                });
             this.mayDisableSetting(
                 setting,
                 !plugin.settings.differentIntervalCommitAndPush
@@ -207,32 +177,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setDesc(
                     "Pull changes every X minutes. Set to 0 (default) to disable."
                 )
-                .addText((text) =>
-                    text
-                        .setValue(String(plugin.settings.autoPullInterval))
-                        .onChange(async (value) => {
-                            if (!isNaN(Number(value))) {
-                                plugin.settings.autoPullInterval =
-                                    Number(value);
-                                await plugin.saveSettings();
-
-                                plugin.automaticsManager.reload("pull");
-                                if (plugin.settings.autoPullInterval > 0) {
-                                    new Notice(
-                                        `Automatic pull enabled! Every ${formatMinutes(
-                                            plugin.settings.autoPullInterval
-                                        )}.`
-                                    );
-                                } else if (
-                                    plugin.settings.autoPullInterval <= 0
-                                ) {
-                                    new Notice("Automatic pull disabled!");
-                                }
-                            } else {
-                                new Notice("Please specify a valid number.");
-                            }
-                        })
-                );
+                .addText((text) => {
+                    text.inputEl.type = "number";
+                    text.setValue(String(plugin.settings.autoPullInterval));
+                    text.setPlaceholder(
+                        String(DEFAULT_SETTINGS.autoPullInterval)
+                    );
+                    text.onChange(async (value) => {
+                        plugin.settings.autoPullInterval = Number(value);
+                        await plugin.saveSettings();
+                        plugin.automaticsManager.reload("pull");
+                    });
+                });
 
             new Setting(containerEl)
                 .setName(
@@ -479,21 +435,23 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             .setDesc(
                 "Milliseconds to wait after file change before refreshing the Source Control View."
             )
-            .addText((toggle) =>
-                toggle
-                    .setValue(
-                        plugin.settings.refreshSourceControlTimer.toString()
-                    )
-                    .setPlaceholder("7000")
-                    .onChange(async (value) => {
-                        plugin.settings.refreshSourceControlTimer = Math.max(
-                            parseInt(value),
-                            500
-                        );
-                        await plugin.saveSettings();
-                        plugin.setRefreshDebouncer();
-                    })
-            );
+            .addText((text) => {
+                text.inputEl.type = "number";
+                text.setValue(
+                    String(plugin.settings.refreshSourceControlTimer)
+                );
+                text.setPlaceholder(
+                    String(DEFAULT_SETTINGS.refreshSourceControlTimer)
+                );
+                text.onChange(async (value) => {
+                    plugin.settings.refreshSourceControlTimer = Math.max(
+                        Number(value),
+                        500
+                    );
+                    await plugin.saveSettings();
+                    plugin.setRefreshDebouncer();
+                });
+            });
         new Setting(containerEl).setName("Miscellaneous").setHeading();
 
         if (plugin.gitManager instanceof SimpleGit) {
