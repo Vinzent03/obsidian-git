@@ -706,7 +706,6 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.isAllInitialized())) return;
 
         const filesUpdated = await this.pull();
-        await this.automaticsManager.setUpAutoCommitAndSync();
         if (filesUpdated === false) {
             return;
         }
@@ -909,7 +908,6 @@ export default class ObsidianGit extends Plugin {
                     roughly = true;
                     committedFiles = changedFiles.length;
                 }
-                await this.automaticsManager.setUpAutoCommitAndSync();
                 this.displayMessage(
                     `Committed${roughly ? " approx." : ""} ${committedFiles} ${
                         committedFiles == 1 ? "file" : "files"

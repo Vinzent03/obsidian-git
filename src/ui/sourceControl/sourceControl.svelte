@@ -91,10 +91,7 @@
             plugin.promiseQueue.addTask(() =>
                 plugin.gitManager
                     .commit({ message: commitMessage })
-                    .then(async () => {
-                        commitMessage = plugin.settings.commitMessage;
-                        await plugin.automaticsManager.setUpAutoCommitAndSync();
-                    })
+                    .then(() => (commitMessage = plugin.settings.commitMessage))
                     .finally(triggerRefresh)
             );
         }
