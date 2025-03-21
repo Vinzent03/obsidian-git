@@ -196,7 +196,7 @@ export function fileOpenableInObsidian(
         return false;
     }
     try {
-        // @ts-ignore (Internal Obsidian API function)
+        // @ts-expect-error (Internal Obsidian API function)
         return !!app.viewRegistry.getTypeByExtension(file.extension);
     } catch {
         // If the function doesn't exist anymore, it will throw an error. In that case, just skip the check.
