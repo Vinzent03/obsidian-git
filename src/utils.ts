@@ -197,10 +197,8 @@ export function fileOpenableInObsidian(
     }
     try {
         // Internal Obsidian API function
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const viewRegistry = (app as any).viewRegistry;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        return !!viewRegistry.getTypeByExtension(file.extension);
+        // @ts-expect-error, eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        return !!app.viewRegistry.getTypeByExtension(file.extension);
     } catch {
         // If the function doesn't exist anymore, it will throw an error. In that case, just skip the check.
         return true;
