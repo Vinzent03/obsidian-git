@@ -574,3 +574,11 @@
 .git-split-diff-view .cm-insertedLine .cm-changedText {
     background-color: #22bb2230;
 }
+
+/* Limits the scrollbar to the view body */
+.git-view {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: 100%;
+}

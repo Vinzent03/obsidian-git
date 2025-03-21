@@ -224,7 +224,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<main data-type={SOURCE_CONTROL_VIEW_CONFIG.type}>
+<main data-type={SOURCE_CONTROL_VIEW_CONFIG.type} class="git-view">
     <div class="nav-header">
         <div class="nav-buttons-container">
             <div
@@ -294,7 +294,6 @@
                 class:loading
                 data-icon="refresh-cw"
                 aria-label="Refresh"
-                style="margin: 1px;"
                 bind:this={buttons[7]}
                 onclick={triggerRefresh}
             ></div>
