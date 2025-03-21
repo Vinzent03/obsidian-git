@@ -3,6 +3,7 @@
     import type { DiffFile } from "src/types";
     import {
         fileIsBinary,
+        fileOpenableInObsidian,
         getDisplayPath,
         getNewLeaf,
         mayTriggerFileMenu,
@@ -87,7 +88,7 @@
         </div>
         <div class="git-tools">
             <div class="buttons">
-                {#if view.app.vault.getAbstractFileByPath(diff.vaultPath) instanceof TFile}
+                {#if fileOpenableInObsidian(diff.vaultPath, view.app)}
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"

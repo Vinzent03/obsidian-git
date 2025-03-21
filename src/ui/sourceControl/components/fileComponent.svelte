@@ -6,6 +6,7 @@
     import { DiscardModal } from "src/ui/modals/discardModal";
     import {
         fileIsBinary,
+        fileOpenableInObsidian,
         getDisplayPath,
         getNewLeaf,
         mayTriggerFileMenu,
@@ -141,7 +142,7 @@
         </div>
         <div class="git-tools">
             <div class="buttons">
-                {#if view.app.vault.getAbstractFileByPath(change.vaultPath) instanceof TFile}
+                {#if fileOpenableInObsidian(change.vaultPath, view.app)}
                     <div
                         data-icon="go-to-file"
                         aria-label="Open File"
