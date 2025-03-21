@@ -137,10 +137,10 @@
                 {/each}
             </div>
         {/if}
-    <div id="sentinel"></div>
-    <!-- Ensure that the sentinel item is reachable with the overlaying status bar and indicate that the end of the list is reached  -->
-    <div style="margin-bottom:40px"></div>
-</div>
+        <div id="sentinel"></div>
+        <!-- Ensure that the sentinel item is reachable with the overlaying status bar and indicate that the end of the list is reached  -->
+        <div style="margin-bottom:40px"></div>
+    </div>
 </main>
 
 <style lang="scss">
