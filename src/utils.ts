@@ -1,7 +1,7 @@
 import * as cssColorConverter from "css-color-converter";
 import deepEqual from "deep-equal";
 import type { App, RGB, WorkspaceLeaf } from "obsidian";
-import { Keymap, Menu, moment } from "obsidian";
+import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
 
 export const worthWalking = (filepath: string, root?: string) => {
@@ -185,4 +185,24 @@ export function formatRemoteUrl(url: string): string {
         }
     }
     return url;
+}
+
+export function fileOpenableInObsidian(
+    relativeVaultPath: string,
+    app: App
+): boolean {
+    const file = app.vault.getAbstractFileByPath(relativeVaultPath);
+    if (!(file instanceof TFile)) {
+        return false;
+    }
+    try {
+        // Internal Obsidian API function
+        // If a view type is registired for the file extension, it can be opened in Obsidian.
+        // Just checking if Obsidian tracks the file is not enough,
+        // because it can also track files, it can only open externally.
+        return !!app.viewRegistry.getTypeByExtension(file.extension);
+    } catch {
+        // If the function doesn't exist anymore, it will throw an error. In that case, just skip the check.
+        return true;
+    }
 }
