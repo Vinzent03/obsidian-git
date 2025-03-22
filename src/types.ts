@@ -321,10 +321,19 @@ declare module "obsidian" {
         saveLocalStorage(key: string, value: string | undefined): void;
         openWithDefaultApp(path: string): void;
         getTheme(): "obsidian" | "moonstone";
+        viewRegistry: ViewRegistry;
     }
     interface View {
         titleEl: HTMLElement;
         inlineTitleEl: HTMLElement;
+    }
+    interface ViewRegistry {
+        /**
+         * PRIVATE API
+         *
+         * Returns the view type for the given extension if available.
+         */
+        getTypeByExtension(extension: string): string;
     }
     interface Workspace {
         /**

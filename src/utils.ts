@@ -197,7 +197,9 @@ export function fileOpenableInObsidian(
     }
     try {
         // Internal Obsidian API function
-        // @ts-expect-error, eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        // If a view type is registired for the file extension, it can be opened in Obsidian.
+        // Just checking if Obsidian tracks the file is not enough,
+        // because it can also track files, it can only open externally.
         return !!app.viewRegistry.getTypeByExtension(file.extension);
     } catch {
         // If the function doesn't exist anymore, it will throw an error. In that case, just skip the check.
