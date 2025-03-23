@@ -197,6 +197,7 @@ export class SimpleGit extends GitManager {
                 }
                 const response = await new GeneralModal(this.plugin, {
                     allowEmpty: true,
+                    obscure: true,
                     placeholder:
                         data.length > 60
                             ? "Enter a response to the message."

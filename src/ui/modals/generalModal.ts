@@ -7,6 +7,7 @@ export interface OptionalGeneralModalConfig {
     allowEmpty?: boolean;
     onlySelection?: boolean;
     initialValue?: string;
+    obscure?: boolean;
 }
 interface GeneralModalConfig {
     options: string[];
@@ -14,6 +15,7 @@ interface GeneralModalConfig {
     allowEmpty: boolean;
     onlySelection: boolean;
     initialValue?: string;
+    obscure: boolean;
 }
 
 const generalModalConfigDefaults: GeneralModalConfig = {
@@ -22,6 +24,7 @@ const generalModalConfigDefaults: GeneralModalConfig = {
     allowEmpty: false,
     onlySelection: false,
     initialValue: undefined,
+    obscure: false,
 };
 
 export class GeneralModal extends SuggestModal<string> {
@@ -34,6 +37,29 @@ export class GeneralModal extends SuggestModal<string> {
         super(plugin.app);
         this.config = { ...generalModalConfigDefaults, ...config };
         this.setPlaceholder(this.config.placeholder);
+        if (this.config.obscure) {
+            this.inputEl.type = "password";
+            const promptContainer = this.containerEl.querySelector(
+                ".prompt-input-container"
+            )!;
+            promptContainer.addClass("git-obscure-prompt");
+            promptContainer.setAttr("git-is-obscured", "true");
+            const obscureSwitchButton = promptContainer?.createDiv({
+                cls: "search-input-clear-button",
+            });
+            obscureSwitchButton.style.marginRight = "32px";
+            obscureSwitchButton.id = "git-show-password";
+            obscureSwitchButton.addEventListener("click", () => {
+                const isObscured = promptContainer.getAttr("git-is-obscured");
+                if (isObscured === "true") {
+                    this.inputEl.type = "text";
+                    promptContainer.setAttr("git-is-obscured", "false");
+                } else {
+                    this.inputEl.type = "password";
+                    promptContainer.setAttr("git-is-obscured", "true");
+                }
+            });
+        }
     }
 
     openAndGetResult(): Promise<string> {
@@ -64,7 +90,11 @@ export class GeneralModal extends SuggestModal<string> {
     }
 
     renderSuggestion(value: string, el: HTMLElement): void {
-        el.setText(value);
+        if (this.config.obscure) {
+            el.hide();
+        } else {
+            el.setText(value);
+        }
     }
 
     onChooseSuggestion(value: string, _: MouseEvent | KeyboardEvent) {
