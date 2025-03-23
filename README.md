@@ -25,7 +25,7 @@ This view allows you to stage, unstage individual files and commit them. It also
 
 ### History View
 
-This view shows the commit history of your repository. You can see the commit message, author, date, and changed files. Author and date can are disabled by default as shown in the screenshot, but can be enabled in the settings.
+This view shows the commit history of your repository. You can see the commit message, author, date, and changed files. Author and date are disabled by default as shown in the screenshot, but can be enabled in the settings.
 
 ![History View](https://raw.githubusercontent.com/Vinzent03/obsidian-git/master/images/history-view.png)
 
