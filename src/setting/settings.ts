@@ -1,5 +1,12 @@
 import type { App, RGB, TextComponent } from "obsidian";
-import { moment, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
+import {
+    moment,
+    Notice,
+    Platform,
+    PluginSettingTab,
+    Setting,
+    TextAreaComponent,
+} from "obsidian";
 import {
     DATE_TIME_FORMAT_SECONDS,
     DEFAULT_SETTINGS,
@@ -236,15 +243,23 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     "Available placeholders: {{date}}" +
                         " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)."
                 )
-                .addTextArea((text) =>
-                    text
-                        .setPlaceholder("vault backup: {{date}}")
+                .addTextArea((text) => {
+                    text.setPlaceholder(DEFAULT_SETTINGS.autoCommitMessage)
                         .setValue(plugin.settings.autoCommitMessage)
                         .onChange(async (value) => {
-                            plugin.settings.autoCommitMessage = value;
+                            if (value === "") {
+                                plugin.settings.autoCommitMessage =
+                                    DEFAULT_SETTINGS.autoCommitMessage;
+                            } else {
+                                plugin.settings.autoCommitMessage = value;
+                            }
                             await plugin.saveSettings();
-                        })
-                );
+                        });
+                    this.setNonDefaultValue({
+                        text,
+                        settingsProperty: "autoCommitMessage",
+                    });
+                });
             this.mayDisableSetting(
                 setting,
                 plugin.settings.customMessageOnAutoBackup
@@ -258,19 +273,23 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     "Available placeholders: {{date}}" +
                         " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)."
                 )
-                .addTextArea((text) =>
-                    text
-                        .setPlaceholder("vault backup: {{date}}")
-                        .setValue(
-                            plugin.settings.commitMessage
-                                ? plugin.settings.commitMessage
-                                : ""
-                        )
-                        .onChange(async (value) => {
+                .addTextArea((text) => {
+                    text.setPlaceholder(
+                        DEFAULT_SETTINGS.commitMessage
+                    ).onChange(async (value) => {
+                        if (value === "") {
+                            plugin.settings.commitMessage =
+                                DEFAULT_SETTINGS.commitMessage;
+                        } else {
                             plugin.settings.commitMessage = value;
-                            await plugin.saveSettings();
-                        })
-                );
+                        }
+                        await plugin.saveSettings();
+                    });
+                    this.setNonDefaultValue({
+                        text,
+                        settingsProperty: "commitMessage",
+                    });
+                });
 
             const datePlaceholderSetting = new Setting(containerEl)
                 .setName("{{date}} placeholder format")
@@ -1240,8 +1259,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         settingsProperty,
         text,
     }: {
-        settingsProperty: keyof Omit<ObsidianGitSettings, "autoCommitMessage">;
-        text: TextComponent;
+        settingsProperty: keyof ObsidianGitSettings;
+        text: TextComponent | TextAreaComponent;
     }): void {
         const storedValue = this.plugin.settings[settingsProperty];
         const defaultValue = DEFAULT_SETTINGS[settingsProperty];
