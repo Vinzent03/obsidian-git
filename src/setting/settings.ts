@@ -244,17 +244,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)."
                 )
                 .addTextArea((text) => {
-                    text.setPlaceholder(DEFAULT_SETTINGS.autoCommitMessage)
-                        .setValue(plugin.settings.autoCommitMessage)
-                        .onChange(async (value) => {
-                            if (value === "") {
-                                plugin.settings.autoCommitMessage =
-                                    DEFAULT_SETTINGS.autoCommitMessage;
-                            } else {
-                                plugin.settings.autoCommitMessage = value;
-                            }
-                            await plugin.saveSettings();
-                        });
+                    text.setPlaceholder(
+                        DEFAULT_SETTINGS.autoCommitMessage
+                    ).onChange(async (value) => {
+                        if (value === "") {
+                            plugin.settings.autoCommitMessage =
+                                DEFAULT_SETTINGS.autoCommitMessage;
+                        } else {
+                            plugin.settings.autoCommitMessage = value;
+                        }
+                        await plugin.saveSettings();
+                    });
                     this.setNonDefaultValue({
                         text,
                         settingsProperty: "autoCommitMessage",
