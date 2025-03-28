@@ -1,5 +1,4 @@
 import { Errors } from "isomorphic-git";
-import * as path from "path";
 import type { Debouncer, Menu, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import {
     debounce,
@@ -10,7 +9,9 @@ import {
     Platform,
     Plugin,
     TFile,
+    TFolder,
 } from "obsidian";
+import * as path from "path";
 import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
 import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
@@ -24,13 +25,14 @@ import {
     DEFAULT_SETTINGS,
     DIFF_VIEW_CONFIG,
     HISTORY_VIEW_CONFIG,
-    SPLIT_DIFF_VIEW_CONFIG,
     SOURCE_CONTROL_VIEW_CONFIG,
+    SPLIT_DIFF_VIEW_CONFIG,
 } from "./constants";
 import type { GitManager } from "./gitManager/gitManager";
 import { IsomorphicGit } from "./gitManager/isomorphicGit";
 import { SimpleGit } from "./gitManager/simpleGit";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
+import Tools from "./tools";
 import type {
     FileStatusResult,
     ObsidianGitSettings,
@@ -39,19 +41,22 @@ import type {
     UnstagedFile,
 } from "./types";
 import {
+    CurrentGitAction,
     mergeSettingsByPriority,
     NoNetworkError,
-    CurrentGitAction,
 } from "./types";
 import DiffView from "./ui/diff/diffView";
+import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
 import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
-import { formatRemoteUrl, splitRemoteBranch } from "./utils";
-import Tools from "./tools";
-import SplitDiffView from "./ui/diff/splitDiffView";
+import {
+    convertPathToAbsoluteGitignoreRule,
+    formatRemoteUrl,
+    splitRemoteBranch,
+} from "./utils";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -319,10 +324,22 @@ export default class ObsidianGit extends Plugin {
         );
     }
 
-    async addFileToGitignore(filePath: string): Promise<void> {
+    async addFileToGitignore(
+        filePath: string,
+        isFolder?: boolean
+    ): Promise<void> {
+        const gitRelativePath = this.gitManager.getRelativeRepoPath(
+            filePath,
+            true
+        );
+        // Define an absolute rule that can apply only for this item.
+        const gitignoreRule = convertPathToAbsoluteGitignoreRule({
+            isFolder,
+            gitRelativePath,
+        });
         await this.app.vault.adapter.append(
             this.gitManager.getRelativeVaultPath(".gitignore"),
-            "\n" + this.gitManager.getRelativeRepoPath(filePath, true)
+            "\n" + gitignoreRule
         );
         return this.refresh();
     }
@@ -389,9 +406,10 @@ export default class ObsidianGit extends Plugin {
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
-                        this.addFileToGitignore(filePath).catch((e) =>
-                            this.displayError(e)
-                        );
+                        this.addFileToGitignore(
+                            filePath,
+                            file instanceof TFolder
+                        ).catch((e) => this.displayError(e));
                     });
             });
         }
@@ -402,9 +420,10 @@ export default class ObsidianGit extends Plugin {
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
-                        this.addFileToGitignore(filePath).catch((e) =>
-                            this.displayError(e)
-                        );
+                        this.addFileToGitignore(
+                            filePath,
+                            file instanceof TFolder
+                        ).catch((e) => this.displayError(e));
                     });
             });
             const gitManager = this.app.vault.adapter;

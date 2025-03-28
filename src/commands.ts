@@ -1,11 +1,11 @@
-import { Notice, Platform, WorkspaceLeaf } from "obsidian";
+import { Notice, Platform, TFolder, WorkspaceLeaf } from "obsidian";
 import { HISTORY_VIEW_CONFIG, SOURCE_CONTROL_VIEW_CONFIG } from "./constants";
+import { SimpleGit } from "./gitManager/simpleGit";
 import ObsidianGit from "./main";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
-import { SimpleGit } from "./gitManager/simpleGit";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -143,7 +143,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 return file !== null;
             } else {
                 plugin
-                    .addFileToGitignore(file!.path)
+                    .addFileToGitignore(file!.path, file instanceof TFolder)
                     .catch((e) => plugin.displayError(e));
             }
         },
