@@ -55,7 +55,13 @@ export class TextGutter extends GutterMarker {
     }
 
     destroy(dom: HTMLElement): void {
-        if (!document.body.contains(dom)) dom.remove();
+        if (!dom) {
+            return; // sometimes, it doesn't exist anymore.
+        }
+
+        if (!document.body.contains(dom)) {
+            dom.remove();
+        }
     }
 }
 
@@ -115,10 +121,14 @@ export class LineAuthoringGutter extends GutterMarker {
     }
 
     public destroy(dom: HTMLElement): void {
+        if (!dom) {
+            return; // sometimes, it doesn't exist anymore.
+        }
+
         // this is called frequently, when the gutter moves outside of the view.
         if (!document.body.contains(dom)) {
-            dom.remove();
             attachedGutterElements.delete(dom);
+            dom.remove();
         }
     }
 
@@ -198,19 +208,19 @@ export class LineAuthoringGutter extends GutterMarker {
             this.settings.authorDisplay === "hide"
                 ? ""
                 : `${this.renderAuthorName(
-                      commit,
-                      this.settings.authorDisplay
-                  )}`;
+                    commit,
+                    this.settings.authorDisplay
+                )}`;
 
         const optionalAuthoringDate =
             this.settings.dateTimeFormatOptions === "hide"
                 ? ""
                 : `${this.renderAuthoringDate(
-                      commit,
-                      this.settings.dateTimeFormatOptions,
-                      this.settings.dateTimeFormatCustomString,
-                      this.settings.dateTimeTimezone
-                  )}`;
+                    commit,
+                    this.settings.dateTimeFormatOptions,
+                    this.settings.dateTimeFormatCustomString,
+                    this.settings.dateTimeTimezone
+                )}`;
 
         const parts = [
             optionalShortHash,
