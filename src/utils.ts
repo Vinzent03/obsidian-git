@@ -206,3 +206,28 @@ export function fileOpenableInObsidian(
         return true;
     }
 }
+
+export function convertPathToAbsoluteGitignoreRule({
+    isFolder,
+    gitRelativePath,
+}: {
+    isFolder?: boolean;
+    gitRelativePath: string;
+}): string {
+    // Add a leading slash to set the rule as absolute from root, so it only excludes that exact path
+    let composedPath = "/";
+
+    composedPath += gitRelativePath;
+
+    // Add an explicit folder rule, so that the same path doesn't also apply for files with that same name
+    if (isFolder) {
+        composedPath += "/";
+    }
+
+    // Escape special characters, so that git treats them as literal characters.
+    const escaped = composedPath.replace(/([\\!#*?[\]])/g, String.raw`\$1`);
+
+    // Then escape each trailing whitespace character individually, because git trims trailing whitespace from the end of the rule.
+    // Files normally end with a file extension, not whitespace, but a file with trailing whitespace can appear if Obsidian's "Detect all file extensions" setting is turned on.
+    return escaped.replace(/\s(?=\s*$)/g, String.raw`\ `);
+}
