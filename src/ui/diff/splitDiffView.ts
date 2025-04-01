@@ -5,6 +5,10 @@ import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
 import type { DiffViewState } from "src/types";
 
+import { history, indentWithTab, standardKeymap } from "@codemirror/commands";
+import { MergeView } from "@codemirror/merge";
+import { highlightSelectionMatches, search } from "@codemirror/search";
+import { EditorState, Transaction } from "@codemirror/state";
 import {
     drawSelection,
     EditorView,
@@ -12,10 +16,6 @@ import {
     lineNumbers,
     ViewPlugin,
 } from "@codemirror/view";
-import { EditorState, Transaction } from "@codemirror/state";
-import { MergeView } from "@codemirror/merge";
-import { history, indentWithTab, standardKeymap } from "@codemirror/commands";
-import { highlightSelectionMatches, search } from "@codemirror/search";
 import { GitError } from "simple-git";
 
 // This class is not extending `FileView', because it needs a `TFile`, which is not possible for dot files like `.gitignore`, which this editor should support as well.`
@@ -358,6 +358,10 @@ export default class SplitDiffView extends ItemView {
             this.mergeView = new MergeView({
                 b: bState,
                 a: aState,
+                collapseUnchanged: {
+                    minSize: 6,
+                    margin: 4,
+                },
                 diffConfig: {
                     scanLimit: this.bIsEditable ? 1000 : 10000, // default is 500
                 },
