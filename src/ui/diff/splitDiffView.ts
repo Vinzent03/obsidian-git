@@ -359,8 +359,8 @@ export default class SplitDiffView extends ItemView {
                 b: bState,
                 a: aState,
                 collapseUnchanged: {
-                    minSize: 5,
-                    margin: 3,
+                    minSize: 6,
+                    margin: 4,
                 },
                 diffConfig: {
                     scanLimit: this.bIsEditable ? 1000 : 10000, // default is 500
