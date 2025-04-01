@@ -208,19 +208,19 @@ export class LineAuthoringGutter extends GutterMarker {
             this.settings.authorDisplay === "hide"
                 ? ""
                 : `${this.renderAuthorName(
-                    commit,
-                    this.settings.authorDisplay
-                )}`;
+                      commit,
+                      this.settings.authorDisplay
+                  )}`;
 
         const optionalAuthoringDate =
             this.settings.dateTimeFormatOptions === "hide"
                 ? ""
                 : `${this.renderAuthoringDate(
-                    commit,
-                    this.settings.dateTimeFormatOptions,
-                    this.settings.dateTimeFormatCustomString,
-                    this.settings.dateTimeTimezone
-                )}`;
+                      commit,
+                      this.settings.dateTimeFormatOptions,
+                      this.settings.dateTimeFormatCustomString,
+                      this.settings.dateTimeTimezone
+                  )}`;
 
         const parts = [
             optionalShortHash,
