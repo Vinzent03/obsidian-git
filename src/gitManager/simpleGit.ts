@@ -241,25 +241,35 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status();
         this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
 
-        const allFilesFormatted = status.files.map<FileStatusResult>((e) => {
-            const res = this.formatPath(e);
-            return {
-                path: res.path,
-                from: res.from,
-                index: e.index === "?" ? "U" : e.index,
-                workingDir: e.working_dir === "?" ? "U" : e.working_dir,
-                vaultPath: this.getRelativeVaultPath(res.path),
-            };
-        });
+        // Filter files by tracked directory if specified
+        const trackedDir = this.plugin.settings.trackedDirectory;
+        const filterByTrackedDir = (path: string) => {
+            if (!trackedDir || trackedDir.length === 0) return true;
+            return path === trackedDir || path.startsWith(trackedDir + "/");
+        };
+
+        const allFilesFormatted = status.files
+            .filter(e => filterByTrackedDir(e.path))
+            .map<FileStatusResult>((e) => {
+                const res = this.formatPath(e);
+                return {
+                    path: res.path,
+                    from: res.from,
+                    index: e.index === "?" ? "U" : e.index,
+                    workingDir: e.working_dir === "?" ? "U" : e.working_dir,
+                    vaultPath: this.getRelativeVaultPath(res.path),
+                };
+            });
+
         return {
             all: allFilesFormatted,
             changed: allFilesFormatted.filter((e) => e.workingDir !== " "),
             staged: allFilesFormatted.filter(
                 (e) => e.index !== " " && e.index != "U"
             ),
-            conflicted: status.conflicted.map(
-                (path) => this.formatPath({ path }).path
-            ),
+            conflicted: status.conflicted
+                .filter(filterByTrackedDir)
+                .map((path) => this.formatPath({ path }).path),
         };
     }
 
@@ -409,7 +419,16 @@ export class SimpleGit extends GitManager {
         }
         this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
 
-        await this.git.add("-A");
+        // Add only files that match the tracked directory
+        if (this.plugin.settings.trackedDirectory) {
+            const trackedDir = this.plugin.settings.trackedDirectory;
+
+            // We could use git add with path to only add tracked directory
+            await this.git.add([trackedDir]);
+        } else {
+            // Add all files if no tracked directory is specified
+            await this.git.add("-A");
+        }
 
         this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
 
@@ -502,7 +521,7 @@ export class SimpleGit extends GitManager {
     }
 
     async discardAll({ dir }: { dir?: string }): Promise<void> {
-        return this.discard(dir ?? ".");
+        return this.discard(dir ?? (this.plugin.settings.trackedDirectory ? this.plugin.settings.trackedDirectory : "."));
     }
 
     async pull(): Promise<FileStatusResult[] | undefined> {
@@ -577,16 +596,23 @@ export class SimpleGit extends GitManager {
                     "--name-only",
                 ]);
 
-                return filesChanged
+                const files = filesChanged
                     .split(/\r\n|\r|\n/)
-                    .filter((value) => value.length > 0)
-                    .map((e) => {
-                        return <FileStatusResult>{
-                            path: e,
-                            workingDir: "P",
-                            vaultPath: this.getRelativeVaultPath(e),
-                        };
-                    });
+                    .filter((value) => value.length > 0);
+
+                // Filter by tracked directory
+                const trackedDir = this.plugin.settings.trackedDirectory;
+                const filteredFiles = trackedDir && trackedDir.length > 0
+                    ? files.filter(file => file === trackedDir || file.startsWith(trackedDir + "/"))
+                    : files;
+
+                return filteredFiles.map<FileStatusResult>((e) => {
+                    return <FileStatusResult>{
+                        path: e,
+                        workingDir: "P",
+                        vaultPath: this.getRelativeVaultPath(e),
+                    };
+                });
             } else {
                 return [];
             }
@@ -624,6 +650,7 @@ export class SimpleGit extends GitManager {
                     currentBranch,
                     trackingBranch,
                     "--",
+                    ...(this.plugin.settings.trackedDirectory ? [this.plugin.settings.trackedDirectory] : [])
                 ])
             ).changed;
 
@@ -645,7 +672,12 @@ export class SimpleGit extends GitManager {
         }
 
         const remoteChangedFiles = (
-            await this.git.diffSummary([currentBranch, trackingBranch, "--"])
+            await this.git.diffSummary([
+                currentBranch,
+                trackingBranch,
+                "--",
+                ...(this.plugin.settings.trackedDirectory ? [this.plugin.settings.trackedDirectory] : [])
+            ])
         ).changed;
 
         return remoteChangedFiles;
@@ -663,7 +695,12 @@ export class SimpleGit extends GitManager {
             return false;
         }
         const remoteChangedFiles = (
-            await this.git.diffSummary([currentBranch, trackingBranch, "--"])
+            await this.git.diffSummary([
+                currentBranch,
+                trackingBranch,
+                "--",
+                ...(this.plugin.settings.trackedDirectory ? [this.plugin.settings.trackedDirectory] : [])
+            ])
         ).changed;
 
         return remoteChangedFiles !== 0;

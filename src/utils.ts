@@ -6,7 +6,9 @@ import { BINARY_EXTENSIONS } from "./constants";
 
 export const worthWalking = (filepath: string, root?: string, trackedDir?: string) => {
     // First check if the file is in the tracked directory, if specified
+    console.log("check tracked", trackedDir)
     if (trackedDir && trackedDir.length > 0 && !filepath.startsWith(trackedDir) && filepath !== trackedDir) {
+        console.log("not tracked", filepath)
         return false;
     }
 
