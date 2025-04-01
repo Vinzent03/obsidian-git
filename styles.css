@@ -593,15 +593,13 @@
 
 /* Override styling of Codemirror merge view "collapsed lines" indicator */
 .git-split-diff-view .ͼ2 .cm-collapsedLines {
-    background: linear-gradient(
-        to bottom,
-        transparent 0,
-        var(--background-secondary-alt) 35%,
-        var(--background-secondary-alt) 65%,
-        transparent 100%
-    );
+    background: var(--interactive-normal);
     border-radius: var(--radius-m);
     color: var(--text-accent);
     font-size: var(--font-small);
     padding: var(--size-4-1) var(--size-4-1);
+}
+.git-split-diff-view .ͼ2 .cm-collapsedLines:hover {
+    background: var(--interactive-hover);
+    color: var(--text-accent-hover);
 }
