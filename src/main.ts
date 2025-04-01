@@ -485,6 +485,8 @@ export default class ObsidianGit extends Plugin {
         this.automaticsManager.unload();
         this.branchBar?.remove();
         this.statusBar?.remove();
+        this.statusBar = undefined;
+        this.branchBar = undefined;
         this.gitManager.unload();
         this.promiseQueue.clear();
 
@@ -522,7 +524,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async init({ fromReload = false }): Promise<void> {
-        if (this.settings.showStatusBar) {
+        if (this.settings.showStatusBar && !this.statusBar) {
             const statusBarEl = this.addStatusBarItem();
             this.statusBar = new StatusBar(statusBarEl, this);
             this.intervalsToClear.push(
@@ -557,7 +559,8 @@ export default class ObsidianGit extends Plugin {
 
                     if (
                         Platform.isDesktop &&
-                        this.settings.showBranchStatusBar
+                        this.settings.showBranchStatusBar &&
+                        !this.branchBar
                     ) {
                         const branchStatusBarEl = this.addStatusBarItem();
                         this.branchBar = new BranchStatusBar(
