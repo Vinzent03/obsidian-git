@@ -861,14 +861,14 @@ export class IsomorphicGit extends GitManager {
     }: {
         walkers: Walker[];
         dir?: string;
-    }): Promise<WalkDifference[]> {
+        }): Promise<WalkDifference[]> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const res = await this.wrapFS(
             git.walk({
                 ...this.getRepo(),
                 trees: walkers,
                 map: async function (filepath, [A, B]) {
-                    if (!worthWalking(filepath, base)) {
+                    if (!worthWalking(filepath, base, this.plugin.settings.trackedDirectory)) {
                         return null;
                     }
 
@@ -960,7 +960,7 @@ export class IsomorphicGit extends GitManager {
                             }
                         }
                         // match against base path
-                        if (!worthWalking(filepath, base)) {
+                        if (!worthWalking(filepath, base, this.plugin.settings.trackedDirectory)) {
                             return null;
                         }
                         // Late filter against file names

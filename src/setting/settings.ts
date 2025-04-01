@@ -827,6 +827,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
+        new Setting(containerEl)
+            .setName("Tracked directory within repository")
+            .setDesc("Specify a directory within your repository to track. Changes outside this directory will be ignored. Leave empty to track the entire repository.")
+            .addText((cb) => {
+                cb.setValue(plugin.settings.trackedDirectory);
+                cb.setPlaceholder("directory/subdirectory");
+                cb.onChange(async (value) => {
+                    plugin.settings.trackedDirectory = value;
+                    await plugin.saveSettings();
+                    // Trigger a refresh to update the UI
+                    plugin.refresh().catch((e) => plugin.displayError(e));
+                });
+            });
+
         new Setting(containerEl).setName("Support").setHeading();
         new Setting(containerEl)
             .setName("Donate")

@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     authorInHistoryView: "hide",
     dateInHistoryView: false,
     diffStyle: "split",
+    trackedDirectory: "",
     lineAuthor: {
         show: false,
         followMovement: "inactive",
