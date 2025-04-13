@@ -90,10 +90,13 @@ export class SimpleGit extends GitManager {
 
             const SIMPLE_GIT_NAMESPACE = "simple-git";
             const NAMESPACE_SEPARATOR = ",";
-            const currentDebug = localStorage.debug || "";
+            const currentDebug = (localStorage.debug ?? "") as string;
             const namespaces = currentDebug.split(NAMESPACE_SEPARATOR);
 
-            if (!namespaces.includes(SIMPLE_GIT_NAMESPACE) && !namespaces.includes(`-${SIMPLE_GIT_NAMESPACE}`)) {
+            if (
+                !namespaces.includes(SIMPLE_GIT_NAMESPACE) &&
+                !namespaces.includes(`-${SIMPLE_GIT_NAMESPACE}`)
+            ) {
                 namespaces.push(SIMPLE_GIT_NAMESPACE);
                 debug.enable(namespaces.join(NAMESPACE_SEPARATOR));
             }
