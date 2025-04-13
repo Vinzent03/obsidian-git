@@ -88,7 +88,16 @@ export class SimpleGit extends GitManager {
                 process.env[key] = value;
             }
 
-            debug.enable("simple-git");
+            const SIMPLE_GIT_NAMESPACE = "simple-git";
+            const NAMESPACE_SEPARATOR = ",";
+            const currentDebug = localStorage.debug || "";
+            const namespaces = currentDebug.split(NAMESPACE_SEPARATOR);
+
+            if (!namespaces.includes(SIMPLE_GIT_NAMESPACE) && !namespaces.includes(`-${SIMPLE_GIT_NAMESPACE}`)) {
+                namespaces.push(SIMPLE_GIT_NAMESPACE);
+                debug.enable(namespaces.join(NAMESPACE_SEPARATOR));
+            }
+
             if (await this.git.checkIsRepo()) {
                 // Resolve the relative root reported by git into an absolute path
                 // in case git resides in a different filesystem (eg, WSL)
