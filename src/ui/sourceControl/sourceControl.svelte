@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Platform, setIcon } from "obsidian";
+    import { Platform, Scope, setIcon } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import type ObsidianGit from "src/main";
     import type {
@@ -81,6 +81,11 @@
         });
     });
 
+    view.scope = new Scope(plugin.app.scope);
+    view.scope.register(["Ctrl"], "Enter", (_: KeyboardEvent) =>
+        commitAndSync()
+    );
+
     async function commit() {
         loading = true;
         if (status) {
@@ -100,9 +105,16 @@
     function commitAndSync() {
         loading = true;
         if (status) {
+            // If staged files exist only commit them, but if not, commit all.
+            // I hope this is the most intuitive way.
+            const onlyStaged = status.staged.length > 0;
             plugin.promiseQueue.addTask(() =>
                 plugin
-                    .commitAndSync(false, false, commitMessage)
+                    .commitAndSync({
+                        fromAutoBackup: false,
+                        commitMessage,
+                        onlyStaged,
+                    })
                     .then(() => {
                         commitMessage = plugin.settings.commitMessage;
                     })

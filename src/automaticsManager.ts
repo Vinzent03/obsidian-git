@@ -166,7 +166,7 @@ export default class AutomaticsManager {
                 if (this.plugin.settings.differentIntervalCommitAndPush) {
                     await this.plugin.commit({ fromAuto: true });
                 } else {
-                    await this.plugin.commitAndSync(true);
+                    await this.plugin.commitAndSync({ fromAutoBackup: true });
                 }
                 return true;
             },

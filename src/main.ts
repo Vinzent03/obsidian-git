@@ -751,11 +751,17 @@ export default class ObsidianGit extends Plugin {
         this.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
-    async commitAndSync(
-        fromAutoBackup: boolean,
+    async commitAndSync({
+        fromAutoBackup,
         requestCustomMessage = false,
-        commitMessage?: string
-    ): Promise<void> {
+        commitMessage,
+        onlyStaged = false,
+    }: {
+        fromAutoBackup: boolean;
+        requestCustomMessage?: boolean;
+        commitMessage?: string;
+        onlyStaged?: boolean;
+    }): Promise<void> {
         if (!(await this.isAllInitialized())) return;
 
         if (
@@ -769,6 +775,7 @@ export default class ObsidianGit extends Plugin {
             fromAuto: fromAutoBackup,
             requestCustomMessage,
             commitMessage,
+            onlyStaged,
         });
         if (!commitSuccessful) {
             return;

@@ -153,7 +153,9 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "push",
         name: "Commit-and-sync",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.commitAndSync(false)),
+            plugin.promiseQueue.addTask(() =>
+                plugin.commitAndSync({ fromAutoBackup: false })
+            ),
     });
 
     plugin.addCommand({
@@ -161,7 +163,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit-and-sync and then close Obsidian",
         callback: () =>
             plugin.promiseQueue.addTask(async () => {
-                await plugin.commitAndSync(false);
+                await plugin.commitAndSync({ fromAutoBackup: false });
                 window.close();
             }),
     });
@@ -171,7 +173,10 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit-and-sync with specific message",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commitAndSync(false, true)
+                plugin.commitAndSync({
+                    fromAutoBackup: false,
+                    requestCustomMessage: true,
+                })
             ),
     });
 
