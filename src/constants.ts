@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     disablePush: false,
     pullBeforePush: true,
     disablePopups: false,
+    showErrorNotices: true,
     disablePopupsForNoChanges: false,
     listChangedFilesInMessageBody: false,
     showStatusBar: true,

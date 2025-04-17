@@ -532,9 +532,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
-            .setName("Disable notifications")
+            .setName("Disable informative notifications")
             .setDesc(
-                "Disable notifications for git operations to minimize distraction (refer to status bar for updates). Errors are still shown as notifications even if you enable this setting."
+                "Disable informative notifications for git operations to minimize distraction (refer to status bar for updates)."
             )
             .addToggle((toggle) =>
                 toggle
@@ -542,6 +542,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         plugin.settings.disablePopups = value;
                         this.refreshDisplayWithDelay();
+                        await plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Disable error notifications")
+            .setDesc(
+                "Disable errror notifications of any kind to minimize distraction (refer to status bar for updates)."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(!plugin.settings.showErrorNotices)
+                    .onChange(async (value) => {
+                        plugin.settings.showErrorNotices = !value;
                         await plugin.saveSettings();
                     })
             );

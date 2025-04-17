@@ -20,7 +20,14 @@ export interface ObsidianGitSettings {
      * Whether to pull on commit-and-sync
      */
     pullBeforePush: boolean;
+    /**
+     * Whether messages from {@link ObsidianGit.displayMessage} should be shown
+     */
     disablePopups: boolean;
+    /**
+     * Whether messages from {@link ObsidianGit.displayError} should be shown
+     */
+    showErrorNotices: boolean;
     disablePopupsForNoChanges: boolean;
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
