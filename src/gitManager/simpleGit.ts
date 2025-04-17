@@ -182,6 +182,8 @@ export class SimpleGit extends GitManager {
         const relPluginConfigDir =
             this.app.vault.configDir + "/plugins/obsidian-git/";
 
+        await this.addAskPassScriptToExclude();
+
         await fsPromises.writeFile(
             path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
             ASK_PASS_SCRIPT
@@ -241,6 +243,56 @@ export class SimpleGit extends GitManager {
             await new Promise((res) => setTimeout(res, 5000));
             this.plugin.log("Retry watch for ask pass");
             await this.askpass();
+        }
+    }
+
+    /**
+     * Adds the askpass script to the exclude file of the git repository.
+     *
+     * This prevents the script from being tracked by git. This should be no
+     * problem as the script does not contain any sensitive data, but may
+     * cause issues with file permissions on other devices.
+     * See https://github.com/Vinzent03/obsidian-git/issues/903
+     */
+    async addAskPassScriptToExclude(): Promise<void> {
+        try {
+            const absoluteExcludeFilePath = await this.git.revparse([
+                "--path-format=absolute",
+                "--git-path",
+                "info/exclude",
+            ]);
+
+            const vaultRelativeAskPassScriptFile = path.join(
+                this.app.vault.configDir,
+                "plugins",
+                "obsidian-git",
+                ASK_PASS_SCRIPT_FILE
+            );
+            const repoRelativeAskPassScriptFile = this.getRelativeRepoPath(
+                vaultRelativeAskPassScriptFile,
+                true
+            );
+
+            const content = await fsPromises.readFile(
+                absoluteExcludeFilePath,
+                "utf-8"
+            );
+            const lines = content.split("\n");
+            const contains = lines.some((line) =>
+                line.contains(repoRelativeAskPassScriptFile)
+            );
+            if (!contains) {
+                await fsPromises.appendFile(
+                    absoluteExcludeFilePath,
+                    repoRelativeAskPassScriptFile + "\n"
+                );
+            }
+        } catch (error) {
+            // Catch any errors, because this is not critical
+            console.error(
+                "Error while adding askpass script to exclude file:",
+                error
+            );
         }
     }
 
