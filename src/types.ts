@@ -56,6 +56,7 @@ export interface ObsidianGitSettings {
     authorInHistoryView: ShowAuthorInHistoryView;
     dateInHistoryView: boolean;
     diffStyle: "git_unified" | "split";
+    trackedDirectory: string; // Directory within repo to track, empty means track all
 }
 
 /**
