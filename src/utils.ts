@@ -5,7 +5,15 @@ import type { App, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
 
-export const worthWalking = (filepath: string, root?: string) => {
+export const worthWalking = (filepath: string, root?: string, trackedDir?: string) => {
+    // First check if the file is in the tracked directory, if specified
+    console.log("check tracked", trackedDir)
+    if (trackedDir && trackedDir.length > 0 && !filepath.startsWith(trackedDir) && filepath !== trackedDir) {
+        console.log("not tracked", filepath)
+        return false;
+    }
+
+    // Then do the original check
     if (filepath === "." || root == null || root.length === 0 || root === ".") {
         return true;
     }
