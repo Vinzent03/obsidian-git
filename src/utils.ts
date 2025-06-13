@@ -246,12 +246,13 @@ export function spawnAsync(
         let stderrBuffer = "";
 
         // Collect stdout data
-        child.stdout.on("data", (data) => {
+        child.stdout.on("data", (data: Buffer) => {
+            console.log(data);
             stdoutBuffer += data.toString();
         });
 
         // Collect stderr data
-        child.stderr.on("data", (data) => {
+        child.stderr.on("data", (data: Buffer) => {
             stderrBuffer += data.toString();
         });
 
