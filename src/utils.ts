@@ -1,4 +1,5 @@
 import * as cssColorConverter from "css-color-converter";
+import { spawn, type SpawnOptionsWithoutStdio } from "child_process";
 import deepEqual from "deep-equal";
 import type { App, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment, TFile } from "obsidian";
@@ -230,4 +231,49 @@ export function convertPathToAbsoluteGitignoreRule({
     // Then escape each trailing whitespace character individually, because git trims trailing whitespace from the end of the rule.
     // Files normally end with a file extension, not whitespace, but a file with trailing whitespace can appear if Obsidian's "Detect all file extensions" setting is turned on.
     return escaped.replace(/\s(?=\s*$)/g, String.raw`\ `);
+}
+
+export function spawnAsync(
+    command: string,
+    args: string[],
+    options: SpawnOptionsWithoutStdio = {}
+): Promise<{ stdout: string; stderr: string; code: number }> {
+    return new Promise((resolve, reject) => {
+        // Spawn the child process
+        const child = spawn(command, args, options);
+
+        let stdoutBuffer = "";
+        let stderrBuffer = "";
+
+        // Collect stdout data
+        child.stdout.on("data", (data) => {
+            stdoutBuffer += data.toString();
+        });
+
+        // Collect stderr data
+        child.stderr.on("data", (data) => {
+            stderrBuffer += data.toString();
+        });
+
+        // Handle process errors (e.g., command not found)
+        child.on("error", (err) => {
+            reject(
+                new Error(
+                    `Failed to start subprocess. Command: '${command} ${args.join(
+                        " "
+                    )}', Error: ${err.message}`
+                )
+            );
+        });
+
+        // Handle process exit
+        child.on("close", (code) => {
+            // Resolve the promise with collected data and exit code
+            resolve({
+                stdout: stdoutBuffer,
+                stderr: stderrBuffer,
+                code: code ?? 1,
+            });
+        });
+    });
 }

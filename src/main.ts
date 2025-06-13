@@ -10,6 +10,7 @@ import {
     Plugin,
     TFile,
     TFolder,
+    moment,
 } from "obsidian";
 import * as path from "path";
 import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
@@ -55,6 +56,7 @@ import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import {
     convertPathToAbsoluteGitignoreRule,
     formatRemoteUrl,
+    spawnAsync,
     splitRemoteBranch,
 } from "./utils";
 
@@ -883,9 +885,13 @@ export default class ObsidianGit extends Plugin {
             }
 
             if (changedFiles.length !== 0 || hadConflict) {
+                // The commit message from settings or previously set in the
+                // source control view
                 let cmtMessage = (commitMessage ??= fromAuto
                     ? this.settings.autoCommitMessage
                     : this.settings.commitMessage);
+
+                // Optionally ask the user via a modal for a commit message
                 if (
                     (fromAuto && this.settings.customMessageOnAutoBackup) ||
                     requestCustomMessage
@@ -895,21 +901,53 @@ export default class ObsidianGit extends Plugin {
                             "Auto backup: Please enter a custom commit message. Leave empty to abort"
                         );
                     }
-                    const tempMessage = await new CustomMessageModal(
+                    const modalMessage = await new CustomMessageModal(
                         this
                     ).openAndGetResult();
 
                     if (
-                        tempMessage != undefined &&
-                        tempMessage != "" &&
-                        tempMessage != "..."
+                        modalMessage != undefined &&
+                        modalMessage != "" &&
+                        modalMessage != "..."
                     ) {
-                        cmtMessage = tempMessage;
+                        cmtMessage = modalMessage;
                     } else {
                         this.setPluginState({
                             gitAction: CurrentGitAction.idle,
                         });
                         return false;
+                    }
+
+                    // On desktop may run a script to get the commit message
+                } else if (
+                    this.gitManager instanceof SimpleGit &&
+                    this.settings.commitMessageScript
+                ) {
+                    const templateScript = this.settings.commitMessageScript;
+                    const hostname = this.localStorage.getHostname() || "";
+                    let formattedScript = templateScript.replace(
+                        "{{hostname}}",
+                        hostname
+                    );
+
+                    formattedScript = formattedScript.replace(
+                        "{{date}}",
+                        moment().format(this.settings.commitDateFormat)
+                    );
+
+                    const res = await spawnAsync(
+                        "sh",
+                        ["-c", formattedScript],
+                        { cwd: this.gitManager.absoluteRepoPath }
+                    );
+                    if (res.code != 0) {
+                        this.displayError(res.stderr);
+                    } else if (res.stdout.trim().length == 0) {
+                        this.displayMessage(
+                            "Stdout from commit message script is empty. Using default message."
+                        );
+                    } else {
+                        cmtMessage = res.stdout;
                     }
                 }
                 let committedFiles: number | undefined;

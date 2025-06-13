@@ -291,6 +291,27 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
                 });
 
+            new Setting(containerEl)
+                .setName("Commit message script")
+                .setDesc(
+                    "A script that is run using 'sh -c' to generate the commit message. May be used to generate commit messages using AI tools. Available placeholders: {{hostname}}, {{date}}."
+                )
+                .addText((text) => {
+                    text.onChange(async (value) => {
+                        if (value === "") {
+                            plugin.settings.commitMessageScript =
+                                DEFAULT_SETTINGS.commitMessageScript;
+                        } else {
+                            plugin.settings.commitMessageScript = value;
+                        }
+                        await plugin.saveSettings();
+                    });
+                    this.setNonDefaultValue({
+                        text,
+                        settingsProperty: "commitMessageScript",
+                    });
+                });
+
             const datePlaceholderSetting = new Setting(containerEl)
                 .setName("{{date}} placeholder format")
                 .addMomentFormat((text) =>

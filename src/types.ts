@@ -3,6 +3,7 @@ import type { LineAuthorSettings } from "src/lineAuthor/model";
 export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
+    commitMessageScript: string;
     commitDateFormat: string;
     /**
      * Interval to either automatically commit-and-sync or just commit

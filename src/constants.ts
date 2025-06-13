@@ -11,6 +11,7 @@ export const CONFLICT_OUTPUT_FILE = "conflict-files-obsidian-git.md";
 export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     autoCommitMessage: "vault backup: {{date}}",
+    commitMessageScript: "",
     commitDateFormat: DATE_TIME_FORMAT_SECONDS,
     autoSaveInterval: 0,
     autoPushInterval: 0,
