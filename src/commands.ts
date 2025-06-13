@@ -203,15 +203,17 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit-staged",
-        name: "Commit staged",
+        name: "Commit",
         callback: () =>
-            plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+            plugin.promiseQueue.addTask(async () => {
+                const status = await plugin.updateCachedStatus();
+                const onlyStaged = status.staged.length > 0;
+                return plugin.commit({
                     fromAuto: false,
                     requestCustomMessage: false,
-                    onlyStaged: true,
-                })
-            ),
+                    onlyStaged: onlyStaged,
+                });
+            }),
     });
 
     if (Platform.isDesktopApp) {

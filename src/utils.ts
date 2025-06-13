@@ -247,7 +247,6 @@ export function spawnAsync(
 
         // Collect stdout data
         child.stdout.on("data", (data: Buffer) => {
-            console.log(data);
             stdoutBuffer += data.toString();
         });
 

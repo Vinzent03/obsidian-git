@@ -86,16 +86,13 @@
         commitAndSync()
     );
 
-    async function commit() {
+    function commit() {
         loading = true;
         if (status) {
-            if (await plugin.tools.hasTooBigFiles(status.staged)) {
-                plugin.setPluginState({ gitAction: CurrentGitAction.idle });
-                return false;
-            }
+            const onlyStaged = status.staged.length > 0;
             plugin.promiseQueue.addTask(() =>
-                plugin.gitManager
-                    .commit({ message: commitMessage })
+                plugin
+                    .commit({ fromAuto: false, commitMessage, onlyStaged })
                     .then(() => (commitMessage = plugin.settings.commitMessage))
                     .finally(triggerRefresh)
             );

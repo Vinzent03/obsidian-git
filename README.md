@@ -50,9 +50,9 @@ Open it from the source control view or via the `Open diff view` command.
   - `Stage current file`
   - `Unstage current file`
 - ✅ Commit
-  - `Commit all changes`: Only commits all changes without pushing
+  - `Commit`: If files are staged only commits those, otherwise commits only files that have been staged
+  - `Commit all changes`: Commits all changes without pushing
   - `Commit all changes with specific message`: Same as above, but with a custom message
-  - `Commit staged`: Commits only files that have been staged
   - `Commit staged with specific message`: Same as above, but with a custom message
 - 🔀 Commit-and-sync
   - `Commit-and-sync`: With default settings, this will commit all changes, pull, and push
