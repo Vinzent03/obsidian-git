@@ -7,7 +7,7 @@
         Status,
         StatusRootTreeItem,
     } from "src/types";
-    import { CurrentGitAction, FileType } from "src/types";
+    import { FileType } from "src/types";
     import { arrayProxyWithNewLength, getDisplayPath } from "src/utils";
     import { slide } from "svelte/transition";
     import { DiscardModal } from "../modals/discardModal";
