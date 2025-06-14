@@ -1,4 +1,3 @@
-import { spawnSync } from "child_process";
 import debug from "debug";
 import * as fsPromises from "fs/promises";
 import type { FileSystemAdapter } from "obsidian";
@@ -27,7 +26,7 @@ import type {
     Status,
 } from "../types";
 import { CurrentGitAction, NoNetworkError } from "../types";
-import { impossibleBranch, splitRemoteBranch } from "../utils";
+import { impossibleBranch, spawnAsync, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 
 export class SimpleGit extends GitManager {
@@ -40,7 +39,7 @@ export class SimpleGit extends GitManager {
     }
 
     async setGitInstance(ignoreError = false): Promise<void> {
-        if (this.isGitInstalled()) {
+        if (await this.isGitInstalled()) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const vaultBasePath = adapter.getBasePath();
             let basePath = vaultBasePath;
@@ -736,7 +735,7 @@ export class SimpleGit extends GitManager {
     async checkRequirements(): Promise<
         "valid" | "missing-repo" | "missing-git"
     > {
-        if (!this.isGitInstalled()) {
+        if (!(await this.isGitInstalled())) {
             return "missing-git";
         }
         if (!(await this.git.checkIsRepo())) {
@@ -1045,21 +1044,19 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    private isGitInstalled(): boolean {
+    private async isGitInstalled(): Promise<boolean> {
         // https://github.com/steveukx/git-js/issues/402
         const gitPath = this.plugin.localStorage.getGitPath();
-        const command = spawnSync(gitPath || "git", ["--version"], {
-            stdio: "ignore",
-        });
+        const command = await spawnAsync(gitPath || "git", ["--version"], {});
 
         if (command.error) {
             if (Platform.isWin && !gitPath) {
                 this.plugin.log(
                     `Git not found in PATH. Checking standard installation path(${DEFAULT_WIN_GIT_PATH}) of Git for Windows.`
                 );
-                const command = spawnSync(DEFAULT_WIN_GIT_PATH, ["--version"], {
-                    stdio: "ignore",
-                });
+                const command = await spawnAsync(DEFAULT_WIN_GIT_PATH, [
+                    "--version",
+                ]);
                 if (command.error) {
                     console.error(command.error);
                     return false;

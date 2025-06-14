@@ -237,8 +237,13 @@ export function spawnAsync(
     command: string,
     args: string[],
     options: SpawnOptionsWithoutStdio = {}
-): Promise<{ stdout: string; stderr: string; code: number }> {
-    return new Promise((resolve, reject) => {
+): Promise<{
+    stdout: string;
+    stderr: string;
+    code: number;
+    error: Error | undefined;
+}> {
+    return new Promise((resolve, _) => {
         // Spawn the child process
         const child = spawn(command, args, options);
 
@@ -257,13 +262,12 @@ export function spawnAsync(
 
         // Handle process errors (e.g., command not found)
         child.on("error", (err) => {
-            reject(
-                new Error(
-                    `Failed to start subprocess. Command: '${command} ${args.join(
-                        " "
-                    )}', Error: ${err.message}`
-                )
-            );
+            resolve({
+                error: new Error(err.message),
+                stdout: stdoutBuffer,
+                stderr: stdoutBuffer,
+                code: 1,
+            });
         });
 
         // Handle process exit
@@ -273,6 +277,7 @@ export function spawnAsync(
                 stdout: stdoutBuffer,
                 stderr: stderrBuffer,
                 code: code ?? 1,
+                error: undefined,
             });
         });
     });
