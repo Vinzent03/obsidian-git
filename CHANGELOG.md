@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.34.0](https://github.com/Vinzent03/obsidian-git/compare/2.33.0...2.34.0) (2025-06-14)
+
+
+### Features
+
+* commit message from script ([c05f847](https://github.com/Vinzent03/obsidian-git/commit/c05f847baac1cfa121755bd6a10cfc5316a8f680)), closes [#849](https://github.com/Vinzent03/obsidian-git/issues/849)
+* make commit command and commit button in source control 'smart' ([f03d75e](https://github.com/Vinzent03/obsidian-git/commit/f03d75e5f9d239d89e7770dfe86c21e9aa7db632)), closes [#907](https://github.com/Vinzent03/obsidian-git/issues/907)
+
+
+### Bug Fixes
+
+* don't use spawnSync, but a non-blocking alternative ([ad03171](https://github.com/Vinzent03/obsidian-git/commit/ad03171300604b968340ca9212790da01b6ba1fd))
+
 ## [2.33.0](https://github.com/Vinzent03/obsidian-git/compare/2.32.1...2.33.0) (2025-04-29)
 
 
