@@ -574,9 +574,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             )
             .addToggle((toggle) =>
                 toggle
-                    .setValue(!plugin.settings.showErrorNotices)
+                    .setValue(!plugin.settings.disableErrorNotice)
                     .onChange(async (value) => {
-                        plugin.settings.showErrorNotices = !value;
+                        plugin.settings.disableErrorNotice = value;
                         await plugin.saveSettings();
                     })
             );

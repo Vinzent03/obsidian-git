@@ -1,0 +1,462 @@
+[
+    {
+        "id": "defaultValue",
+        "text": "default value"
+    },
+    {
+        "id": "supportGroup",
+        "label": "Support"
+    },
+    {
+        "id": "isGitReady",
+        "text": "Git is not ready. When all settings are correct you can configure commit-sync, etc."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.autoCommit",
+        "label": "Automatic `commit` `push` `pull`"
+    },
+    {
+        "id": "activeTimers",
+        "label": "Active git timers"
+    },
+    {
+        "id": "differentIntervalCommitAndPush",
+        "label": "Split timers for `commit` | `push`",
+        "tooltip": "Enable to use one interval for `commit` and another for `push`."
+    },
+    {
+        "id": "autoSaveInterval",
+        "label": "${action} interval",
+        "hint": "0 to disable",
+        "tooltip": "${action} every ${interval} minutes. Set to 0 to disable."
+    },
+    {
+        "id": "saveIntervalType",
+        "label": "Interval valid:"
+    },
+    {
+        "id": "autoSaveIntervalInGeneral",
+        "label": "in general"
+    },
+    {
+        "id": "autoBackupAfterFileChange",
+        "label": "from last file edit",
+        "tooltip": "If turned on, do auto ${action} every ${interval} minutes after last file change. This also prevents auto ${action} while editing a file."
+    },
+    {
+        "id": "setLastSaveToLastCommit",
+        "label": "from last commit",
+        "tooltip": "If turned on, sets last auto ${action} timestamp to the latest commit timestamp. This reduces the frequency of auto ${action} when doing manual commits."
+    },
+    {
+        "id": "autoPushInterval",
+        "label": "`push` interval",
+        "tooltip": "`push` commits every 'n' minutes. Set to 0 to disable."
+    },
+    {
+        "id": "autoPullInterval",
+        "label": "`pull` interval",
+        "tooltip": "`pull` commits every 'n' minutes. Set to 0 to disable."
+    },
+    {
+        "id": "customMessageOnAutoBackup",
+        "label": "Custom commit message",
+        "tooltip": "If enabled, you will get a pop up to specify your message."
+    },
+    {
+        "id": "autoCommitMessage",
+        "label": "Default commit message",
+        "tooltip": [
+            "<b>Available placeholders:</b>",
+            "{{date}}",
+            "{{hostname}}",
+            "{{numFiles}} - number of changed files",
+            "{{files}} - list of changed files"
+        ]
+    },
+
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.commitMessage",
+        "label": "Commit Message"
+    },
+    {
+        "id": "commitMessage",
+        "label": "On manual commit",
+        "tooltip": [
+            "<b>Available placeholders:</b>",
+            "{{date}}",
+            "{{hostname}}",
+            "{{numFiles}} - number of changed files",
+            "{{files}} - list of changed files"
+        ]
+    },
+    {
+        "id": "commitMessageScript",
+        "label": "Generator",
+        "tooltip": [
+            "A script that is run using 'sh -c' to generate the commit message.",
+            "May be used to generate commit messages using AI tools.",
+            "Available placeholders: {{hostname}}, {{date}}."
+        ]
+    },
+    {
+        "id": "previewCommitMessage",
+        "buttonText": "Preview"
+    },
+    {
+        "id": "commitDateFormat",
+        "label": "{{date}} format",
+        "tooltip": "Specify custom date format (see also <a href='https://momentjs.com'>Moment.js</a>)."
+    },
+    {
+        "id": "hostnameReplacement",
+        "label": "{{hostname}} replacement"
+    },
+    {
+        "id": "listChangedFilesInMessageBody",
+        "label": "List affected filenames",
+        "tooltip": "List affected filenames in the commit body"
+    },
+
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.pull",
+        "label": "Pull"
+    },
+    {
+        "id": "syncMethod",
+        "label": "Merge strategy",
+        "tooltip": "Decide how to integrate commits from your remote branch into your local branch."
+    },
+    {
+        "id": "syncMethod.merge",
+        "label": "Merge"
+    },
+    {
+        "id": "syncMethod.rebase",
+        "label": "Rebase"
+    },
+    {
+        "id": "syncMethod.reset",
+        "label": "Only updates the HEAD without touching the working directory"
+    },
+    {
+        "id": "autoPullOnBoot",
+        "label": "Trigger on startup",
+        "tooltip": "Automatically pull commits when Obsidian starts"
+    },
+
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.commitAndSync",
+        "label": "Commit-and-sync",
+        "tooltip": "Commit-and-sync with default settings means staging everything -> committing -> pulling -> pushing. Ideally this is a single action that you do regularly to keep your local and remote repository in sync."
+    },
+    {
+        "id": "disablePush",
+        "label": "Push",
+        "tooltip": "Most of the time you want to push after committing. Turning this off turns a commit-and-sync action into commit and pull only. It will still be called commit-and-sync."
+    },
+    {
+        "id": "pullBeforePush",
+        "label": "Pull",
+        "tooltip": "On commit-and-sync, pull commits as well. Turning this off turns a commit-and-sync action into commit and push only."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.lineAuthor",
+        "label": "Line author display",
+        "tooltip": [
+            "<a href='https://publish.obsidian.md/git-doc/Line+Authoring'>Feature guide and quick examples</a>",
+            "The commit hash, author name and authoring date can all be individually toggled.",
+            "Hide everything, to only show the age-colored sidebar."
+        ]
+    },
+    {
+        "id": "lineAuthor.show",
+        "label": "Next to each line"
+    },
+    {
+        "id": "lineAuthor.followMovement",
+        "label": "Follow movement and copies across files and commits",
+        "tooltip": [
+            "By default (deactivated), each line only shows the newest commit where it was changed.",
+            "With <i>same commit</i>, cut-copy-paste-ing of text is followed within the same commit and the original commit of authoring will be shown.",
+            "With <i>all commits</i>, cut-copy-paste-ing text inbetween multiple commits will be detected.",
+            "It uses <a href='https://git-scm.com/docs/git-blame'>git-blame</a> and",
+            "for matches (at least ${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH} characters) within the same (or all) commit(s),",
+            "<em>the originating</em> commit's information is shown."
+        ]
+    },
+    {
+        "id": "lineAuthor.followMovement.inactive",
+        "label": "Do not follow (default)"
+    },
+    {
+        "id": "lineAuthor.followMovement.same-commit",
+        "label": "Follow within same commit"
+    },
+    {
+        "id": "lineAuthor.followMovement.all-commits",
+        "label": "Follow within all commits (maybe slow)"
+    },
+    {
+        "id": "lineAuthor.showCommitHash",
+        "label": "Commit hash"
+    },
+    {
+        "id": "lineAuthor.authorDisplay",
+        "label": "Author",
+        "tooltip": "If and how the author is displayed"
+    },
+    {
+        "id": "lineAuthor.dateTimeFormatOptions",
+        "label": "Date format"
+    },
+    {
+        "id": "lineAuthor.dateTimeFormatCustomString",
+        "label": "Custom date format",
+        "tooltip": "See more on <a href='https://momentjs.com/docs/#/parsing/string-format/' target='_blank'>our website</a>.",
+        "hint": "preview: ${format}"
+    },
+    {
+        "id": "lineAuthor.dateTimeTimezone",
+        "label": "Timezone",
+        "tooltip": [
+            "The time-zone in which the authoring date should be shown:",
+            "`viewer-local` - your local time-zone (default),",
+            "`author-local` - the author's time-zone during commit creation or",
+            "<a href='https://en.wikipedia.org/wiki/UTC%C2%B100:00'>`UTC±00:00`</a>."
+        ]
+    },
+    {
+        "id": "lineAuthor.coloringMaxAge",
+        "label": "Oldest age in coloring",
+        "tooltip": [
+            "The oldest age in the line author coloring.",
+            "Everything older will have the same color.",
+            "Smallest valid age is '1d'. Currently: ${age}"
+        ]
+    },
+    {
+        "id": "lineAuthor.colorNew",
+        "label": "Color for newest commits"
+    },
+    {
+        "id": "lineAuthor.colorOld",
+        "label": "Color for oldest commits"
+    },
+    {
+        "id": "lineAuthor.textColorCss",
+        "label": "Text Color",
+        "tooltip": [
+            "The CSS color of the gutter text.",
+            "It is higly recommended to use <a href='https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties'>CSS variables</a> defined by themes",
+            "(e.g. `var(--text-muted)` or `var(--text-on-accent)`",
+            "because they automatically adapt to theme changes.",
+            "See: <a href='https://github.com/obsidian-community/obsidian-theme-template/blob/main/obsidian.css'>List of available CSS variables in Obsidian<a/>"
+        ]
+    },
+    {
+        "id": "lineAuthor.textColorCss.var(--text-muted)",
+        "label": "text muted (default)"
+    },
+    {
+        "id": "lineAuthor.ignoreWhitespace",
+        "label": "Ignore whitespace and newlines in changes",
+        "tooltip": [
+            "Whitespace and newlines are interpreted as part of the document and in changes by default (hence not ignored).",
+            "This makes the last line being shown as 'changed' when a new subsequent line is added, even if the previously last line's text is the same.",
+            "If you don't care about purely-whitespace changes (e.g. list nesting / quote indentation changes),",
+            "then activating this will provide more meaningful change detection."
+        ]
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.historyView",
+        "label": "History view display",
+        "tooltip": "Decide what to show in the history view of the commit."
+    },
+    {
+        "id": "authorInHistoryView",
+        "label": "Author"
+    },
+    {
+        "id": "authorInHistoryView.hide",
+        "label": "Hide"
+    },
+    {
+        "id": "authorInHistoryView.full",
+        "label": "Full"
+    },
+    {
+        "id": "authorInHistoryView.initials",
+        "label": "Initials"
+    },
+    {
+        "id": "dateInHistoryView",
+        "label": "Date",
+        "tooltip": "The {{date}} placeholder format is used to display the date."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.sourceControl",
+        "label": "Source control view"
+    },
+    {
+        "id": "refreshSourceControl",
+        "label": "Refresh on file change",
+        "tooltip": [
+            "Automatically refresh source control view on file changes.",
+            "On slower machines this may cause lags. If so, just disable this option."
+        ]
+    },
+    {
+        "id": "refreshSourceControlTimer",
+        "label": "Refresh interval",
+        "tooltip": "Milliseconds to wait after file change before refreshing the Source Control View."
+    },
+
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.miscellaneous",
+        "label": "Miscellaneous"
+    },
+    {
+        "id": "diffStyle",
+        "label": "Diff view style",
+        "tooltip": [
+            "Note that the actual diff in `Split` mode is not generated by Git, ",
+            "but by the editor itself, so it may differ from the diff generated by Git.",
+            "One advantage of this is that you can edit the text in that view."
+        ]
+    },
+    {
+        "id": "diffStyle.git_unified",
+        "label": "Unified"
+    },
+    {
+        "id": "diffStyle.split",
+        "label": "Split"
+    },
+    {
+        "id": "disablePopups",
+        "label": "Disable informative notifications",
+        "tooltip": "Disable informative notifications for git operations to minimize distraction (refer to status bar for updates)."
+    },
+    {
+        "id": "disableErrorNotice",
+        "label": "Disable error notifications",
+        "tooltip": "Disable errror notifications of any kind to minimize distraction (refer to status bar for updates)."
+    },
+    {
+        "id": "disablePopupsForNoChanges",
+        "label": "Disable Notifications for no changes",
+        "tooltip": "Don't show notifications when there are no changes to commit or push."
+    },
+    {
+        "id": "showStatusBar",
+        "label": "Show status bar",
+        "tooltip": "!Obsidian must be restarted for the changes to take affect."
+    },
+    {
+        "id": "showFileMenu",
+        "label": "File menu integration",
+        "tooltip": "Add `Stage`, `Unstage` and `Add` to `.gitignore` actions to the file menu."
+    },
+    {
+        "id": "showBranchStatusBar",
+        "label": "Show branch status bar",
+        "tooltip": "Obsidian must be restarted for the changes to take affect."
+    },
+    {
+        "id": "changedFilesInStatusBar",
+        "label": "Show the count of modified files",
+        "tooltip": "Show the count of modified files in the status bar."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.gitReadyCommitAuthor",
+        "label": "Commit author"
+    },
+    {
+        "id": "authorName",
+        "label": "Name"
+    },
+    {
+        "id": "authorEmail",
+        "label": "Email"
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.IsomorphicGit",
+        "label": "Authentication/commit author"
+    },
+    {
+        "id": "username",
+        "label": "Username",
+        "tooltip": "Username on your git server. E.g. your username on GitHub"
+    },
+    {
+        "id": "password",
+        "label": "Password / Personal access token",
+        "tooltip": "You won't be able to see it again."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.advanced",
+        "label": "Advanced",
+        "tooltip": "These settings usually don't need to be changed, but may be requried for special setups."
+    },
+    {
+        "id": "updateSubmodules",
+        "label": "Update submodules",
+        "tooltip": "`Commit-and-sync` and `pull` take care of submodules. Missing features: Conflicted files, count of pulled/pushed/committed files. Tracking branch needs to be set for each submodule"
+    },
+    {
+        "id": "submoduleRecurseCheckout",
+        "label": "Submodule recurse checkout/switch",
+        "tooltip": "Whenever a checkout happens on the root repository, recurse the checkout on the submodules (if the branches exist)."
+    },
+    {
+        "id": "customGitPath",
+        "label": "Custom Git binary path"
+    },
+    {
+        "id": "envVariables",
+        "label": "Additional environment variables",
+        "hint": "GIT_DIR=/path/to/git/dir",
+        "tooltip": "Use each line for a new environment variable in the format KEY=VALUE."
+    },
+    {
+        "id": "pathVariables",
+        "label": "Additional PATH environment variable paths",
+        "tooltip": "Use each line for one path."
+    },
+    {
+        "id": "reloadGit",
+        "buttonText": "Reload"
+    },
+    {
+        "id": "customBasePath",
+        "label": "Custom base path (Git repository path)",
+        "tooltip": [
+            "Sets the relative path to the vault from which the Git binary should be executed.",
+            "Mostly used to set the path to the Git repository, which is only required if the Git repository is below the vault root directory. Use '\\' instead of '/' on Windows."
+        ],
+        "placeholder": "directory/directory-with-git-repo"
+    },
+    {
+        "id": "gitDir",
+        "label": "Custom Git directory path (Instead of .git)",
+        "tooltip": "!Requires restart of Obsidian to take effect. Use '\\' instead of '/' on Windows.",
+        "placeholder": ".git"
+    },
+    {
+        "id": "disablePlugin",
+        "label": "Disable on this device",
+        "tooltip": "Disables the plugin on this device. This setting is not synced."
+    }
+]
