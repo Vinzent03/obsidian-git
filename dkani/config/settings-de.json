@@ -1,0 +1,462 @@
+[
+    {
+        "id": "defaultValue",
+        "text": "Standardwert"
+    },
+    {
+        "id": "supportGroup",
+        "label": "Support"
+    },
+    {
+        "id": "isGitReady",
+        "text": "Git ist nicht bereit. Wenn alle Einstellungen korrekt sind, können Sie Commit-Sync usw. konfigurieren."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.autoCommit",
+        "label": "Automatisches `commit` `push` `pull`"
+    },
+    {
+        "id": "activeTimers",
+        "label": "Aktive Git-Timer"
+    },
+    {
+        "id": "differentIntervalCommitAndPush",
+        "label": "Getrennte Timer für `commit` | `push`",
+        "tooltip": "Aktivieren, um unterschiedliche Intervalle für `commit` und `push` zu verwenden."
+    },
+    {
+        "id": "autoSaveInterval",
+        "label": "${action}-Intervall",
+        "hint": "0 zum Deaktivieren",
+        "tooltip": "${action} alle ${interval} Minuten. Auf 0 setzen zum Deaktivieren."
+    },
+    {
+        "id": "saveIntervalType",
+        "label": "Intervall gültig:"
+    },
+    {
+        "id": "autoSaveIntervalInGeneral",
+        "label": "allgemein"
+    },
+    {
+        "id": "autoBackupAfterFileChange",
+        "label": "ab letzter Dateiänderung",
+        "tooltip": "Wenn aktiviert, führe automatisches ${action} alle ${interval} Minuten nach der letzten Dateiänderung aus. Verhindert auch automatisches ${action} während der Bearbeitung einer Datei."
+    },
+    {
+        "id": "setLastSaveToLastCommit",
+        "label": "ab letztem Commit",
+        "tooltip": "Wenn aktiviert, wird der Zeitstempel der letzten automatischen ${action} auf den Zeitstempel des letzten Commits gesetzt. Reduziert die Häufigkeit automatischer ${action} bei manuellen Commits."
+    },
+    {
+        "id": "autoPushInterval",
+        "label": "`push`-Intervall",
+        "tooltip": "`push` Commits alle 'n' Minuten. Auf 0 setzen zum Deaktivieren."
+    },
+    {
+        "id": "autoPullInterval",
+        "label": "`pull`-Intervall",
+        "tooltip": "`pull` Commits alle 'n' Minuten. Auf 0 setzen zum Deaktivieren."
+    },
+    {
+        "id": "customMessageOnAutoBackup",
+        "label": "Benutzerdefinierte Commit-Nachricht",
+        "tooltip": "Wenn aktiviert, erscheint ein Popup zur Eingabe einer eigenen Nachricht."
+    },
+    {
+        "id": "autoCommitMessage",
+        "label": "Standard-Commit-Nachricht",
+        "tooltip": [
+            "<b>Verfügbare Platzhalter:</b>",
+            "{{date}}",
+            "{{hostname}}",
+            "{{numFiles}} - Anzahl geänderter Dateien",
+            "{{files}} - Liste geänderter Dateien"
+        ]
+    },
+
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.commitMessage",
+        "label": "Commit-Nachricht"
+    },
+    {
+        "id": "commitMessage",
+        "label": "Bei manuellem Commit",
+        "tooltip": [
+            "<b>Verfügbare Platzhalter:</b>",
+            "{{date}}",
+            "{{hostname}}",
+            "{{numFiles}} - Anzahl geänderter Dateien",
+            "{{files}} - Liste geänderter Dateien"
+        ]
+    },
+    {
+        "id": "commitMessageScript",
+        "label": "Generator",
+        "tooltip": [
+            "Ein Skript, das mit 'sh -c' ausgeführt wird, um die Commit-Nachricht zu erzeugen.",
+            "Kann verwendet werden, um Commit-Nachrichten mithilfe von KI-Tools zu generieren.",
+            "Verfügbare Platzhalter: {{hostname}}, {{date}}."
+        ]
+    },
+    {
+        "id": "previewCommitMessage",
+        "buttonText": "Vorschau"
+    },
+    {
+        "id": "commitDateFormat",
+        "label": "{{date}}-Format",
+        "tooltip": "Benutzerdefiniertes Datumsformat festlegen (siehe auch <a href='https://momentjs.com'>Moment.js</a>)."
+    },
+    {
+        "id": "hostnameReplacement",
+        "label": "{{hostname}}-Ersatz"
+    },
+    {
+        "id": "listChangedFilesInMessageBody",
+        "label": "Betroffene Dateien auflisten",
+        "tooltip": "Betroffene Dateinamen im Commit-Body auflisten"
+    },
+
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.pull",
+        "label": "Pull"
+    },
+    {
+        "id": "syncMethod",
+        "label": "Merge-Strategie",
+        "tooltip": "Entscheide, wie du die Commits aus dem Remote-Branch in den lokalen Branch integrieren möchtest."
+    },
+    {
+        "id": "syncMethod.merge",
+        "label": "Merge"
+    },
+    {
+        "id": "syncMethod.rebase",
+        "label": "Rebase"
+    },
+    {
+        "id": "syncMethod.reset",
+        "label": "Aktualisiert nur den HEAD ohne Arbeitsverzeichnis zu ändern"
+    },
+    {
+        "id": "autoPullOnBoot",
+        "label": "Beim Start auslösen",
+        "tooltip": "Automatisch Commits pullen beim Obsidian-Start"
+    },
+
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.commitAndSync",
+        "label": "Commit-and-sync",
+        "tooltip": "Commit-and-sync mit Standardeinstellungen bedeutet: Alles stagen -> committen -> pullen -> pushen. Idealerweise eine regelmäßige Aktion, um lokales und Remote-Repository synchron zu halten."
+    },
+    {
+        "id": "disablePush",
+        "label": "Push",
+        "tooltip": "Normalerweise will man nach einem Commit pushen. Deaktivieren verwandelt commit-and-sync in nur commit und pull. Der Name bleibt commit-and-sync."
+    },
+    {
+        "id": "pullBeforePush",
+        "label": "Pull",
+        "tooltip": "Bei commit-and-sync auch Commits pullen. Deaktivieren verwandelt es in nur commit und push."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.lineAuthor",
+        "label": "Zeilen-Autor-Anzeige",
+        "tooltip": [
+            "<a href='https://publish.obsidian.md/git-doc/Line+Authoring'>Funktionsübersicht und Beispiele</a>",
+            "Commit-Hash, Autorenname und Erstellungsdatum können einzeln ein-/ausgeblendet werden.",
+            "Alles ausblenden, um nur die farbkodierte Seitenleiste anzuzeigen."
+        ]
+    },
+    {
+        "id": "lineAuthor.show",
+        "label": "Neben jeder Zeile anzeigen"
+    },
+    {
+        "id": "lineAuthor.followMovement",
+        "label": "Bewegungen und Kopien über Dateien und Commits verfolgen",
+        "tooltip": [
+            "Standardmäßig (deaktiviert) zeigt jede Zeile nur den neuesten Commit, in dem sie geändert wurde.",
+            "Mit <i>gleicher Commit</i> wird das Ausschneiden/Kopieren/Einfügen von Text innerhalb desselben Commits verfolgt, und der ursprüngliche Commit der Erstellung wird angezeigt.",
+            "Mit <i>alle Commits</i> wird das Ausschneiden/Kopieren/Einfügen über mehrere Commits hinweg erkannt.",
+            "Es verwendet <a href='https://git-scm.com/docs/git-blame'>git-blame</a> und",
+            "für Übereinstimmungen (mindestens ${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH} Zeichen) innerhalb desselben (oder aller) Commits",
+            "werden die Informationen des <em>ursprünglichen</em> Commits angezeigt."
+        ]
+    },
+    {
+        "id": "lineAuthor.followMovement.inactive",
+        "label": "Nicht folgen (Standard)"
+    },
+    {
+        "id": "lineAuthor.followMovement.same-commit",
+        "label": "Innerhalb desselben Commits folgen"
+    },
+    {
+        "id": "lineAuthor.followMovement.all-commits",
+        "label": "Über alle Commits folgen (evtl. langsam)"
+    },
+    {
+        "id": "lineAuthor.showCommitHash",
+        "label": "Commit-Hash anzeigen"
+    },
+    {
+        "id": "lineAuthor.authorDisplay",
+        "label": "Autor-Name",
+        "tooltip": "Ob und wie der Autor angezeigt wird"
+    },
+    {
+        "id": "lineAuthor.dateTimeFormatOptions",
+        "label": "Datumsformat"
+    },
+    {
+        "id": "lineAuthor.dateTimeFormatCustomString",
+        "label": "Benutzerdefiniertes Datumsformat",
+        "tooltip": "Mehr unter <a href='https://momentjs.com/docs/#/parsing/string-format/' target='_blank'>unserer Website</a>.",
+        "hint": "Vorschau: ${format}"
+    },
+    {
+        "id": "lineAuthor.dateTimeTimezone",
+        "label": "Zeitzone",
+        "tooltip": [
+            "Zeitzone für die Anzeige des Commit-Datums.",
+            "Entweder lokale Zeitzone (Standard),",
+            "Zeitzone des Autors beim Commit oder",
+            "<a href='https://en.wikipedia.org/wiki/UTC%C2%B100:00'>UTC±00:00</a>."
+        ]
+    },
+    {
+        "id": "lineAuthor.coloringMaxAge",
+        "label": "Maximales Alter für Farbgebung",
+        "tooltip": [
+            "Das maximale Alter für die Zeilen-Autor-Farbgebung.",
+            "Ältere Commits haben dieselbe Farbe.",
+            "Mindestalter ist '1d'. Aktuell: ${age}"
+        ]
+    },
+    {
+        "id": "lineAuthor.colorNew",
+        "label": "Farbe für neueste Commits"
+    },
+    {
+        "id": "lineAuthor.colorOld",
+        "label": "Farbe für älteste Commits"
+    },
+    {
+        "id": "lineAuthor.textColorCss",
+        "label": "Textfarbe",
+        "tooltip": [
+            "Die CSS-Farbe des Textes.",
+            "Es wird dringend empfohlen, <a href='https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties'>CSS-Variablen</a> zu verwenden, die von Themes definiert werden",
+            "(z. B. `var(--text-muted)` oder `var(--text-on-accent)`),",
+            "da sie sich automatisch an Theme-Änderungen anpassen.",
+            "Siehe: <a href='https://github.com/obsidian-community/obsidian-theme-template/blob/main/obsidian.css'>Liste verfügbarer CSS-Variablen in Obsidian</a>"
+        ]
+    },
+    {
+        "id": "lineAuthor.textColorCss.var(--text-muted)",
+        "label": "Gedämpfter Text (Standard)"
+    },
+    {
+        "id": "lineAuthor.ignoreWhitespace",
+        "label": "Whitespace und Zeilenumbrüche in Änderungen ignorieren",
+        "tooltip": [
+            "Whitespace und Zeilenumbrüche werden standardmäßig als Teil des Dokuments interpretiert (daher nicht ignoriert).",
+            "Dadurch wird die letzte Zeile als 'geändert' angezeigt, wenn eine neue Zeile hinzugefügt wird, selbst wenn der Text unverändert ist.",
+            "Wenn Sie sich nicht für reine Whitespace-Änderungen interessieren (z.B. Listen-Einrückungen),",
+            "liefert die Aktivierung eine sinnvollere Änderungserkennung."
+        ]
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.historyView",
+        "label": "Historie-Ansicht",
+        "tooltip": "Entscheide, was in der Verlaufansicht des Commits angezeigt werden soll."
+    },
+    {
+        "id": "authorInHistoryView",
+        "label": "Autor anzeigen"
+    },
+    {
+        "id": "authorInHistoryView.hide",
+        "label": "Verbergen"
+    },
+    {
+        "id": "authorInHistoryView.full",
+        "label": "Vollständig"
+    },
+    {
+        "id": "authorInHistoryView.initials",
+        "label": "Initialen"
+    },
+    {
+        "id": "dateInHistoryView",
+        "label": "Datum anzeigen",
+        "tooltip": "Das Commit-Datum in der Historie anzeigen. Das {{date}}-Platzhalterformat wird verwendet."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.sourceControl",
+        "label": "Source-Control-Ansicht"
+    },
+    {
+        "id": "refreshSourceControl",
+        "label": "Bei Dateiänderung aktualisieren",
+        "tooltip": [
+            "Quellcode-Verwaltungsansicht bei Dateiänderungen automatisch aktualisieren.",
+            "Auf langsameren Systemen kann dies zu Verzögerungen führen. In diesem Fall einfach diese Option deaktivieren."
+        ]
+    },
+    {
+        "id": "refreshSourceControlTimer",
+        "label": "Aktualisierungsintervall",
+        "tooltip": "Millisekunden, die nach einer Dateiänderung gewartet werden, bevor die Quellcode-Verwaltungsansicht aktualisiert wird."
+    },
+
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.miscellaneous",
+        "label": "Verschiedenes"
+    },
+    {
+        "id": "diffStyle",
+        "label": "Stil der Diff-Ansicht",
+        "tooltip": [
+            "Beachten Sie, dass das tatsächliche Diff im `Split`-Modus nicht von Git,",
+            "sondern vom Editor selbst erzeugt wird – es kann also vom Git-Diff abweichen. ",
+            "Ein Vorteil davon ist, dass Sie den Text in dieser Ansicht bearbeiten können."
+        ]
+    },
+    {
+        "id": "diffStyle.git_unified",
+        "label": "Unified"
+    },
+    {
+        "id": "diffStyle.split",
+        "label": "Geteilt"
+    },
+    {
+        "id": "disablePopups",
+        "label": "Informative Benachrichtigungen deaktivieren",
+        "tooltip": "Informative Benachrichtigungen für Git-Operationen deaktivieren (Statusleiste für Updates beachten)."
+    },
+    {
+        "id": "disableErrorNotice",
+        "label": "Fehlerbenachrichtigungen deaktivieren",
+        "tooltip": "Alle Fehlerbenachrichtigungen deaktivieren (Statusleiste für Updates beachten)."
+    },
+    {
+        "id": "disablePopupsForNoChanges",
+        "label": "Benachrichtigungen bei keinen Änderungen verbergen",
+        "tooltip": "Keine Benachrichtigungen anzeigen, wenn keine Änderungen zum Committen oder Pushen vorhanden sind."
+    },
+    {
+        "id": "showStatusBar",
+        "label": "Statusleiste anzeigen",
+        "tooltip": "!Obsidian muss neu gestartet werden, damit die Änderungen wirksam werden."
+    },
+    {
+        "id": "showFileMenu",
+        "label": "Dateimenü-Integration",
+        "tooltip": "`Stage`, `Unstage` und `Add` zu `.gitignore`-Aktionen im Dateimenü hinzufügen."
+    },
+    {
+        "id": "showBranchStatusBar",
+        "label": "Branch-Statusleiste anzeigen",
+        "tooltip": "Obsidian muss neu gestartet werden, damit die Änderungen wirksam werden."
+    },
+    {
+        "id": "changedFilesInStatusBar",
+        "label": "Anzahl geänderter Dateien anzeigen",
+        "tooltip": "Anzahl geänderter Dateien in der Statusleiste anzeigen."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.gitReadyCommitAuthor",
+        "label": "Commit-Autor"
+    },
+    {
+        "id": "authorName",
+        "label": "Name"
+    },
+    {
+        "id": "authorEmail",
+        "label": "Email"
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.IsomorphicGit",
+        "label": "Authentifizierung/Commit-Autor"
+    },
+    {
+        "id": "username",
+        "label": "Benutzername",
+        "tooltip": "Benutzername auf dem Git-Server (z.B. GitHub-Benutzername)"
+    },
+    {
+        "id": "password",
+        "label": "Passwort / Personal Access Token",
+        "tooltip": "Passwort eingeben. Es wird nicht wieder angezeigt."
+    },
+    {
+        "##": "==== Group ===================================================================",
+        "id": "settingGroup.advanced",
+        "label": "Erweitert",
+        "tooltip": "Diese Einstellungen müssen normalerweise nicht geändert werden, können aber für spezielle Setups erforderlich sein."
+    },
+    {
+        "id": "updateSubmodules",
+        "label": "Submodules aktualisieren",
+        "tooltip": "`Commit-and-sync` und `pull` kümmern sich um Submodules. Fehlende Features: Konfliktdateien, Anzahl gepullter/gepushter/committeter Dateien. Tracking-Branch muss für jedes Submodule gesetzt sein."
+    },
+    {
+        "id": "submoduleRecurseCheckout",
+        "label": "Submodule-Rekursion beim Checkout/Switch",
+        "tooltip": "Bei Checkout im Root-Repository auch in Submodules ausführen (falls Branches existieren)."
+    },
+    {
+        "id": "customGitPath",
+        "label": "Benutzerdefinierter Git-Binary-Pfad"
+    },
+    {
+        "id": "envVariables",
+        "label": "Zusätzliche Umgebungsvariablen",
+        "hint": "GIT_DIR=/pfad/zu/git/verzeichnis",
+        "tooltip": "Jede Zeile für eine neue Umgebungsvariable im Format SCHLÜSSEL=WERT."
+    },
+    {
+        "id": "pathVariables",
+        "label": "Zusätzliche PATH-Umgebungsvariablen",
+        "tooltip": "Jede Zeile für einen Pfad."
+    },
+    {
+        "id": "reloadGit",
+        "buttonText": "Neu laden"
+    },
+    {
+        "id": "customBasePath",
+        "label": "Benutzerdefinierter Basis-Pfad (Git-Repository-Pfad)",
+        "tooltip": [
+            "Relativer Pfad zum Vault, von dem aus das Git-Binary ausgeführt werden soll.",
+            "Wird meist für den Pfad zum Git-Repository benötigt, falls es nicht im Vault-Root liegt. Auf Windows '\\' statt '/' verwenden."
+        ],
+        "placeholder": "verzeichnis/verzeichnis-mit-git-repo"
+    },
+    {
+        "id": "gitDir",
+        "label": "Benutzerdefinierter Git-Verzeichnispfad (statt .git)",
+        "tooltip": "!Obsidian-Neustart erforderlich. Auf Windows '\\' statt '/' verwenden.",
+        "placeholder": ".git"
+    },
+    {
+        "id": "disablePlugin",
+        "label": "Auf diesem Gerät deaktivieren",
+        "tooltip": "Deaktiviert das Plugin auf diesem Gerät. Diese Einstellung wird nicht synchronisiert."
+    }
+]

@@ -603,3 +603,360 @@
     background: var(--interactive-hover);
     color: var(--text-accent-hover);
 }
+
+
+/* >>> Begin of generated styles @dkani */
+.obsidian-git-dkani-ui-howto,
+.obsidian-git-dkani-ui-group {
+  padding: 1em;
+  border: 1px solid var(--divider-color);
+  margin-top: 1em;
+  margin-bottom: 2em;
+}
+.obsidian-git-dkani-ui-howto-title,
+.obsidian-git-dkani-ui-group-title {
+  font-weight: bold;
+  padding: 0 0.5em 0 0.5em;
+  width: fit-content;
+  background: white;
+}
+.obsidian-git-dkani-ui-howto {
+  margin-bottom: 1em;
+}
+.obsidian-git-dkani-ui-howto-title {
+  font-size: 1.1em;
+}
+.obsidian-git-dkani-ui-howto-text {
+  display: block;
+  color: var(--text-muted);
+  font-size: smaller;
+}
+
+.obsidian-git-dkani-ui-group-header {
+  display: flex;
+  cursor: pointer;
+  margin-bottom: 0.3em;
+  margin-top: -26px;
+}
+
+.obsidian-git-dkani-ui-group-toggle {
+  width: 1em;
+  font-family: monospace;
+  font-size: 1em;
+  text-align: center;
+  user-select: none;
+  opacity: 0.8;
+  margin-top: 2px;
+  padding: 0 10px 0 10px;
+  background: white;
+}
+
+.obsidian-git-dkani-ui-group-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  will-change: max-height;
+  padding-top: 2px;
+}
+
+.obsidian-git-dkani-ui-group-body.collapsed {
+  max-height: 0;
+  opacity: 0.5;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.setting-item.obsidian-git-dkani-ui-item,
+.setting-item.obsidian-git-dkani-ui-group-item {
+  align-items: flex-start;
+}
+.obsidian-git-dkani-ui-info-toggle {
+  margin-top: 10px;
+}
+
+.setting-item.obsidian-git-dkani-ui-item {
+  padding: 0.75em 0 0 1em;
+  border-top: unset;
+}
+
+.setting-item.obsidian-git-dkani-ui-group-item {
+  border-top: none !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-bottom: 0.25em;
+}
+
+.setting-item.obsidian-git-dkani-ui-group-item > .setting-item-info,
+.setting-item.obsidian-git-dkani-ui-item > .setting-item-info {
+  flex: 0 0 200px;
+  margin-top: 5px;
+}
+.setting-item.obsidian-git-dkani-ui-group-item > .setting-item-info.obsidian-git-dkani-ui-info-toggle,
+.setting-item.obsidian-git-dkani-ui-item > .setting-item-info.obsidian-git-dkani-ui-info-toggle {
+  margin-top: 0px;
+}
+.setting-item.obsidian-git-dkani-ui-group-item > .setting-item-info.obsidian-git-dkani-ui-info-textarea,
+.setting-item.obsidian-git-dkani-ui-item > .setting-item-info.obsidian-git-dkani-ui-info-textarea {
+  margin-top: 3px;
+}
+
+.obsidian-git-dkani-ui-info-toggle {
+  margin-top: 0px !important;
+}
+
+.setting-item.obsidian-git-dkani-ui-group-item > .setting-item-control,
+.setting-item.obsidian-git-dkani-ui-item > .setting-item-control {
+  flex: 1 1 auto !important;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.setting-item.obsidian-git-dkani-ui-group-item > .setting-item-control input,
+.setting-item.obsidian-git-dkani-ui-item > .setting-item-control input,
+.setting-item.obsidian-git-dkani-ui-group-item > .setting-item-control input,
+.setting-item.obsidian-git-dkani-ui-item > .setting-item-control input {
+  max-width: none;
+  font-size: 0.9em;
+  height: 90%;
+}
+
+.obsidian-git-dkani-ui-group-item > .setting-item-control input[type='number'] + label,
+.obsidian-git-dkani-ui-item > .setting-item-control input[type='number'] + label,
+.obsidian-git-dkani-ui-group-item > .setting-item-control input[type='number'] + label,
+.obsidian-git-dkani-ui-item > .setting-item-control input[type='number'] + label {
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  margin-left: 5px;
+}
+
+input.obsidian-git-dkani-ui-colorpicker {
+  width: auto !important;
+}
+.obsidian-git-dkani-ui-colorpicker-preview {
+  display: flex;
+  align-items: center;
+  margin-left: 3px;
+}
+.obsidian-git-dkani-ui-colorpicker-preview label {
+  padding: 2px;
+}
+
+.setting-item.obsidian-git-dkani-ui-group-item > .setting-item-control small,
+.setting-item.obsidian-git-dkani-ui-item > .setting-item-control small {
+  margin-top: -0.5em;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+}
+
+.setting-item-control input[class*='-dkani-ui-item']:not([type='checkbox']),
+.setting-item-control select[class*='-dkani-ui-item']:not([type='checkbox']),
+.setting-item-control textarea[class*='-dkani-ui-item'] {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* On wider screens, set a max width for text inputs & textarea */
+@media (min-width: 640px) {
+  .setting-item-control input[class*='-dkani-ui-item']:not([type='checkbox']) {
+    max-width: 472px;
+  }
+
+  .setting-item-control textarea[class*='-dkani-ui-item'] {
+    max-width: 472px;
+    height: 5em;
+  }
+}
+
+input.obsidian-git-dkani-ui-item-short {
+  width: 4em !important;
+  text-align: right;
+}
+
+.obsidian-git-dkani-ui-label-code {
+  font-weight: bold;
+  _text-transform: uppercase;
+  color: blue;
+}
+
+.obsidian-git-dkani-ui-tooltip-icon-warning {
+  font-size: 1.1em;
+  vertical-align: 0px;
+  color: orangered;
+}
+
+.obsidian-git-dkani-ui-tooltip-icon-info {
+  font-size: 0.8em; /* Smaller text */
+  vertical-align: 1px;
+}
+
+.obsidian-git-dkani-ui-tooltip-icon-warning,
+.obsidian-git-dkani-ui-tooltip-icon-info {
+  opacity: 0.7;
+  cursor: help;
+  margin-left: 0.2em;
+  line-height: 1;
+  user-select: none;
+  display: inline-block;
+}
+
+.obsidian-git-dkani-ui-tooltip-icon-info:hover,
+.obsidian-git-dkani-ui-tooltip-icon-info:focus,
+.obsidian-git-dkani-ui-tooltip-icon-warning:hover,
+.obsidian-git-dkani-ui-tooltip-icon-warning:focus {
+  opacity: 1;
+}
+
+/* Hidden by default */
+.obsidian-git-dkani-ui-tooltip {
+  position: absolute;
+  top: 1.6em;
+  left: 0;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  padding: 4px 8px;
+  font-size: 1em;
+  border: 1px solid var(--divider-color);
+  border-radius: 4px;
+  white-space: normal;
+  z-index: 10;
+  width: max-content;
+  max-width: 300px;
+  text-align: left;
+  display: none;
+}
+
+/* Show on hover or focus */
+.obsidian-git-dkani-ui-tooltip-icon:hover + .obsidian-git-dkani-ui-tooltip,
+.obsidian-git-dkani-ui-tooltip-icon:focus + .obsidian-git-dkani-ui-tooltip {
+  display: block;
+}
+
+/* StatusLine */
+.obsidian-git-dkani-ui-status-wrapper {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.obsidian-git-dkani-ui-status-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 2px 12px 2px 2.5em; /* reserve space for thumb */
+  border-radius: 6px;
+  white-space: nowrap;
+  font-family: var(--font-monospace);
+  color: var(--text-normal);
+  background-color: var(--background-modifier-border-hover);
+  min-width: 75px;
+  text-align: left;
+  user-select: text;
+  box-shadow:
+    inset 0 4px 10px rgba(0, 0, 0, 0.07),
+    inset 0 0 1px rgba(0, 0, 0, 0.21);
+}
+
+.obsidian-git-dkani-ui-status-pill::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background-color: white;
+  background-size: 80% 80%;
+  background-repeat: no-repeat;
+  background-position: 2px 2px;
+}
+
+/* Status variants */
+.obsidian-git-dkani-ui-status-pill.enabled {
+  background-color: #a3f7b5; /* light green */
+  color: #166534;
+}
+.obsidian-git-dkani-ui-status-pill.enabled::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%2315803d' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+}
+
+.obsidian-git-dkani-ui-status-pill.disabled {
+  background-color: var(--background-modifier-border-hover);
+  color: var(--text-muted);
+}
+.obsidian-git-dkani-ui-status-pill.disabled::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%23ff0000' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='4.93' y1='4.93' x2='19.07' y2='19.07'/%3E%3C/svg%3E");
+}
+
+.obsidian-git-dkani-ui-settings-slideout {
+  position: absolute;
+  top: -200px;
+  width: 250px;
+  right: 0px;
+  background: var(--background-primary);
+  border: 1px solid var(--divider-color);
+  padding: 10px;
+  border-radius: 0 8px 0 8px;
+  box-shadow: 5px -1px 9px 1px;
+  transition: top 0.3s ease-in-out;
+  z-index: 999;
+}
+.obsidian-git-dkani-ui-settings-slideout.visible {
+  top: 0px;
+}
+.obsidian-git-dkani-ui-lang-btn {
+  margin: 0 5px 5px 0;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.obsidian-git-dkani-ui-lang-btn.current {
+  background-color: var(--background-modifier-success);
+}
+.obsidian-git-dkani-ui-gear-icon {
+  position: absolute;
+  top: 10px;
+  right: 30px;
+  cursor: pointer;
+  font-size: 15px;
+  opacity: 0.7;
+}
+.obsidian-git-dkani-ui-gear-icon:hover {
+  opacity: 1;
+}
+.obsidian-git-dkani-ui-gear-close-button {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+}
+.obsidian-git-dkani-ui-group.radio {
+  border-radius: 10px;
+}
+
+/* defaultValue vertical bar === BEGIN */
+.obsidian-git-dkani-ui-input-wrapper {
+  display: flex;
+  width: 100%;
+}
+.obsidian-git-dkani-ui-icon-wrapper {
+  display: flex;
+  align-items: center;
+}
+.obsidian-git-dkani-ui-default-icon {
+  width: 5px;
+  height: 90%;
+  background: #a3f7b5;
+  margin-left: -5px;
+  display: block;
+}
+/* defaultValue vertical bar === END */
+
+/* <<< End of generated styles @dkani */
+
