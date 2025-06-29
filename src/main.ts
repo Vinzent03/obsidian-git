@@ -1081,6 +1081,18 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
+    async abortMerge(): Promise<void> {
+        this.cachedStatus = await this.gitManager.status();
+        if (this.cachedStatus.conflicted.length == 0) {
+            this.displayMessage('No merge in progress. Nothing to abort');
+            return;
+        }
+
+        await this.gitManager.abortMerge().catch((e) => {
+            this.displayError(e);
+        });
+    }
+
     async fetch(): Promise<void> {
         if (!(await this.remotesAreSet())) {
             return;

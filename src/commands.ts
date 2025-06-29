@@ -122,6 +122,12 @@ export function addCommmands(plugin: ObsidianGit) {
     });
 
     plugin.addCommand({
+        id: "abort-merge",
+        name: "Abort merge",
+        callback: () => plugin.promiseQueue.addTask(() => plugin.abortMerge()),
+    });
+
+    plugin.addCommand({
         id: "fetch",
         name: "Fetch",
         callback: () => plugin.promiseQueue.addTask(() => plugin.fetch()),

@@ -46,6 +46,8 @@ export abstract class GitManager {
 
     abstract pull(): Promise<FileStatusResult[] | undefined>;
 
+    abstract abortMerge(): Promise<void>;
+
     abstract push(): Promise<number | undefined>;
 
     abstract getUnpushedCommits(): Promise<number>;

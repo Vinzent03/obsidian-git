@@ -5,7 +5,7 @@ import { normalizePath, Notice, Platform } from "obsidian";
 import * as path from "path";
 import { resolve, sep } from "path";
 import type * as simple from "simple-git";
-import simpleGit, { GitError } from "simple-git";
+import simpleGit, { GitError, ResetMode } from "simple-git";
 import {
     ASK_PASS_INPUT_FILE,
     ASK_PASS_SCRIPT,
@@ -655,6 +655,16 @@ export class SimpleGit extends GitManager {
             }
         } catch (e) {
             this.convertErrors(e);
+        }
+    }
+
+    async abortMerge(): Promise<void> {
+        try {
+            const res = await this.git.reset(ResetMode.MERGE);
+            console.log("Merge aborted:", res);
+        } catch (error) {
+            this.plugin.displayError(error);
+            throw error;
         }
     }
 
