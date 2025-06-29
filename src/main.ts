@@ -751,7 +751,35 @@ export default class ObsidianGit extends Plugin {
     async pullChangesFromRemote(): Promise<void> {
         if (!(await this.isAllInitialized())) return;
 
-        const filesUpdated = await this.pull();
+        const filesUpdated = await this.pull(false);
+        if (filesUpdated === false) {
+            return;
+        }
+        if (!filesUpdated) {
+            this.displayMessage("Pull: Everything is up-to-date");
+        }
+
+        if (this.gitManager instanceof SimpleGit) {
+            const status = await this.updateCachedStatus();
+            if (status.conflicted.length > 0) {
+                this.displayError(
+                    `You have conflicts in ${status.conflicted.length} ${
+                        status.conflicted.length == 1 ? "file" : "files"
+                    }`
+                );
+                await this.handleConflict(status.conflicted);
+            }
+        }
+
+        this.app.workspace.trigger("obsidian-git:refresh");
+        this.setPluginState({ gitAction: CurrentGitAction.idle });
+    }
+
+    ///Used for command
+    async forcePullChangesFromRemote(): Promise<void> {
+        if (!(await this.isAllInitialized())) return;
+
+        const filesUpdated = await this.pull(true);
         if (filesUpdated === false) {
             return;
         }
@@ -1076,15 +1104,16 @@ export default class ObsidianGit extends Plugin {
 
     /** Used for internals
     Returns whether the pull added a commit or not.
+    @param {boolean} force - If true, merge strategy `--strategy-option=theirs` is used. This will prefer remote changes over local changes.
 
     See {@link pullChangesFromRemote} for the command version. */
-    async pull(): Promise<false | number> {
+    async pull(force: boolean = false): Promise<false | number> {
         if (!(await this.remotesAreSet())) {
             return false;
         }
         try {
             this.log("Pulling....");
-            const pulledFiles = (await this.gitManager.pull()) || [];
+            const pulledFiles = (await this.gitManager.pull(force)) || [];
             this.setPluginState({ offlineMode: false });
 
             if (pulledFiles.length > 0) {

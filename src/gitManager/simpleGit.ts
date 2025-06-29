@@ -584,7 +584,10 @@ export class SimpleGit extends GitManager {
         return this.discard(dir ?? ".");
     }
 
-    async pull(): Promise<FileStatusResult[] | undefined> {
+    /**
+    @param {boolean} force - If true, merge strategy `--strategy-option=theirs` is used. This will prefer remote changes over local changes.
+    */
+    async pull(force: boolean): Promise<FileStatusResult[] | undefined> {
         this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
         try {
             if (this.plugin.settings.updateSubmodules)
@@ -616,12 +619,15 @@ export class SimpleGit extends GitManager {
                     this.plugin.settings.syncMethod === "rebase"
                 ) {
                     try {
+                        const args = force
+                                        ? [branchInfo.tracking!, "--strategy-option=theirs"]
+                                        : [branchInfo.tracking!]
                         switch (this.plugin.settings.syncMethod) {
                             case "merge":
-                                await this.git.merge([branchInfo.tracking!]);
+                                await this.git.merge(args);
                                 break;
                             case "rebase":
-                                await this.git.rebase([branchInfo.tracking!]);
+                                await this.git.rebase(args);
                         }
                     } catch (err) {
                         this.plugin.displayError(
