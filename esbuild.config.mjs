@@ -42,7 +42,7 @@ const context = await esbuild.context({
     logLevel: "info",
     sourcemap: prod ? false : "inline",
     treeShaking: true,
-    platform: "node",
+    platform: "browser",
     minify: prod,
     conditions: [prod ? "production" : "development"], // https://www.npmjs.com/package/esm-env
     plugins: [
