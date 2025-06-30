@@ -659,9 +659,10 @@ export class SimpleGit extends GitManager {
     }
 
     async abortMerge(): Promise<void> {
+        this.plugin.displayMessage("Aborting merge");
         try {
-            const res = await this.git.reset(ResetMode.MERGE);
-            console.log("Merge aborted:", res);
+            await this.git.reset(['--merge']);
+            this.plugin.displayMessage("Merge aborted successfully");
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
