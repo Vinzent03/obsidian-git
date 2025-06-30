@@ -588,6 +588,7 @@ export class SimpleGit extends GitManager {
     @param {boolean} force - If true, merge strategy `--strategy-option=theirs` is used. This will prefer remote changes over local changes.
     */
     async pull(force: boolean): Promise<FileStatusResult[] | undefined> {
+        const progressNotice = this.plugin.displayMessage("Initializing pull");
         this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
         try {
             if (this.plugin.settings.updateSubmodules)
@@ -605,6 +606,9 @@ export class SimpleGit extends GitManager {
                 this.plugin.log(
                     "No tracking branch found. Ignoring pull of main repo and updating submodules only."
                 );
+                this.plugin.displayMessage(
+                    "No tracking branch found. Ignoring pull of main repo and updating submodules only."
+                );
                 return;
             }
 
@@ -614,6 +618,7 @@ export class SimpleGit extends GitManager {
             ]);
 
             if (localCommit !== upstreamCommit) {
+                let err = false;
                 if (
                     this.plugin.settings.syncMethod === "merge" ||
                     this.plugin.settings.syncMethod === "rebase"
@@ -649,6 +654,7 @@ export class SimpleGit extends GitManager {
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             `Sync failed (${this.plugin.settings.syncMethod}): ${"message" in err ? err.message : err}`
                         );
+                        err = true;
                     }
                 }
                 this.app.workspace.trigger("obsidian-git:head-change");
@@ -661,6 +667,8 @@ export class SimpleGit extends GitManager {
                     `${localCommit}..${afterMergeCommit}`,
                     "--name-only",
                 ]);
+
+                if (!err) this.plugin.displayMessage("Finished pull");
 
                 return filesChanged
                     .split(/\r\n|\r|\n/)
