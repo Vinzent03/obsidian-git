@@ -748,38 +748,10 @@ export default class ObsidianGit extends Plugin {
     }
 
     ///Used for command
-    async pullChangesFromRemote(): Promise<void> {
+    async pullChangesFromRemote(force: boolean = false): Promise<void> {
         if (!(await this.isAllInitialized())) return;
 
-        const filesUpdated = await this.pull(false);
-        if (filesUpdated === false) {
-            return;
-        }
-        if (!filesUpdated) {
-            this.displayMessage("Pull: Everything is up-to-date");
-        }
-
-        if (this.gitManager instanceof SimpleGit) {
-            const status = await this.updateCachedStatus();
-            if (status.conflicted.length > 0) {
-                this.displayError(
-                    `You have conflicts in ${status.conflicted.length} ${
-                        status.conflicted.length == 1 ? "file" : "files"
-                    }`
-                );
-                await this.handleConflict(status.conflicted);
-            }
-        }
-
-        this.app.workspace.trigger("obsidian-git:refresh");
-        this.setPluginState({ gitAction: CurrentGitAction.idle });
-    }
-
-    ///Used for command
-    async forcePullChangesFromRemote(): Promise<void> {
-        if (!(await this.isAllInitialized())) return;
-
-        const filesUpdated = await this.pull(true);
+        const filesUpdated = await this.pull(force);
         if (filesUpdated === false) {
             return;
         }
