@@ -125,7 +125,7 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "force-pull",
         name: "Force pull",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.forcePullChangesFromRemote()),
+            plugin.promiseQueue.addTask(() => plugin.pullChangesFromRemote(true)),
     });
 
     plugin.addCommand({

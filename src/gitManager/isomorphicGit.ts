@@ -430,7 +430,10 @@ export class IsomorphicGit extends GitManager {
                     ours: branchInfo.current,
                     theirs: branchInfo.tracking!,
                     abortOnConflict: false,
-                    strategyOption: force ? "theirs" : undefined,
+                    mergeDriver: force ? ({ contents }) => {
+                        const mergedText = contents[2];
+                        return { cleanMerge: true, mergedText };
+                    } : undefined,
                 })
             );
             if (!mergeRes.alreadyMerged) {
