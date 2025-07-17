@@ -475,6 +475,24 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
+    async abortMerge(): Promise<void> {
+        const progressNotice = this.showNotice("Aborting merge");
+        try {
+            await this.wrapFS(
+                git.abortMerge({
+                    ...this.getRepo(),
+                })
+            );
+
+            progressNotice?.hide();
+            this.showNotice("Aborted merge", false);
+        } catch (error) {
+            progressNotice?.hide();
+            this.plugin.displayError(error);
+            throw error;
+        }
+    }
+
     async push(): Promise<number> {
         if (!(await this.canPush())) {
             return 0;
