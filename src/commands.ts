@@ -202,7 +202,7 @@ export function addCommmands(plugin: ObsidianGit) {
     });
 
     plugin.addCommand({
-        id: "commit-staged",
+        id: "commit-smart",
         name: "Commit",
         callback: () =>
             plugin.promiseQueue.addTask(async () => {
@@ -214,6 +214,24 @@ export function addCommmands(plugin: ObsidianGit) {
                     onlyStaged: onlyStaged,
                 });
             }),
+    });
+
+    plugin.addCommand({
+        id: "commit-staged",
+        name: "Commit staged",
+        checkCallback: function (checking) {
+            // Don't show this command in command palette, because the
+            // commit-smart command is more useful. Still provide this command
+            // for hotkeys and automation.
+            if (checking) return false;
+
+            plugin.promiseQueue.addTask(async () => {
+                return plugin.commit({
+                    fromAuto: false,
+                    requestCustomMessage: false,
+                });
+            });
+        },
     });
 
     if (Platform.isDesktopApp) {
@@ -233,16 +251,34 @@ export function addCommmands(plugin: ObsidianGit) {
     }
 
     plugin.addCommand({
+        id: "commit-smart-specified-message",
+        name: "Commit with specific message",
+        callback: () =>
+            plugin.promiseQueue.addTask(async () => {
+                const status = await plugin.updateCachedStatus();
+                const onlyStaged = status.staged.length > 0;
+                return plugin.commit({
+                    fromAuto: false,
+                    requestCustomMessage: true,
+                    onlyStaged: onlyStaged,
+                });
+            }),
+    });
+
+    plugin.addCommand({
         id: "commit-staged-specified-message",
         name: "Commit staged with specific message",
-        callback: () =>
-            plugin.promiseQueue.addTask(() =>
+        checkCallback: function (checking) {
+            // Same reason as for commit-staged
+            if (checking) return false;
+            return plugin.promiseQueue.addTask(() =>
                 plugin.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
                     onlyStaged: true,
                 })
-            ),
+            );
+        },
     });
 
     plugin.addCommand({
