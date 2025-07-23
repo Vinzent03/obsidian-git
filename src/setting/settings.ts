@@ -570,7 +570,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Disable error notifications")
             .setDesc(
-                "Disable errror notifications of any kind to minimize distraction (refer to status bar for updates)."
+                "Disable error notifications of any kind to minimize distraction (refer to status bar for updates)."
             )
             .addToggle((toggle) =>
                 toggle
@@ -717,7 +717,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Advanced")
             .setDesc(
-                "These settings usually don't need to be changed, but may be requried for special setups."
+                "These settings usually don't need to be changed, but may be required for special setups."
             )
             .setHeading();
 
@@ -940,7 +940,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     }
 
     /**
-     * Ensure, that certain last shown values are persisten in the settings.
+     * Ensure, that certain last shown values are persistent in the settings.
      *
      * Necessary for the line author info gutter context menus.
      */
@@ -1160,7 +1160,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 }).descEl.innerHTML = `
                     The CSS color of the gutter text.<br/>
 
-                    It is higly recommended to use
+                    It is highly recommended to use
                     <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties">
                     CSS variables</a>
                     defined by themes
