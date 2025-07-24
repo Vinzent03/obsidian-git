@@ -12,6 +12,7 @@ export interface ObsidianGitSettings {
     autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
+    autoCommitOnlyStaged: boolean;
     syncMethod: SyncMethod;
     /**
      * Whether to push on commit-and-sync

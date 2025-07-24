@@ -223,6 +223,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
 
             new Setting(containerEl)
+                .setName(`Auto ${commitOrSync} only staged files`)
+                .setDesc(
+                    `If turned on, only staged files are committed on ${commitOrSync}. If turned off, all changed files are committed.`
+                )
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.autoCommitOnlyStaged)
+                        .onChange(async (value) => {
+                            plugin.settings.autoCommitOnlyStaged = value;
+                            await plugin.saveSettings();
+                        })
+                );
+
+            new Setting(containerEl)
                 .setName(
                     `Specify custom commit message on auto ${commitOrSync}`
                 )
