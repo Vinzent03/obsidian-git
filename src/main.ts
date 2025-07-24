@@ -1352,7 +1352,12 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
                 placeholder:
                     "Select or create a new remote branch by typing its name and selecting it",
             });
-            return await branchModal.openAndGetResult();
+            const branch = await branchModal.openAndGetResult();
+            if (!branch.startsWith(remoteName + "/")) {
+                // If the branch does not start with the remote name, prepend it
+                return `${remoteName}/${branch}`;
+            }
+            return branch; // Already in the correct format
         }
     }
 

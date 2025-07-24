@@ -933,6 +933,9 @@ export class SimpleGit extends GitManager {
         await this.git.removeRemote(remoteName);
     }
 
+    /**
+     * @param remoteBranch - The remote branch to set as upstream, in the format "remote/branch"
+     */
     async updateUpstreamBranch(remoteBranch: string) {
         try {
             // git 1.8+
@@ -943,12 +946,14 @@ export class SimpleGit extends GitManager {
                 await this.git.branch(["--set-upstream", remoteBranch]);
             } catch {
                 // fallback for when setting upstream branch to a branch that does not exist on the remote yet. Setting it with push instead.
-                await this.git.push(
-                    // @ts-expect-error A type error occurs here because the third element could be undefined.
-                    // However, it is unlikely to be undefined due to the `remoteBranch`'s format, and error handling is in place.
-                    // Therefore, we temporarily ignore the error.
-                    ["--set-upstream", ...splitRemoteBranch(remoteBranch)]
-                );
+                const [remote, remoteBranchName] =
+                    splitRemoteBranch(remoteBranch);
+                const branchInfo = await this.branchInfo();
+                await this.git.push([
+                    "--set-upstream",
+                    remote,
+                    `${branchInfo.current}:${remoteBranchName}`,
+                ]);
             }
         }
     }
