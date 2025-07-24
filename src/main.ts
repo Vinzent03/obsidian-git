@@ -76,6 +76,10 @@ export default class ObsidianGit extends Plugin {
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue(this);
+
+    /**
+     * Debouncer for the auto commit after file changes.
+     */
     autoCommitDebouncer: Debouncer<[], void> | undefined;
     cachedStatus: Status | undefined;
     // Used to store the path of the file that is currently shown in the diff view.
@@ -83,6 +87,9 @@ export default class ObsidianGit extends Plugin {
     intervalsToClear: number[] = [];
     lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(this);
 
+    /**
+     * Debouncer for the refresh of the git status for the source control view after file changes.
+     */
     debRefresh: Debouncer<[], void>;
 
     setPluginState(state: Partial<PluginState>): void {

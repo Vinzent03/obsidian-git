@@ -706,6 +706,14 @@ export class SimpleGit extends GitManager {
         if (trackingBranch == null || currentBranch == null) {
             return 0;
         }
+        const [remote, _] = splitRemoteBranch(trackingBranch);
+        const remoteBranches = await this.getRemoteBranches(remote);
+        if (!remoteBranches.includes(trackingBranch)) {
+            this.plugin.log(
+                `Tracking branch ${trackingBranch} does not exist on remote ${remote}.`
+            );
+            return 0;
+        }
 
         const remoteChangedFiles = (
             await this.git.diffSummary([currentBranch, trackingBranch, "--"])
