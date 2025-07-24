@@ -58,7 +58,8 @@
     function showDiff(event: MouseEvent) {
         event.stopPropagation();
         view.plugin.tools.openDiff({
-            aFile: change.path,
+            aFile: change.from ?? change.path,
+            bFile: change.path,
             aRef: "HEAD",
             bRef: "",
             event,

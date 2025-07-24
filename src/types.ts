@@ -286,7 +286,7 @@ export type StatusRootTreeItem = RootTreeItem<FileStatusResult>;
 
 export type HistoryRootTreeItem = RootTreeItem<DiffFile>;
 
-export interface DiffViewState {
+export type DiffViewState = {
     /**
      * The repo relative file path for a.
      * For diffing a renamed file, this is the old path.
@@ -307,10 +307,10 @@ export interface DiffViewState {
     /**
      * The git ref to specify which state of that file should be shown.
      * An empty string refers to the index version of a file, so you have to specifically check against undefined.
-     * `undefined` stands for the workign tree version.
+     * `undefined` stands for the working tree version.
      */
     bRef?: string;
-}
+};
 
 export enum FileType {
     staged,

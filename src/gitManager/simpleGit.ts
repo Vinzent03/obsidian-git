@@ -388,10 +388,10 @@ export class SimpleGit extends GitManager {
     }
 
     //Remove wrong `"` like "My file.md"
-    formatPath(
-        path: { from?: string; path: string },
-        renamed = false
-    ): { path: string; from?: string } {
+    formatPath(path: { from?: string; path: string }): {
+        path: string;
+        from?: string;
+    } {
         function format(path?: string): string | undefined {
             if (path == undefined) return undefined;
 
@@ -401,7 +401,7 @@ export class SimpleGit extends GitManager {
                 return path;
             }
         }
-        if (renamed) {
+        if (path.from != undefined) {
             return {
                 from: format(path.from),
                 path: format(path.path)!,

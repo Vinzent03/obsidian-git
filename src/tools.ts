@@ -8,6 +8,7 @@ import type ObsidianGit from "./main";
 import { SimpleGit } from "./gitManager/simpleGit";
 import { getNewLeaf, splitRemoteBranch } from "./utils";
 import { GeneralModal } from "./ui/modals/generalModal";
+import type { DiffViewState } from "./types";
 
 export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
@@ -117,7 +118,7 @@ export default class Tools {
             diffStyle = "git_unified";
         }
 
-        const state = {
+        const state: DiffViewState = {
             aFile: aFile,
             bFile: bFile ?? aFile,
             aRef: aRef,
