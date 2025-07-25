@@ -44,7 +44,7 @@ export abstract class GitManager {
 
     abstract discardAll(_: { dir?: string; status?: Status }): Promise<void>;
 
-    abstract pull(): Promise<FileStatusResult[] | undefined>;
+    abstract pull(force?: boolean): Promise<FileStatusResult[] | undefined>;
 
     abstract push(): Promise<number | undefined>;
 
