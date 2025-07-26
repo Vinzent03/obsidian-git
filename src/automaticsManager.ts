@@ -64,7 +64,7 @@ export default class AutomaticsManager {
      * Should only be used when settings are changed.
      */
     reload(...type: ("commit" | "push" | "pull")[]) {
-        if (this.plugin.state.pausedAutomatics) return;
+        if (this.plugin.localStorage.getAutomaticsPaused()) return;
 
         if (type.contains("commit")) {
             this.clearAutoCommitAndSync();
@@ -107,11 +107,7 @@ export default class AutomaticsManager {
             }
         }
 
-        if (
-            !this.plugin.state.pausedAutomatics &&
-            !this.timeoutIDCommitAndSync &&
-            !this.plugin.autoCommitDebouncer
-        ) {
+        if (!this.timeoutIDCommitAndSync && !this.plugin.autoCommitDebouncer) {
             const lastAutos = this.loadLastAuto();
 
             if (this.plugin.settings.autoSaveInterval > 0) {

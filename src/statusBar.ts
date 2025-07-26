@@ -94,7 +94,7 @@ export class StatusBar {
             this.conflictEl.style.marginRight = "";
         }
 
-        if (this.plugin.state.pausedAutomatics) {
+        if (this.plugin.localStorage.getAutomaticsPaused()) {
             setIcon(this.pausedEl, "pause-circle");
             this.pausedEl.ariaLabel =
                 "Automatic routines are currently paused.";

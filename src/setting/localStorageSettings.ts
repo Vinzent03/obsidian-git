@@ -136,4 +136,22 @@ export class LocalStorageSettings {
             `${value}`
         );
     }
+
+    /**
+     * Whether automatic routines are currently paused.
+     * New timers should not be started when this is true.
+     */
+    getAutomaticsPaused(): boolean {
+        return (
+            this.app.loadLocalStorage(this.prefix + "automaticsPaused") ==
+            "true"
+        );
+    }
+
+    setAutomaticsPaused(value: boolean): void {
+        return this.app.saveLocalStorage(
+            this.prefix + "automaticsPaused",
+            `${value}`
+        );
+    }
 }

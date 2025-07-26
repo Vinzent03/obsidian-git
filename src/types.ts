@@ -217,11 +217,6 @@ export interface FileStatusResult {
 export interface PluginState {
     offlineMode: boolean;
     gitAction: CurrentGitAction;
-    /**
-     * Whether automatic routines are currently paused.
-     * New timers should not be started when this is true.
-     */
-    pausedAutomatics: boolean;
 }
 
 export enum CurrentGitAction {

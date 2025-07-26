@@ -446,8 +446,8 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "pause-automatic-routines",
         name: "Pause/Resume automatic routines",
         callback: () => {
-            const pause = !plugin.state.pausedAutomatics;
-            plugin.setPluginState({ pausedAutomatics: pause });
+            const pause = !plugin.localStorage.getAutomaticsPaused();
+            plugin.localStorage.setAutomaticsPaused(pause);
             if (pause) {
                 plugin.automaticsManager.unload();
                 new Notice(`Paused automatic routines.`);

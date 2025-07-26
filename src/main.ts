@@ -72,7 +72,6 @@ export default class ObsidianGit extends Plugin {
     state: PluginState = {
         gitAction: CurrentGitAction.idle,
         offlineMode: false,
-        pausedAutomatics: false,
     };
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
@@ -551,6 +550,7 @@ export default class ObsidianGit extends Plugin {
             }
 
             const result = await this.gitManager.checkRequirements();
+            const automaticsPaused = this.localStorage.getAutomaticsPaused();
             switch (result) {
                 case "missing-git":
                     this.displayError(
@@ -595,12 +595,24 @@ export default class ObsidianGit extends Plugin {
                     /// Among other things, this notifies the history view that git is ready
                     this.app.workspace.trigger("obsidian-git:head-change");
 
-                    if (!fromReload && this.settings.autoPullOnBoot) {
+                    if (
+                        !fromReload &&
+                        this.settings.autoPullOnBoot &&
+                        !automaticsPaused
+                    ) {
                         this.promiseQueue.addTask(() =>
                             this.pullChangesFromRemote()
                         );
                     }
-                    await this.automaticsManager.init();
+
+                    if (!automaticsPaused) {
+                        await this.automaticsManager.init();
+                    }
+
+                    if (automaticsPaused) {
+                        new Notice("Automatic routines are currently paused.");
+                    }
+
                     break;
                 default:
                     this.log(
