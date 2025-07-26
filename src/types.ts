@@ -3,6 +3,7 @@ import type { LineAuthorSettings } from "src/lineAuthor/model";
 export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
+    commitMessageScript: string;
     commitDateFormat: string;
     /**
      * Interval to either automatically commit-and-sync or just commit
@@ -11,6 +12,7 @@ export interface ObsidianGitSettings {
     autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
+    autoCommitOnlyStaged: boolean;
     syncMethod: SyncMethod;
     /**
      * Whether to push on commit-and-sync
@@ -20,7 +22,14 @@ export interface ObsidianGitSettings {
      * Whether to pull on commit-and-sync
      */
     pullBeforePush: boolean;
+    /**
+     * Whether messages from {@link ObsidianGit.displayMessage} should be shown
+     */
     disablePopups: boolean;
+    /**
+     * Whether messages from {@link ObsidianGit.displayError} should be shown
+     */
+    showErrorNotices: boolean;
     disablePopupsForNoChanges: boolean;
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
@@ -282,7 +291,7 @@ export type StatusRootTreeItem = RootTreeItem<FileStatusResult>;
 
 export type HistoryRootTreeItem = RootTreeItem<DiffFile>;
 
-export interface DiffViewState {
+export type DiffViewState = {
     /**
      * The repo relative file path for a.
      * For diffing a renamed file, this is the old path.
@@ -303,10 +312,10 @@ export interface DiffViewState {
     /**
      * The git ref to specify which state of that file should be shown.
      * An empty string refers to the index version of a file, so you have to specifically check against undefined.
-     * `undefined` stands for the workign tree version.
+     * `undefined` stands for the working tree version.
      */
     bRef?: string;
-}
+};
 
 export enum FileType {
     staged,
@@ -326,10 +335,19 @@ declare module "obsidian" {
         saveLocalStorage(key: string, value: string | undefined): void;
         openWithDefaultApp(path: string): void;
         getTheme(): "obsidian" | "moonstone";
+        viewRegistry: ViewRegistry;
     }
     interface View {
         titleEl: HTMLElement;
         inlineTitleEl: HTMLElement;
+    }
+    interface ViewRegistry {
+        /**
+         * PRIVATE API
+         *
+         * Returns the view type for the given extension if available.
+         */
+        getTypeByExtension(extension: string): string;
     }
     interface Workspace {
         /**

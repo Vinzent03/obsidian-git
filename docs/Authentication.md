@@ -2,6 +2,41 @@
 aliases:
   - "04 Authentication"
 ---
+# macOS
+
+## HTTPS
+
+Run the following to use the macOS keychain to store your credentials.
+
+```bash
+git config --global credential.helper osxkeychain
+```
+
+You have to do one authentication action (clone/pull/push) after setting the helper in the terminal. After that you should be able to clone/pull/push in Obsidian without any issues.
+
+## SSH
+
+Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#adding-your-ssh-key-to-the-ssh-agent).
+
+# Windows
+
+## HTTPS
+
+Ensure you are using Git 2.29 or higher and you are using Git Credential Manager as a credential helper. 
+You can verify this by executing the following snippet in a terminal, preferably in the directory where your vault/repository is located. It should output `manager`.
+
+```bash
+git config credential.helper
+```
+
+If this doesn't output `manager`, please run `git config set credential.helper manager`
+Just execute any authentication command like push/pull/clone and a pop window should come up, allowing your to sign in.
+
+Alternatively, you can also leave that setting empty and always provide the username and password manually via the prompted modal in Obsidian. All available credential helpers are listed [here](https://git-scm.com/doc/credential-helpers).,
+
+## SSH
+Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#adding-your-ssh-key-to-the-ssh-agent).
+
 # Linux
 
 ## HTTPS
@@ -50,40 +85,3 @@ The plugin now automatically provides an integrated script for the `SSH_ASKPASS`
 
 ## SSH
 With one of the above [[#SSH_PASS Tools]]  installed to enter your passphrase, you can use ssh with a passphrase. Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linuxu#adding-your-ssh-key-to-the-ssh-agent).
-
-# macOS
-
-## HTTPS
-
-Run the following to use the macOS keychain to store your credentials.
-
-```bash
-git config --global credential.helper osxkeychain
-```
-
-You have to do one authentication action (clone/pull/push) after setting the helper in the terminal. After that you should be able to clone/pull/push in Obsidian without any issues.
-
-## SSH
-
-Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#adding-your-ssh-key-to-the-ssh-agent).
-
-# Windows
-
-## HTTPS
-
-Ensure you are using Git 2.29 or higher and you are using Git Credential Manager as a credential helper. 
-You can verify this by executing the following snippet in a terminal, preferably in the directory where your vault/repository is located. It should output `manager`.
-
-```bash
-git config credential.helper
-```
-
-If this doesn't output `manager`, please run `git config set credential.helper manager`
-Just execute any authentication command like push/pull/clone and a pop window should come up, allowing your to sign in.
-
-Alternatively, you can also leave that setting empty and always provide the username and password manually via the prompted modal in Obsidian. All available credential helpers are listed [here](https://git-scm.com/doc/credential-helpers).,
-
-## SSH
-Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows#adding-your-ssh-key-to-the-ssh-agent).
-
-

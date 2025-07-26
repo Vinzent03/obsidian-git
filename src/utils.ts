@@ -1,7 +1,8 @@
 import * as cssColorConverter from "css-color-converter";
+import { spawn, type SpawnOptionsWithoutStdio } from "child_process";
 import deepEqual from "deep-equal";
 import type { App, RGB, WorkspaceLeaf } from "obsidian";
-import { Keymap, Menu, moment } from "obsidian";
+import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
 
 export const worthWalking = (filepath: string, root?: string) => {
@@ -150,7 +151,7 @@ export function splitRemoteBranch(
 
 export function getDisplayPath(path: string): string {
     if (path.endsWith("/")) return path;
-    return path.split("/").last()!.replace(".md", "");
+    return path.split("/").last()!.replace(/\.md$/, "");
 }
 
 export function formatMinutes(minutes: number): string {
@@ -173,4 +174,111 @@ export function fileIsBinary(path: string): boolean {
     const ext = getExtensionFromPath(path);
 
     return BINARY_EXTENSIONS.includes(ext);
+}
+
+export function formatRemoteUrl(url: string): string {
+    if (
+        url.startsWith("https://github.com/") ||
+        url.startsWith("https://gitlab.com/")
+    ) {
+        if (!url.endsWith(".git")) {
+            url = url + ".git";
+        }
+    }
+    return url;
+}
+
+export function fileOpenableInObsidian(
+    relativeVaultPath: string,
+    app: App
+): boolean {
+    const file = app.vault.getAbstractFileByPath(relativeVaultPath);
+    if (!(file instanceof TFile)) {
+        return false;
+    }
+    try {
+        // Internal Obsidian API function
+        // If a view type is registired for the file extension, it can be opened in Obsidian.
+        // Just checking if Obsidian tracks the file is not enough,
+        // because it can also track files, it can only open externally.
+        return !!app.viewRegistry.getTypeByExtension(file.extension);
+    } catch {
+        // If the function doesn't exist anymore, it will throw an error. In that case, just skip the check.
+        return true;
+    }
+}
+
+export function convertPathToAbsoluteGitignoreRule({
+    isFolder,
+    gitRelativePath,
+}: {
+    isFolder?: boolean;
+    gitRelativePath: string;
+}): string {
+    // Add a leading slash to set the rule as absolute from root, so it only excludes that exact path
+    let composedPath = "/";
+
+    composedPath += gitRelativePath;
+
+    // Add an explicit folder rule, so that the same path doesn't also apply for files with that same name
+    if (isFolder) {
+        composedPath += "/";
+    }
+
+    // Escape special characters, so that git treats them as literal characters.
+    const escaped = composedPath.replace(/([\\!#*?[\]])/g, String.raw`\$1`);
+
+    // Then escape each trailing whitespace character individually, because git trims trailing whitespace from the end of the rule.
+    // Files normally end with a file extension, not whitespace, but a file with trailing whitespace can appear if Obsidian's "Detect all file extensions" setting is turned on.
+    return escaped.replace(/\s(?=\s*$)/g, String.raw`\ `);
+}
+
+export function spawnAsync(
+    command: string,
+    args: string[],
+    options: SpawnOptionsWithoutStdio = {}
+): Promise<{
+    stdout: string;
+    stderr: string;
+    code: number;
+    error: Error | undefined;
+}> {
+    return new Promise((resolve, _) => {
+        // Spawn the child process
+        const child = spawn(command, args, options);
+
+        let stdoutBuffer = "";
+        let stderrBuffer = "";
+
+        // Collect stdout data
+        child.stdout.on("data", (data: Buffer) => {
+            stdoutBuffer += data.toString();
+        });
+
+        // Collect stderr data
+        child.stderr.on("data", (data: Buffer) => {
+            stderrBuffer += data.toString();
+        });
+
+        // Handle process errors (e.g., command not found)
+        child.on("error", (err) => {
+            resolve({
+                error: new Error(err.message),
+                stdout: stdoutBuffer,
+                stderr: stdoutBuffer,
+                code: 1,
+            });
+        });
+
+        // Handle process exit
+        child.on("close", (code) => {
+            // Resolve the promise with collected data and exit code
+            resolve({
+                stdout: stdoutBuffer,
+                stderr: stderrBuffer,
+                code: code ?? 1,
+                error: undefined,
+            });
+        });
+    });
 }

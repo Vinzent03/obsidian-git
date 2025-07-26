@@ -101,7 +101,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<main>
+<main class="git-view">
     <div class="nav-header">
         <div class="nav-buttons-container">
             <div
@@ -123,7 +123,6 @@
                 class:loading
                 data-icon="refresh-cw"
                 aria-label="Refresh"
-                style="margin: 1px;"
                 bind:this={buttons[1]}
                 onclick={triggerRefresh}
             ></div>
@@ -138,10 +137,10 @@
                 {/each}
             </div>
         {/if}
+        <div id="sentinel"></div>
+        <!-- Ensure that the sentinel item is reachable with the overlaying status bar and indicate that the end of the list is reached  -->
+        <div style="margin-bottom:40px"></div>
     </div>
-    <div id="sentinel"></div>
-    <!-- Ensure that the sentinel item is reachable with the overlaying status bar and indicate that the end of the list is reached  -->
-    <div style="margin-bottom:40px"></div>
 </main>
 
 <style lang="scss">

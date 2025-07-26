@@ -1,4 +1,15 @@
 # Desktop
+You can either start by cloning an existing remote repository as described [[#For existing remote repository|here]] or start with initializing a new repository locally and optionally push that to a remote repository as described [[#Create new local repository|here]].
+
+## Create new local repository
+
+1. Follow the [[Installation]] instructions for your operating system
+2. Call the `Initialize a new repo` command
+3. Create your first commit by creating some files and calling the `Commit all changes with specific message` command
+4. If you want to Setup to push it to a remote repository like to GitHub:
+	1. Setup [[Authentication]]
+	2. Ensure that the remote repository is empty. Otherwise delete the repository and instead proceed to clone the remote repository as described in the [[#For existing remote repository|next section]].
+	3. Call the `Push` command. It should ask you for a name and URL of the remote repository. Just enter `origin` for the remote name and copy the URL to push to somewhere from your remote git service.
 
 ## For existing remote repository
 

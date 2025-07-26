@@ -111,6 +111,9 @@ importers:
       svelte-check:
         specifier: ^4.0.5
         version: 4.0.5(svelte@5.16.0)(typescript@5.6.3)
+      svelte-eslint-parser:
+        specifier: ^0.43.0
+        version: 0.43.0(svelte@5.16.0)
       svelte-preprocess:
         specifier: ^6.0.3
         version: 6.0.3(postcss-load-config@3.1.4(postcss@8.4.47))(postcss@8.4.47)(sass@1.79.4)(svelte@5.16.0)(typescript@5.6.3)

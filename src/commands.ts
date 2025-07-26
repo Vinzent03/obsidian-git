@@ -1,11 +1,11 @@
-import { Notice, Platform, WorkspaceLeaf } from "obsidian";
+import { Notice, Platform, TFolder, WorkspaceLeaf } from "obsidian";
 import { HISTORY_VIEW_CONFIG, SOURCE_CONTROL_VIEW_CONFIG } from "./constants";
+import { SimpleGit } from "./gitManager/simpleGit";
 import ObsidianGit from "./main";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
-import { SimpleGit } from "./gitManager/simpleGit";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -46,6 +46,10 @@ export function addCommmands(plugin: ObsidianGit) {
                 leaf = leafs.first()!;
             }
             await app.workspace.revealLeaf(leaf);
+
+            // Is not needed for the first open, but allows to refresh the view
+            // per hotkey even if already opened
+            app.workspace.trigger("obsidian-git:refresh");
         },
     });
     plugin.addCommand({
@@ -67,6 +71,10 @@ export function addCommmands(plugin: ObsidianGit) {
                 leaf = leafs.first()!;
             }
             await app.workspace.revealLeaf(leaf);
+
+            // Is not needed for the first open, but allows to refresh the view
+            // per hotkey even if already opened
+            app.workspace.trigger("obsidian-git:refresh");
         },
     });
 
@@ -135,7 +143,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 return file !== null;
             } else {
                 plugin
-                    .addFileToGitignore(file!.path)
+                    .addFileToGitignore(file!.path, file instanceof TFolder)
                     .catch((e) => plugin.displayError(e));
             }
         },
@@ -145,7 +153,9 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "push",
         name: "Commit-and-sync",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.commitAndSync(false)),
+            plugin.promiseQueue.addTask(() =>
+                plugin.commitAndSync({ fromAutoBackup: false })
+            ),
     });
 
     plugin.addCommand({
@@ -153,7 +163,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit-and-sync and then close Obsidian",
         callback: () =>
             plugin.promiseQueue.addTask(async () => {
-                await plugin.commitAndSync(false);
+                await plugin.commitAndSync({ fromAutoBackup: false });
                 window.close();
             }),
     });
@@ -163,7 +173,10 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit-and-sync with specific message",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commitAndSync(false, true)
+                plugin.commitAndSync({
+                    fromAutoBackup: false,
+                    requestCustomMessage: true,
+                })
             ),
     });
 
@@ -189,16 +202,36 @@ export function addCommmands(plugin: ObsidianGit) {
     });
 
     plugin.addCommand({
-        id: "commit-staged",
-        name: "Commit staged",
+        id: "commit-smart",
+        name: "Commit",
         callback: () =>
-            plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+            plugin.promiseQueue.addTask(async () => {
+                const status = await plugin.updateCachedStatus();
+                const onlyStaged = status.staged.length > 0;
+                return plugin.commit({
                     fromAuto: false,
                     requestCustomMessage: false,
-                    onlyStaged: true,
-                })
-            ),
+                    onlyStaged: onlyStaged,
+                });
+            }),
+    });
+
+    plugin.addCommand({
+        id: "commit-staged",
+        name: "Commit staged",
+        checkCallback: function (checking) {
+            // Don't show this command in command palette, because the
+            // commit-smart command is more useful. Still provide this command
+            // for hotkeys and automation.
+            if (checking) return false;
+
+            plugin.promiseQueue.addTask(async () => {
+                return plugin.commit({
+                    fromAuto: false,
+                    requestCustomMessage: false,
+                });
+            });
+        },
     });
 
     if (Platform.isDesktopApp) {
@@ -218,16 +251,34 @@ export function addCommmands(plugin: ObsidianGit) {
     }
 
     plugin.addCommand({
+        id: "commit-smart-specified-message",
+        name: "Commit with specific message",
+        callback: () =>
+            plugin.promiseQueue.addTask(async () => {
+                const status = await plugin.updateCachedStatus();
+                const onlyStaged = status.staged.length > 0;
+                return plugin.commit({
+                    fromAuto: false,
+                    requestCustomMessage: true,
+                    onlyStaged: onlyStaged,
+                });
+            }),
+    });
+
+    plugin.addCommand({
         id: "commit-staged-specified-message",
         name: "Commit staged with specific message",
-        callback: () =>
-            plugin.promiseQueue.addTask(() =>
+        checkCallback: function (checking) {
+            // Same reason as for commit-staged
+            if (checking) return false;
+            return plugin.promiseQueue.addTask(() =>
                 plugin.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
                     onlyStaged: true,
                 })
-            ),
+            );
+        },
     });
 
     plugin.addCommand({

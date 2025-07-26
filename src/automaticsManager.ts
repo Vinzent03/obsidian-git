@@ -2,9 +2,9 @@ import { debounce } from "obsidian";
 import type ObsidianGit from "./main";
 
 export default class AutomaticsManager {
-    timeoutIDCommitAndSync?: number;
-    timeoutIDPush?: number;
-    timeoutIDPull?: number;
+    private timeoutIDCommitAndSync?: number;
+    private timeoutIDPush?: number;
+    private timeoutIDPull?: number;
 
     constructor(private readonly plugin: ObsidianGit) {}
 
@@ -36,24 +36,18 @@ export default class AutomaticsManager {
             this.plugin.settings.differentIntervalCommitAndPush &&
             this.plugin.settings.autoPushInterval > 0
         ) {
-            const now = new Date();
-
-            const diff =
-                this.plugin.settings.autoPushInterval -
-                Math.round(
-                    (now.getTime() - lastAutos.push.getTime()) / 1000 / 60
-                );
-            this.startAutoPush(diff <= 0 ? 0 : diff);
+            const diff = this.diff(
+                this.plugin.settings.autoPushInterval,
+                lastAutos.push
+            );
+            this.startAutoPush(diff);
         }
         if (this.plugin.settings.autoPullInterval > 0) {
-            const now = new Date();
-
-            const diff =
-                this.plugin.settings.autoPullInterval -
-                Math.round(
-                    (now.getTime() - lastAutos.pull.getTime()) / 1000 / 60
-                );
-            this.startAutoPull(diff <= 0 ? 0 : diff);
+            const diff = this.diff(
+                this.plugin.settings.autoPullInterval,
+                lastAutos.pull
+            );
+            this.startAutoPull(diff);
         }
     }
 
@@ -97,17 +91,19 @@ export default class AutomaticsManager {
         }
     }
 
-    async setUpAutoCommitAndSync() {
-        // If the setting is enabled, set the last auto backup to the
-        // last commit in localstorage
+    /**
+     * Starts the auto commit-and-sync with the correct remaining time.
+     *
+     * Additionally, if `setLastSaveToLastCommit` is enabled, the last auto commit-and-sync
+     * is set to the last commit time.
+     */
+    private async setUpAutoCommitAndSync() {
         if (this.plugin.settings.setLastSaveToLastCommit) {
             this.clearAutoCommitAndSync();
             const lastCommitDate =
                 await this.plugin.gitManager.getLastCommitTime();
             if (lastCommitDate) {
-                this.plugin.localStorage.setLastAutoBackup(
-                    lastCommitDate.toString()
-                );
+                this.saveLastAuto(lastCommitDate, "backup");
             }
         }
 
@@ -119,14 +115,11 @@ export default class AutomaticsManager {
             const lastAutos = this.loadLastAuto();
 
             if (this.plugin.settings.autoSaveInterval > 0) {
-                const now = new Date();
-
-                const diff =
-                    this.plugin.settings.autoSaveInterval -
-                    Math.round(
-                        (now.getTime() - lastAutos.backup.getTime()) / 1000 / 60
-                    );
-                this.startAutoCommitAndSync(diff <= 0 ? 0 : diff);
+                const diff = this.diff(
+                    this.plugin.settings.autoSaveInterval,
+                    lastAutos.backup
+                );
+                this.startAutoCommitAndSync(diff);
             }
         }
     }
@@ -153,17 +146,48 @@ export default class AutomaticsManager {
         }
     }
 
-    // this.plugin is used for both auto commit-and-sync and commit only
+    // This is used for both auto commit-and-sync and commit only
     private doAutoCommitAndSync(): void {
-        this.plugin.promiseQueue.addTask(() => {
-            if (this.plugin.settings.differentIntervalCommitAndPush) {
-                return this.plugin.commit({ fromAuto: true });
-            } else {
-                return this.plugin.commitAndSync(true);
+        this.plugin.promiseQueue.addTask(
+            async () => {
+                // Re-check if the auto commit should run now or be postponed,
+                // because the last commit time has changed
+                if (this.plugin.settings.setLastSaveToLastCommit) {
+                    const lastCommitDate =
+                        await this.plugin.gitManager.getLastCommitTime();
+                    if (lastCommitDate) {
+                        this.saveLastAuto(lastCommitDate, "backup");
+                        const diff = this.diff(
+                            this.plugin.settings.autoSaveInterval,
+                            lastCommitDate
+                        );
+                        if (diff > 0) {
+                            this.startAutoCommitAndSync(diff);
+                            // Return false to mark the next iteration
+                            // already being scheduled
+                            return false;
+                        }
+                    }
+                }
+                const onlyStaged = this.plugin.settings.autoCommitOnlyStaged;
+                if (this.plugin.settings.differentIntervalCommitAndPush) {
+                    await this.plugin.commit({ fromAuto: true, onlyStaged });
+                } else {
+                    await this.plugin.commitAndSync({
+                        fromAutoBackup: true,
+                        onlyStaged,
+                    });
+                }
+                return true;
+            },
+            (schedule) => {
+                // Don't schedule if the next iteration is already scheduled
+                if (schedule !== false) {
+                    this.saveLastAuto(new Date(), "backup");
+                    this.startAutoCommitAndSync();
+                }
             }
-        });
-        this.saveLastAuto(new Date(), "backup");
-        this.startAutoCommitAndSync();
+        );
     }
 
     private startAutoPull(minutes?: number) {
@@ -171,13 +195,17 @@ export default class AutomaticsManager {
         // max timeout in js
         if (time > 2147483647) time = 2147483647;
 
-        this.timeoutIDPull = window.setTimeout(() => {
-            this.plugin.promiseQueue.addTask(() =>
-                this.plugin.pullChangesFromRemote()
-            );
-            this.saveLastAuto(new Date(), "pull");
-            this.startAutoPull();
-        }, time);
+        this.timeoutIDPull = window.setTimeout(() => this.doAutoPull(), time);
+    }
+
+    private doAutoPull(): void {
+        this.plugin.promiseQueue.addTask(
+            () => this.plugin.pullChangesFromRemote(),
+            () => {
+                this.saveLastAuto(new Date(), "pull");
+                this.startAutoPull();
+            }
+        );
     }
 
     private startAutoPush(minutes?: number) {
@@ -185,11 +213,17 @@ export default class AutomaticsManager {
         // max timeout in js
         if (time > 2147483647) time = 2147483647;
 
-        this.timeoutIDPush = window.setTimeout(() => {
-            this.plugin.promiseQueue.addTask(() => this.plugin.push());
-            this.saveLastAuto(new Date(), "push");
-            this.startAutoPush();
-        }, time);
+        this.timeoutIDPush = window.setTimeout(() => this.doAutoPush(), time);
+    }
+
+    private doAutoPush(): void {
+        this.plugin.promiseQueue.addTask(
+            () => this.plugin.push(),
+            () => {
+                this.saveLastAuto(new Date(), "push");
+                this.startAutoPush();
+            }
+        );
     }
 
     private clearAutoCommitAndSync(): boolean {
@@ -223,5 +257,18 @@ export default class AutomaticsManager {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Calculates the minutes until the next auto action. >= 0
+     *
+     * This is done by the difference between the setting and the time since the last auto action, but at least 0.
+     */
+    private diff(setting: number, lastAuto: Date) {
+        const now = new Date();
+        const diff =
+            setting -
+            Math.round((now.getTime() - lastAuto.getTime()) / 1000 / 60);
+        return Math.max(0, diff);
     }
 }

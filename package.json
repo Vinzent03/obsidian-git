@@ -1,6 +1,6 @@
 {
     "name": "obsidian-git",
-    "version": "2.31.1",
+    "version": "2.34.0",
     "description": "Integrate Git version control with automatic backup and other advanced features in Obsidian.md",
     "main": "main.js",
     "scripts": {
@@ -41,6 +41,7 @@
         "standard-version": "^9.5.0",
         "svelte-check": "^4.0.5",
         "svelte-preprocess": "^6.0.3",
+        "svelte-eslint-parser": "^0.43.0",
         "tslib": "^2.7.0",
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.8.1"

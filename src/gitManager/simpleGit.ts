@@ -1,4 +1,3 @@
-import { spawnSync } from "child_process";
 import debug from "debug";
 import * as fsPromises from "fs/promises";
 import type { FileSystemAdapter } from "obsidian";
@@ -27,7 +26,7 @@ import type {
     Status,
 } from "../types";
 import { CurrentGitAction, NoNetworkError } from "../types";
-import { impossibleBranch, splitRemoteBranch } from "../utils";
+import { impossibleBranch, spawnAsync, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 
 export class SimpleGit extends GitManager {
@@ -40,7 +39,7 @@ export class SimpleGit extends GitManager {
     }
 
     async setGitInstance(ignoreError = false): Promise<void> {
-        if (this.isGitInstalled()) {
+        if (await this.isGitInstalled()) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const vaultBasePath = adapter.getBasePath();
             let basePath = vaultBasePath;
@@ -88,7 +87,19 @@ export class SimpleGit extends GitManager {
                 process.env[key] = value;
             }
 
-            debug.enable("simple-git");
+            const SIMPLE_GIT_NAMESPACE = "simple-git";
+            const NAMESPACE_SEPARATOR = ",";
+            const currentDebug = (localStorage.debug ?? "") as string;
+            const namespaces = currentDebug.split(NAMESPACE_SEPARATOR);
+
+            if (
+                !namespaces.includes(SIMPLE_GIT_NAMESPACE) &&
+                !namespaces.includes(`-${SIMPLE_GIT_NAMESPACE}`)
+            ) {
+                namespaces.push(SIMPLE_GIT_NAMESPACE);
+                debug.enable(namespaces.join(NAMESPACE_SEPARATOR));
+            }
+
             if (await this.git.checkIsRepo()) {
                 // Resolve the relative root reported by git into an absolute path
                 // in case git resides in a different filesystem (eg, WSL)
@@ -170,6 +181,8 @@ export class SimpleGit extends GitManager {
         const relPluginConfigDir =
             this.app.vault.configDir + "/plugins/obsidian-git/";
 
+        await this.addAskPassScriptToExclude();
+
         await fsPromises.writeFile(
             path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
             ASK_PASS_SCRIPT
@@ -197,6 +210,7 @@ export class SimpleGit extends GitManager {
                 }
                 const response = await new GeneralModal(this.plugin, {
                     allowEmpty: true,
+                    obscure: true,
                     placeholder:
                         data.length > 60
                             ? "Enter a response to the message."
@@ -228,6 +242,56 @@ export class SimpleGit extends GitManager {
             await new Promise((res) => setTimeout(res, 5000));
             this.plugin.log("Retry watch for ask pass");
             await this.askpass();
+        }
+    }
+
+    /**
+     * Adds the askpass script to the exclude file of the git repository.
+     *
+     * This prevents the script from being tracked by git. This should be no
+     * problem as the script does not contain any sensitive data, but may
+     * cause issues with file permissions on other devices.
+     * See https://github.com/Vinzent03/obsidian-git/issues/903
+     */
+    async addAskPassScriptToExclude(): Promise<void> {
+        try {
+            const absoluteExcludeFilePath = await this.git.revparse([
+                "--path-format=absolute",
+                "--git-path",
+                "info/exclude",
+            ]);
+
+            const vaultRelativeAskPassScriptFile = path.join(
+                this.app.vault.configDir,
+                "plugins",
+                "obsidian-git",
+                ASK_PASS_SCRIPT_FILE
+            );
+            const repoRelativeAskPassScriptFile = this.getRelativeRepoPath(
+                vaultRelativeAskPassScriptFile,
+                true
+            );
+
+            const content = await fsPromises.readFile(
+                absoluteExcludeFilePath,
+                "utf-8"
+            );
+            const lines = content.split("\n");
+            const contains = lines.some((line) =>
+                line.contains(repoRelativeAskPassScriptFile)
+            );
+            if (!contains) {
+                await fsPromises.appendFile(
+                    absoluteExcludeFilePath,
+                    repoRelativeAskPassScriptFile + "\n"
+                );
+            }
+        } catch (error) {
+            // Catch any errors, because this is not critical
+            console.error(
+                "Error while adding askpass script to exclude file:",
+                error
+            );
         }
     }
 
@@ -324,10 +388,10 @@ export class SimpleGit extends GitManager {
     }
 
     //Remove wrong `"` like "My file.md"
-    formatPath(
-        path: { from?: string; path: string },
-        renamed = false
-    ): { path: string; from?: string } {
+    formatPath(path: { from?: string; path: string }): {
+        path: string;
+        from?: string;
+    } {
         function format(path?: string): string | undefined {
             if (path == undefined) return undefined;
 
@@ -337,7 +401,7 @@ export class SimpleGit extends GitManager {
                 return path;
             }
         }
-        if (renamed) {
+        if (path.from != undefined) {
             return {
                 from: format(path.from),
                 path: format(path.path)!,
@@ -642,6 +706,14 @@ export class SimpleGit extends GitManager {
         if (trackingBranch == null || currentBranch == null) {
             return 0;
         }
+        const [remote, _] = splitRemoteBranch(trackingBranch);
+        const remoteBranches = await this.getRemoteBranches(remote);
+        if (!remoteBranches.includes(trackingBranch)) {
+            this.plugin.log(
+                `Tracking branch ${trackingBranch} does not exist on remote ${remote}.`
+            );
+            return 0;
+        }
 
         const remoteChangedFiles = (
             await this.git.diffSummary([currentBranch, trackingBranch, "--"])
@@ -671,7 +743,7 @@ export class SimpleGit extends GitManager {
     async checkRequirements(): Promise<
         "valid" | "missing-repo" | "missing-git"
     > {
-        if (!this.isGitInstalled()) {
+        if (!(await this.isGitInstalled())) {
             return "missing-git";
         }
         if (!(await this.git.checkIsRepo())) {
@@ -869,6 +941,9 @@ export class SimpleGit extends GitManager {
         await this.git.removeRemote(remoteName);
     }
 
+    /**
+     * @param remoteBranch - The remote branch to set as upstream, in the format "remote/branch"
+     */
     async updateUpstreamBranch(remoteBranch: string) {
         try {
             // git 1.8+
@@ -879,12 +954,14 @@ export class SimpleGit extends GitManager {
                 await this.git.branch(["--set-upstream", remoteBranch]);
             } catch {
                 // fallback for when setting upstream branch to a branch that does not exist on the remote yet. Setting it with push instead.
-                await this.git.push(
-                    // @ts-expect-error A type error occurs here because the third element could be undefined.
-                    // However, it is unlikely to be undefined due to the `remoteBranch`'s format, and error handling is in place.
-                    // Therefore, we temporarily ignore the error.
-                    ["--set-upstream", ...splitRemoteBranch(remoteBranch)]
-                );
+                const [remote, remoteBranchName] =
+                    splitRemoteBranch(remoteBranch);
+                const branchInfo = await this.branchInfo();
+                await this.git.push([
+                    "--set-upstream",
+                    remote,
+                    `${branchInfo.current}:${remoteBranchName}`,
+                ]);
             }
         }
     }
@@ -980,21 +1057,19 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    private isGitInstalled(): boolean {
+    private async isGitInstalled(): Promise<boolean> {
         // https://github.com/steveukx/git-js/issues/402
         const gitPath = this.plugin.localStorage.getGitPath();
-        const command = spawnSync(gitPath || "git", ["--version"], {
-            stdio: "ignore",
-        });
+        const command = await spawnAsync(gitPath || "git", ["--version"], {});
 
         if (command.error) {
             if (Platform.isWin && !gitPath) {
                 this.plugin.log(
                     `Git not found in PATH. Checking standard installation path(${DEFAULT_WIN_GIT_PATH}) of Git for Windows.`
                 );
-                const command = spawnSync(DEFAULT_WIN_GIT_PATH, ["--version"], {
-                    stdio: "ignore",
-                });
+                const command = await spawnAsync(DEFAULT_WIN_GIT_PATH, [
+                    "--version",
+                ]);
                 if (command.error) {
                     console.error(command.error);
                     return false;

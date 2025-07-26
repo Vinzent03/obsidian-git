@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.34.0](https://github.com/Vinzent03/obsidian-git/compare/2.33.0...2.34.0) (2025-06-14)
+
+
+### Features
+
+* commit message from script ([c05f847](https://github.com/Vinzent03/obsidian-git/commit/c05f847baac1cfa121755bd6a10cfc5316a8f680)), closes [#849](https://github.com/Vinzent03/obsidian-git/issues/849)
+* make commit command and commit button in source control 'smart' ([f03d75e](https://github.com/Vinzent03/obsidian-git/commit/f03d75e5f9d239d89e7770dfe86c21e9aa7db632)), closes [#907](https://github.com/Vinzent03/obsidian-git/issues/907)
+
+
+### Bug Fixes
+
+* don't use spawnSync, but a non-blocking alternative ([ad03171](https://github.com/Vinzent03/obsidian-git/commit/ad03171300604b968340ca9212790da01b6ba1fd))
+
+## [2.33.0](https://github.com/Vinzent03/obsidian-git/compare/2.32.1...2.33.0) (2025-04-29)
+
+
+### Features
+
+* add setting to hide error notifications ([54f0541](https://github.com/Vinzent03/obsidian-git/commit/54f0541296d910dba317f4f83cf0fbbc1702a596)), closes [#870](https://github.com/Vinzent03/obsidian-git/issues/870)
+* collapse unchanged lines in split diff view ([#893](https://github.com/Vinzent03/obsidian-git/issues/893)) ([6377157](https://github.com/Vinzent03/obsidian-git/commit/637715747deb465ca0730d273002679b8bde5540))
+* ctrl + enter to commit-and-sync ([e15cdc0](https://github.com/Vinzent03/obsidian-git/commit/e15cdc06eaa9a1b33f39535621fd6ee873cd27e0)), closes [#901](https://github.com/Vinzent03/obsidian-git/issues/901)
+
+
+### Bug Fixes
+
+* add obsidian_askpass.sh to .git/info/exclude ([655d171](https://github.com/Vinzent03/obsidian-git/commit/655d1718da42a7eacce8e9a8b066c57304c512bb)), closes [#903](https://github.com/Vinzent03/obsidian-git/issues/903)
+* don't overwrite debug logging of other packages ([#905](https://github.com/Vinzent03/obsidian-git/issues/905)) ([c258fe2](https://github.com/Vinzent03/obsidian-git/commit/c258fe2bcb45be83833f07e5d8d2b788f5571992))
+* duplicated status bar ([f653019](https://github.com/Vinzent03/obsidian-git/commit/f65301946ee7d3160f5b6b00ca2f0aec8e0ef6ed)), closes [#892](https://github.com/Vinzent03/obsidian-git/issues/892)
+* handle "Add to .gitignore" edgecases and make the added path absolute ([#890](https://github.com/Vinzent03/obsidian-git/issues/890)) ([485e4cd](https://github.com/Vinzent03/obsidian-git/commit/485e4cda3d374cc5e0d5ea93b0496f6ef24d1aa3))
+* improve settings ui ([#886](https://github.com/Vinzent03/obsidian-git/issues/886)) ([edbbfb6](https://github.com/Vinzent03/obsidian-git/commit/edbbfb610462a3dd85436b4d97e74adfc4bcee7d))
+* improve the "is file openable in obsidian" check ([#884](https://github.com/Vinzent03/obsidian-git/issues/884)) ([f7b286c](https://github.com/Vinzent03/obsidian-git/commit/f7b286cf0fb146cdd59a39302796e13a744e9c77))
+* line authoring crashes when dom Element cannot be removed. ([#891](https://github.com/Vinzent03/obsidian-git/issues/891)) ([2d2ebfd](https://github.com/Vinzent03/obsidian-git/commit/2d2ebfd9a91aae636215f03e0620bc14c357e333))
+* make view header buttons sticky and contain scrollbar to body ([#864](https://github.com/Vinzent03/obsidian-git/issues/864)) ([953dbd4](https://github.com/Vinzent03/obsidian-git/commit/953dbd4ac350e7c119439b3ddbf8951377464369))
+* obscure password for ssh passphrase prompt ([5dbd3cd](https://github.com/Vinzent03/obsidian-git/commit/5dbd3cd8dedb4ccd97326205392cbd63702152d5)), closes [#845](https://github.com/Vinzent03/obsidian-git/issues/845)
+
+### [2.32.1](https://github.com/Vinzent03/obsidian-git/compare/2.32.0...2.32.1) (2025-03-20)
+
+
+### Bug Fixes
+
+* don't reschedule auto commit-and-sync too often ([7f506c7](https://github.com/Vinzent03/obsidian-git/commit/7f506c7d54cc83bebcf14e22207c53e57a55add0)), closes [#875](https://github.com/Vinzent03/obsidian-git/issues/875)
+* don't reset auto commit-and-sync timer while still running ([bd5b942](https://github.com/Vinzent03/obsidian-git/commit/bd5b9423eb6f90dce2e078cffa7591a4634bfc87))
+* properly hide md extension ([6494ccf](https://github.com/Vinzent03/obsidian-git/commit/6494ccf0375d3790202e803864d2f6cbd46d1269)), closes [#873](https://github.com/Vinzent03/obsidian-git/issues/873)
+* **settings:** remove ability to enter non-number in number input boxes ([#880](https://github.com/Vinzent03/obsidian-git/issues/880)) ([18e966e](https://github.com/Vinzent03/obsidian-git/commit/18e966e3905814b4c7ba9918466529998a45e26e)), closes [#878](https://github.com/Vinzent03/obsidian-git/issues/878)
+
+## [2.32.0](https://github.com/Vinzent03/obsidian-git/compare/2.31.1...2.32.0) (2025-03-05)
+
+
+### Features
+
+* append .git to https remote url if not present ([2aca7c8](https://github.com/Vinzent03/obsidian-git/commit/2aca7c85b40792f619c511206375f224ece5ab27)), closes [#867](https://github.com/Vinzent03/obsidian-git/issues/867)
+* show a mini file menu for hidden files from source control ([d2991cc](https://github.com/Vinzent03/obsidian-git/commit/d2991ccedcd59c56e685c2c776159f236bad8331)), closes [#766](https://github.com/Vinzent03/obsidian-git/issues/766)
+
+
+### Bug Fixes
+
+* check file size for non Obsidian files as well ([0754fd8](https://github.com/Vinzent03/obsidian-git/commit/0754fd87ba5e947096466c3a63890da12e0159ca)), closes [#859](https://github.com/Vinzent03/obsidian-git/issues/859)
+* refresh already opened views on open command ([fbb62ad](https://github.com/Vinzent03/obsidian-git/commit/fbb62ad0cece4dbf36518616312a29463c39227c)), closes [#838](https://github.com/Vinzent03/obsidian-git/issues/838)
+* schedule new automatic after it finishes ([15416cb](https://github.com/Vinzent03/obsidian-git/commit/15416cb57ce126f8cd47cc8446bab77dd751815a)), closes [#851](https://github.com/Vinzent03/obsidian-git/issues/851)
+
 ### [2.31.1](https://github.com/Vinzent03/obsidian-git/compare/2.31.0...2.31.1) (2025-01-04)
 
 
