@@ -443,6 +443,22 @@ export function addCommmands(plugin: ObsidianGit) {
     });
 
     plugin.addCommand({
+        id: "pause-automatic-routines",
+        name: "Pause/Resume automatic routines",
+        callback: () => {
+            const pause = !plugin.localStorage.getPausedAutomatics();
+            plugin.localStorage.setPausedAutomatics(pause);
+            if (pause) {
+                plugin.automaticsManager.unload();
+                new Notice(`Paused automatic routines.`);
+            } else {
+                plugin.automaticsManager.reload("commit", "push", "pull");
+                new Notice(`Resumed automatic routines.`);
+            }
+        },
+    });
+
+    plugin.addCommand({
         id: "raw-command",
         name: "Raw command",
         checkCallback: (checking) => {

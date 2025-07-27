@@ -64,6 +64,8 @@ export default class AutomaticsManager {
      * Should only be used when settings are changed.
      */
     reload(...type: ("commit" | "push" | "pull")[]) {
+        if (this.plugin.localStorage.getPausedAutomatics()) return;
+
         if (type.contains("commit")) {
             this.clearAutoCommitAndSync();
             if (this.plugin.settings.autoSaveInterval > 0) {
