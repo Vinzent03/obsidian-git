@@ -550,7 +550,7 @@ export default class ObsidianGit extends Plugin {
             }
 
             const result = await this.gitManager.checkRequirements();
-            const automaticsPaused = this.localStorage.getAutomaticsPaused();
+            const pausedAutomatics = this.localStorage.getPausedAutomatics();
             switch (result) {
                 case "missing-git":
                     this.displayError(
@@ -598,18 +598,18 @@ export default class ObsidianGit extends Plugin {
                     if (
                         !fromReload &&
                         this.settings.autoPullOnBoot &&
-                        !automaticsPaused
+                        !pausedAutomatics
                     ) {
                         this.promiseQueue.addTask(() =>
                             this.pullChangesFromRemote()
                         );
                     }
 
-                    if (!automaticsPaused) {
+                    if (!pausedAutomatics) {
                         await this.automaticsManager.init();
                     }
 
-                    if (automaticsPaused) {
+                    if (pausedAutomatics) {
                         new Notice("Automatic routines are currently paused.");
                     }
 

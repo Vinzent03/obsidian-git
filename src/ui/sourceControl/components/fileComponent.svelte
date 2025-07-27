@@ -1,10 +1,3 @@
-<script lang="ts">
-    import { setIcon, TFile } from "obsidian";
-    import { hoverPreview } from "obsidian-community-lib";
-    import type { GitManager } from "src/gitManager/gitManager";
-    import type { FileStatusResult } from "src/types";
-    import { DiscardModal } from "src/ui/modals/discardModal";
-    import {
         fileIsBinary,
         fileOpenableInObsidian,
         getDisplayPath,
