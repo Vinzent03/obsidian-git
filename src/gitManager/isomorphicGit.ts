@@ -410,7 +410,10 @@ export class IsomorphicGit extends GitManager {
         return this.wrapFS(git.resolveRef({ ...this.getRepo(), ref }));
     }
 
-    async pull(): Promise<FileStatusResult[]> {
+    /**
+    @param {boolean} force - If true, merge strategy `--strategy-option=theirs` is used. This will prefer remote changes over local changes.
+    */
+    async pull(force: boolean = false): Promise<FileStatusResult[]> {
         const progressNotice = this.showNotice("Initializing pull");
         try {
             this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
@@ -427,6 +430,10 @@ export class IsomorphicGit extends GitManager {
                     ours: branchInfo.current,
                     theirs: branchInfo.tracking!,
                     abortOnConflict: false,
+                    mergeDriver: force ? ({ contents }) => {
+                        const mergedText = contents[2];
+                        return { cleanMerge: true, mergedText };
+                    } : undefined,
                 })
             );
             if (!mergeRes.alreadyMerged) {
