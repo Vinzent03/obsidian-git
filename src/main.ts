@@ -1415,10 +1415,10 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
 
         // Clear existing active state
         sourceControlLeaf?.view.containerEl
-            .querySelector(`div.nav-file-title.is-active`)
+            .querySelector(`div.tree-item-self.is-active`)
             ?.removeClass("is-active");
         historyLeaf?.view.containerEl
-            .querySelector(`div.nav-file-title.is-active`)
+            .querySelector(`div.tree-item-self.is-active`)
             ?.removeClass("is-active");
 
         if (
@@ -1430,15 +1430,15 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             let el: Element | undefined | null;
             if (sourceControlLeaf && leaf.view.state.aRef == "HEAD") {
                 el = sourceControlLeaf.view.containerEl.querySelector(
-                    `div.staged div.nav-file-title[data-path='${path}']`
+                    `div.staged div.tree-item-self[data-path='${path}']`
                 );
             } else if (sourceControlLeaf && leaf.view.state.aRef == "") {
                 el = sourceControlLeaf.view.containerEl.querySelector(
-                    `div.changes div.nav-file-title[data-path='${path}']`
+                    `div.changes div.tree-item-self[data-path='${path}']`
                 );
             } else if (historyLeaf) {
                 el = historyLeaf.view.containerEl.querySelector(
-                    `div.nav-file-title[data-path='${path}']`
+                    `div.tree-item-self[data-path='${path}']`
                 );
             }
             el?.addClass("is-active");

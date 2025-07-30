@@ -251,11 +251,3 @@
 
     <TooManyFilesComponent files={hierarchy.children} />
 </main>
-
-<style lang="scss">
-    main {
-        .nav-folder-title {
-            align-items: center;
-        }
-    }
-</style>

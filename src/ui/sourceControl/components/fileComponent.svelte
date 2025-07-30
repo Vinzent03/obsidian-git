@@ -173,11 +173,3 @@
         </div>
     </div>
 </main>
-
-<style lang="scss">
-    main {
-        .nav-file-title {
-            align-items: center;
-        }
-    }
-</style>

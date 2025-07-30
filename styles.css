@@ -55,6 +55,15 @@
 .tooltip.mod-right {
     overflow-wrap: break-word;
 }
+
+/* Limits the scrollbar to the view body */
+.git-view {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: 100%;
+}
+
 .git-tools {
     display: flex;
     margin-left: auto;
@@ -81,6 +90,21 @@
     height: auto;
 }
 
+.workspace-leaf-content[data-type="git-view"] .tree-item-self,
+.workspace-leaf-content[data-type="git-history-view"] .tree-item-self {
+    align-items: center;
+}
+
+.workspace-leaf-content[data-type="git-view"]
+    .tree-item-self:hover
+    .clickable-icon,
+.workspace-leaf-content[data-type="git-history-view"]
+    .tree-item-self:hover
+    .clickable-icon {
+    color: var(--icon-color-hover);
+}
+
+/* Highlight an item as active if it's diff is currently opened */
 .is-active .git-tools .buttons > * {
     color: var(--nav-item-color-active);
 }
@@ -573,14 +597,6 @@
 .git-unified-diff-view,
 .git-split-diff-view .cm-insertedLine .cm-changedText {
     background-color: #22bb2230;
-}
-
-/* Limits the scrollbar to the view body */
-.git-view {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    height: 100%;
 }
 
 .git-obscure-prompt[git-is-obscured="true"] #git-show-password:after {
