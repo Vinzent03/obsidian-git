@@ -5,7 +5,6 @@
     import type ObsidianGit from "src/main";
     import type { StatusRootTreeItem, TreeItem } from "src/types";
     import { FileType } from "src/types";
-    import { DiscardModal } from "src/ui/modals/discardModal";
     import { slide } from "svelte/transition";
     import type GitView from "../sourceControl";
     import FileComponent from "./fileComponent.svelte";
@@ -58,21 +57,7 @@
     }
     function discard(event: MouseEvent, item: TreeItem) {
         event.stopPropagation();
-        new DiscardModal(view.app, false, item.vaultPath).myOpen().then(
-            (shouldDiscard) => {
-                if (shouldDiscard === true) {
-                    return plugin.gitManager
-                        .discardAll({
-                            dir: item.path,
-                            status: plugin.cachedStatus,
-                        })
-                        .finally(() => {
-                            view.app.workspace.trigger("obsidian-git:refresh");
-                        });
-                }
-            },
-            (e) => plugin.displayError(e)
-        );
+        void plugin.discardAll(item.vaultPath);
     }
     function fold(item: TreeItem) {
         closed[item.title] = !closed[item.title];

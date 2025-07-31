@@ -10,7 +10,6 @@
     import { FileType } from "src/types";
     import { arrayProxyWithNewLength, getDisplayPath } from "src/utils";
     import { slide } from "svelte/transition";
-    import { DiscardModal } from "../modals/discardModal";
     import FileComponent from "./components/fileComponent.svelte";
     import PulledFileComponent from "./components/pulledFileComponent.svelte";
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
@@ -205,27 +204,7 @@
     }
     function discard(event: Event) {
         event.stopPropagation();
-        new DiscardModal(
-            view.app,
-            false,
-            plugin.gitManager.getRelativeVaultPath("/")
-        )
-            .myOpen()
-            .then((shouldDiscard) => {
-                if (shouldDiscard === true) {
-                    plugin.promiseQueue.addTask(() =>
-                        plugin.gitManager
-                            .discardAll({
-                                status: plugin.cachedStatus,
-                            })
-                            .finally(() => {
-                                view.app.workspace.trigger(
-                                    "obsidian-git:refresh"
-                                );
-                            })
-                    );
-                }
-            }, console.error);
+        void plugin.discardAll();
     }
 
     let rows = $derived((commitMessage.match(/\n/g) || []).length + 1 || 1);

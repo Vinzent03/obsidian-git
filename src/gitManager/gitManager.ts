@@ -18,7 +18,7 @@ export abstract class GitManager {
         this.app = plugin.app;
     }
 
-    abstract status(): Promise<Status>;
+    abstract status(opts?: { path?: string }): Promise<Status>;
 
     abstract commitAll(_: {
         message: string;
@@ -43,6 +43,18 @@ export abstract class GitManager {
     abstract discard(filepath: string): Promise<void>;
 
     abstract discardAll(_: { dir?: string; status?: Status }): Promise<void>;
+
+    /**
+     * Use this method instead of {@link GitManager.status} to delete untracked files, becase on native git
+     * directories which only contain untracked files will only be listed by their directory name e.g. `thedir/` and not every file individually.
+     * This allows for more efficient deletion of untracked files.
+     *
+     * @param path - The path to the directory to get untracked paths in. If not specified, the whole repository is used.
+     */
+    abstract getUntrackedPaths(opts?: {
+        path?: string;
+        status?: Status;
+    }): Promise<string[]>;
 
     abstract pull(): Promise<FileStatusResult[] | undefined>;
 

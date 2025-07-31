@@ -261,10 +261,7 @@ export interface WalkDifference {
     type: "M" | "A" | "D";
 }
 
-export interface UnstagedFile {
-    path: string;
-    deleted: boolean;
-}
+export type UnstagedFile = WalkDifference;
 
 export interface BranchInfo {
     current?: string;

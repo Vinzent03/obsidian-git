@@ -5,6 +5,23 @@ import type { App, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
 
+export function assertNever(x: never): never {
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+    throw new Error(`Unexpected object: ${x}`);
+}
+
+export function plural(
+    count: number,
+    singular: string,
+    plural?: string
+): string {
+    if (count === 1) {
+        return `${count} ${singular}`;
+    } else {
+        return `${count} ${plural ?? singular + "s"}`;
+    }
+}
+
 export const worthWalking = (filepath: string, root?: string) => {
     if (filepath === "." || root == null || root.length === 0 || root === ".") {
         return true;

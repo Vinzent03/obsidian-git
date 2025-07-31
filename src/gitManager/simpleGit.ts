@@ -299,9 +299,12 @@ export class SimpleGit extends GitManager {
         this.watchAbortController?.abort();
     }
 
-    async status(): Promise<Status> {
+    async status(opts?: { path?: string }): Promise<Status> {
+        const dir = opts?.path;
         this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
-        const status = await this.git.status();
+        const status = await this.git.status(
+            dir != undefined ? ["--", dir] : []
+        );
         this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
 
         const allFilesFormatted = status.files.map<FileStatusResult>((e) => {
@@ -539,13 +542,26 @@ export class SimpleGit extends GitManager {
         this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
         if (await this.isTracked(filepath)) {
             await this.git.checkout(["--", filepath]);
-        } else {
-            await this.app.vault.adapter.rmdir(
-                this.getRelativeVaultPath(filepath),
-                true
-            );
         }
         this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+    }
+
+    async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {
+        const dir = opts?.path;
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
+        const args = [
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "--directory",
+        ];
+        if (dir != undefined) {
+            args.push("--", dir);
+        }
+        const untrackedFiles = await this.git.raw(args);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+
+        return untrackedFiles.split(/\r\n|\r|\n/).filter((e) => e.length > 0);
     }
 
     async hashObject(filepath: string): Promise<string> {

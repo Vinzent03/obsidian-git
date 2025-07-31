@@ -6,6 +6,7 @@ import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
+import { assertNever } from "./utils";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -428,16 +429,18 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "discard-all",
         name: "CAUTION: Discard all changes",
         callback: async () => {
-            if (!(await plugin.isAllInitialized())) return false;
-            const modal = new GeneralModal(plugin, {
-                options: ["NO", "YES"],
-                placeholder:
-                    "Do you want to discard all changes to tracked files? plugin action cannot be undone.",
-                onlySelection: true,
-            });
-            const shouldDiscardAll = (await modal.openAndGetResult()) === "YES";
-            if (shouldDiscardAll) {
-                plugin.promiseQueue.addTask(() => plugin.discardAll());
+            const res = await plugin.discardAll();
+            switch (res) {
+                case "discard":
+                    new Notice("Discarded all changes in tracked files.");
+                    break;
+                case "delete":
+                    new Notice("Discarded all files.");
+                    break;
+                case false:
+                    break;
+                default:
+                    assertNever(res);
             }
         },
     });

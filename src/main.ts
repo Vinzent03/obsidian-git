@@ -54,11 +54,13 @@ import { GeneralModal } from "./ui/modals/generalModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import {
+    assertNever,
     convertPathToAbsoluteGitignoreRule,
     formatRemoteUrl,
     spawnAsync,
     splitRemoteBranch,
 } from "./utils";
+import { DiscardModal, type DiscardResult } from "./ui/modals/discardModal";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -1268,14 +1270,72 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async discardAll() {
-        await this.gitManager.discardAll({
-            status: this.cachedStatus,
-        });
-        new Notice(
-            "All local changes have been discarded. New files remain untouched."
-        );
+    async discardAll(path?: string): Promise<DiscardResult> {
+        if (!(await this.isAllInitialized())) return false;
+
+        const status = await this.gitManager.status({ path });
+
+        let filesToDeleteCount = 0;
+        let filesToDiscardCount = 0;
+        for (const file of status.changed) {
+            if (file.workingDir == "U") {
+                filesToDeleteCount++;
+            } else {
+                filesToDiscardCount++;
+            }
+        }
+        if (filesToDeleteCount + filesToDiscardCount == 0) {
+            return false;
+        }
+
+        const result = await new DiscardModal({
+            app: this.app,
+            filesToDeleteCount,
+            filesToDiscardCount,
+            path: path ?? "",
+        }).openAndGetResult();
+
+        switch (result) {
+            case false:
+                return result;
+            case "discard":
+                await this.gitManager.discardAll({
+                    dir: path,
+                    status: this.cachedStatus,
+                });
+                break;
+            case "delete": {
+                await this.gitManager.discardAll({
+                    dir: path,
+                    status: this.cachedStatus,
+                });
+                const untrackedPaths = await this.gitManager.getUntrackedPaths({
+                    path,
+                    status: this.cachedStatus,
+                });
+                for (const file of untrackedPaths) {
+                    const vaultPath =
+                        this.gitManager.getRelativeVaultPath(file);
+                    const tFile =
+                        this.app.vault.getAbstractFileByPath(vaultPath);
+
+                    if (tFile) {
+                        await this.app.fileManager.trashFile(tFile);
+                    } else {
+                        if (file.endsWith("/")) {
+                            await this.app.vault.adapter.rmdir(vaultPath, true);
+                        } else {
+                            await this.app.vault.adapter.remove(vaultPath);
+                        }
+                    }
+                }
+                break;
+            }
+            default:
+                assertNever(result);
+        }
         this.app.workspace.trigger("obsidian-git:refresh");
+        return result;
     }
 
     async handleConflict(conflicted?: string[]): Promise<void> {

@@ -145,7 +145,7 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async status(): Promise<Status> {
+    async status(opts?: { path?: string }): Promise<Status> {
         let notice: Notice | undefined;
         const timeout = window.setTimeout(() => {
             notice = new Notice(
@@ -159,13 +159,22 @@ export class IsomorphicGit extends GitManager {
                 await this.wrapFS(git.statusMatrix({ ...this.getRepo() }))
             ).map((row) => this.getFileStatusResult(row));
 
-            const changed = status.filter(
-                (fileStatus) => fileStatus.workingDir !== " "
-            );
-            const staged = status.filter(
-                (fileStatus) =>
-                    fileStatus.index !== " " && fileStatus.index !== "U"
-            );
+            const changed: FileStatusResult[] = [];
+            const staged: FileStatusResult[] = [];
+            for (const file of status) {
+                if (
+                    opts?.path != undefined &&
+                    !file.vaultPath.startsWith(`${opts.path}/`)
+                ) {
+                    continue;
+                }
+                if (file.workingDir !== " ") {
+                    changed.push(file);
+                }
+                if (file.index !== " " && file.index !== "U") {
+                    staged.push(file);
+                }
+            }
             const conflicted: string[] = [];
             window.clearTimeout(timeout);
             notice?.hide();
@@ -286,8 +295,8 @@ export class IsomorphicGit extends GitManager {
                 const filesToStage =
                     unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
                 await Promise.all(
-                    filesToStage.map(({ path, deleted }) =>
-                        deleted
+                    filesToStage.map(({ path, type }) =>
+                        type == "D"
                             ? git.remove({ ...this.getRepo(), filepath: path })
                             : this.wrapFS(
                                   git.add({ ...this.getRepo(), filepath: path })
@@ -369,13 +378,20 @@ export class IsomorphicGit extends GitManager {
         if (status) {
             if (dir != undefined) {
                 files = status.changed
-                    .filter((file) => file.path.startsWith(dir))
+                    .filter(
+                        (file) =>
+                            file.workingDir != "U" && file.path.startsWith(dir)
+                    )
                     .map((file) => file.path);
             } else {
-                files = status.changed.map((file) => file.path);
+                files = status.changed
+                    .filter((file) => file.workingDir != "U")
+                    .map((file) => file.path);
             }
         } else {
-            files = (await this.getUnstagedFiles(dir)).map(({ path }) => path);
+            files = (await this.getUnstagedFiles(dir))
+                .filter((file) => file.type != "A")
+                .map(({ path }) => path);
         }
 
         try {
@@ -390,6 +406,34 @@ export class IsomorphicGit extends GitManager {
             this.plugin.displayError(error);
             throw error;
         }
+    }
+
+    async getUntrackedPaths(opts: {
+        path?: string;
+        status?: Status;
+    }): Promise<string[]> {
+        const untrackedPaths: string[] = [];
+        if (opts.status) {
+            for (const file of opts.status.changed) {
+                if (
+                    file.index == "U" &&
+                    file.workingDir === "U" &&
+                    file.path.startsWith(
+                        opts.path != undefined ? `${opts.path}/` : ""
+                    )
+                ) {
+                    untrackedPaths.push(file.path);
+                }
+            }
+        } else {
+            const status = await this.status({ path: opts?.path });
+            for (const file of status.changed) {
+                if (file.index === "U" && file.workingDir === "U") {
+                    untrackedPaths.push(file.path);
+                }
+            }
+        }
+        return untrackedPaths;
     }
 
     getProgressText(action: string, event: GitProgressEvent): string {
@@ -1007,14 +1051,20 @@ export class IsomorphicGit extends GitManager {
                         if (!workdirOid) {
                             return {
                                 path: filepath,
-                                deleted: true,
+                                type: "D",
+                            };
+                        }
+                        if (!stageOid) {
+                            return {
+                                path: filepath,
+                                type: "A",
                             };
                         }
 
                         if (workdirOid !== stageOid) {
                             return {
                                 path: filepath,
-                                deleted: false,
+                                type: "M",
                             };
                         }
                         return null;
