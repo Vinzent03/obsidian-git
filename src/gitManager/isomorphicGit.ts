@@ -111,7 +111,7 @@ export class IsomorphicGit extends GitManager {
                     // because that's what requestUrl expects
                     let collectedBody: ArrayBuffer | undefined;
                     if (body) {
-                        collectedBody = (await collect(body)).buffer;
+                        collectedBody = await asyncIteratorToArrayBuffer(body);
                     }
 
                     const res = await requestUrl({
@@ -121,11 +121,12 @@ export class IsomorphicGit extends GitManager {
                         body: collectedBody,
                         throw: false,
                     });
+
                     return {
                         url,
                         method,
                         headers: res.headers,
-                        body: [new Uint8Array(res.arrayBuffer)],
+                        body: arrayBufferToAsyncIterator(res.arrayBuffer),
                         statusCode: res.status,
                         statusMessage: res.status.toString(),
                     };
@@ -1258,42 +1259,24 @@ function fromValue(value: any) {
     };
 }
 
-function getIterator(iterable: any) {
-    if (iterable[Symbol.asyncIterator]) {
-        return iterable[Symbol.asyncIterator]();
-    }
-    if (iterable[Symbol.iterator]) {
-        return iterable[Symbol.iterator]();
-    }
-    if (iterable.next) {
-        return iterable;
-    }
-    return fromValue(iterable);
+async function* arrayBufferToAsyncIterator(
+    buffer: ArrayBuffer
+): AsyncIterableIterator<Uint8Array> {
+    yield new Uint8Array(buffer);
 }
 
-async function forAwait(iterable: any, cb: any) {
-    const iter = getIterator(iterable);
-    while (true) {
-        const { value, done } = await iter.next();
-        if (value) await cb(value);
-        if (done) break;
-    }
-    if (iter.return) iter.return();
-}
-
-async function collect(iterable: any): Promise<Uint8Array> {
-    let size = 0;
-    const buffers: Uint8Array[] = [];
-    // This will be easier once `for await ... of` loops are available.
-    await forAwait(iterable, (value: any) => {
-        buffers.push(value);
-        size += value.byteLength;
+async function asyncIteratorToArrayBuffer(
+    iterator: AsyncIterableIterator<Uint8Array>
+): Promise<ArrayBuffer> {
+    const stream = new ReadableStream({
+        async start(controller) {
+            for await (const chunk of iterator) {
+                controller.enqueue(chunk);
+            }
+            controller.close();
+        },
     });
-    const result = new Uint8Array(size);
-    let nextIndex = 0;
-    for (const buffer of buffers) {
-        result.set(buffer, nextIndex);
-        nextIndex += buffer.byteLength;
-    }
-    return result;
+
+    const response = new Response(stream);
+    return await response.arrayBuffer();
 }

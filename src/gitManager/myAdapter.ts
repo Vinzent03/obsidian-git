@@ -11,7 +11,7 @@ export class MyAdapter {
     promises: any = {};
     adapter: DataAdapter;
     vault: Vault;
-    index: Buffer | undefined;
+    index: ArrayBuffer | undefined;
     indexctime: number | undefined;
     indexmtime: number | undefined;
     lastBasePath: string | undefined;
@@ -65,7 +65,7 @@ export class MyAdapter {
             }
         }
     }
-    async writeFile(path: string, data: string | Buffer) {
+    async writeFile(path: string, data: string | ArrayBuffer) {
         this.maybeLog("Write: " + path);
 
         if (typeof data === "string") {
@@ -122,7 +122,7 @@ export class MyAdapter {
                     isFile: () => true,
                     isDirectory: () => false,
                     isSymbolicLink: () => false,
-                    size: this.index.length,
+                    size: this.index.byteLength,
                     type: "file",
                     ctimeMs: this.indexctime,
                     mtimeMs: this.indexmtime,
