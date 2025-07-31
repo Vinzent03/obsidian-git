@@ -539,10 +539,12 @@ export class IsomorphicGit extends GitManager {
             ).length;
 
             this.plugin.setPluginState({ gitAction: CurrentGitAction.push });
+            const remote = await this.getCurrentRemote();
 
             await this.wrapFS(
                 git.push({
                     ...this.getRepo(),
+                    remote,
                     onProgress: (progress) => {
                         if (progressNotice !== undefined) {
                             progressNotice.noticeEl.innerText =
