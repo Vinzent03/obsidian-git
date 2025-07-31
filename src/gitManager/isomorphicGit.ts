@@ -155,30 +155,34 @@ export class IsomorphicGit extends GitManager {
         }, 20000);
         try {
             this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
+            const statusOpts = { ...this.getRepo() } as Parameters<
+                typeof git.statusMatrix
+            >[0];
+            if (opts?.path != undefined) {
+                statusOpts.filepaths = [`${opts.path}/`];
+            }
             const status = (
-                await this.wrapFS(git.statusMatrix({ ...this.getRepo() }))
+                await this.wrapFS(git.statusMatrix(statusOpts))
             ).map((row) => this.getFileStatusResult(row));
 
             const changed: FileStatusResult[] = [];
             const staged: FileStatusResult[] = [];
+            const all: FileStatusResult[] = [];
             for (const file of status) {
-                if (
-                    opts?.path != undefined &&
-                    !file.vaultPath.startsWith(`${opts.path}/`)
-                ) {
-                    continue;
-                }
                 if (file.workingDir !== " ") {
                     changed.push(file);
                 }
                 if (file.index !== " " && file.index !== "U") {
                     staged.push(file);
                 }
+                if (file.index != " " || file.workingDir != " ") {
+                    all.push(file);
+                }
             }
             const conflicted: string[] = [];
             window.clearTimeout(timeout);
             notice?.hide();
-            return { all: status, changed, staged, conflicted };
+            return { all, changed, staged, conflicted };
         } catch (error) {
             window.clearTimeout(timeout);
             notice?.hide();
