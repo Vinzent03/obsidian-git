@@ -6,7 +6,7 @@ A powerful community plugin for [Obsidian.md](Obsidian.md) that brings Git integ
 
 All setup instructions (including mobile), common issues, tips, and advanced configuration can be found in the 📖 [full documentation](https://publish.obsidian.md/git-doc).
 
-> 👉 Mobile users: The plugin is **highly unstable ⚠️ !** Please check the dedicated [Mobile](#mobile) section below.
+> 👉 Mobile users: The plugin is **highly unstable ⚠️ !** Please check the dedicated [Mobile](#-mobile-support-%EF%B8%8F--experimental) section below.
 
 ## ✨ Key Features
 
