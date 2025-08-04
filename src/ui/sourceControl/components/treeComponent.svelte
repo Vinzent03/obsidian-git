@@ -18,6 +18,7 @@
         view: GitView;
         fileType: FileType;
         topLevel?: boolean;
+        closed: Record<string, boolean>;
     }
 
     let {
@@ -26,11 +27,11 @@
         view,
         fileType,
         topLevel = false,
+        closed = $bindable(),
     }: Props = $props();
-    const closed: Record<string, boolean> = $state({});
 
     for (const entity of hierarchy.children) {
-        closed[entity.title] = (entity.children?.length ?? 0) > 100;
+        if ((entity.children?.length ?? 0) > 100) closed[entity.title] = true;
     }
     /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
     let side = $derived(
@@ -59,8 +60,9 @@
         event.stopPropagation();
         void plugin.discardAll(item.vaultPath);
     }
-    function fold(item: TreeItem) {
-        closed[item.title] = !closed[item.title];
+    function fold(event: MouseEvent, item: TreeItem) {
+        event.stopPropagation();
+        closed[item.path] = !closed[item.path];
     }
 </script>
 
@@ -88,7 +90,7 @@
             </div>
         {:else}
             <div
-                onclick={() => fold(entity)}
+                onclick={(event) => fold(event, entity)}
                 onauxclick={(event) =>
                     mayTriggerFileMenu(
                         view.app,
@@ -98,7 +100,7 @@
                         "git-source-control"
                     )}
                 class="tree-item nav-folder"
-                class:is-collapsed={closed[entity.title]}
+                class:is-collapsed={closed[entity.path]}
             >
                 <div
                     class="tree-item-self is-clickable nav-folder-title"
@@ -111,7 +113,7 @@
                     ></div>
                     <div
                         class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
-                        class:is-collapsed={closed[entity.title]}
+                        class:is-collapsed={closed[entity.path]}
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -217,7 +219,7 @@
                     </div>
                 </div>
 
-                {#if !closed[entity.title]}
+                {#if !closed[entity.path]}
                     <div
                         class="tree-item-children nav-folder-children"
                         transition:slide|local={{ duration: 150 }}
@@ -227,6 +229,7 @@
                             {plugin}
                             {view}
                             {fileType}
+                            bind:closed
                         />
                     </div>
                 {/if}

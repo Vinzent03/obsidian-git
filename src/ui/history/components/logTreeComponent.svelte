@@ -12,18 +12,25 @@
         plugin: ObsidianGit;
         view: HistoryView;
         topLevel?: boolean;
+        closed: Record<string, boolean>;
     }
 
-    let { hierarchy, plugin, view, topLevel = false }: Props = $props();
-    const closed: Record<string, boolean> = $state({});
+    let {
+        hierarchy,
+        plugin,
+        view,
+        topLevel = false,
+        closed = $bindable(),
+    }: Props = $props();
 
     let side = $derived(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
     );
 
-    function fold(item: TreeItem) {
-        closed[item.title] = !closed[item.title];
+    function fold(event: MouseEvent, item: TreeItem) {
+        event.stopPropagation();
+        closed[item.path] = !closed[item.path];
     }
 </script>
 
@@ -38,13 +45,13 @@
         {:else}
             <div
                 class="tree-item nav-folder"
-                class:is-collapsed={closed[entity.title]}
+                class:is-collapsed={closed[entity.path]}
             >
                 <div
                     class="tree-item-self is-clickable nav-folder-title"
                     data-tooltip-position={side}
                     aria-label={entity.vaultPath}
-                    onclick={() => fold(entity)}
+                    onclick={(event) => fold(event, entity)}
                 >
                     <div
                         data-icon="folder"
@@ -52,7 +59,7 @@
                     ></div>
                     <div
                         class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
-                        class:is-collapsed={closed[entity.title]}
+                        class:is-collapsed={closed[entity.path]}
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -73,7 +80,7 @@
                     </div>
                 </div>
 
-                {#if !closed[entity.title]}
+                {#if !closed[entity.path]}
                     <div
                         class="tree-item-children nav-folder-children"
                         transition:slide|local={{ duration: 150 }}
@@ -82,6 +89,7 @@
                             hierarchy={entity as HistoryRootTreeItem}
                             {plugin}
                             {view}
+                            bind:closed
                         />
                     </div>
                 {/if}

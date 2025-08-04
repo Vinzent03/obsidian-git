@@ -27,6 +27,7 @@
         (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
     );
     let isCollapsed = $state(true);
+    let closed = $state<Record<string, boolean>>({});
 
     function authorToString(log: LogEntry) {
         const name = log.author.name;
@@ -105,6 +106,7 @@ ${log.message}`}
                         {plugin}
                         {view}
                         topLevel={true}
+                        bind:closed
                     />
                 {:else}
                     {#each log.diff.files as file}
