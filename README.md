@@ -118,7 +118,7 @@ If you have a large repo/vault I recommend to stage individual files and only co
 
 ## 🙋 Contact & Credits
 
-- The Line Authoring feature was developed by [GollyTicker](https://github.com/GollyTicker), so any questions may be best answered by him.
+- The Line Authoring feature was developed by [GollyTicker](https://github.com/GollyTicker), so any questions may be best answered by her.
 - This plugin was initial developed by [denolehov](https://github.com/denolehov). Since March 2021, it's me [Vinzent03](https://github.com/Vinzent03) who is developing this plugin. That's why the GitHub repository got moved to my account in July 2024.
 - If you have any kind of feedback or questions, feel free to reach out via GitHub issues.
 
