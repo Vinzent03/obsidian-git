@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.35.0](https://github.com/Vinzent03/obsidian-git/compare/2.34.0...2.35.0) (2025-08-07)
+
+
+### Features
+
+* add hidden commit staged command ([234bf8f](https://github.com/Vinzent03/obsidian-git/commit/234bf8f97e767b2523c74dc336a2c690b9d231b9)), closes [#932](https://github.com/Vinzent03/obsidian-git/issues/932)
+* auto commit only staged files ([e64ef60](https://github.com/Vinzent03/obsidian-git/commit/e64ef60406c52729f5105887f27e9db10a9e4cb2)), closes [#927](https://github.com/Vinzent03/obsidian-git/issues/927)
+* pause automatics via command ([f6f650e](https://github.com/Vinzent03/obsidian-git/commit/f6f650e4e85337f8e1613255899f191c12989f38))
+
+
+### Bug Fixes
+
+* catch not existing tracking branch ([5833ed3](https://github.com/Vinzent03/obsidian-git/commit/5833ed39c4c14e6c88e58713368c6a558a71425a))
+* correctly set non-existing remote branch as upstream branch ([8283e10](https://github.com/Vinzent03/obsidian-git/commit/8283e10a26492c6359e68219750be5951e8c090d)), closes [#599](https://github.com/Vinzent03/obsidian-git/issues/599)
+* discard files correctly ([1c4e0c3](https://github.com/Vinzent03/obsidian-git/commit/1c4e0c3e37fbc466d33a2f0e8089a65f4de8b103))
+* don't include all files in status on mobile ([8410e32](https://github.com/Vinzent03/obsidian-git/commit/8410e3219ae68b7fd9bea39274e0d81155a560f3))
+* get old path of renamed file ([b31a855](https://github.com/Vinzent03/obsidian-git/commit/b31a855102cd8f81a5a36cae160bac77b96ddfd6)), closes [#944](https://github.com/Vinzent03/obsidian-git/issues/944)
+* properly close toggle tree items ([69fdf79](https://github.com/Vinzent03/obsidian-git/commit/69fdf79c5b45a114043996b5fafd4839728f32e6)), closes [#950](https://github.com/Vinzent03/obsidian-git/issues/950)
+* properly color hovered icon buttons ([197a4c7](https://github.com/Vinzent03/obsidian-git/commit/197a4c7f82121b75e47ab61cae10ca0fb59e1587))
+* use correct remote for push on mobile ([7e54350](https://github.com/Vinzent03/obsidian-git/commit/7e5435000116eaefc16826e6747cb5004675efa1))
+
 ## [2.34.0](https://github.com/Vinzent03/obsidian-git/compare/2.33.0...2.34.0) (2025-06-14)
 
 
