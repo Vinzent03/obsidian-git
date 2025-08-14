@@ -568,11 +568,7 @@ export class SimpleGit extends GitManager {
         return this.discard(dir ?? ".");
     }
 
-    /**
-    @param {boolean} force - If true, merge strategy `--strategy-option=theirs` is used. This will prefer remote changes over local changes.
-    */
-    async pull(force: boolean): Promise<FileStatusResult[] | undefined> {
-        const progressNotice = this.plugin.displayMessage("Initializing pull");
+    async pull(): Promise<FileStatusResult[] | undefined> {
         this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
         try {
             if (this.plugin.settings.updateSubmodules)
@@ -602,15 +598,19 @@ export class SimpleGit extends GitManager {
             ]);
 
             if (localCommit !== upstreamCommit) {
-                let err = false;
                 if (
                     this.plugin.settings.syncMethod === "merge" ||
                     this.plugin.settings.syncMethod === "rebase"
                 ) {
                     try {
-                        const args = force
-                                        ? [branchInfo.tracking!, "--strategy-option=theirs"]
-                                        : [branchInfo.tracking!]
+                        const args = [branchInfo.tracking!];
+
+                        if (this.plugin.settings.resolutionMethod !== "none") {
+                            args.push(
+                                `--strategy-option=${this.plugin.settings.resolutionMethod}`
+                            );
+                        }
+
                         switch (this.plugin.settings.syncMethod) {
                             case "merge":
                                 await this.git.merge(args);
@@ -651,8 +651,6 @@ export class SimpleGit extends GitManager {
                     `${localCommit}..${afterMergeCommit}`,
                     "--name-only",
                 ]);
-
-                if (!err) this.plugin.displayMessage("Finished pull");
 
                 return filesChanged
                     .split(/\r\n|\r|\n/)
