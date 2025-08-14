@@ -64,6 +64,8 @@ export default class AutomaticsManager {
      * Should only be used when settings are changed.
      */
     reload(...type: ("commit" | "push" | "pull")[]) {
+        if (this.plugin.localStorage.getPausedAutomatics()) return;
+
         if (type.contains("commit")) {
             this.clearAutoCommitAndSync();
             if (this.plugin.settings.autoSaveInterval > 0) {
@@ -163,10 +165,14 @@ export default class AutomaticsManager {
                         }
                     }
                 }
+                const onlyStaged = this.plugin.settings.autoCommitOnlyStaged;
                 if (this.plugin.settings.differentIntervalCommitAndPush) {
-                    await this.plugin.commit({ fromAuto: true });
+                    await this.plugin.commit({ fromAuto: true, onlyStaged });
                 } else {
-                    await this.plugin.commitAndSync({ fromAutoBackup: true });
+                    await this.plugin.commitAndSync({
+                        fromAutoBackup: true,
+                        onlyStaged,
+                    });
                 }
                 return true;
             },

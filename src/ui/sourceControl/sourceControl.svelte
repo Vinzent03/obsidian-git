@@ -10,7 +10,6 @@
     import { FileType } from "src/types";
     import { arrayProxyWithNewLength, getDisplayPath } from "src/utils";
     import { slide } from "svelte/transition";
-    import { DiscardModal } from "../modals/discardModal";
     import FileComponent from "./components/fileComponent.svelte";
     import PulledFileComponent from "./components/pulledFileComponent.svelte";
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
@@ -36,6 +35,9 @@
     let stagedOpen = $state(true);
     let lastPulledFilesOpen = $state(true);
     let unPushedCommits = $state(0);
+    let stagedClosed: Record<string, boolean> = $state({});
+    let unstagedClosed: Record<string, boolean> = $state({});
+    let pulledClosed: Record<string, boolean> = $state({});
 
     let showTree = $state(plugin.settings.treeStructure);
     view.registerEvent(
@@ -205,27 +207,7 @@
     }
     function discard(event: Event) {
         event.stopPropagation();
-        new DiscardModal(
-            view.app,
-            false,
-            plugin.gitManager.getRelativeVaultPath("/")
-        )
-            .myOpen()
-            .then((shouldDiscard) => {
-                if (shouldDiscard === true) {
-                    plugin.promiseQueue.addTask(() =>
-                        plugin.gitManager
-                            .discardAll({
-                                status: plugin.cachedStatus,
-                            })
-                            .finally(() => {
-                                view.app.workspace.trigger(
-                                    "obsidian-git:refresh"
-                                );
-                            })
-                    );
-                }
-            }, console.error);
+        void plugin.discardAll();
     }
 
     let rows = $derived((commitMessage.match(/\n/g) || []).length + 1 || 1);
@@ -403,6 +385,7 @@
                                     {view}
                                     fileType={FileType.staged}
                                     topLevel={true}
+                                    bind:closed={stagedClosed}
                                 />
                             {:else}
                                 {#each arrayProxyWithNewLength(status.staged, 500) as stagedFile}
@@ -520,6 +503,7 @@
                                     {view}
                                     fileType={FileType.changed}
                                     topLevel={true}
+                                    bind:closed={unstagedClosed}
                                 />
                             {:else}
                                 {#each arrayProxyWithNewLength(status.changed, 500) as change}
@@ -584,6 +568,7 @@
                                         {view}
                                         fileType={FileType.pulled}
                                         topLevel={true}
+                                        bind:closed={pulledClosed}
                                     />
                                 {:else}
                                     {#each lastPulledFiles as change}

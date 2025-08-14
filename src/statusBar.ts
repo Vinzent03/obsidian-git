@@ -16,6 +16,7 @@ export class StatusBar {
     private base = "obsidian-git-statusbar-";
     private iconEl: HTMLElement;
     private conflictEl: HTMLElement;
+    private pausedEl: HTMLElement;
     private textEl: HTMLElement;
 
     constructor(
@@ -70,6 +71,10 @@ export class StatusBar {
             this.conflictEl.setAttribute("data-tooltip-position", "top");
             this.conflictEl.style.float = "left";
 
+            this.pausedEl = this.statusBarEl.createDiv();
+            this.pausedEl.setAttribute("data-tooltip-position", "top");
+            this.pausedEl.style.float = "left";
+
             this.iconEl = this.statusBarEl.createDiv();
             this.iconEl.style.float = "left";
 
@@ -86,9 +91,20 @@ export class StatusBar {
             this.conflictEl.addClass(this.base + "conflict");
         } else {
             this.conflictEl.empty();
-
             this.conflictEl.style.marginRight = "";
         }
+
+        if (this.plugin.localStorage.getPausedAutomatics()) {
+            setIcon(this.pausedEl, "pause-circle");
+            this.pausedEl.ariaLabel =
+                "Automatic routines are currently paused.";
+            this.pausedEl.style.marginRight = "5px";
+            this.pausedEl.addClass(this.base + "paused");
+        } else {
+            this.pausedEl.empty();
+            this.pausedEl.style.marginRight = "";
+        }
+
         switch (this.plugin.state.gitAction) {
             case CurrentGitAction.idle:
                 this.displayFromNow();

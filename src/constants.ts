@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     autoPushInterval: 0,
     autoPullInterval: 0,
     autoPullOnBoot: false,
+    autoCommitOnlyStaged: false,
     disablePush: false,
     pullBeforePush: true,
     disablePopups: false,

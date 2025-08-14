@@ -6,6 +6,7 @@ import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
+import { assertNever } from "./utils";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -202,7 +203,7 @@ export function addCommmands(plugin: ObsidianGit) {
     });
 
     plugin.addCommand({
-        id: "commit-staged",
+        id: "commit-smart",
         name: "Commit",
         callback: () =>
             plugin.promiseQueue.addTask(async () => {
@@ -214,6 +215,24 @@ export function addCommmands(plugin: ObsidianGit) {
                     onlyStaged: onlyStaged,
                 });
             }),
+    });
+
+    plugin.addCommand({
+        id: "commit-staged",
+        name: "Commit staged",
+        checkCallback: function (checking) {
+            // Don't show this command in command palette, because the
+            // commit-smart command is more useful. Still provide this command
+            // for hotkeys and automation.
+            if (checking) return false;
+
+            plugin.promiseQueue.addTask(async () => {
+                return plugin.commit({
+                    fromAuto: false,
+                    requestCustomMessage: false,
+                });
+            });
+        },
     });
 
     if (Platform.isDesktopApp) {
@@ -233,16 +252,34 @@ export function addCommmands(plugin: ObsidianGit) {
     }
 
     plugin.addCommand({
+        id: "commit-smart-specified-message",
+        name: "Commit with specific message",
+        callback: () =>
+            plugin.promiseQueue.addTask(async () => {
+                const status = await plugin.updateCachedStatus();
+                const onlyStaged = status.staged.length > 0;
+                return plugin.commit({
+                    fromAuto: false,
+                    requestCustomMessage: true,
+                    onlyStaged: onlyStaged,
+                });
+            }),
+    });
+
+    plugin.addCommand({
         id: "commit-staged-specified-message",
         name: "Commit staged with specific message",
-        callback: () =>
-            plugin.promiseQueue.addTask(() =>
+        checkCallback: function (checking) {
+            // Same reason as for commit-staged
+            if (checking) return false;
+            return plugin.promiseQueue.addTask(() =>
                 plugin.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
                     onlyStaged: true,
                 })
-            ),
+            );
+        },
     });
 
     plugin.addCommand({
@@ -392,16 +429,34 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "discard-all",
         name: "CAUTION: Discard all changes",
         callback: async () => {
-            if (!(await plugin.isAllInitialized())) return false;
-            const modal = new GeneralModal(plugin, {
-                options: ["NO", "YES"],
-                placeholder:
-                    "Do you want to discard all changes to tracked files? plugin action cannot be undone.",
-                onlySelection: true,
-            });
-            const shouldDiscardAll = (await modal.openAndGetResult()) === "YES";
-            if (shouldDiscardAll) {
-                plugin.promiseQueue.addTask(() => plugin.discardAll());
+            const res = await plugin.discardAll();
+            switch (res) {
+                case "discard":
+                    new Notice("Discarded all changes in tracked files.");
+                    break;
+                case "delete":
+                    new Notice("Discarded all files.");
+                    break;
+                case false:
+                    break;
+                default:
+                    assertNever(res);
+            }
+        },
+    });
+
+    plugin.addCommand({
+        id: "pause-automatic-routines",
+        name: "Pause/Resume automatic routines",
+        callback: () => {
+            const pause = !plugin.localStorage.getPausedAutomatics();
+            plugin.localStorage.setPausedAutomatics(pause);
+            if (pause) {
+                plugin.automaticsManager.unload();
+                new Notice(`Paused automatic routines.`);
+            } else {
+                plugin.automaticsManager.reload("commit", "push", "pull");
+                new Notice(`Resumed automatic routines.`);
             }
         },
     });

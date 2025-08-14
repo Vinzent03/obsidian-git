@@ -299,9 +299,12 @@ export class SimpleGit extends GitManager {
         this.watchAbortController?.abort();
     }
 
-    async status(): Promise<Status> {
+    async status(opts?: { path?: string }): Promise<Status> {
+        const dir = opts?.path;
         this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
-        const status = await this.git.status();
+        const status = await this.git.status(
+            dir != undefined ? ["--", dir] : []
+        );
         this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
 
         const allFilesFormatted = status.files.map<FileStatusResult>((e) => {
@@ -388,10 +391,10 @@ export class SimpleGit extends GitManager {
     }
 
     //Remove wrong `"` like "My file.md"
-    formatPath(
-        path: { from?: string; path: string },
-        renamed = false
-    ): { path: string; from?: string } {
+    formatPath(path: { from?: string; path: string }): {
+        path: string;
+        from?: string;
+    } {
         function format(path?: string): string | undefined {
             if (path == undefined) return undefined;
 
@@ -401,7 +404,7 @@ export class SimpleGit extends GitManager {
                 return path;
             }
         }
-        if (renamed) {
+        if (path.from != undefined) {
             return {
                 from: format(path.from),
                 path: format(path.path)!,
@@ -539,13 +542,26 @@ export class SimpleGit extends GitManager {
         this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
         if (await this.isTracked(filepath)) {
             await this.git.checkout(["--", filepath]);
-        } else {
-            await this.app.vault.adapter.rmdir(
-                this.getRelativeVaultPath(filepath),
-                true
-            );
         }
         this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+    }
+
+    async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {
+        const dir = opts?.path;
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
+        const args = [
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "--directory",
+        ];
+        if (dir != undefined) {
+            args.push("--", dir);
+        }
+        const untrackedFiles = await this.git.raw(args);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+
+        return untrackedFiles.split(/\r\n|\r|\n/).filter((e) => e.length > 0);
     }
 
     async hashObject(filepath: string): Promise<string> {
@@ -716,6 +732,14 @@ export class SimpleGit extends GitManager {
         const currentBranch = status.current;
 
         if (trackingBranch == null || currentBranch == null) {
+            return 0;
+        }
+        const [remote, _] = splitRemoteBranch(trackingBranch);
+        const remoteBranches = await this.getRemoteBranches(remote);
+        if (!remoteBranches.includes(trackingBranch)) {
+            this.plugin.log(
+                `Tracking branch ${trackingBranch} does not exist on remote ${remote}.`
+            );
             return 0;
         }
 
@@ -945,6 +969,9 @@ export class SimpleGit extends GitManager {
         await this.git.removeRemote(remoteName);
     }
 
+    /**
+     * @param remoteBranch - The remote branch to set as upstream, in the format "remote/branch"
+     */
     async updateUpstreamBranch(remoteBranch: string) {
         try {
             // git 1.8+
@@ -955,12 +982,14 @@ export class SimpleGit extends GitManager {
                 await this.git.branch(["--set-upstream", remoteBranch]);
             } catch {
                 // fallback for when setting upstream branch to a branch that does not exist on the remote yet. Setting it with push instead.
-                await this.git.push(
-                    // @ts-expect-error A type error occurs here because the third element could be undefined.
-                    // However, it is unlikely to be undefined due to the `remoteBranch`'s format, and error handling is in place.
-                    // Therefore, we temporarily ignore the error.
-                    ["--set-upstream", ...splitRemoteBranch(remoteBranch)]
-                );
+                const [remote, remoteBranchName] =
+                    splitRemoteBranch(remoteBranch);
+                const branchInfo = await this.branchInfo();
+                await this.git.push([
+                    "--set-upstream",
+                    remote,
+                    `${branchInfo.current}:${remoteBranchName}`,
+                ]);
             }
         }
     }

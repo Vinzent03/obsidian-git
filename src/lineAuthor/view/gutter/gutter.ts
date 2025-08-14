@@ -402,7 +402,7 @@ export function lineAuthoringGutterMarker(
     options?: "waiting-for-result"
 ) {
     const digest = sha256.create();
-    digest.update(Object.values(settings).join(","));
+    digest.update(JSON.stringify(settings));
     digest.update(`s${startLine}-e${endLine}-k${key}-o${options}`);
 
     const cacheKey = digest.hex();
