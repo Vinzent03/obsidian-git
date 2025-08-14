@@ -748,10 +748,10 @@ export default class ObsidianGit extends Plugin {
     }
 
     ///Used for command
-    async pullChangesFromRemote(force: boolean = false): Promise<void> {
+    async pullChangesFromRemote(): Promise<void> {
         if (!(await this.isAllInitialized())) return;
 
-        const filesUpdated = await this.pull(force);
+        const filesUpdated = await this.pull();
         if (filesUpdated === false) {
             return;
         }
@@ -1074,18 +1074,13 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    /** Used for internals
-    Returns whether the pull added a commit or not.
-    @param {boolean} force - If true, merge strategy `--strategy-option=theirs` is used. This will prefer remote changes over local changes.
-
-    See {@link pullChangesFromRemote} for the command version. */
-    async pull(force: boolean = false): Promise<false | number> {
+    async pull(): Promise<false | number> {
         if (!(await this.remotesAreSet())) {
             return false;
         }
         try {
             this.log("Pulling....");
-            const pulledFiles = (await this.gitManager.pull(force)) || [];
+            const pulledFiles = (await this.gitManager.pull()) || [];
             this.setPluginState({ offlineMode: false });
 
             if (pulledFiles.length > 0) {

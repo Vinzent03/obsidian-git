@@ -25,6 +25,7 @@ import type {
 import type ObsidianGit from "src/main";
 import type {
     ObsidianGitSettings,
+    ResolutionMethod,
     ShowAuthorInHistoryView,
     SyncMethod,
 } from "src/types";
@@ -397,6 +398,26 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             await plugin.saveSettings();
                         });
                     });
+
+            new Setting(containerEl)
+                .setName("Conflict resolution strategy")
+                .setDesc(
+                    "Decide how to solve conflicts when pulling remote changes"
+                )
+                .addDropdown((dropdown) => {
+                    const options: Record<ResolutionMethod, string> = {
+                        none: "None (git default)",
+                        ours: "Our changes",
+                        theirs: "Their changes",
+                    };
+                    dropdown.addOptions(options);
+                    dropdown.setValue(plugin.settings.resolutionMethod);
+
+                    dropdown.onChange(async (option: ResolutionMethod) => {
+                        plugin.settings.resolutionMethod = option;
+                        await plugin.saveSettings();
+                    });
+                });
 
             new Setting(containerEl)
                 .setName("Pull on startup")

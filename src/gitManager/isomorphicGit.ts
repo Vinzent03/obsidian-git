@@ -25,6 +25,7 @@ import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
 import { MyAdapter } from "./myAdapter";
+import diff3Merge from "diff3";
 
 export class IsomorphicGit extends GitManager {
     private readonly FILE = 0;
@@ -459,10 +460,7 @@ export class IsomorphicGit extends GitManager {
         return this.wrapFS(git.resolveRef({ ...this.getRepo(), ref }));
     }
 
-    /**
-    @param {boolean} force - If true, merge strategy `--strategy-option=theirs` is used. This will prefer remote changes over local changes.
-    */
-    async pull(force: boolean = false): Promise<FileStatusResult[]> {
+    async pull(): Promise<FileStatusResult[]> {
         const progressNotice = this.showNotice("Initializing pull");
         try {
             this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
@@ -479,10 +477,37 @@ export class IsomorphicGit extends GitManager {
                     ours: branchInfo.current,
                     theirs: branchInfo.tracking!,
                     abortOnConflict: false,
-                    mergeDriver: force ? ({ contents }) => {
-                        const mergedText = contents[2];
-                        return { cleanMerge: true, mergedText };
-                    } : undefined,
+                    mergeDriver:
+                        this.plugin.settings.resolutionMethod !== "none"
+                            ? ({ contents }) => {
+                                  const baseContent = contents[0];
+                                  const ourContent = contents[1];
+                                  const theirContent = contents[2];
+
+                                  const LINEBREAKS = /^.*(\r?\n|$)/gm;
+                                  const ours =
+                                      ourContent.match(LINEBREAKS) ?? [];
+                                  const base =
+                                      baseContent.match(LINEBREAKS) ?? [];
+                                  const theirs =
+                                      theirContent.match(LINEBREAKS) ?? [];
+                                  const result = diff3Merge(ours, base, theirs);
+                                  let mergedText = "";
+                                  for (const item of result) {
+                                      if (item.ok) {
+                                          mergedText += item.ok.join("");
+                                      }
+                                      if (item.conflict) {
+                                          mergedText +=
+                                              this.plugin.settings
+                                                  .resolutionMethod === "ours"
+                                                  ? item.conflict.a.join("")
+                                                  : item.conflict.b.join("");
+                                      }
+                                  }
+                                  return { cleanMerge: true, mergedText };
+                              }
+                            : undefined,
                 })
             );
             if (!mergeRes.alreadyMerged) {
