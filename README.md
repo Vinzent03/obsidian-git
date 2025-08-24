@@ -92,6 +92,9 @@ Some Git services may require further setup for HTTPS/SSH authentication. Refer 
 ## 📱 Mobile Support (⚠️  Experimental)
 
 The Git implementation on mobile is **very unstable**! I would not recommend using this plugin on mobile, but try other syncing services.
+
+One such alternative is [GitSync](https://github.com/ViscousPot/GitSync), which is available on both Android and iOS. It is not associated with this plugin, but it may be a better option for mobile users. A tutorial for setting it up can be found [here](https://viscouspotenti.al/posts/gitsync-all-devices-tutorial).
+
 > 🧪 The Git plugin works on mobile thanks to [isomorphic-git](https://isomorphic-git.org/), a JavaScript-based re-implementation of Git - but it comes with serious limitations and issues. It is not possible for an Obsidian plugin to use a native Git installation on Android or iOS.
 
 ### ❌ Mobile Feature Limitations

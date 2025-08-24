@@ -33,7 +33,10 @@ To clone, you have to use a remote URL. This can be one of two protocols: either
 > - Another solution is to move the `.git` directory to another location and create a `.git` file in your vault with only the following line: `gitdir: <path-to-your-actual-git-direcotry>`
 
 # Mobile
-The git implementation on mobile is **very unstable**!
+The Git implementation on mobile is **very unstable**! I would not recommend using this plugin on mobile, but try other syncing services.
+
+One such alternative is [GitSync](https://github.com/ViscousPot/GitSync), which is available on both Android and iOS. It is not associated with this plugin, but it may be a better option for mobile users. A tutorial for setting it up can be found [here](https://viscouspotenti.al/posts/gitsync-all-devices-tutorial).
+Another alternative for iOS is [Working Copy](https://workingcopy.app/).
 
 ## Restrictions
 
