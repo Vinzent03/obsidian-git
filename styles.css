@@ -21,6 +21,10 @@
     padding: 0;
 }
 
+.loading {
+    overflow: hidden;
+}
+
 .loading > svg {
     animation: 2s linear infinite loading;
     transform-origin: 50% 50%;
