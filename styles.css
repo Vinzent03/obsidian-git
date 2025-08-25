@@ -17,12 +17,12 @@
     padding: 0;
 }
 
-.workspace-leaf-content[data-type="git-view"] .nav-buttons-container {
-    min-height: 34px;
-}
-
 .workspace-leaf-content[data-type="git-history-view"] .view-content {
     padding: 0;
+}
+
+.loading {
+    overflow: hidden;
 }
 
 .loading > svg {
