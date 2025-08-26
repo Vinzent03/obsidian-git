@@ -59,6 +59,7 @@
         "deep-equal": "^2.2.3",
         "diff": "^7.0.0",
         "diff2html": "^3.4.52",
+        "diff3": "^0.0.4",
         "isomorphic-git": "^1.32.2",
         "js-sha256": "^0.9.0",
         "obsidian-community-lib": "github:Vinzent03/obsidian-community-lib#upgrade",

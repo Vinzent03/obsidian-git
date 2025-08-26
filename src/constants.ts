@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     showStatusBar: true,
     updateSubmodules: false,
     syncMethod: "merge",
+    resolutionMethod: "none",
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
     treeStructure: false,
