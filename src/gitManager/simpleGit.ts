@@ -1067,9 +1067,19 @@ export class SimpleGit extends GitManager {
     }
 
     async getLastCommitTime(): Promise<Date | undefined> {
-        const res = await this.git.log({ n: 1 });
-        if (res != null && res.latest != null) {
-            return new Date(res.latest.date);
+        try {
+            const res = await this.git.log({ n: 1 });
+            if (res != null && res.latest != null) {
+                return new Date(res.latest.date);
+            }
+        } catch (error) {
+            if (error instanceof GitError) {
+                if (error.message.contains("does not have any commits yet")) {
+                    return undefined;
+                }
+            } else {
+                throw error;
+            }
         }
     }
 
