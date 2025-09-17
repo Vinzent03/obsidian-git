@@ -379,7 +379,7 @@ export default class ObsidianGit extends Plugin {
                     .onClick((_) => {
                         this.promiseQueue.addTask(async () => {
                             if (file instanceof TFile) {
-                                await this.gitManager.stage(file.path, true);
+                                await this.stageFile(file);
                             } else {
                                 await this.gitManager.stageAll({
                                     dir: this.gitManager.getRelativeRepoPath(
@@ -387,8 +387,10 @@ export default class ObsidianGit extends Plugin {
                                         true
                                     ),
                                 });
+                                this.app.workspace.trigger(
+                                    "obsidian-git:refresh"
+                                );
                             }
-                            this.displayMessage(`Staged ${filePath}`);
                         });
                     });
             });
@@ -399,7 +401,7 @@ export default class ObsidianGit extends Plugin {
                     .onClick((_) => {
                         this.promiseQueue.addTask(async () => {
                             if (file instanceof TFile) {
-                                await this.gitManager.unstage(file.path, true);
+                                await this.unstageFile(file);
                             } else {
                                 await this.gitManager.unstageAll({
                                     dir: this.gitManager.getRelativeRepoPath(
@@ -407,8 +409,11 @@ export default class ObsidianGit extends Plugin {
                                         true
                                     ),
                                 });
+
+                                this.app.workspace.trigger(
+                                    "obsidian-git:refresh"
+                                );
                             }
-                            this.displayMessage(`Unstaged ${filePath}`);
                         });
                     });
             });
@@ -1137,7 +1142,6 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.isAllInitialized())) return false;
 
         await this.gitManager.stage(file.path, true);
-        this.displayMessage(`Staged ${file.path}`);
 
         this.app.workspace.trigger("obsidian-git:refresh");
 
@@ -1149,7 +1153,6 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.isAllInitialized())) return false;
 
         await this.gitManager.unstage(file.path, true);
-        this.displayMessage(`Unstaged ${file.path}`);
 
         this.app.workspace.trigger("obsidian-git:refresh");
 
