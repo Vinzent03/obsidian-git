@@ -1391,7 +1391,10 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         if (remoteName) {
             const oldUrl = await this.gitManager.getRemoteUrl(remoteName);
 
-            const urlModal = new GeneralModal(this, { initialValue: oldUrl });
+            const urlModal = new GeneralModal(this, {
+                initialValue: oldUrl,
+                placeholder: "Enter remote URL",
+            });
             // urlModal.inputEl.setText(oldUrl ?? "");
             const remoteURL = await urlModal.openAndGetResult();
             if (remoteURL) {
@@ -1433,6 +1436,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
                     "Select or create a new remote branch by typing its name and selecting it",
             });
             const branch = await branchModal.openAndGetResult();
+            if (branch == undefined) return;
             if (!branch.startsWith(remoteName + "/")) {
                 // If the branch does not start with the remote name, prepend it
                 return `${remoteName}/${branch}`;
