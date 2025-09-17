@@ -14,11 +14,15 @@
 }
 
 .workspace-leaf-content[data-type="git-view"] .view-content {
-    padding: 0;
+    padding-left: 0;
+    padding-top: 0;
+    padding-right: 0;
 }
 
 .workspace-leaf-content[data-type="git-history-view"] .view-content {
-    padding: 0;
+    padding-left: 0;
+    padding-top: 0;
+    padding-right: 0;
 }
 
 .loading {

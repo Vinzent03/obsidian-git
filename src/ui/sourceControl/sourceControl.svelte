@@ -175,7 +175,8 @@
         view.app.workspace.trigger("obsidian-git:refresh");
     }
 
-    function stageAll() {
+    function stageAll(event: MouseEvent) {
+        event.stopPropagation();
         loading = true;
         plugin.promiseQueue.addTask(() =>
             plugin.gitManager
@@ -184,7 +185,8 @@
         );
     }
 
-    function unstageAll() {
+    function unstageAll(event: MouseEvent) {
+        event.stopPropagation();
         loading = true;
         plugin.promiseQueue.addTask(() =>
             plugin.gitManager
