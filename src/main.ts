@@ -707,6 +707,11 @@ export default class ObsidianGit extends Plugin {
                 allowEmpty: true,
             }).openAndGetResult();
             let depthInt = undefined;
+            if (depth === undefined) {
+                new Notice("Aborted clone");
+                return;
+            }
+
             if (depth !== "") {
                 depthInt = parseInt(depth);
                 if (isNaN(depthInt)) {
