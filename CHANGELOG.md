@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.35.1](https://github.com/Vinzent03/obsidian-git/compare/2.35.0...2.35.1) (2025-09-19)
+
+
+### Bug Fixes
+
+* correctly abort selection when no branch selected ([23c009a](https://github.com/Vinzent03/obsidian-git/commit/23c009a2e9d23f0be6c882b2b992248e24bcf2da))
+* don't collapse changed files on stage and add bottom padding ([3832059](https://github.com/Vinzent03/obsidian-git/commit/38320597ec712804eecc04dfcd64ce774963c303))
+* get last commit time on branch without commits ([73300a1](https://github.com/Vinzent03/obsidian-git/commit/73300a1bf7c6333ea389a6792f73ea412b7f751d))
+* Prevent jitter of refresh icon in mobile ([#941](https://github.com/Vinzent03/obsidian-git/issues/941)) ([180a314](https://github.com/Vinzent03/obsidian-git/commit/180a314ca65bf666a8e15aaa07dc0d6b1e1ec838))
+* refresh view when staging files from menu ([1bd92c3](https://github.com/Vinzent03/obsidian-git/commit/1bd92c3961ac311312ff20e9fa2e3067a95c0434))
+
 ## [2.35.0](https://github.com/Vinzent03/obsidian-git/compare/2.34.0...2.35.0) (2025-08-07)
 
 
