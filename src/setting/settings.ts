@@ -1314,11 +1314,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         const storedValue = this.plugin.settings[settingsProperty];
         const defaultValue = DEFAULT_SETTINGS[settingsProperty];
 
-        if (defaultValue !== storedValue && storedValue != null) {
-            if (typeof storedValue === "object") {
-                text.setValue(JSON.stringify(storedValue));
-            }else {
+        if (defaultValue !== storedValue) {
+            // Doesn't add "" to saved strings
+            if (typeof storedValue === "string") {
                 text.setValue(String(storedValue));
+            }else {
+                text.setValue(JSON.stringify(storedValue));
             }
         }
     }
