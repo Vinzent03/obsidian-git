@@ -1316,9 +1316,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         if (defaultValue !== storedValue) {
             // Doesn't add "" to saved strings
-            if (typeof storedValue === "string" || typeof storedValue === "number" || typeof storedValue === "boolean") {
+            if (
+                typeof storedValue === "string" ||
+                typeof storedValue === "number" ||
+                typeof storedValue === "boolean"
+            ) {
                 text.setValue(String(storedValue));
-            }else {
+            } else {
                 text.setValue(JSON.stringify(storedValue));
             }
         }
