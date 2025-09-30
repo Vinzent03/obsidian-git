@@ -854,9 +854,9 @@ export default class ObsidianGit extends Plugin {
         try {
             let hadConflict = this.localStorage.getConflict();
 
-            let changedFiles: { vaultPath: string; path: string }[];
             let status: Status | undefined;
-            let unstagedFiles: UnstagedFile[] | undefined;
+            let stagedFiles: { vaultPath: string; path: string }[] = [];
+            let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
 
             if (this.gitManager instanceof SimpleGit) {
                 await this.mayDeleteConflictFile();
@@ -879,7 +879,12 @@ export default class ObsidianGit extends Plugin {
                     await this.handleConflict(status.conflicted);
                     return false;
                 }
-                changedFiles = [...status.changed, ...status.staged];
+                stagedFiles = status.staged;
+
+                // This typecast is only needed to hide the fact that `type` is missing, but that is only needed for isomorphic-git
+                unstagedFiles = status.changed as unknown as (UnstagedFile & {
+                    vaultPath: string;
+                })[];
             } else {
                 // isomorphic-git section
 
@@ -892,31 +897,40 @@ export default class ObsidianGit extends Plugin {
                         `Did not commit, because you have conflicts. Please resolve them and commit per command.`
                     );
                     return false;
-                } else if (hadConflict) {
-                    await this.mayDeleteConflictFile();
-                    status = await this.updateCachedStatus();
-                    changedFiles = [...status.changed, ...status.staged];
                 } else {
+                    if (hadConflict) {
+                        await this.mayDeleteConflictFile();
+                    }
                     const gitManager = this.gitManager as IsomorphicGit;
                     if (onlyStaged) {
-                        changedFiles = await gitManager.getStagedFiles();
+                        stagedFiles = await gitManager.getStagedFiles();
                     } else {
-                        unstagedFiles = await gitManager.getUnstagedFiles();
-                        changedFiles = unstagedFiles.map(({ path }) => ({
+                        const res = await gitManager.getUnstagedFiles();
+                        unstagedFiles = res.map(({ path, type }) => ({
                             vaultPath:
                                 this.gitManager.getRelativeVaultPath(path),
                             path,
+                            type,
                         }));
                     }
                 }
             }
 
-            if (await this.tools.hasTooBigFiles(changedFiles)) {
+            if (
+                await this.tools.hasTooBigFiles(
+                    onlyStaged
+                        ? stagedFiles
+                        : [...stagedFiles, ...unstagedFiles]
+                )
+            ) {
                 this.setPluginState({ gitAction: CurrentGitAction.idle });
                 return false;
             }
 
-            if (changedFiles.length !== 0 || hadConflict) {
+            if (
+                unstagedFiles.length + stagedFiles.length !== 0 ||
+                hadConflict
+            ) {
                 // The commit message from settings or previously set in the
                 // source control view
                 let cmtMessage = (commitMessage ??= fromAuto
@@ -1005,7 +1019,8 @@ export default class ObsidianGit extends Plugin {
                 let roughly = false;
                 if (committedFiles === undefined) {
                     roughly = true;
-                    committedFiles = changedFiles.length;
+                    committedFiles =
+                        unstagedFiles.length + stagedFiles.length || 0;
                 }
                 this.displayMessage(
                     `Committed${roughly ? " approx." : ""} ${committedFiles} ${
