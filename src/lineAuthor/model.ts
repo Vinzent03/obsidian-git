@@ -1,9 +1,5 @@
-import type {
-    AnnotationType,
-    EditorState,
-    Transaction,
-} from "@codemirror/state";
-import { Annotation, StateField } from "@codemirror/state";
+import type { EditorState, Transaction } from "@codemirror/state";
+import { StateEffect, StateField } from "@codemirror/state";
 import type { Hasher } from "js-sha256";
 import { sha256 } from "js-sha256";
 import type { RGB } from "obsidian";
@@ -70,14 +66,14 @@ export type LineAuthoringWithChanges = {
 };
 
 /**
- * The {@link Annotation} used in Codemirror {@link Transaction}s to
+ * The {@link StateEffect} used in Codemirror {@link Transaction}s to
  * update the {@link EditorState} with the {@link LineAuthoring}, that should be displayed.
  *
  * See users of {@link newComputationResultAsTransaction} for the value providers.
  * The {@link StateField} {@link lineAuthorState} hold the value of this transaction.
  */
-const LineAuthoringContainerType: AnnotationType<LineAuthoringWithChanges> =
-    Annotation.define<LineAuthoringWithChanges>();
+const LineAuthoringContainerType =
+    StateEffect.define<LineAuthoringWithChanges>();
 
 export function newComputationResultAsTransaction(
     key: LineAuthoringId,
@@ -85,18 +81,12 @@ export function newComputationResultAsTransaction(
     state: EditorState
 ): Transaction {
     return state.update({
-        annotations: LineAuthoringContainerType.of({
+        effects: LineAuthoringContainerType.of({
             key,
             la,
             lineOffsetsFromUnsavedChanges: new Map(),
         }),
     });
-}
-
-function getLineAuthorAnnotation(
-    tr: Transaction
-): LineAuthoringWithChanges | undefined {
-    return tr.annotation(LineAuthoringContainerType);
 }
 
 // ================ Codemirror StateField containing the current Line Authoring ===================
@@ -105,11 +95,11 @@ function getLineAuthorAnnotation(
  * The Codemirror {@link StateField} which contains the current {@link LineAuthoring}
  * that is being shown.
  *
- * The update method extracts the value from the annotation, if one is provided.
+ * The update method extracts the value from the StateEffect, if one is provided.
  *
- * Strictly speaking, if the annotation of a previous and outdated computation
+ * Strictly speaking, if the StateEffect of a previous and outdated computation
  * appears after a new a recent one, it might happen, that the old and stale one
- * will be shown instead. This is because we only ever show the annotation which
+ * will be shown instead. This is because we only ever show the StateEffect which
  * was most recently in a transaction - and we do not track any time here.
  *
  * When caching this, please use {@link laStateDigest} to compute the key.
@@ -127,9 +117,14 @@ export const lineAuthorState: StateField<LineAuthoringWithChanges | undefined> =
          * line author gutter without needing to wait until the document is saved and the
          * line authoring is properly computed.
          */
-        update: (previous, transaction) =>
-            getLineAuthorAnnotation(transaction) ??
-            enrichUnsavedChanges(transaction, previous),
+        update: (previous, transaction) => {
+            for (const effect of transaction.effects) {
+                if (effect.is(LineAuthoringContainerType)) {
+                    return effect.value;
+                }
+            }
+            return enrichUnsavedChanges(transaction, previous);
+        },
         // compare cache keys.
         // equality rate is >= 95% :)
         // hence avoids recomputation of views
