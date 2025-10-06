@@ -3,8 +3,15 @@ import { StateField } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { editorEditorField, editorInfoField } from "obsidian";
 import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
-import type { LineAuthoring, LineAuthoringId } from "src/lineAuthor/model";
-import { newComputationResultAsTransaction } from "src/lineAuthor/model";
+import type {
+    LineAuthoring,
+    LineAuthoringId,
+    SignsCompareResult,
+} from "src/lineAuthor/model";
+import {
+    newComputationResultAsTransaction,
+    newSignsComputationResultAsTransaction,
+} from "src/lineAuthor/model";
 
 /*
 ================== CONTROL ======================
@@ -34,6 +41,21 @@ export class LineAuthoringSubscriber {
         // using "this.state" directly here leads to some problems when closing panes. Hence, "this.view.state"
         const state = this.view.state;
         const transaction = newComputationResultAsTransaction(id, la, state);
+        this.view.dispatch(transaction);
+    }
+
+    public notifySigns(data: SignsCompareResult) {
+        if (this.view === undefined) {
+            console.warn(
+                `Git: View is not defined for editor cache key. Unforeseen situation. id: `
+            );
+            //TODO removed it above in the error message
+            return;
+        }
+
+        // using "this.state" directly here leads to some problems when closing panes. Hence, "this.view.state"
+        const state = this.view.state;
+        const transaction = newSignsComputationResultAsTransaction(data, state);
         this.view.dispatch(transaction);
     }
 

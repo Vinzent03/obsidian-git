@@ -627,3 +627,25 @@
     background: var(--interactive-hover);
     color: var(--text-accent-hover);
 }
+
+.git-gutter-marker {
+}
+
+.git-gutter-marker.git-add {
+    background-color: #399839;
+    justify-self: end;
+    height: inherit;
+    width: 2px;
+}
+.git-gutter-marker.git-change {
+    background-color: #d0b44c;
+    justify-self: end;
+    height: inherit;
+    width: 2px;
+}
+
+.git-gutter-marker.git-delete {
+    background-color: #c33;
+    height: 2px;
+    width: 12px;
+}

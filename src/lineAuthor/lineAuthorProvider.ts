@@ -3,11 +3,20 @@ import { Prec } from "@codemirror/state";
 import type { TFile } from "obsidian";
 import { subscribeNewEditor } from "src/lineAuthor/control";
 import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
-import type { LineAuthoring, LineAuthoringId } from "src/lineAuthor/model";
-import { lineAuthorState, lineAuthoringId } from "src/lineAuthor/model";
+import type {
+    LineAuthoring,
+    LineAuthoringId,
+    SignsCompareResult,
+} from "src/lineAuthor/model";
+import {
+    lineAuthorState,
+    lineAuthoringId,
+    signsState,
+} from "src/lineAuthor/model";
 import { clearViewCache } from "src/lineAuthor/view/cache";
 import { lineAuthorGutter } from "src/lineAuthor/view/view";
 import type ObsidianGit from "src/main";
+import { signsGutter } from "./view/signs";
 
 export { previewColor } from "src/lineAuthor/view/gutter/coloring";
 /**
@@ -64,6 +73,13 @@ export class LineAuthorProvider {
                 filepath
             );
 
+        const compareText = await gitManager.show("", filepath);
+        const compareTextHead = await gitManager.show(headRevision, filepath);
+        this.notifySignComputationResultToSubscribers(filepath, {
+            compareText,
+            compareTextHead,
+        });
+
         const fileHash = await gitManager.hashObject(filepath);
 
         const key = lineAuthoringId(headRevision, fileHash, filepath);
@@ -98,6 +114,15 @@ export class LineAuthorProvider {
                 )
         );
     }
+    private notifySignComputationResultToSubscribers(
+        filepath: string,
+        data: SignsCompareResult
+    ) {
+        eventsPerFilePathSingleton.ifFilepathDefinedTransformSubscribers(
+            filepath,
+            (subs) => subs.forEach((sub) => sub.notifySigns(data))
+        );
+    }
 }
 
 // =========================================================
@@ -105,5 +130,7 @@ export class LineAuthorProvider {
 export const enabledLineAuthorInfoExtensions: Extension = Prec.high([
     subscribeNewEditor,
     lineAuthorState,
+    signsState,
     lineAuthorGutter,
+    signsGutter,
 ]);
