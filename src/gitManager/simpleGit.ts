@@ -341,7 +341,7 @@ export class SimpleGit extends GitManager {
         result.catch((err) =>
             console.warn("obsidian-git: rev-parse error:", err)
         );
-        return result;
+        return (await result).trim();
     }
 
     async getSubmodulePaths(): Promise<string[]> {
