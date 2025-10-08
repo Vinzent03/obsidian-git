@@ -14,14 +14,14 @@ import {
 } from "src/constants";
 import { IsomorphicGit } from "src/gitManager/isomorphicGit";
 import { SimpleGit } from "src/gitManager/simpleGit";
-import { previewColor } from "src/lineAuthor/lineAuthorProvider";
+import { previewColor } from "src/editor/lineAuthor/lineAuthorProvider";
 import type {
     LineAuthorDateTimeFormatOptions,
     LineAuthorDisplay,
     LineAuthorFollowMovement,
     LineAuthorSettings,
     LineAuthorTimezoneOption,
-} from "src/lineAuthor/model";
+} from "src/editor/lineAuthor/model";
 import type ObsidianGit from "src/main";
 import type {
     ObsidianGitSettings,

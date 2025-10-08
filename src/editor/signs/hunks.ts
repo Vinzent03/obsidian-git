@@ -15,8 +15,11 @@ export interface Hunk {
     vend: number;
 }
 
+export type SignType = HunkType | "topdelete" | "changedelete" | "untracked";
+
 export interface Sign {
-    type: HunkType | "topdelete" | "changedelete" | "untracked";
+    type: SignType;
+    /// Number of lines added/removed. Only set on the first line of a hunk.
     count?: number;
     lnum: number;
 }
@@ -37,13 +40,8 @@ export interface HlMark {
 
 export type LineSpec = [[string, HlMark[], string?]];
 
-export class Hunks {
-    private config = {
-        _new_sign_calc: true,
-        diff_opts: { internal: true },
-    };
-
-    createHunk(
+export abstract class Hunks {
+    static createHunk(
         oldStart: number,
         oldCount: number,
         newStart: number,
@@ -60,7 +58,7 @@ export class Hunks {
         };
     }
 
-    createPartialHunk(
+    static createPartialHunk(
         hunks: Hunk[],
         top: number,
         bot: number
@@ -132,7 +130,7 @@ export class Hunks {
         return lines;
     }
 
-    parseDiffLine(line: string): Hunk {
+    static parseDiffLine(line: string): Hunk {
         const parts = line.split("@@");
         const diffkey = parts[1].trim();
 
@@ -152,7 +150,7 @@ export class Hunks {
         return hunk;
     }
 
-    private changeEnd(hunk: Hunk): number {
+    private static changeEnd(hunk: Hunk): number {
         if (hunk.added.count === 0) {
             return hunk.added.start;
         } else if (hunk.removed.count === 0) {
@@ -166,83 +164,7 @@ export class Hunks {
         }
     }
 
-    private calcSignsOld(
-        hunk: Hunk,
-        next: Hunk | undefined,
-        minLnum: number,
-        maxLnum: number,
-        untracked?: boolean
-    ): Sign[] {
-        const { start, added, removed } = {
-            start: hunk.added.start,
-            added: hunk.added.count,
-            removed: hunk.removed.count,
-        };
-
-        if (hunk.type === "delete" && start === 0) {
-            if (minLnum <= 1) {
-                return [{ type: "topdelete", count: removed, lnum: 1 }];
-            } else {
-                return [];
-            }
-        }
-
-        const signs: Sign[] = [];
-        const cend = this.changeEnd(hunk);
-
-        const changedelete =
-            hunk.type === "change" &&
-            (removed > added ||
-                (next &&
-                    next.type === "delete" &&
-                    hunk.added.start + hunk.added.count - 1 ===
-                        next.added.start));
-
-        for (
-            let lnum = Math.max(start, minLnum);
-            lnum <= Math.min(cend, maxLnum);
-            lnum++
-        ) {
-            signs.push({
-                type:
-                    changedelete && lnum === cend
-                        ? "changedelete"
-                        : untracked
-                          ? "untracked"
-                          : hunk.type,
-                count:
-                    lnum === start
-                        ? hunk.type === "add"
-                            ? added
-                            : removed
-                        : undefined,
-                lnum,
-            });
-        }
-
-        if (
-            hunk.type === "change" &&
-            added > removed &&
-            hunk.vend >= minLnum &&
-            cend <= maxLnum
-        ) {
-            for (
-                let lnum = Math.max(cend, minLnum);
-                lnum <= Math.min(hunk.vend, maxLnum);
-                lnum++
-            ) {
-                signs.push({
-                    type: "add",
-                    count: lnum === hunk.vend ? added - removed : undefined,
-                    lnum,
-                });
-            }
-        }
-
-        return signs;
-    }
-
-    calcSigns(
+    static calcSigns(
         prevHunk: Hunk | undefined,
         hunk: Hunk,
         nextHunk: Hunk | undefined,
@@ -258,16 +180,6 @@ export class Hunks {
         }
 
         minLnum = Math.max(1, minLnum);
-
-        if (!this.config._new_sign_calc) {
-            return this.calcSignsOld(
-                hunk,
-                nextHunk,
-                minLnum,
-                maxLnum,
-                untracked
-            );
-        }
 
         const { start, added, removed } = {
             start: hunk.added.start,

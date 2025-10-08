@@ -1,4 +1,4 @@
-import type { LineAuthorSettings } from "src/lineAuthor/model";
+import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
 
 export interface ObsidianGitSettings {
     commitMessage: string;

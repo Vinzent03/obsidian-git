@@ -13,7 +13,7 @@ import {
     DEFAULT_WIN_GIT_PATH,
     GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
 } from "src/constants";
-import type { LineAuthorFollowMovement } from "src/lineAuthor/model";
+import type { LineAuthorFollowMovement } from "src/editor/lineAuthor/model";
 import { GeneralModal } from "src/ui/modals/generalModal";
 import type ObsidianGit from "../main";
 import type {

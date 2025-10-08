@@ -2,16 +2,13 @@ import type { EditorState } from "@codemirror/state";
 import { StateField } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { editorEditorField, editorInfoField } from "obsidian";
-import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
-import type {
-    LineAuthoring,
-    LineAuthoringId,
-    SignsCompareResult,
-} from "src/lineAuthor/model";
+import { eventsPerFilePathSingleton } from "./eventsPerFilepath";
+import type { LineAuthoring, LineAuthoringId } from "./lineAuthor/model";
+import { newComputationResultAsTransaction } from "./lineAuthor/model";
 import {
-    newComputationResultAsTransaction,
-    newSignsComputationResultAsTransaction,
-} from "src/lineAuthor/model";
+    newGitCompareResultAsTransaction,
+    type GitCompareResult,
+} from "./signs/signs";
 
 /*
 ================== CONTROL ======================
@@ -23,7 +20,7 @@ given the changes in the Obsidian UI.
  * Subscribes to changes in the files on a specific filepath.
  * It knows its corresponding editor and initiates editor view changes.
  */
-export class LineAuthoringSubscriber {
+export class FileSubscriber {
     private lastSeenPath: string; // remember path to detect and adapt to renames
 
     constructor(private state: EditorState) {
@@ -44,7 +41,7 @@ export class LineAuthoringSubscriber {
         this.view.dispatch(transaction);
     }
 
-    public notifySigns(data: SignsCompareResult) {
+    public notifyGitCompare(data: GitCompareResult) {
         if (this.view === undefined) {
             console.warn(
                 `Git: View is not defined for editor cache key. Unforeseen situation. id: `
@@ -55,7 +52,7 @@ export class LineAuthoringSubscriber {
 
         // using "this.state" directly here leads to some problems when closing panes. Hence, "this.view.state"
         const state = this.view.state;
-        const transaction = newSignsComputationResultAsTransaction(data, state);
+        const transaction = newGitCompareResultAsTransaction(data, state);
         this.view.dispatch(transaction);
     }
 
@@ -108,14 +105,14 @@ export class LineAuthoringSubscriber {
     }
 }
 
-export type LineAuthoringSubscribers = Set<LineAuthoringSubscriber>;
+export type FileSubscribers = Set<FileSubscriber>;
 
 /**
  * The Codemirror {@link Extension} used to make each editor subscribe itself to this pub-sub.
  */
-export const subscribeNewEditor: StateField<LineAuthoringSubscriber> =
-    StateField.define<LineAuthoringSubscriber>({
-        create: (state) => new LineAuthoringSubscriber(state),
+export const subscribeNewEditor: StateField<FileSubscriber> =
+    StateField.define<FileSubscriber>({
+        create: (state) => new FileSubscriber(state),
         update: (v, transaction) => v.updateToNewState(transaction.state),
         compare: (a, b) => a === b,
     });

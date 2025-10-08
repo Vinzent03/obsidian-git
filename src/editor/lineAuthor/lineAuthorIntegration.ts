@@ -5,12 +5,12 @@ import { SimpleGit } from "src/gitManager/simpleGit";
 import {
     LineAuthorProvider,
     enabledLineAuthorInfoExtensions,
-} from "src/lineAuthor/lineAuthorProvider";
-import type { LineAuthorSettings } from "src/lineAuthor/model";
-import { provideSettingsAccess } from "src/lineAuthor/model";
-import { handleContextMenu } from "src/lineAuthor/view/contextMenu";
-import { setTextColorCssBasedOnSetting } from "src/lineAuthor/view/gutter/coloring";
-import { prepareGutterSearchForContextMenuHandling } from "src/lineAuthor/view/gutter/gutterElementSearch";
+} from "./lineAuthorProvider";
+import type { LineAuthorSettings } from "./model";
+import { provideSettingsAccess } from "./model";
+import { handleContextMenu } from "./view/contextMenu";
+import { setTextColorCssBasedOnSetting } from "./view/gutter/coloring";
+import { prepareGutterSearchForContextMenuHandling } from "./view/gutter/gutterElementSearch";
 import type ObsidianGit from "src/main";
 
 /**

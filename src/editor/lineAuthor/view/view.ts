@@ -5,25 +5,25 @@ import { gutter } from "@codemirror/view";
 import type {
     LineAuthoringWithChanges,
     LineAuthorSettings,
-} from "src/lineAuthor/model";
+} from "src/editor/lineAuthor/model";
 import {
     laStateDigest,
     latestSettings,
     lineAuthorState,
-} from "src/lineAuthor/model";
+} from "src/editor/lineAuthor/model";
 import {
     getLongestRenderedGutter,
     gutterMarkersRangeSet,
-} from "src/lineAuthor/view/cache";
+} from "src/editor/lineAuthor/view/cache";
 import {
     lineAuthoringGutterMarker,
     TextGutter,
-} from "src/lineAuthor/view/gutter/gutter";
+} from "src/editor/lineAuthor/view/gutter/gutter";
 import {
     initialLineAuthoringGutter,
     initialSpacingGutter,
-} from "src/lineAuthor/view/gutter/initial";
-import { newUntrackedFileGutter } from "src/lineAuthor/view/gutter/untrackedFile";
+} from "src/editor/lineAuthor/view/gutter/initial";
+import { newUntrackedFileGutter } from "src/editor/lineAuthor/view/gutter/untrackedFile";
 import { between } from "src/utils";
 
 /*

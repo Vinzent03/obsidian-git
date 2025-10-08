@@ -628,24 +628,47 @@
     color: var(--text-accent-hover);
 }
 
+.signs-gutter-container {
+    .cm-gutterElement {
+        display: grid;
+    }
+}
+
 .git-gutter-marker {
 }
 
 .git-gutter-marker.git-add {
-    background-color: #399839;
-    justify-self: end;
+    background-color: var(--color-green);
+    justify-self: center;
     height: inherit;
     width: 2px;
 }
 .git-gutter-marker.git-change {
-    background-color: #d0b44c;
-    justify-self: end;
+    background-color: var(--color-yellow);
+    justify-self: center;
+    height: inherit;
+    width: 2px;
+}
+
+.git-gutter-marker.git-changedelete {
+    color: var(--color-yellow);
+    font-weight: var(--font-medium);
+    font-size: var(--font-ui-small);
+    justify-self: center;
     height: inherit;
     width: 2px;
 }
 
 .git-gutter-marker.git-delete {
-    background-color: #c33;
+    background-color: var(--color-red);
     height: 2px;
     width: 12px;
+    align-self: end;
+}
+
+.git-gutter-marker.git-topdelete {
+    background-color: var(--color-red);
+    height: 2px;
+    width: 12px;
+    align-self: start;
 }

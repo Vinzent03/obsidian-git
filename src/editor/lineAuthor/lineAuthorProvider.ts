@@ -1,24 +1,20 @@
 import type { Extension } from "@codemirror/state";
 import { Prec } from "@codemirror/state";
 import type { TFile } from "obsidian";
-import { subscribeNewEditor } from "src/lineAuthor/control";
-import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
+import { subscribeNewEditor } from "src/editor/control";
+import { eventsPerFilePathSingleton } from "src/editor/eventsPerFilepath";
 import type {
     LineAuthoring,
     LineAuthoringId,
-    SignsCompareResult,
-} from "src/lineAuthor/model";
-import {
-    lineAuthorState,
-    lineAuthoringId,
-    signsState,
-} from "src/lineAuthor/model";
-import { clearViewCache } from "src/lineAuthor/view/cache";
-import { lineAuthorGutter } from "src/lineAuthor/view/view";
+} from "src/editor/lineAuthor/model";
+import { lineAuthorState, lineAuthoringId } from "src/editor/lineAuthor/model";
+import { clearViewCache } from "src/editor/lineAuthor/view/cache";
+import { lineAuthorGutter } from "src/editor/lineAuthor/view/view";
 import type ObsidianGit from "src/main";
-import { signsGutter } from "./view/signs";
+import { signsState, type GitCompareResult } from "../signs/signs";
+import { signsGutter } from "../signs/gutter";
 
-export { previewColor } from "src/lineAuthor/view/gutter/coloring";
+export { previewColor } from "src/editor/lineAuthor/view/gutter/coloring";
 /**
  * * handles changes in git head, filesystem, etc. by initiating computation
  * * Initiates the line authoring computation via
@@ -116,11 +112,11 @@ export class LineAuthorProvider {
     }
     private notifySignComputationResultToSubscribers(
         filepath: string,
-        data: SignsCompareResult
+        data: GitCompareResult
     ) {
         eventsPerFilePathSingleton.ifFilepathDefinedTransformSubscribers(
             filepath,
-            (subs) => subs.forEach((sub) => sub.notifySigns(data))
+            (subs) => subs.forEach((sub) => sub.notifyGitCompare(data))
         );
     }
 }

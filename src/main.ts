@@ -13,7 +13,7 @@ import {
     moment,
 } from "obsidian";
 import * as path from "path";
-import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
+import { LineAuthoringFeature } from "src/editor/lineAuthor/lineAuthorIntegration";
 import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/setting/settings";

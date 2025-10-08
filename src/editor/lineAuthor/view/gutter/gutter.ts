@@ -8,18 +8,18 @@ import type {
     LineAuthorSettings,
     LineAuthorTimezoneOption,
     LineAuthoring,
-} from "src/lineAuthor/model";
-import { latestSettings } from "src/lineAuthor/model";
+} from "src/editor/lineAuthor/model";
+import { latestSettings } from "src/editor/lineAuthor/model";
 import {
     attachedGutterElements,
     conditionallyUpdateLongestRenderedGutter,
     getLongestRenderedGutter,
     gutterInstances,
     recordRenderedAgeInDays,
-} from "src/lineAuthor/view/cache";
-import { enrichCommitInfoForContextMenu } from "src/lineAuthor/view/contextMenu";
-import { coloringBasedOnCommitAge } from "src/lineAuthor/view/gutter/coloring";
-import { chooseNewestCommit } from "src/lineAuthor/view/gutter/commitChoice";
+} from "src/editor/lineAuthor/view/cache";
+import { enrichCommitInfoForContextMenu } from "src/editor/lineAuthor/view/contextMenu";
+import { coloringBasedOnCommitAge } from "src/editor/lineAuthor/view/gutter/coloring";
+import { chooseNewestCommit } from "src/editor/lineAuthor/view/gutter/commitChoice";
 import type { BlameCommit } from "src/types";
 import {
     impossibleBranch,

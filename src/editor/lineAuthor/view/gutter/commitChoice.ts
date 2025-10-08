@@ -1,4 +1,4 @@
-import type { LineAuthoring } from "src/lineAuthor/model";
+import type { LineAuthoring } from "src/editor/lineAuthor/model";
 import type { BlameCommit } from "src/types";
 
 /**

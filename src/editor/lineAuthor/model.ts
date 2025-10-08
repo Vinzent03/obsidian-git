@@ -6,9 +6,6 @@ import type { RGB } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
 import { parseColoringMaxAgeDuration } from "src/setting/settings";
 import type { Blame } from "src/types";
-import { Hunks, type Hunk } from "./hunks";
-import { diffLines, structuredPatch } from "diff";
-import * as diff from "diff";
 
 /*
 ================== MODEL ======================
@@ -92,28 +89,6 @@ export function newComputationResultAsTransaction(
     });
 }
 
-const SignsCompareEffectType = StateEffect.define<SignsCompareResult>();
-
-export type SignsData = {
-    key: LineAuthoringId;
-    hunks: Hunk[];
-    stagedHunks: Hunk[];
-} & SignsCompareResult;
-
-export type SignsCompareResult = {
-    compareText?: string;
-    compareTextHead?: string;
-};
-
-export function newSignsComputationResultAsTransaction(
-    signData: SignsCompareResult,
-    state: EditorState
-): Transaction {
-    return state.update({
-        effects: SignsCompareEffectType.of(signData),
-    });
-}
-
 // ================ Codemirror StateField containing the current Line Authoring ===================
 
 /**
@@ -155,88 +130,6 @@ export const lineAuthorState: StateField<LineAuthoringWithChanges | undefined> =
         // hence avoids recomputation of views
         compare: (l, r) => l?.key === r?.key,
     });
-
-export const signsState: StateField<SignsData | undefined> = StateField.define<
-    SignsData | undefined
->({
-    create: (_state) => undefined,
-    update: (previous, transaction) => {
-        const prev: SignsData = previous
-            ? { ...previous }
-            : {
-                  key: "",
-                  hunks: [],
-                  stagedHunks: [],
-              };
-        let newCompare = false;
-
-        for (const effect of transaction.effects) {
-            if (effect.is(SignsCompareEffectType)) {
-                newCompare = true;
-                prev.compareText = effect.value.compareText;
-                prev.compareTextHead = effect.value.compareTextHead;
-            }
-        }
-        if (prev.compareText) {
-            if (newCompare || transaction.docChanged) {
-                const unstagedDiff = structuredPatch(
-                    "",
-                    "",
-                    prev.compareText,
-                    transaction.newDoc.toString(),
-                    undefined,
-                    undefined,
-                    {
-                        context: 0,
-                        ignoreWhitespace: false,
-                    }
-                );
-                const hunks = toHunks(
-                    prev.compareText,
-                    transaction.newDoc.toString(),
-                    unstagedDiff.hunks
-                );
-                prev.hunks = hunks;
-                console.log("hunks", hunks);
-            }
-        }
-        return prev;
-    },
-});
-
-function toHunks(textA: string, textB: string, rawHunks: diff.Hunk[]): Hunk[] {
-    const hunks: Hunk[] = [];
-    const linesA = textA.split("\n");
-    const linesB = textB.split("\n");
-    const hunkManager = new Hunks();
-    for (const rawHunk of rawHunks) {
-        const { oldStart, oldLines, newStart, newLines } = rawHunk;
-        const hunk = hunkManager.createHunk(
-            oldStart,
-            oldLines,
-            newStart,
-            newLines
-        );
-        if (rawHunk.oldLines > 0) {
-            for (let i = oldStart; i < oldStart + oldLines; i++) {
-                hunk.removed.lines.push(linesA[i - 1]);
-            }
-            if (oldStart + oldLines >= linesA.length && linesA.last() === "") {
-                hunk.removed.no_nl_at_eof = true;
-            }
-        }
-        if (rawHunk.newLines > 0) {
-            for (let i = newStart; i < newStart + newLines; i++) {
-                hunk.added.lines.push(linesB[i - 1]);
-            }
-            if (newStart + newLines >= linesB.length && linesB.last() === "") {
-                hunk.added.no_nl_at_eof = true;
-            }
-        }
-        hunks.push(hunk);
-    }
-    return hunks;
-}
 
 export function laStateDigest(
     laState: LineAuthoringWithChanges | undefined
