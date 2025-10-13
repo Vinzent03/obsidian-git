@@ -61,6 +61,7 @@ import {
     splitRemoteBranch,
 } from "./utils";
 import { DiscardModal, type DiscardResult } from "./ui/modals/discardModal";
+import { SignsFeature } from "./editor/signs/signsIntegration";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -88,6 +89,7 @@ export default class ObsidianGit extends Plugin {
     lastDiffViewState: Record<string, unknown> | undefined;
     intervalsToClear: number[] = [];
     lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(this);
+    signsFeature: SignsFeature = new SignsFeature(this);
 
     /**
      * Debouncer for the refresh of the git status for the source control view after file changes.
@@ -144,6 +146,7 @@ export default class ObsidianGit extends Plugin {
 
     refreshUpdatedHead() {
         this.lineAuthoringFeature.refreshLineAuthorViews();
+        this.signsFeature.refresh();
     }
 
     async onload() {
@@ -316,6 +319,7 @@ export default class ObsidianGit extends Plugin {
         });
 
         this.lineAuthoringFeature.onLoadPlugin();
+        this.signsFeature.onLoadPlugin();
 
         this.setRefreshDebouncer();
 
@@ -498,6 +502,7 @@ export default class ObsidianGit extends Plugin {
         this.gitReady = false;
 
         this.lineAuthoringFeature.deactivateFeature();
+        this.signsFeature.deactivateFeature();
         this.automaticsManager.unload();
         this.branchBar?.remove();
         this.statusBar?.remove();
@@ -597,6 +602,7 @@ export default class ObsidianGit extends Plugin {
                     await this.branchBar?.display();
 
                     this.lineAuthoringFeature.conditionallyActivateBySettings();
+                    this.signsFeature.conditionallyActivateBySettings();
 
                     this.app.workspace.trigger("obsidian-git:refresh");
                     /// Among other things, this notifies the history view that git is ready

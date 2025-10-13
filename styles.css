@@ -672,3 +672,7 @@
     width: 12px;
     align-self: start;
 }
+
+.git-gutter-marker.staged {
+    opacity: 0.5;
+}

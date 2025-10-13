@@ -11,8 +11,6 @@ import { lineAuthorState, lineAuthoringId } from "src/editor/lineAuthor/model";
 import { clearViewCache } from "src/editor/lineAuthor/view/cache";
 import { lineAuthorGutter } from "src/editor/lineAuthor/view/view";
 import type ObsidianGit from "src/main";
-import { signsState, type GitCompareResult } from "../signs/signs";
-import { signsGutter } from "../signs/gutter";
 
 export { previewColor } from "src/editor/lineAuthor/view/gutter/coloring";
 /**
@@ -69,13 +67,6 @@ export class LineAuthorProvider {
                 filepath
             );
 
-        const compareText = await gitManager.show("", filepath);
-        const compareTextHead = await gitManager.show(headRevision, filepath);
-        this.notifySignComputationResultToSubscribers(filepath, {
-            compareText,
-            compareTextHead,
-        });
-
         const fileHash = await gitManager.hashObject(filepath);
 
         const key = lineAuthoringId(headRevision, fileHash, filepath);
@@ -110,15 +101,6 @@ export class LineAuthorProvider {
                 )
         );
     }
-    private notifySignComputationResultToSubscribers(
-        filepath: string,
-        data: GitCompareResult
-    ) {
-        eventsPerFilePathSingleton.ifFilepathDefinedTransformSubscribers(
-            filepath,
-            (subs) => subs.forEach((sub) => sub.notifyGitCompare(data))
-        );
-    }
 }
 
 // =========================================================
@@ -126,7 +108,5 @@ export class LineAuthorProvider {
 export const enabledLineAuthorInfoExtensions: Extension = Prec.high([
     subscribeNewEditor,
     lineAuthorState,
-    signsState,
     lineAuthorGutter,
-    signsGutter,
 ]);

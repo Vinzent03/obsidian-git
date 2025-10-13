@@ -51,6 +51,7 @@
         "@codemirror/search": "^6.5.11",
         "@codemirror/state": "^6.5.2",
         "@codemirror/view": "^6.38.1",
+        "@sanity/diff-match-patch": "^3.2.0",
         "buffer": "^6.0.3",
         "codemirror": "^6.0.2",
         "css-color-converter": "^2.0.0",

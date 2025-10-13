@@ -409,7 +409,7 @@ export abstract class Hunks {
         return false;
     }
 
-    private compareNew(a: Hunk, b: Hunk): boolean {
+    private static compareNew(a: Hunk, b: Hunk): boolean {
         if (a.added.start !== b.added.start) {
             return false;
         }
@@ -427,7 +427,7 @@ export abstract class Hunks {
         return true;
     }
 
-    filterCommon(a?: Hunk[], b?: Hunk[]): Hunk[] | undefined {
+    static filterCommon(a?: Hunk[], b?: Hunk[]): Hunk[] | undefined {
         if (!a && !b) {
             return undefined;
         }

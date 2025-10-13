@@ -448,6 +448,22 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             if (plugin.gitManager instanceof SimpleGit) {
+                new Setting(containerEl).setName("Signs").addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.signs.enabled)
+                        .onChange(async (value) => {
+                            plugin.settings.signs.enabled = value;
+                            await plugin.saveSettings();
+                            if (value) {
+                                plugin.signsFeature.activateFeature();
+                            } else {
+                                plugin.signsFeature.deactivateFeature();
+                            }
+                        })
+                );
+            }
+
+            if (plugin.gitManager instanceof SimpleGit) {
                 new Setting(containerEl)
                     .setName("Line author information")
                     .setHeading();
