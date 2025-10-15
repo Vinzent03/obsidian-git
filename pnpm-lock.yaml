@@ -44,6 +44,9 @@ importers:
       diff2html:
         specifier: ^3.4.52
         version: 3.4.52
+      diff3:
+        specifier: ^0.0.4
+        version: 0.0.4
       isomorphic-git:
         specifier: ^1.32.2
         version: 1.32.2
@@ -124,7 +127,7 @@ importers:
         specifier: 5.8.3
         version: 5.8.3
       typescript-eslint:
-        specifier: ^8.38.0
+        specifier: ^8.8.1
         version: 8.38.0(eslint@9.32.0(supports-color@9.4.0))(supports-color@9.4.0)(typescript@5.8.3)
 
 packages:
@@ -837,6 +840,9 @@ packages:
 
   diff3@0.0.3:
     resolution: {integrity: sha512-iSq8ngPOt0K53A6eVr4d5Kn6GNrM2nQZtC740pzIriHtn4pOQ2lyzEXQMBeVcWERN0ye7fhBsk9PbLLQOnUx/g==}
+
+  diff3@0.0.4:
+    resolution: {integrity: sha512-f1rQ7jXDn/3i37hdwRk9ohqcvLRH3+gEIgmA6qEM280WUOh7cOr3GXV8Jm5sPwUs46Nzl48SE8YNLGJoaLuodg==}
 
   diff@7.0.0:
     resolution: {integrity: sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw==}
@@ -2864,6 +2870,8 @@ snapshots:
       highlight.js: 11.9.0
 
   diff3@0.0.3: {}
+
+  diff3@0.0.4: {}
 
   diff@7.0.0: {}
 
