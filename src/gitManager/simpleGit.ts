@@ -76,7 +76,7 @@ export class SimpleGit extends GitManager {
             const envVars = this.plugin.localStorage.getEnvVars();
             const gitDir = this.plugin.settings.gitDir;
             if (pathPaths.length > 0) {
-                const path = process.env["PATH"] + ":" + pathPaths.join(":");
+                const path = pathPaths.join(":") + ":" + process.env["PATH"];
                 process.env["PATH"] = path;
             }
             if (gitDir) {
