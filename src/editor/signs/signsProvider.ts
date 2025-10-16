@@ -2,11 +2,9 @@ import type { Extension } from "@codemirror/state";
 import { Prec } from "@codemirror/state";
 import type { TFile } from "obsidian";
 import { eventsPerFilePathSingleton } from "src/editor/eventsPerFilepath";
-import { clearViewCache } from "src/editor/lineAuthor/view/cache";
 import type ObsidianGit from "src/main";
 import { hunksState, type GitCompareResult } from "../signs/signs";
 import { signsGutter, signsMarker } from "../signs/gutter";
-import { subscribeNewEditor } from "../control";
 
 export { previewColor } from "src/editor/lineAuthor/view/gutter/coloring";
 export class SignsProvider {
@@ -33,14 +31,11 @@ export class SignsProvider {
         return this.computeSigns(file.path);
     }
 
-    public destroy() {
-        eventsPerFilePathSingleton.clear();
-        clearViewCache();
-    }
+    public destroy() {}
 
     private async computeSigns(filepath: string) {
         const gitManager =
-            this.plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform()
+            this.plugin.editorIntegration.lineAuthoringFeature.isAvailableOnCurrentPlatform()
                 .gitManager;
 
         const headRevision =
@@ -48,8 +43,12 @@ export class SignsProvider {
                 filepath
             );
 
-        const compareText = await gitManager.show("", filepath);
-        const compareTextHead = await gitManager.show(headRevision, filepath);
+        const compareText = await gitManager
+            .show("", filepath)
+            .catch(() => undefined);
+        const compareTextHead = await gitManager
+            .show(headRevision, filepath)
+            .catch(() => undefined);
         this.notifySignComputationResultToSubscribers(filepath, {
             compareText,
             compareTextHead,
@@ -68,7 +67,6 @@ export class SignsProvider {
 }
 
 export const enabledSignsExtensions: Extension = Prec.default([
-    subscribeNewEditor,
     hunksState,
     signsGutter,
     signsMarker,

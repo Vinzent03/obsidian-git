@@ -131,6 +131,11 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
                 prev.hunks = hunks;
                 prev.stagedHunks = Hunks.filterCommon(headHunks, hunks)!;
             }
+        } else {
+            prev.compareText = undefined;
+            prev.compareTextHead = undefined;
+            prev.hunks = [];
+            prev.stagedHunks = [];
         }
         return prev;
     },

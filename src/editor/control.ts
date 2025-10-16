@@ -50,6 +50,11 @@ export class FileSubscriber {
             return;
         }
 
+        // Prevent updates to stale subscribers
+        if (this.removeIfStale()) {
+            return;
+        }
+
         // using "this.state" directly here leads to some problems when closing panes. Hence, "this.view.state"
         const state = this.view.state;
         const transaction = newGitCompareResultAsTransaction(data, state);
@@ -57,13 +62,10 @@ export class FileSubscriber {
     }
 
     public updateToNewState(state: EditorState) {
-        // if filepath has changed, then re-subcribe.
-        const filepathChanged =
-            this.lastSeenPath && this.filepath != this.lastSeenPath;
         this.state = state;
 
-        if (filepathChanged) {
-            this.unsubscribeMe(this.lastSeenPath);
+        // If no filepath was previously available subscribe now
+        if (!this.lastSeenPath && this.filepath) {
             this.subscribeMe();
             // the update of the view by starting a new computation is done by
             // listening to rename events in the line authoring controller.
@@ -72,21 +74,38 @@ export class FileSubscriber {
         return this;
     }
 
-    public removeIfStale(): void {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-        if ((this.view as any).destroyed) {
+    public removeIfStale(): boolean {
+        // If a new `subscribeNewEditor` field has been created, then this instance is stale.
+        // This happens when in the same leaf and `EditorView` a new file is opened
+        if (
+            this.view?.state.field(subscribeNewEditor, false) != this ||
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+            (this.view as any).destroyed
+        ) {
             this.unsubscribeMe(this.lastSeenPath);
+            return true;
         }
+        return false;
     }
 
-    private subscribeMe() {
-        if (this.filepath === undefined) return; // happens on the very first editor after start.
+    // When a file is renamed, the editor's filepath changes.
+    // So we resubscribe all editors to the new filepath.
+    public changeToNewFilepath(filepath: string) {
+        this.unsubscribeMe(this.lastSeenPath);
+        this.subscribeMe(filepath);
+        // the update of the view by starting a new computation is done by
+        // listening to rename events in the line authoring controller.
+    }
+
+    private subscribeMe(filepath?: string) {
+        filepath ??= this.filepath;
+        if (filepath === undefined) return; // happens on the very first editor after start.
 
         eventsPerFilePathSingleton.ifFilepathDefinedTransformSubscribers(
-            this.filepath,
+            filepath,
             (subs) => subs.add(this)
         );
-        this.lastSeenPath = this.filepath;
+        this.lastSeenPath = filepath;
     }
 
     private unsubscribeMe(oldFilepath: string) {

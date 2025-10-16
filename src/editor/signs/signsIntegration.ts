@@ -1,9 +1,10 @@
 import type { Extension } from "@codemirror/state";
-import type { EventRef, TAbstractFile, WorkspaceLeaf } from "obsidian";
+import type { EventRef, WorkspaceLeaf } from "obsidian";
 import { MarkdownView, Platform, TFile } from "obsidian";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
 import { enabledSignsExtensions, SignsProvider } from "./signsProvider";
+import { eventsPerFilePathSingleton } from "../eventsPerFilepath";
 
 /**
  * Manages the interaction between Obsidian (file-open event, modification event, etc.)
@@ -12,7 +13,6 @@ import { enabledSignsExtensions, SignsProvider } from "./signsProvider";
  */
 export class SignsFeature {
     private signsProvider?: SignsProvider;
-    private fileOpenEvent?: EventRef;
     private workspaceLeafChangeEvent?: EventRef;
     private fileRenameEvent?: EventRef;
     private pluginRefreshedEvent?: EventRef;
@@ -108,19 +108,16 @@ export class SignsFeature {
     // ========================= HANDLERS ==========================
 
     private createEventHandlers() {
-        this.fileOpenEvent = this.createFileOpenEvent();
         this.workspaceLeafChangeEvent = this.createWorkspaceLeafChangeEvent();
         this.fileRenameEvent = this.createFileRenameEvent();
         this.pluginRefreshedEvent = this.createPluginRefreshedEvent();
 
-        this.plg.registerEvent(this.fileOpenEvent);
         this.plg.registerEvent(this.workspaceLeafChangeEvent);
         this.plg.registerEvent(this.fileRenameEvent);
         this.plg.registerEvent(this.pluginRefreshedEvent);
     }
 
     private destroyEventHandlers() {
-        this.plg.app.workspace.offref(this.fileOpenEvent!);
         this.plg.app.workspace.offref(this.workspaceLeafChangeEvent!);
         this.plg.app.vault.offref(this.fileRenameEvent!);
         this.plg.app.workspace.offref(this.pluginRefreshedEvent!);
@@ -146,14 +143,6 @@ export class SignsFeature {
         this.signsProvider.trackChanged(obsView.file).catch(console.error);
     };
 
-    private createFileOpenEvent(): EventRef {
-        return this.plg.app.workspace.on(
-            "file-open",
-            (file: TFile) =>
-                void this.signsProvider?.trackChanged(file).catch(console.error)
-        );
-    }
-
     private createWorkspaceLeafChangeEvent(): EventRef {
         return this.plg.app.workspace.on(
             "active-leaf-change",
@@ -162,15 +151,31 @@ export class SignsFeature {
     }
 
     private createFileRenameEvent(): EventRef {
-        return this.plg.app.vault.on(
-            "rename",
-            (file, _old) =>
+        return this.plg.app.vault.on("rename", (file, _old) => {
+            // Notify all subscribers of the old filepath to resubscribe to the new filepath
+            eventsPerFilePathSingleton.ifFilepathDefinedTransformSubscribers(
+                _old,
+                (subs) => {
+                    return subs.forEach((las) => {
+                        las.changeToNewFilepath(file.path);
+                    });
+                }
+            );
+            return (
                 file instanceof TFile && this.signsProvider?.trackChanged(file)
-        );
+            );
+        });
     }
 
     private createPluginRefreshedEvent(): EventRef {
         return this.plg.app.workspace.on("obsidian-git:refreshed", () => {
+            this.refresh();
+        });
+    }
+
+    //TODO do we need this?
+    private createHeadChangeEvent(): EventRef {
+        return this.plg.app.workspace.on("obsidian-git:head-change", () => {
             this.refresh();
         });
     }

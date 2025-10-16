@@ -455,9 +455,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             plugin.settings.signs.enabled = value;
                             await plugin.saveSettings();
                             if (value) {
-                                plugin.signsFeature.activateFeature();
+                                plugin.editorIntegration.activateSigns();
                             } else {
-                                plugin.signsFeature.deactivateFeature();
+                                plugin.editorIntegration.deactivateSigns();
                             }
                         })
                 );
@@ -953,8 +953,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         this.settings.lineAuthor.show = show;
         void this.plugin.saveSettings();
 
-        if (show) this.plugin.lineAuthoringFeature.activateFeature();
-        else this.plugin.lineAuthoringFeature.deactivateFeature();
+        if (show) this.plugin.editorIntegration.activateLineAuthoring();
+        else this.plugin.editorIntegration.deactiveLineAuthoring();
     }
 
     /**
@@ -966,7 +966,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     >(key: K, value: ObsidianGitSettings["lineAuthor"][K]): Promise<void> {
         this.settings.lineAuthor[key] = value;
         await this.plugin.saveSettings();
-        this.plugin.lineAuthoringFeature.refreshLineAuthorViews();
+        this.plugin.editorIntegration.lineAuthoringFeature.refreshLineAuthorViews();
     }
 
     /**
@@ -990,7 +990,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             "Show commit authoring information next to each line"
         );
 
-        if (!this.plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform()) {
+        if (
+            !this.plugin.editorIntegration.lineAuthoringFeature.isAvailableOnCurrentPlatform()
+        ) {
             baseLineAuthorInfoSetting
                 .setDesc("Only available on desktop currently.")
                 .setDisabled(true);

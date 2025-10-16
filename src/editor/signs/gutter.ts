@@ -26,12 +26,14 @@ class GitGutterMarker extends GutterMarker {
 export const signsMarker = StateField.define({
     create: () => RangeSet.empty,
     update: (rangeSet, tr) => {
+        const data = tr.state.field(hunksState);
+        if (!data) {
+            return RangeSet.empty;
+        }
         const isNewCompare = tr.effects.some((effect) =>
             effect.is(GitCompareResultEffectType)
         );
         if (tr.docChanged || isNewCompare) {
-            const data = tr.state.field(hunksState);
-            if (!data) return RangeSet.empty;
             const linesWithSign = new Set<number>();
             const markers = getMarkers(tr, data.hunks, false, linesWithSign);
             const stagedMarkers = getMarkers(

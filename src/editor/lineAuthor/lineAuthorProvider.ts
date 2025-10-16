@@ -53,13 +53,12 @@ export class LineAuthorProvider {
 
     public destroy() {
         this.lineAuthorings.clear();
-        eventsPerFilePathSingleton.clear();
         clearViewCache();
     }
 
     private async computeLineAuthorInfo(filepath: string) {
         const gitManager =
-            this.plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform()
+            this.plugin.editorIntegration.lineAuthoringFeature.isAvailableOnCurrentPlatform()
                 .gitManager;
 
         const headRevision =
@@ -106,7 +105,6 @@ export class LineAuthorProvider {
 // =========================================================
 
 export const enabledLineAuthorInfoExtensions: Extension = Prec.high([
-    subscribeNewEditor,
     lineAuthorState,
     lineAuthorGutter,
 ]);
