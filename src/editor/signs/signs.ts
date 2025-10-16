@@ -7,6 +7,99 @@ import {
 import { Hunks, type Hunk } from "../signs/hunks";
 import { computeHunks } from "./diff";
 
+export abstract class HunksStateHelper {
+    static getHunks(state: EditorState, staged: boolean): Hunk[] {
+        const data = state.field(hunksState);
+        if (!data) return [];
+        return staged ? data.stagedHunks : data.hunks;
+    }
+
+    static getCursorHunk(
+        state: EditorState,
+        staged: boolean
+    ): Hunk | undefined {
+        const data = state.field(hunksState);
+        if (!data) return undefined;
+        const cursorLine = state.selection.main.head;
+        const line = state.doc.lineAt(cursorLine).number;
+
+        const hunks = this.getHunks(state, staged);
+        return Hunks.findHunk(line, hunks)[0];
+    }
+
+    static getHunk(state: EditorState, staged: boolean): Hunk | undefined {
+        if (state.selection.main.empty) {
+            return this.getCursorHunk(state, staged);
+        }
+
+        const from = state.selection.main.from;
+        const to = state.selection.main.to;
+        const fromLine = state.doc.lineAt(from).number;
+        const toLineRaw = state.doc.lineAt(to);
+
+        const no_nl_at_eof = !(
+            toLineRaw.text.length == 0 && toLineRaw.number == state.doc.lines
+        );
+        const toLine = no_nl_at_eof ? toLineRaw.number : toLineRaw.number - 1;
+
+        const hunks = this.getHunks(state, staged);
+        const hunk = Hunks.createPartialHunk(hunks, fromLine, toLine);
+        if (!hunk) {
+            return undefined;
+        }
+
+        const data = state.field(hunksState)!;
+
+        if (staged) {
+            let stagedTop = fromLine;
+            let stagedBot = toLine;
+            for (const h of data.hunks) {
+                if (fromLine > h.vend) {
+                    stagedTop = stagedTop - (h.added.count - h.removed.count);
+                }
+                if (toLine > h.vend) {
+                    stagedBot = stagedBot - (h.added.count - h.removed.count);
+                }
+            }
+            hunk.added.lines = data
+                .compareText!.split("\n")
+                .slice(stagedTop - 1, stagedBot);
+            if (data.compareTextHead) {
+                hunk.removed.lines = data.compareTextHead
+                    .split("\n")
+                    .slice(
+                        hunk.removed.start - 1,
+                        hunk.removed.start - 1 + hunk.removed.count
+                    );
+            } else {
+                hunk.removed.lines = [];
+            }
+        } else {
+            hunk.added.lines = state.doc
+                .toString()
+                .split("\n")
+                .slice(fromLine - 1, toLine);
+            if (no_nl_at_eof) {
+                hunk.added.no_nl_at_eof = true;
+            }
+            hunk.removed.lines = data
+                .compareText!.split("\n")
+                .slice(
+                    hunk.removed.start - 1,
+                    hunk.removed.start - 1 + hunk.removed.count
+                );
+            if (
+                hunk.removed.start + hunk.removed.count - 1 ===
+                    data.compareText!.split("\n").length &&
+                !data.compareText!.endsWith("\n")
+            ) {
+                hunk.removed.no_nl_at_eof = true;
+            }
+        }
+        return hunk;
+    }
+}
+
 export const hunksState: StateField<HunksData | undefined> = StateField.define<
     HunksData | undefined
 >({

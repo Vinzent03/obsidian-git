@@ -330,7 +330,7 @@ export abstract class Hunks {
         return status;
     }
 
-    findHunk(
+    static findHunk(
         lnum: number,
         hunks?: Hunk[]
     ): [Hunk, number] | [undefined, undefined] {

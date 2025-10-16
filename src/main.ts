@@ -62,6 +62,7 @@ import {
 } from "./utils";
 import { DiscardModal, type DiscardResult } from "./ui/modals/discardModal";
 import { SignsFeature } from "./editor/signs/signsIntegration";
+import { HunkActions } from "./editor/signs/hunkActions";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -90,6 +91,7 @@ export default class ObsidianGit extends Plugin {
     intervalsToClear: number[] = [];
     lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(this);
     signsFeature: SignsFeature = new SignsFeature(this);
+    hunkActions = new HunkActions(this);
 
     /**
      * Debouncer for the refresh of the git status for the source control view after file changes.

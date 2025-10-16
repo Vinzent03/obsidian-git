@@ -7,6 +7,8 @@ import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import { assertNever } from "./utils";
+import { HunksStateHelper } from "./editor/signs/signs";
+import type { EditorView } from "codemirror";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -484,5 +486,13 @@ export function addCommmands(plugin: ObsidianGit) {
             plugin.settingsTab?.configureLineAuthorShowStatus(
                 !plugin.settings.lineAuthor.show
             ),
+    });
+
+    plugin.addCommand({
+        id: "reset-hunk",
+        name: "Reset hunk",
+        editorCallback: (_, __) => {
+            plugin.hunkActions.resetHunk();
+        },
     });
 }

@@ -1,9 +1,4 @@
-import {
-    RangeSet,
-    StateField,
-    Transaction,
-    type Extension,
-} from "@codemirror/state";
+import { RangeSet, StateField, Transaction } from "@codemirror/state";
 import { EditorView, gutter, GutterMarker } from "@codemirror/view";
 import { Hunks, type Hunk, type SignType } from "./hunks";
 import { GitCompareResultEffectType, hunksState } from "./signs";
