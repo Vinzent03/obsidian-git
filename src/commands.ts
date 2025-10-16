@@ -8,7 +8,6 @@ import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import { assertNever } from "./utils";
 import { HunksStateHelper } from "./editor/signs/signs";
-import type { EditorView } from "codemirror";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -491,8 +490,23 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "reset-hunk",
         name: "Reset hunk",
-        editorCallback: (_, __) => {
+        editorCheckCallback(checking, editor, ctx) {
+            if (checking) {
+                return plugin.hunkActions.editor !== undefined;
+            }
+
             plugin.hunkActions.resetHunk();
+        },
+    });
+
+    plugin.addCommand({
+        id: "stage-hunk",
+        name: "Stage hunk",
+        editorCheckCallback: (checking, _, __) => {
+            if (checking) {
+                return plugin.hunkActions.editor !== undefined;
+            }
+            plugin.promiseQueue.addTask(() => plugin.hunkActions.stageHunk());
         },
     });
 }

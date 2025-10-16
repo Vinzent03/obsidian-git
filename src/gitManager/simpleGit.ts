@@ -169,32 +169,42 @@ export class SimpleGit extends GitManager {
         return filePath;
     }
 
-    async askpass(): Promise<void> {
+    private get absPluginConfigPath(): string {
         const adapter = this.app.vault.adapter as FileSystemAdapter;
         const vaultPath = adapter.getBasePath();
-        const absPluginConfigPath = path.join(
+        return path.join(
             vaultPath,
             this.app.vault.configDir,
             "plugins",
             "obsidian-git"
         );
+    }
+
+    private get relPluginConfigPath(): string {
+        return path.join(this.app.vault.configDir, "plugins", "obsidian-git");
+    }
+    async askpass(): Promise<void> {
+        const adapter = this.app.vault.adapter as FileSystemAdapter;
+        const vaultPath = adapter.getBasePath();
         const relPluginConfigDir =
             this.app.vault.configDir + "/plugins/obsidian-git/";
 
         await this.addAskPassScriptToExclude();
 
         await fsPromises.writeFile(
-            path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
+            path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
             ASK_PASS_SCRIPT
         );
         await fsPromises.chmod(
-            path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
+            path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
             0o755
         );
         this.watchAbortController = new AbortController();
         const { signal } = this.watchAbortController;
         try {
-            const watcher = fsPromises.watch(absPluginConfigPath, { signal });
+            const watcher = fsPromises.watch(this.absPluginConfigPath, {
+                signal,
+            });
 
             for await (const event of watcher) {
                 if (event.filename != ASK_PASS_INPUT_FILE) continue;
@@ -229,12 +239,12 @@ export class SimpleGit extends GitManager {
         } catch (error) {
             this.plugin.displayError(error);
             await fsPromises.rm(
-                path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
+                path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
                 { force: true }
             );
             await fsPromises.rm(
                 path.join(
-                    absPluginConfigPath,
+                    this.absPluginConfigPath,
                     `${ASK_PASS_SCRIPT_FILE}.response`
                 ),
                 { force: true }
@@ -544,6 +554,16 @@ export class SimpleGit extends GitManager {
             await this.git.checkout(["--", filepath]);
         }
         this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+    }
+
+    async applyPatch(patch: string): Promise<void> {
+        const patchPath = path.join(this.relPluginConfigPath, "patch");
+        await this.app.vault.adapter.write(patchPath, patch);
+        await this.git.applyPatch(patchPath, {
+            "--cached": null,
+            "--unidiff-zero": null,
+            "--whitespace": "nowarn",
+        });
     }
 
     async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {

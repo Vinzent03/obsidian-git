@@ -1,18 +1,33 @@
-import type { Editor } from "obsidian";
-import { HunksStateHelper } from "./signs";
+import { editorInfoField, type Editor } from "obsidian";
+import { hunksState, HunksStateHelper } from "./signs";
 import type { EditorView } from "codemirror";
 import type ObsidianGit from "src/main";
+import { Hunks } from "./hunks";
+import type { SimpleGit } from "src/gitManager/simpleGit";
 
 export class HunkActions {
     constructor(private readonly plugin: ObsidianGit) {}
 
-    resetHunk(): void {
+    get editor(): { obEditor: Editor; editor: EditorView } | undefined {
         const obEditor = this.plugin.app.workspace.activeEditor?.editor;
-        if (!obEditor) {
+        // @ts-expect-error, not typed
+        const editor = obEditor?.cm as EditorView;
+
+        if (!obEditor || !HunksStateHelper.hasHunksData(editor.state)) {
+            return undefined;
+        }
+        return { editor, obEditor };
+    }
+
+    private get gitManager(): SimpleGit {
+        return this.plugin.gitManager as SimpleGit;
+    }
+
+    resetHunk(): void {
+        if (!this.editor) {
             return;
         }
-        // @ts-expect-error, not typed
-        const editor = obEditor.cm as EditorView;
+        const { editor, obEditor } = this.editor;
         const hunk = HunksStateHelper.getHunk(editor.state, false);
         if (hunk) {
             let lstart: number, lend: number;
@@ -41,5 +56,33 @@ export class HunkActions {
 
             obEditor.setSelection(obEditor.offsetToPos(from));
         }
+    }
+
+    async stageHunk(): Promise<void> {
+        if (!(await this.plugin.isAllInitialized())) {
+            return;
+        }
+        if (!this.editor) {
+            return;
+        }
+        const { editor } = this.editor;
+
+        let hunk = HunksStateHelper.getHunk(editor.state, false);
+        let invert = false;
+        if (!hunk) {
+            hunk = HunksStateHelper.getHunk(editor.state, true);
+            invert = true;
+        }
+        if (!hunk) {
+            return;
+        }
+        const filepath = editor.state.field(editorInfoField).file!.path;
+
+        const patch =
+            Hunks.createPatch(filepath, [hunk], "100644", invert).join("\n") +
+            "\n";
+        await this.gitManager.applyPatch(patch);
+
+        this.plugin.app.workspace.trigger("obsidian-git:refresh");
     }
 }

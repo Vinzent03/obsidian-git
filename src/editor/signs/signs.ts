@@ -8,6 +8,11 @@ import { Hunks, type Hunk } from "../signs/hunks";
 import { computeHunks } from "./diff";
 
 export abstract class HunksStateHelper {
+    static hasHunksData(state: EditorState): boolean {
+        const data = state.field(hunksState, false);
+        return !!data;
+    }
+
     static getHunks(state: EditorState, staged: boolean): Hunk[] {
         const data = state.field(hunksState);
         if (!data) return [];

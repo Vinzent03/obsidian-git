@@ -250,7 +250,7 @@ export abstract class Hunks {
         return signs;
     }
 
-    createPatch(
+    static createPatch(
         relpath: string,
         hunks: Hunk[],
         modeBits: string,
