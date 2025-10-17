@@ -72,14 +72,23 @@ function changesToRawHunks(diff: ChangeObject[]): RawHunk[] {
             }
 
             // Track the updated file position
+            // If the change affects the last line of the document and does not
+            // end with '\n' increase the line count by 1 because the last line
+            // still needs to count.
             if (current.added) {
                 newLine += linesCount;
-                if (!current.value.endsWith("\n") && i + 2 == diff.length) {
+                if (
+                    !current.value.endsWith("\n") &&
+                    (i + 2 == diff.length || i + 3 == diff.length)
+                ) {
                     newLine += 1;
                 }
             } else {
                 oldLine += linesCount;
-                if (!current.value.endsWith("\n") && i + 3 == diff.length) {
+                if (
+                    !current.value.endsWith("\n") &&
+                    (i + 2 == diff.length || i + 3 == diff.length)
+                ) {
                     oldLine += 1;
                 }
             }
@@ -130,7 +139,7 @@ export function rawHunksToHunks(
             for (let i = oldStart; i < oldStart + oldLines; i++) {
                 hunk.removed.lines.push(linesA[i - 1]);
             }
-            if (oldStart + oldLines >= linesA.length && linesA.last() != "") {
+            if (oldStart + oldLines > linesA.length && linesA.last() != "") {
                 hunk.removed.no_nl_at_eof = true;
             }
         }
@@ -138,7 +147,7 @@ export function rawHunksToHunks(
             for (let i = newStart; i < newStart + newLines; i++) {
                 hunk.added.lines.push(linesB[i - 1]);
             }
-            if (newStart + newLines >= linesB.length && linesB.last() != "") {
+            if (newStart + newLines > linesB.length && linesB.last() != "") {
                 hunk.added.no_nl_at_eof = true;
             }
         }

@@ -44,7 +44,7 @@ export class HunkActions {
                     ? editor.state.doc.line(lend).from
                     : editor.state.doc.line(lend).to + 1;
             let lines = hunk.removed.lines.join("\n");
-            if (lines.length > 0 && !hunk.removed.no_nl_at_eof) {
+            if (!hunk.removed.no_nl_at_eof) {
                 lines += "\n";
             }
 
