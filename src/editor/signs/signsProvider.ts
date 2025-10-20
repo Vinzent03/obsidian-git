@@ -5,6 +5,7 @@ import { eventsPerFilePathSingleton } from "src/editor/eventsPerFilepath";
 import type ObsidianGit from "src/main";
 import { hunksState, type GitCompareResult } from "../signs/signs";
 import { signsGutter, signsMarker } from "../signs/gutter";
+import { cursorTooltipBaseTheme, diffTooltipField } from "./tooltip";
 
 export { previewColor } from "src/editor/lineAuthor/view/gutter/coloring";
 export class SignsProvider {
@@ -67,6 +68,8 @@ export class SignsProvider {
 }
 
 export const enabledSignsExtensions: Extension = Prec.default([
+    diffTooltipField,
+    cursorTooltipBaseTheme,
     hunksState,
     signsGutter,
     signsMarker,
