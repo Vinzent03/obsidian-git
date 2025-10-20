@@ -19,6 +19,19 @@ export abstract class HunksStateHelper {
         return staged ? data.stagedHunks : data.hunks;
     }
 
+    static getHunkAtPos(
+        state: EditorState,
+        pos: number,
+        staged: boolean
+    ): Hunk | undefined {
+        const data = state.field(hunksState);
+        if (!data) return undefined;
+        const line = state.doc.lineAt(pos).number;
+
+        const hunks = this.getHunks(state, staged);
+        return Hunks.findHunk(line, hunks)[0];
+    }
+
     static getCursorHunk(
         state: EditorState,
         staged: boolean
@@ -26,13 +39,18 @@ export abstract class HunksStateHelper {
         const data = state.field(hunksState);
         if (!data) return undefined;
         const cursorLine = state.selection.main.head;
-        const line = state.doc.lineAt(cursorLine).number;
-
-        const hunks = this.getHunks(state, staged);
-        return Hunks.findHunk(line, hunks)[0];
+        return this.getHunkAtPos(state, cursorLine, staged);
     }
 
-    static getHunk(state: EditorState, staged: boolean): Hunk | undefined {
+    static getHunk(
+        state: EditorState,
+        staged: boolean,
+        pos?: number
+    ): Hunk | undefined {
+        if (pos != undefined) {
+            console.log("Getting hunk at pos:", pos);
+            return this.getHunkAtPos(state, pos, staged);
+        }
         if (state.selection.main.empty) {
             return this.getCursorHunk(state, staged);
         }

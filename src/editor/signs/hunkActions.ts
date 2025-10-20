@@ -23,12 +23,12 @@ export class HunkActions {
         return this.plugin.gitManager as SimpleGit;
     }
 
-    resetHunk(): void {
+    resetHunk(pos: number): void {
         if (!this.editor) {
             return;
         }
         const { editor, obEditor } = this.editor;
-        const hunk = HunksStateHelper.getHunk(editor.state, false);
+        const hunk = HunksStateHelper.getHunk(editor.state, false, pos);
         if (hunk) {
             let lstart: number, lend: number;
             if (hunk.type === "delete") {
@@ -58,7 +58,7 @@ export class HunkActions {
         }
     }
 
-    async stageHunk(): Promise<void> {
+    async stageHunk(pos?: number): Promise<void> {
         if (!(await this.plugin.isAllInitialized())) {
             return;
         }
@@ -67,10 +67,10 @@ export class HunkActions {
         }
         const { editor } = this.editor;
 
-        let hunk = HunksStateHelper.getHunk(editor.state, false);
+        let hunk = HunksStateHelper.getHunk(editor.state, false, pos);
         let invert = false;
         if (!hunk) {
-            hunk = HunksStateHelper.getHunk(editor.state, true);
+            hunk = HunksStateHelper.getHunk(editor.state, true, pos);
             invert = true;
         }
         if (!hunk) {

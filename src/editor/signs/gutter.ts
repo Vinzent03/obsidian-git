@@ -2,6 +2,7 @@ import { RangeSet, StateField, Transaction } from "@codemirror/state";
 import { EditorView, gutter, GutterMarker } from "@codemirror/view";
 import { Hunks, type Hunk, type SignType } from "./hunks";
 import { GitCompareResultEffectType, hunksState } from "./signs";
+import { selectHunkEffectType } from "./tooltip";
 
 class GitGutterMarker extends GutterMarker {
     constructor(
@@ -83,5 +84,16 @@ export const signsGutter = gutter({
     markers: (view) => view.state.field(signsMarker),
     initialSpacer: (_) => {
         return new GitGutterMarker("delete", false);
+    },
+    domEventHandlers: {
+        click: (view, line, event) => {
+            // Prevent editor focus loss on gutter click
+            console.log("Gutter click prevented", line);
+            view.dispatch({
+                effects: selectHunkEffectType.of({ pos: line.from, add: true }),
+            });
+            event.preventDefault();
+            return false;
+        },
     },
 });
