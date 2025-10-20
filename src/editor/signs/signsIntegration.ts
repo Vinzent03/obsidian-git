@@ -42,10 +42,8 @@ export class SignsFeature {
             this.createEventHandlers();
 
             this.activateCodeMirrorExtensions();
-
-            console.log(this.plg.manifest.name + ": Enabled line authoring.");
         } catch (e) {
-            console.warn("Git: Error while loading line authoring feature.", e);
+            console.warn("Git: Error while loading signs feature.", e);
             this.deactivateFeature();
         }
     }

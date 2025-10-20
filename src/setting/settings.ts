@@ -448,22 +448,26 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             if (plugin.gitManager instanceof SimpleGit) {
-                new Setting(containerEl).setName("Signs").addToggle((toggle) =>
-                    toggle
-                        .setValue(plugin.settings.signs.enabled)
-                        .onChange(async (value) => {
-                            plugin.settings.signs.enabled = value;
-                            await plugin.saveSettings();
-                            if (value) {
-                                plugin.editorIntegration.activateSigns();
-                            } else {
-                                plugin.editorIntegration.deactivateSigns();
-                            }
-                        })
-                );
-            }
+                new Setting(containerEl).setName("Signs").setHeading();
+                new Setting(containerEl)
+                    .setName("Show git diff hunks in the editor")
+                    .setDesc(
+                        "This allows you to see which type of changes you have done right in your editor. It also shows whether you have already staged a line or not."
+                    )
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(plugin.settings.signs.enabled)
+                            .onChange(async (value) => {
+                                plugin.settings.signs.enabled = value;
+                                await plugin.saveSettings();
+                                if (value) {
+                                    plugin.editorIntegration.activateSigns();
+                                } else {
+                                    plugin.editorIntegration.deactivateSigns();
+                                }
+                            })
+                    );
 
-            if (plugin.gitManager instanceof SimpleGit) {
                 new Setting(containerEl)
                     .setName("Line author information")
                     .setHeading();
