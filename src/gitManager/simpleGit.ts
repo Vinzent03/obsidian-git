@@ -564,6 +564,7 @@ export class SimpleGit extends GitManager {
             "--unidiff-zero": null,
             "--whitespace": "nowarn",
         });
+        await this.app.vault.adapter.remove(patchPath);
     }
 
     async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {

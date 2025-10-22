@@ -598,11 +598,24 @@ which itself is adapted from the diff2html library with the following original l
     height: inherit;
     width: 2px;
 }
+
 .git-gutter-marker.git-change {
     background-color: var(--color-yellow);
     justify-self: center;
     height: inherit;
     width: 2px;
+}
+
+div:hover > .git-gutter-marker.git-change {
+    width: 6px;
+}
+
+div:hover > .git-gutter-marker.git-add {
+    width: 6px;
+}
+
+div:hover > .git-gutter-marker.git-delete {
+    height: 6px;
 }
 
 .git-gutter-marker.git-changedelete {
@@ -631,13 +644,3 @@ which itself is adapted from the diff2html library with the following original l
 .git-gutter-marker.staged {
     opacity: 0.5;
 }
-
-/* .d2h-code-line-ctn { */
-/*     white-space: pre-wrap; */
-/* } */
-/**/
-/* .d2h-code-line, */
-/* .d2h-code-side-line, */
-/* .d2h-code-line-ctn { */
-/*     width: revert; */
-/* } */

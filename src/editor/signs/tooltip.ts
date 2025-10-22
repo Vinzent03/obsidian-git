@@ -78,7 +78,10 @@ function getTooltips(state: EditorState): Tooltip[] {
             .filter((hunk) => {
                 for (const pos of selectedHunks) {
                     const line = state.doc.lineAt(pos);
-                    if (hunk.added.start == line.number) {
+                    if (
+                        hunk.added.start <= line.number &&
+                        line.number <= hunk.vend
+                    ) {
                         return true;
                     }
                 }

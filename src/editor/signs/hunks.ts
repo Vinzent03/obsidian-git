@@ -290,7 +290,9 @@ export abstract class Hunks {
                 results.push("-" + l);
             }
 
-            if (processHunk.removed.no_nl_at_eof) {
+            if (
+                (invert ? processHunk.added : processHunk.removed).no_nl_at_eof
+            ) {
                 results.push("\\ No newline at end of file");
             }
 
@@ -298,7 +300,9 @@ export abstract class Hunks {
                 results.push("+" + l);
             }
 
-            if (processHunk.added.no_nl_at_eof) {
+            if (
+                (invert ? processHunk.removed : processHunk.added).no_nl_at_eof
+            ) {
                 results.push("\\ No newline at end of file");
             }
 
