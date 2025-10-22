@@ -75,31 +75,29 @@ function getTooltips(state: EditorState): Tooltip[] {
     if (hunksData) {
         const selectedHunks = state.field(selectedHunksState);
         return hunksData.hunks
-            .filter((hunk) => {
+            .map((hunk) => {
                 for (const pos of selectedHunks) {
                     const line = state.doc.lineAt(pos);
                     if (
                         hunk.added.start <= line.number &&
                         line.number <= hunk.vend
                     ) {
-                        return true;
+                        const from = state.doc.line(hunk.added.start).from;
+                        return {
+                            pos: from,
+                            above: false,
+                            arrow: false,
+                            strictSide: true,
+                            clip: false,
+                            create: () => {
+                                return createTooltip(hunk, state, pos);
+                            },
+                        };
                     }
                 }
-                return false;
+                return undefined;
             })
-            .map((hunk) => {
-                const from = state.doc.line(hunk.added.start).from;
-                return {
-                    pos: from,
-                    above: false,
-                    arrow: false,
-                    strictSide: true,
-                    clip: false,
-                    create: () => {
-                        return createTooltip(hunk, state, from);
-                    },
-                };
-            });
+            .filter((tip) => tip !== undefined);
     } else {
         return [];
     }

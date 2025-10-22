@@ -190,6 +190,9 @@ export function computeHunks(textA: string, textB: string): Hunk[] {
         if (hunk.newLines == 0) {
             hunk.newStart -= 1;
         }
+        if (hunk.oldLines == 0) {
+            hunk.oldStart -= 1;
+        }
     }
     // console.log("linediff2", linediff2);
     // console.log("rawHunks", rawHunks);
