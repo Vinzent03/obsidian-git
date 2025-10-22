@@ -12,10 +12,31 @@ import { ColorSchemeType } from "diff2html/lib/types";
 import { pluginRef } from "src/pluginGlobalRef";
 import { editorEditorField, setIcon } from "obsidian";
 
-export const selectHunkEffectType = StateEffect.define<{
+const selectHunkEffectType = StateEffect.define<{
     pos: number;
     add: boolean;
 }>();
+
+export function togglePreviewHunk(editor: EditorView, pos?: number) {
+    console.log("Toggling hunk preview at pos", pos);
+    const state = editor.state;
+    const selectedHunks = state.field(selectedHunksState);
+    const hunksData = state.field(hunksState);
+    const line = state.doc.lineAt(pos ?? state.selection.main.head).number;
+
+    const hunk = Hunks.findHunk(line, hunksData?.hunks)[0];
+    console.log("Toggling hunk preview at line", pos, line, hunk);
+    if (!hunk) return;
+    const hunkStartPos = state.doc.line(hunk.added.start).from;
+
+    const isSelected = selectedHunks.has(hunkStartPos);
+    return state.field(editorEditorField).dispatch({
+        effects: selectHunkEffectType.of({
+            pos: hunkStartPos,
+            add: !isSelected,
+        }),
+    });
+}
 
 export const selectedHunksState = StateField.define<Set<number>>({
     create: () => new Set<number>(),
@@ -146,41 +167,25 @@ function createTooltip(
     contentEl.appendChild(diffEl!);
     contentEl.addClass("git-diff-tooltip", "git-diff");
 
+    const editor = state.field(editorEditorField);
     // handlers
     closeBtn.onclick = () => {
-        state.field(editorEditorField).dispatch({
-            effects: selectHunkEffectType.of({
-                pos: pos,
-                add: false,
-            }),
-        });
+        togglePreviewHunk(editor, pos);
     };
 
     stageBtn.onclick = () => {
         const plugin = pluginRef.plugin;
         if (!plugin) return;
-        // enqueue same as commands
         plugin.promiseQueue.addTask(() => plugin.hunkActions.stageHunk(pos));
 
-        // close tooltip selection afterwards
-        state.field(editorEditorField).dispatch({
-            effects: selectHunkEffectType.of({
-                pos: pos,
-                add: false,
-            }),
-        });
+        togglePreviewHunk(editor, pos);
     };
 
     resetBtn.onclick = () => {
         const plugin = pluginRef.plugin;
         if (!plugin) return;
         plugin.hunkActions.resetHunk(pos);
-        state.field(editorEditorField).dispatch({
-            effects: selectHunkEffectType.of({
-                pos: pos,
-                add: false,
-            }),
-        });
+        togglePreviewHunk(editor, pos);
     };
 
     return {

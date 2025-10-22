@@ -6,7 +6,7 @@ import {
     hunksState,
     HunksStateHelper,
 } from "./signs";
-import { selectedHunksState, selectHunkEffectType } from "./tooltip";
+import { togglePreviewHunk } from "./tooltip";
 
 class GitGutterMarker extends GutterMarker {
     constructor(
@@ -91,7 +91,6 @@ export const signsGutter = gutter({
     },
     domEventHandlers: {
         click: (view, line, event) => {
-            const selectedHunks = view.state.field(selectedHunksState);
             const hunk =
                 HunksStateHelper.getHunkAtPos(view.state, line.from, false) ??
                 HunksStateHelper.getHunkAtPos(view.state, line.from, true);
@@ -99,21 +98,7 @@ export const signsGutter = gutter({
                 return false;
             }
 
-            if (selectedHunks.has(line.from)) {
-                view.dispatch({
-                    effects: selectHunkEffectType.of({
-                        pos: line.from,
-                        add: false,
-                    }),
-                });
-            } else {
-                view.dispatch({
-                    effects: selectHunkEffectType.of({
-                        pos: line.from,
-                        add: true,
-                    }),
-                });
-            }
+            togglePreviewHunk(view, line.from);
             event.preventDefault();
             return false;
         },

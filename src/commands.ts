@@ -7,7 +7,7 @@ import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import { assertNever } from "./utils";
-import { HunksStateHelper } from "./editor/signs/signs";
+import { togglePreviewHunk } from "./editor/signs/tooltip";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -507,6 +507,18 @@ export function addCommmands(plugin: ObsidianGit) {
                 return plugin.hunkActions.editor !== undefined;
             }
             plugin.promiseQueue.addTask(() => plugin.hunkActions.stageHunk());
+        },
+    });
+
+    plugin.addCommand({
+        id: "preview-hunk",
+        name: "Preview hunk",
+        editorCheckCallback: (checking, _, __) => {
+            if (checking) {
+                return plugin.hunkActions.editor !== undefined;
+            }
+            const editor = plugin.hunkActions.editor!.editor;
+            togglePreviewHunk(editor);
         },
     });
 }

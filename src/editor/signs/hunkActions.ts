@@ -1,5 +1,5 @@
 import { editorInfoField, type Editor } from "obsidian";
-import { hunksState, HunksStateHelper } from "./signs";
+import { HunksStateHelper } from "./signs";
 import type { EditorView } from "codemirror";
 import type ObsidianGit from "src/main";
 import { Hunks } from "./hunks";
@@ -23,7 +23,7 @@ export class HunkActions {
         return this.plugin.gitManager as SimpleGit;
     }
 
-    resetHunk(pos: number): void {
+    resetHunk(pos?: number): void {
         if (!this.editor) {
             return;
         }
