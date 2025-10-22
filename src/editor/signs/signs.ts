@@ -48,7 +48,6 @@ export abstract class HunksStateHelper {
         pos?: number
     ): Hunk | undefined {
         if (pos != undefined) {
-            console.log("Getting hunk at pos:", pos);
             return this.getHunkAtPos(state, pos, staged);
         }
         if (state.selection.main.empty) {
@@ -147,12 +146,16 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
             const editorText = transaction.state.doc.toString();
             if (newCompare || transaction.docChanged) {
                 const hunks = computeHunks(prev.compareText, editorText);
-                const headHunks = computeHunks(
-                    prev.compareTextHead ?? "",
-                    editorText
-                );
+                // const headHunks = computeHunks(
+                //     prev.compareTextHead ?? "",
+                //     editorText
+                // );
                 prev.hunks = hunks;
-                prev.stagedHunks = Hunks.filterCommon(headHunks, hunks)!;
+                // prev.stagedHunks = Hunks.computeStagedHunks(
+                //     headHunks,
+                //     hunks,
+                //     prev
+                // );
             }
         } else {
             prev.compareText = undefined;

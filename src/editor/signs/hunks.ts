@@ -1,3 +1,5 @@
+import type { GitCompareResult } from "./signs";
+
 export type HunkType = "add" | "change" | "delete";
 
 export interface HunkNode {
@@ -265,6 +267,7 @@ export abstract class Hunks {
 
         let offset = 0;
 
+        hunks = structuredClone(hunks);
         for (const processHunk of hunks) {
             let start = processHunk.removed.start;
             let preCount = processHunk.removed.count;
@@ -413,7 +416,7 @@ export abstract class Hunks {
         return false;
     }
 
-    private static compareNew(a: Hunk, b: Hunk): boolean {
+    private static compare(a: Hunk, b: Hunk): boolean {
         if (a.added.start !== b.added.start) {
             return false;
         }
@@ -431,7 +434,7 @@ export abstract class Hunks {
         return true;
     }
 
-    static filterCommon(a?: Hunk[], b?: Hunk[]): Hunk[] | undefined {
+    private static filterCommon(a?: Hunk[], b?: Hunk[]): Hunk[] | undefined {
         if (!a && !b) {
             return undefined;
         }
@@ -448,10 +451,12 @@ export abstract class Hunks {
             const aH = a[aI];
             const bH = b[bI];
 
+            // End of a
             if (!aH) {
                 break;
             }
 
+            // End of b and add remaining a
             if (!bH) {
                 for (let i = aI; i < a.length; i++) {
                     ret.push(a[i]);
@@ -465,8 +470,44 @@ export abstract class Hunks {
                 ret.push(aH);
                 aI++;
             } else {
-                if (!this.compareNew(aH, bH)) {
+                if (!this.compare(aH, bH)) {
+                    // let topOffset = 0;
+                    // for (let j = 0; j < aH.added.count; j++) {
+                    //     const lineA = aH.added.lines[j];
+                    //     const lineB = bH.added.lines[j];
+                    //
+                    //     if (!lineB) {
+                    //         topOffset = j;
+                    //         break;
+                    //     }
+                    //
+                    //     if (lineA !== lineB) {
+                    //         topOffset = j;
+                    //     }
+                    // }
+                    //
+                    // if (topOffset < aH.added.count) {
+                    //     const newHunk: Hunk = {
+                    //         head: aH.head,
+                    //         type: aH.type,
+                    //         added: {
+                    //             start: aH.added.start + topOffset,
+                    //             count: aH.added.count - topOffset,
+                    //             lines: aH.added.lines.slice(topOffset),
+                    //             no_nl_at_eof: aH.added.no_nl_at_eof,
+                    //         },
+                    //         removed: {
+                    //             start: aH.removed.start,
+                    //             count: aH.removed.count,
+                    //             lines: aH.removed.lines,
+                    //             no_nl_at_eof: aH.removed.no_nl_at_eof,
+                    //         },
+                    //         vend: aH.added.start + aH.added.count - 1,
+                    //     };
+                    //     ret.push(newHunk);
+                    // } else {
                     ret.push(aH);
+                    // }
                 }
                 aI++;
                 bI++;
@@ -474,6 +515,46 @@ export abstract class Hunks {
         }
 
         return ret;
+    }
+
+    static computeStagedHunks(
+        headHunks: Hunk[],
+        hunks: Hunk[],
+        compare: GitCompareResult
+    ): Hunk[] {
+        const filteredHunks = Hunks.filterCommon(headHunks, hunks)!;
+        //
+        // // Update staged hunk added lines to match compareText and not
+        // // include unstaged changes
+        // const compareTextLines = compare.compareText!.split("\n");
+        // for (const hunk of filteredHunks) {
+        //     for (let i = 0; i < hunk.added.lines.length; i++) {
+        //         hunk.added.lines[i] =
+        //             compareTextLines[Math.max(0, hunk.removed.start - 1) + i];
+        //     }
+        //     let offset = 0;
+        //     for (
+        //         let i = 0;
+        //         i <
+        //         Math.min(hunk.added.lines.length, hunk.removed.lines.length);
+        //         i++
+        //     ) {
+        //         if (hunk.added.lines[i] != hunk.removed.lines[i]) {
+        //             break;
+        //         } else {
+        //             offset++;
+        //         }
+        //     }
+        //     if (offset > 0) {
+        //         hunk.added.lines = hunk.added.lines.slice(offset);
+        //         hunk.removed.lines = hunk.removed.lines.slice(offset);
+        //         hunk.added.start += offset;
+        //         hunk.removed.start += offset;
+        //         hunk.added.count -= offset;
+        //         hunk.removed.count -= offset;
+        //     }
+        // }
+        return filteredHunks;
     }
 
     linespecForHunk(hunk: Hunk, stripCr: boolean = false): LineSpec[] {

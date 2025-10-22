@@ -44,17 +44,18 @@ export class SignsProvider {
             this.plugin.editorIntegration.lineAuthoringFeature.isAvailableOnCurrentPlatform()
                 .gitManager;
 
-        const headRevision =
-            await gitManager.submoduleAwareHeadRevisonInContainingDirectory(
-                filepath
-            );
+        // const headRevision =
+        //     await gitManager.submoduleAwareHeadRevisonInContainingDirectory(
+        //         filepath
+        //     );
 
         const compareText = await gitManager
             .show("", filepath)
             .catch(() => undefined);
-        const compareTextHead = await gitManager
-            .show(headRevision, filepath)
-            .catch(() => undefined);
+        // const compareTextHead = await gitManager
+        //     .show(headRevision, filepath)
+        //     .catch(() => undefined);
+        const compareTextHead = undefined;
         this.notifySignComputationResultToSubscribers(filepath, {
             compareText,
             compareTextHead,
