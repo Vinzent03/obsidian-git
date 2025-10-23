@@ -644,3 +644,8 @@ div:hover > .git-gutter-marker.git-delete {
 .git-gutter-marker.staged {
     opacity: 0.5;
 }
+
+/* Ensure that merge revert markers are positioned correctly */
+.cm-merge-revert > * {
+    position: absolute;
+}

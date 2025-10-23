@@ -2,10 +2,24 @@ import {
     EditorState,
     StateEffect,
     StateField,
+    Text,
     Transaction,
 } from "@codemirror/state";
 import { Hunks, type Hunk } from "../signs/hunks";
 import { computeHunks } from "./diff";
+
+/**
+ * Given a document and a position, return the corresponding line number in the
+ * file.
+ */
+export function lineFromPos(doc: Text, pos: number): number {
+    const lineData = doc.lineAt(pos);
+    const no_nl_at_eof = !(
+        lineData.text.length == 0 && lineData.number == doc.lines
+    );
+    const fileLine = no_nl_at_eof ? lineData.number : lineData.number - 1;
+    return fileLine;
+}
 
 export abstract class HunksStateHelper {
     static hasHunksData(state: EditorState): boolean {
@@ -57,12 +71,7 @@ export abstract class HunksStateHelper {
         const from = state.selection.main.from;
         const to = state.selection.main.to;
         const fromLine = state.doc.lineAt(from).number;
-        const toLineRaw = state.doc.lineAt(to);
-
-        const no_nl_at_eof = !(
-            toLineRaw.text.length == 0 && toLineRaw.number == state.doc.lines
-        );
-        const toLine = no_nl_at_eof ? toLineRaw.number : toLineRaw.number - 1;
+        const toLine = lineFromPos(state.doc, to);
 
         const hunks = this.getHunks(state, staged);
         const hunk = Hunks.createPartialHunk(hunks, fromLine, toLine);
@@ -101,6 +110,9 @@ export abstract class HunksStateHelper {
                 .toString()
                 .split("\n")
                 .slice(fromLine - 1, toLine);
+            const no_nl_at_eof =
+                toLine === state.doc.lines &&
+                !state.doc.toString().endsWith("\n");
             if (no_nl_at_eof) {
                 hunk.added.no_nl_at_eof = true;
             }
