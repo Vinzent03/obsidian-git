@@ -19,7 +19,6 @@ import {
 import { GitError } from "simple-git";
 import { Hunks } from "src/editor/signs/hunks";
 import { rawHunkFromChunk, rawHunksToHunks } from "src/editor/signs/diff";
-import { lineFromPos } from "src/editor/signs/signs";
 
 // This class is not extending `FileView', because it needs a `TFile`, which is not possible for dot files like `.gitignore`, which this editor should support as well.`
 export default class SplitDiffView extends ItemView {
@@ -278,6 +277,10 @@ export default class SplitDiffView extends ItemView {
 
         const stageButton = contentEl.createDiv();
         stageButton.addClass("clickable-icon");
+        stageButton.setAttr(
+            "aria-label",
+            this.state.bRef == undefined ? "Stage hunk" : "Unstage hunk"
+        );
         setIcon(stageButton, this.state.bRef == undefined ? "plus" : "minus");
 
         stageButton.onmousedown = async (_) => {
@@ -314,6 +317,7 @@ export default class SplitDiffView extends ItemView {
         if (this.state.bRef == undefined) {
             const resetButton = contentEl.createDiv();
             resetButton.addClass("clickable-icon");
+            resetButton.setAttr("aria-label", "Reset hunk");
             setIcon(resetButton, "undo");
             resetButton.onmousedown = (_) => {
                 const source = this.mergeView!.a;
@@ -369,7 +373,8 @@ export default class SplitDiffView extends ItemView {
             container.empty();
 
             // new
-            this.contentEl.addClass("git-split-diff-view");
+
+            this.contentEl.addClass("git-split-diff-view", "git-diff");
             this.bIsEditable = await this.bShouldBeEditable();
 
             const aText = await this.gitShow(this.state.aRef, this.state.aFile);

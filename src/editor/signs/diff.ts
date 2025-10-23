@@ -197,7 +197,6 @@ function diffViaCMMerge(
 ) {
     const aDoc = Text.of(textA.split("\n"));
     const bDoc = Text.of(textB.split("\n"));
-    console.log("diffViaCMMerge", { chunks, changes });
     const newChunks =
         chunks && changes
             ? Chunk.updateB(chunks, aDoc, bDoc, changes)

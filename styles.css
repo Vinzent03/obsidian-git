@@ -624,7 +624,6 @@ div:hover > .git-gutter-marker.git-delete {
     font-size: var(--font-ui-small);
     justify-self: center;
     height: inherit;
-    width: 2px;
 }
 
 .git-gutter-marker.git-delete {
@@ -645,7 +644,14 @@ div:hover > .git-gutter-marker.git-delete {
     opacity: 0.5;
 }
 
-/* Ensure that merge revert markers are positioned correctly */
-.cm-merge-revert > * {
-    position: absolute;
+.git-diff {
+    .cm-merge-revert {
+        width: 4em;
+    }
+    /* Ensure that merge revert markers are positioned correctly */
+    .cm-merge-revert > * {
+        position: absolute;
+        background-color: var(--background-secondary);
+        display: flex;
+    }
 }
