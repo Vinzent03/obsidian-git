@@ -1,7 +1,6 @@
 import type { Extension } from "@codemirror/state";
 import { Prec } from "@codemirror/state";
 import type { TFile } from "obsidian";
-import { subscribeNewEditor } from "src/editor/control";
 import { eventsPerFilePathSingleton } from "src/editor/eventsPerFilepath";
 import type {
     LineAuthoring,

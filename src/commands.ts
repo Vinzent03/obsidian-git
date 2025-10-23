@@ -490,7 +490,7 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "reset-hunk",
         name: "Reset hunk",
-        editorCheckCallback(checking, editor, ctx) {
+        editorCheckCallback(checking, _, __) {
             if (checking) {
                 return plugin.hunkActions.editor !== undefined;
             }

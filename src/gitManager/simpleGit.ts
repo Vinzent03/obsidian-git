@@ -185,7 +185,6 @@ export class SimpleGit extends GitManager {
     }
     async askpass(): Promise<void> {
         const adapter = this.app.vault.adapter as FileSystemAdapter;
-        const vaultPath = adapter.getBasePath();
         const relPluginConfigDir =
             this.app.vault.configDir + "/plugins/obsidian-git/";
 

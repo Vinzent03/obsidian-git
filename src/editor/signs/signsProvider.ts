@@ -10,7 +10,6 @@ import {
     diffTooltipField,
     selectedHunksState,
 } from "./tooltip";
-import { unifiedMergeView } from "@codemirror/merge";
 
 export { previewColor } from "src/editor/lineAuthor/view/gutter/coloring";
 export class SignsProvider {

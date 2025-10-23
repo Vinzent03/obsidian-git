@@ -520,6 +520,7 @@ export abstract class Hunks {
     static computeStagedHunks(
         headHunks: Hunk[],
         hunks: Hunk[],
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         compare: GitCompareResult
     ): Hunk[] {
         const filteredHunks = Hunks.filterCommon(headHunks, hunks)!;

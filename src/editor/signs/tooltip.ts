@@ -18,14 +18,12 @@ const selectHunkEffectType = StateEffect.define<{
 }>();
 
 export function togglePreviewHunk(editor: EditorView, pos?: number) {
-    console.log("Toggling hunk preview at pos", pos);
     const state = editor.state;
     const selectedHunks = state.field(selectedHunksState);
     const hunksData = state.field(hunksState);
     const line = state.doc.lineAt(pos ?? state.selection.main.head).number;
 
     const hunk = Hunks.findHunk(line, hunksData?.hunks)[0];
-    console.log("Toggling hunk preview at line", pos, line, hunk);
     if (!hunk) return;
     const hunkStartPos = state.doc.line(hunk.added.start).from;
 
