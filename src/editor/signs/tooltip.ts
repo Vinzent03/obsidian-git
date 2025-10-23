@@ -25,7 +25,7 @@ export function togglePreviewHunk(editor: EditorView, pos?: number) {
 
     const hunk = Hunks.findHunk(line, hunksData?.hunks)[0];
     if (!hunk) return;
-    const hunkStartPos = state.doc.line(hunk.added.start).from;
+    const hunkStartPos = state.doc.line(Math.max(1, hunk.added.start)).from;
 
     const isSelected = selectedHunks.has(hunkStartPos);
     return state.field(editorEditorField).dispatch({
@@ -93,28 +93,21 @@ function getTooltips(state: EditorState): Tooltip[] {
     const hunksData = state.field(hunksState);
     if (hunksData) {
         const selectedHunks = state.field(selectedHunksState);
-        return hunksData.hunks
-            .map((hunk) => {
-                for (const pos of selectedHunks) {
-                    const line = state.doc.lineAt(pos);
-                    if (
-                        hunk.added.start <= line.number &&
-                        line.number <= hunk.vend
-                    ) {
-                        const from = state.doc.line(hunk.added.start).from;
-                        return {
-                            pos: from,
-                            above: false,
-                            arrow: false,
-                            strictSide: true,
-                            clip: false,
-                            create: () => {
-                                return createTooltip(hunk, state, pos);
-                            },
-                        };
-                    }
-                }
-                return undefined;
+        return [...selectedHunks]
+            .map((selectedPos) => {
+                const line = state.doc.lineAt(selectedPos);
+                const hunk = Hunks.findHunk(line.number, hunksData.hunks)[0];
+                if (!hunk) return undefined;
+                return {
+                    pos: selectedPos,
+                    above: false,
+                    arrow: false,
+                    strictSide: true,
+                    clip: false,
+                    create: () => {
+                        return createTooltip(hunk, state, selectedPos);
+                    },
+                };
             })
             .filter((tip) => tip !== undefined);
     } else {
