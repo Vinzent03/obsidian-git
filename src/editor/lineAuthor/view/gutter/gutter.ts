@@ -58,10 +58,6 @@ export class TextGutter extends GutterMarker {
         if (!dom) {
             return; // sometimes, it doesn't exist anymore.
         }
-
-        if (!document.body.contains(dom)) {
-            dom.remove();
-        }
     }
 }
 
@@ -128,7 +124,6 @@ export class LineAuthoringGutter extends GutterMarker {
         // this is called frequently, when the gutter moves outside of the view.
         if (!document.body.contains(dom)) {
             attachedGutterElements.delete(dom);
-            dom.remove();
         }
     }
 
