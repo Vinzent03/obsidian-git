@@ -1,33 +1,33 @@
 import { Hunks, type Hunk } from "../signs/hunks";
-import { makeDiff, cleanupSemantic } from "@sanity/diff-match-patch";
-import * as diff from "diff";
-import { charsToLines, linesToChars } from "./diffMatchPatchHelper";
+import { Chunk } from "@codemirror/merge";
+import { ChangeDesc, Text } from "@codemirror/state";
+import { lineFromPos } from "./signs";
 
-function diffMatchPatch(
-    text1: string,
-    text2: string
-): diff.ChangeObject<string>[] {
-    const toChars = linesToChars(text1, text2);
-    const lineText1 = toChars.chars1;
-    const lineText2 = toChars.chars2;
-    const lineArray = toChars.lineArray;
-    let diffs = makeDiff(lineText1, lineText2, {
-        checkLines: false,
-    });
-    diffs = cleanupSemantic(diffs);
-    charsToLines(diffs, lineArray);
-    const res: diff.ChangeObject<string>[] = [];
-    for (let i = 0; i < diffs.length; i++) {
-        res.push({
-            added: diffs[i][0] == 1 ? true : false,
-            removed: diffs[i][0] == -1 ? true : false,
-            value: diffs[i][1],
-            count: diffs[i][1].split("\n").length - 1,
-        });
-    }
-
-    return res;
-}
+// function diffMatchPatch(
+//     text1: string,
+//     text2: string
+// ): diff.ChangeObject<string>[] {
+//     const toChars = linesToChars(text1, text2);
+//     const lineText1 = toChars.chars1;
+//     const lineText2 = toChars.chars2;
+//     const lineArray = toChars.lineArray;
+//     let diffs = makeDiff(lineText1, lineText2, {
+//         checkLines: false,
+//     });
+//     diffs = cleanupSemantic(diffs);
+//     charsToLines(diffs, lineArray);
+//     const res: diff.ChangeObject<string>[] = [];
+//     for (let i = 0; i < diffs.length; i++) {
+//         res.push({
+//             added: diffs[i][0] == 1 ? true : false,
+//             removed: diffs[i][0] == -1 ? true : false,
+//             value: diffs[i][1],
+//             count: diffs[i][1].split("\n").length - 1,
+//         });
+//     }
+//
+//     return res;
+// }
 
 type RawHunk = {
     oldStart: number;
@@ -35,94 +35,94 @@ type RawHunk = {
     newStart: number;
     newLines: number;
 };
-export interface ChangeObject {
-    /**
-     * The concatenated content of all the tokens represented by this change object - i.e. generally the text that is either added, deleted, or common, as a single string.
-     * In cases where tokens are considered common but are non-identical (e.g. because an option like `ignoreCase` or a custom `comparator` was used), the value from the *new* string will be provided here.
-     */
-    value: string;
-    /**
-     * true if the value was inserted into the new string, otherwise false
-     */
-    added: boolean;
-    /**
-     * true if the value was removed from the old string, otherwise false
-     */
-    removed: boolean;
-}
-
-function changesToRawHunks(diff: ChangeObject[]): RawHunk[] {
-    diff.push({ value: "", added: false, removed: false }); // Append an empty value to make cleanup easier
-
-    const hunks = [];
-    let oldRangeStart = 0,
-        newRangeStart = 0,
-        oldLine = 1,
-        newLine = 1;
-    for (let i = 0; i < diff.length; i++) {
-        const current = diff[i];
-        const linesCount =
-            current.value.match(new RegExp(`\n`, "g"))?.length ?? 0;
-
-        if (current.added || current.removed) {
-            // If we have previous context, start with that
-            if (!oldRangeStart) {
-                oldRangeStart = oldLine;
-                newRangeStart = newLine;
-            }
-
-            // Track the updated file position
-            // If the change affects the last line of the document and does not
-            // end with '\n' increase the line count by 1 because the last line
-            // still needs to count.
-            if (current.added) {
-                newLine += linesCount;
-                if (
-                    !current.value.endsWith("\n") &&
-                    (i + 2 == diff.length || i + 3 == diff.length)
-                ) {
-                    newLine += 1;
-                }
-            } else {
-                oldLine += linesCount;
-                if (
-                    !current.value.endsWith("\n") &&
-                    (i + 2 == diff.length || i + 3 == diff.length)
-                ) {
-                    oldLine += 1;
-                }
-            }
-        } else {
-            if (oldRangeStart) {
-                // if (current.value.startsWith("\n")) {
-                // }
-                const hunk = {
-                    oldStart: oldRangeStart,
-                    oldLines: oldLine - oldRangeStart,
-                    newStart: newRangeStart,
-                    newLines: newLine - newRangeStart,
-                };
-                hunks.push(hunk);
-
-                // oldLine += 1;
-                // newLine += 1;
-                oldRangeStart = 0;
-                newRangeStart = 0;
-                // if (current.value.startsWith("\n")) {
-                //     oldLine += linesCount - 1;
-                //     newLine += linesCount - 1;
-                // } else {
-                oldLine += linesCount;
-                newLine += linesCount;
-                /* } */
-            } else {
-                oldLine += linesCount;
-                newLine += linesCount;
-            }
-        }
-    }
-    return hunks;
-}
+// export interface ChangeObject {
+//     /**
+//      * The concatenated content of all the tokens represented by this change object - i.e. generally the text that is either added, deleted, or common, as a single string.
+//      * In cases where tokens are considered common but are non-identical (e.g. because an option like `ignoreCase` or a custom `comparator` was used), the value from the *new* string will be provided here.
+//      */
+//     value: string;
+//     /**
+//      * true if the value was inserted into the new string, otherwise false
+//      */
+//     added: boolean;
+//     /**
+//      * true if the value was removed from the old string, otherwise false
+//      */
+//     removed: boolean;
+// }
+//
+// function changesToRawHunks(diff: ChangeObject[]): RawHunk[] {
+//     diff.push({ value: "", added: false, removed: false }); // Append an empty value to make cleanup easier
+//
+//     const hunks = [];
+//     let oldRangeStart = 0,
+//         newRangeStart = 0,
+//         oldLine = 1,
+//         newLine = 1;
+//     for (let i = 0; i < diff.length; i++) {
+//         const current = diff[i];
+//         const linesCount =
+//             current.value.match(new RegExp(`\n`, "g"))?.length ?? 0;
+//
+//         if (current.added || current.removed) {
+//             // If we have previous context, start with that
+//             if (!oldRangeStart) {
+//                 oldRangeStart = oldLine;
+//                 newRangeStart = newLine;
+//             }
+//
+//             // Track the updated file position
+//             // If the change affects the last line of the document and does not
+//             // end with '\n' increase the line count by 1 because the last line
+//             // still needs to count.
+//             if (current.added) {
+//                 newLine += linesCount;
+//                 if (
+//                     !current.value.endsWith("\n") &&
+//                     (i + 2 == diff.length || i + 3 == diff.length)
+//                 ) {
+//                     newLine += 1;
+//                 }
+//             } else {
+//                 oldLine += linesCount;
+//                 if (
+//                     !current.value.endsWith("\n") &&
+//                     (i + 2 == diff.length || i + 3 == diff.length)
+//                 ) {
+//                     oldLine += 1;
+//                 }
+//             }
+//         } else {
+//             if (oldRangeStart) {
+//                 // if (current.value.startsWith("\n")) {
+//                 // }
+//                 const hunk = {
+//                     oldStart: oldRangeStart,
+//                     oldLines: oldLine - oldRangeStart,
+//                     newStart: newRangeStart,
+//                     newLines: newLine - newRangeStart,
+//                 };
+//                 hunks.push(hunk);
+//
+//                 // oldLine += 1;
+//                 // newLine += 1;
+//                 oldRangeStart = 0;
+//                 newRangeStart = 0;
+//                 // if (current.value.startsWith("\n")) {
+//                 //     oldLine += linesCount - 1;
+//                 //     newLine += linesCount - 1;
+//                 // } else {
+//                 oldLine += linesCount;
+//                 newLine += linesCount;
+//                 /* } */
+//             } else {
+//                 oldLine += linesCount;
+//                 newLine += linesCount;
+//             }
+//         }
+//     }
+//     return hunks;
+// }
 
 export function rawHunksToHunks(
     textA: string,
@@ -156,7 +156,72 @@ export function rawHunksToHunks(
     return hunks;
 }
 
-export function computeHunks(textA: string, textB: string): Hunk[] {
+export function rawHunkFromChunk(
+    chunk: Chunk,
+    aDoc: Text,
+    bDoc: Text
+): RawHunk {
+    const oldStart = aDoc.lineAt(chunk.fromA).number;
+    const oldLines =
+        chunk.fromA == chunk.toA
+            ? 0
+            : lineFromPos(aDoc, chunk.endA) - oldStart + 1;
+    const newStart = bDoc.lineAt(chunk.fromB).number;
+    const newLines =
+        chunk.fromB == chunk.toB
+            ? 0
+            : lineFromPos(bDoc, chunk.endB) - newStart + 1;
+
+    const rawHunk = {
+        oldStart,
+        oldLines,
+        newStart,
+        newLines,
+    };
+
+    if (rawHunk.oldLines == 0) {
+        rawHunk.oldStart -= 1;
+    }
+    if (rawHunk.newLines == 0) {
+        rawHunk.newStart -= 1;
+    }
+
+    return rawHunk;
+}
+
+function diffViaCMMerge(
+    textA: string,
+    textB: string,
+    chunks: readonly Chunk[] | undefined,
+    changes: ChangeDesc | undefined
+) {
+    const aDoc = Text.of(textA.split("\n"));
+    const bDoc = Text.of(textB.split("\n"));
+    console.log("diffViaCMMerge", { chunks, changes });
+    const newChunks =
+        chunks && changes
+            ? Chunk.updateB(chunks, aDoc, bDoc, changes)
+            : Chunk.build(aDoc, bDoc);
+    const rawHunks: RawHunk[] = [];
+    for (let i = 0; i < newChunks.length; i++) {
+        const chunk = newChunks[i];
+
+        const rawHunk = rawHunkFromChunk(chunk, aDoc, bDoc);
+        rawHunks.push(rawHunk);
+    }
+    return {
+        hunks: rawHunksToHunks(textA, textB, rawHunks),
+        chunks: newChunks,
+    };
+}
+
+export function computeHunks(
+    textA: string,
+    textB: string,
+    chunks: readonly Chunk[] | undefined,
+    changes: ChangeDesc | undefined
+): { hunks: Hunk[]; chunks: readonly Chunk[] } {
+    return diffViaCMMerge(textA, textB, chunks, changes);
     // const lineDiff = diff.diffLines(textA, textB, {
     //     newlineIsToken: true,
     // });
@@ -179,24 +244,24 @@ export function computeHunks(textA: string, textB: string): Hunk[] {
     //     "",
     //     { context: 0 }
     // ).hunks;
-    const linediff2 = diffMatchPatch(textA, textB);
-    const rawHunks = changesToRawHunks(linediff2);
+    // const linediff2 = diffMatchPatch(textA, textB);
+    // const rawHunks = changesToRawHunks(linediff2);
     // console.log("rawHunks", rawHunks);
     // console.log("rawHunks3", rawHunks3);
     // console.log("rawHunks2", rawHunks2);
     // Adjust newStart for hunks which do not add any lines
     // This is more in the style of git diff
-    for (const hunk of rawHunks) {
-        if (hunk.newLines == 0) {
-            hunk.newStart -= 1;
-        }
-        if (hunk.oldLines == 0) {
-            hunk.oldStart -= 1;
-        }
-    }
+    // for (const hunk of rawHunks) {
+    //     if (hunk.newLines == 0) {
+    //         hunk.newStart -= 1;
+    //     }
+    //     if (hunk.oldLines == 0) {
+    //         hunk.oldStart -= 1;
+    //     }
+    // }
     // console.log("linediff2", linediff2);
     // console.log("rawHunks", rawHunks);
-    const hunks = rawHunksToHunks(textA, textB, rawHunks);
+    // const hunks = rawHunksToHunks(textA, textB, rawHunks);
     // console.log("hunks", hunks);
-    return hunks;
+    // return hunks;
 }

@@ -7,6 +7,7 @@ import {
 } from "@codemirror/state";
 import { Hunks, type Hunk } from "../signs/hunks";
 import { computeHunks } from "./diff";
+import type { Chunk } from "@codemirror/merge";
 
 /**
  * Given a document and a position, return the corresponding line number in the
@@ -144,6 +145,7 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
             : {
                   hunks: [],
                   stagedHunks: [],
+                  chunks: undefined,
               };
         let newCompare = false;
 
@@ -156,13 +158,22 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
         }
         if (prev.compareText) {
             const editorText = transaction.state.doc.toString();
+            if (newCompare) {
+                prev.chunks = undefined;
+            }
             if (newCompare || transaction.docChanged) {
-                const hunks = computeHunks(prev.compareText, editorText);
+                const { hunks, chunks } = computeHunks(
+                    prev.compareText,
+                    editorText,
+                    prev.chunks,
+                    transaction.changes
+                );
                 // const headHunks = computeHunks(
                 //     prev.compareTextHead ?? "",
                 //     editorText
                 // );
                 prev.hunks = hunks;
+                prev.chunks = chunks;
                 // prev.stagedHunks = Hunks.computeStagedHunks(
                 //     headHunks,
                 //     hunks,
@@ -172,6 +183,7 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
         } else {
             prev.compareText = undefined;
             prev.compareTextHead = undefined;
+            prev.chunks = undefined;
             prev.hunks = [];
             prev.stagedHunks = [];
         }
@@ -185,6 +197,7 @@ export const GitCompareResultEffectType =
 export type HunksData = {
     hunks: Hunk[];
     stagedHunks: Hunk[];
+    chunks: readonly Chunk[] | undefined;
 } & GitCompareResult;
 
 export type GitCompareResult = {

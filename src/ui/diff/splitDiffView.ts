@@ -18,7 +18,7 @@ import {
 } from "@codemirror/view";
 import { GitError } from "simple-git";
 import { Hunks } from "src/editor/signs/hunks";
-import { rawHunksToHunks } from "src/editor/signs/diff";
+import { rawHunkFromChunk, rawHunksToHunks } from "src/editor/signs/diff";
 import { lineFromPos } from "src/editor/signs/signs";
 
 // This class is not extending `FileView', because it needs a `TFile`, which is not possible for dot files like `.gitignore`, which this editor should support as well.`
@@ -288,33 +288,11 @@ export default class SplitDiffView extends ItemView {
 
             const chunk = chunks.chunks[index!];
 
-            const aDoc = aEditor.state.doc;
-            const bDoc = bEditor.state.doc;
-            const oldStart = aDoc.lineAt(chunk.fromA).number;
-            const oldLines =
-                chunk.fromA == chunk.toA
-                    ? 0
-                    : lineFromPos(aDoc, chunk.endA) - oldStart + 1;
-            const newStart = bDoc.lineAt(chunk.fromB).number;
-            const newLines =
-                chunk.fromB == chunk.toB
-                    ? 0
-                    : lineFromPos(bDoc, chunk.endB) - newStart + 1;
-
-            const rawHunk = {
-                oldStart,
-                oldLines,
-                newStart,
-                newLines,
-            };
-
-            if (rawHunk.oldLines == 0) {
-                rawHunk.oldStart -= 1;
-            }
-            if (rawHunk.newLines == 0) {
-                rawHunk.newStart -= 1;
-            }
-
+            const rawHunk = rawHunkFromChunk(
+                chunk,
+                aEditor.state.doc,
+                bEditor.state.doc
+            );
             const hunk = rawHunksToHunks(
                 this.mergeView!.a.state.doc.toString(),
                 this.mergeView!.b.state.doc.toString(),
