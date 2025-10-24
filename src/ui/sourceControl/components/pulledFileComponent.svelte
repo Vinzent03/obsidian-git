@@ -1,6 +1,6 @@
 <script lang="ts">
     import { TFile } from "obsidian";
-    import { hoverPreview } from "obsidian-community-lib";
+    import { hoverPreview } from "src/utils";
     import type { FileStatusResult } from "src/types";
     import { getDisplayPath, getNewLeaf, mayTriggerFileMenu } from "src/utils";
     import type GitView from "../sourceControl";
@@ -19,7 +19,7 @@
     function hover(event: MouseEvent) {
         //Don't show previews of config- or hidden files.
         if (view.app.vault.getAbstractFileByPath(change.vaultPath)) {
-            hoverPreview(event, view, change.vaultPath);
+            hoverPreview(view.app, event, view, change.vaultPath);
         }
     }
 

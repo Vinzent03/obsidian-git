@@ -50,9 +50,6 @@ importers:
       js-sha256:
         specifier: ^0.9.0
         version: 0.9.0
-      obsidian-community-lib:
-        specifier: github:Vinzent03/obsidian-community-lib#upgrade
-        version: https://codeload.github.com/Vinzent03/obsidian-community-lib/tar.gz/e663de4f95c879b40613090da78ea599ff621d24(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
       simple-git:
         specifier: github:Vinzent03/git-js#release
         version: https://codeload.github.com/Vinzent03/git-js/tar.gz/365b7d64b9b6dd3c38259535a819def2439f8b03(supports-color@9.4.0)
@@ -633,9 +630,6 @@ packages:
     resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
     engines: {node: '>= 14.16.0'}
 
-  classnames@2.5.1:
-    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
-
   clean-git-ref@2.0.1:
     resolution: {integrity: sha512-bLSptAy2P0s6hU4PzuIMKmMJJSE6gLXGH1cntDu7bWJUksvuM+7ReOK61mozULErYvP6a15rnYl0zFDef+pyPw==}
 
@@ -744,9 +738,6 @@ packages:
     resolution: {integrity: sha512-uiApbSiNGM/kkdL9GTOLAqC4hbptObFo4wW2QRyHsKciGAfQuLU1ShZ1BIVI/+K2BE/W1AWYQMCXAsv4dyKPaw==}
     engines: {node: '>=10'}
     hasBin: true
-
-  core-js@3.44.0:
-    resolution: {integrity: sha512-aFCtd4l6GvAXwVEh3XbbVqJGHDJt0OZRa+5ePGx3LLwi12WfexqQxcsohb2wgsa/92xtl19Hd66G/L+TaAxDMw==}
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
@@ -992,9 +983,6 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
-
-  feather-icons@4.29.2:
-    resolution: {integrity: sha512-0TaCFTnBTVCz6U+baY2UJNKne5ifGh7sMG4ZC2LoBWCZdIyPa+y6UiR4lEYGws1JOFWdee8KAsAIvu0VcXqiqA==}
 
   figures@3.2.0:
     resolution: {integrity: sha512-yaduQFRKLXYOGgEn6AZau90j3ggSOyiqXU0F9JZfeXYhNa+Jk4X+s45A2zg5jns87GAFa34BBm2kXw4XpNcbdg==}
@@ -1496,10 +1484,6 @@ packages:
   object.assign@4.1.7:
     resolution: {integrity: sha512-nK28WOo+QIjBkDduTINE4JkF/UJJKyf2EJxvJKfblDpyg0Q+pkOHNTL0Qwy6NP6FhE/EnzV73BxxqcJaXY9anw==}
     engines: {node: '>= 0.4'}
-
-  obsidian-community-lib@https://codeload.github.com/Vinzent03/obsidian-community-lib/tar.gz/e663de4f95c879b40613090da78ea599ff621d24:
-    resolution: {tarball: https://codeload.github.com/Vinzent03/obsidian-community-lib/tar.gz/e663de4f95c879b40613090da78ea599ff621d24}
-    version: 2.0.1
 
   obsidian@1.8.7:
     resolution: {integrity: sha512-h4bWwNFAGRXlMlMAzdEiIM2ppTGlrh7uGOJS6w4gClrsjc+ei/3YAtU2VdFUlCiPuTHpY4aBpFJJW75S1Tl/JA==}
@@ -2606,8 +2590,6 @@ snapshots:
     dependencies:
       readdirp: 4.1.2
 
-  classnames@2.5.1: {}
-
   clean-git-ref@2.0.1: {}
 
   cliui@7.0.4:
@@ -2767,8 +2749,6 @@ snapshots:
       git-semver-tags: 4.1.1
       meow: 8.1.2
       q: 1.5.1
-
-  core-js@3.44.0: {}
 
   core-util-is@1.0.3: {}
 
@@ -3073,11 +3053,6 @@ snapshots:
       reusify: 1.1.0
 
   fdir@6.4.6: {}
-
-  feather-icons@4.29.2:
-    dependencies:
-      classnames: 2.5.1
-      core-js: 3.44.0
 
   figures@3.2.0:
     dependencies:
@@ -3562,14 +3537,6 @@ snapshots:
       es-object-atoms: 1.1.1
       has-symbols: 1.1.0
       object-keys: 1.1.1
-
-  obsidian-community-lib@https://codeload.github.com/Vinzent03/obsidian-community-lib/tar.gz/e663de4f95c879b40613090da78ea599ff621d24(@codemirror/state@6.5.2)(@codemirror/view@6.38.1):
-    dependencies:
-      feather-icons: 4.29.2
-      obsidian: 1.8.7(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
-    transitivePeerDependencies:
-      - '@codemirror/state'
-      - '@codemirror/view'
 
   obsidian@1.8.7(@codemirror/state@6.5.2)(@codemirror/view@6.38.1):
     dependencies:
