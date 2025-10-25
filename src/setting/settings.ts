@@ -450,9 +450,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             if (plugin.gitManager instanceof SimpleGit) {
                 new Setting(containerEl).setName("Signs").setHeading();
                 new Setting(containerEl)
-                    .setName("Show git diff hunks in the editor")
+                    .setName("Show Git diff hunks in the editor")
                     .setDesc(
-                        "This allows you to see which type of changes you have done right in your editor. It also shows whether you have already staged a line or not."
+                        "This allows you to see your changes right in your editor and stage/reset individual hunks."
                     )
                     .addToggle((toggle) =>
                         toggle
