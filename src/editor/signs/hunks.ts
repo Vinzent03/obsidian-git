@@ -357,7 +357,7 @@ export abstract class Hunks {
         return [undefined, undefined];
     }
 
-    findNearestHunk(
+    static findNearestHunk(
         lnum: number,
         hunks: Hunk[],
         direction: "first" | "last" | "next" | "prev",

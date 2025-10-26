@@ -85,4 +85,36 @@ export class HunkActions {
 
         this.plugin.app.workspace.trigger("obsidian-git:refresh");
     }
+
+    goToHunk(direction: "first" | "last" | "next" | "prev"): void {
+        if (!this.editor) {
+            return;
+        }
+        const { editor, obEditor } = this.editor;
+        const hunks = HunksStateHelper.getHunks(editor.state, false);
+
+        const currentLine = obEditor.getCursor().line + 1;
+        const hunkIndex = Hunks.findNearestHunk(
+            currentLine,
+            hunks,
+            direction,
+            true
+        );
+        if (hunkIndex == undefined) {
+            return;
+        }
+        const hunk = hunks[hunkIndex];
+
+        if (hunk) {
+            const line = hunk.added.start - 1;
+            obEditor.setCursor(line, 0);
+            obEditor.scrollIntoView(
+                {
+                    from: { line: line, ch: 0 },
+                    to: { line: line + 1, ch: 0 },
+                },
+                true
+            );
+        }
+    }
 }

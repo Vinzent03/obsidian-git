@@ -521,4 +521,26 @@ export function addCommmands(plugin: ObsidianGit) {
             togglePreviewHunk(editor);
         },
     });
+
+    plugin.addCommand({
+        id: "next-hunk",
+        name: "Go to next hunk",
+        editorCheckCallback: (checking, _, __) => {
+            if (checking) {
+                return plugin.hunkActions.editor !== undefined;
+            }
+            plugin.hunkActions.goToHunk("next");
+        },
+    });
+
+    plugin.addCommand({
+        id: "prev-hunk",
+        name: "Go to previous hunk",
+        editorCheckCallback: (checking, _, __) => {
+            if (checking) {
+                return plugin.hunkActions.editor !== undefined;
+            }
+            plugin.hunkActions.goToHunk("prev");
+        },
+    });
 }
