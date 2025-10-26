@@ -583,7 +583,7 @@ which itself is adapted from the diff2html library with the following original l
     color: var(--text-accent-hover);
 }
 
-.signs-gutter-container {
+.git-signs-gutter {
     .cm-gutterElement {
         display: grid;
     }
@@ -596,26 +596,26 @@ which itself is adapted from the diff2html library with the following original l
     background-color: var(--color-green);
     justify-self: center;
     height: inherit;
-    width: 2px;
+    width: 3px;
 }
 
 .git-gutter-marker.git-change {
     background-color: var(--color-yellow);
     justify-self: center;
     height: inherit;
-    width: 2px;
+    width: 3px;
 }
 
 div:hover > .git-gutter-marker.git-change {
-    width: 6px;
+    width: 8px;
 }
 
 div:hover > .git-gutter-marker.git-add {
-    width: 6px;
+    width: 8px;
 }
 
 div:hover > .git-gutter-marker.git-delete {
-    height: 6px;
+    height: 8px;
 }
 
 .git-gutter-marker.git-changedelete {
@@ -628,14 +628,14 @@ div:hover > .git-gutter-marker.git-delete {
 
 .git-gutter-marker.git-delete {
     background-color: var(--color-red);
-    height: 2px;
+    height: 3px;
     width: 12px;
     align-self: end;
 }
 
 .git-gutter-marker.git-topdelete {
     background-color: var(--color-red);
-    height: 2px;
+    height: 3px;
     width: 12px;
     align-self: start;
 }
@@ -653,5 +653,13 @@ div:hover > .git-gutter-marker.git-delete {
         position: absolute;
         background-color: var(--background-secondary);
         display: flex;
+    }
+}
+
+/* Prevent shifting of the editor when git signs gutter is the only gutter present */
+.cm-gutters.cm-gutters-before:has(> .git-signs-gutter:only-child) {
+    margin-inline-end: 0;
+    .git-signs-gutter {
+        margin-inline-start: -1rem;
     }
 }
