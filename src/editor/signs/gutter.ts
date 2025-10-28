@@ -85,7 +85,7 @@ function getMarkers(
 
 export const signsGutter = gutter({
     class: "git-signs-gutter",
-    markers: (view) => view.state.field(signsMarker),
+    markers: (view) => view.state.field(signsMarker, false) ?? RangeSet.empty,
     initialSpacer: (_) => {
         return new GitGutterMarker("delete", false);
     },

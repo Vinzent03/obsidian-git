@@ -72,12 +72,12 @@ export class SignsProvider {
     }
 }
 
-export const enabledSignsExtensions: Extension = Prec.default([
+export const enabledSignsExtensions: Extension[] = [
     diffTooltipField,
     cursorTooltipBaseTheme,
     signsGutter,
     signsMarker,
     selectedHunksState,
-]);
+];
 
 export const enabledHunksExtensions = hunksState;

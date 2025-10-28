@@ -109,7 +109,7 @@ export class SignsFeature {
         // toggleable Codemirror extensions.
         this.codeMirrorExtensions.push(enabledHunksExtensions);
         if (this.plg.settings.hunks.showSigns) {
-            this.codeMirrorExtensions.push(enabledSignsExtensions);
+            this.codeMirrorExtensions.push(...enabledSignsExtensions);
         }
         this.plg.app.workspace.updateOptions();
 
