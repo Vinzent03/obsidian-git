@@ -589,7 +589,8 @@ which itself is adapted from the diff2html library with the following original l
     }
 }
 
-.git-gutter-marker {
+.git-gutter-marker:hover {
+    border-radius: 2px;
 }
 
 .git-gutter-marker.git-add {
@@ -616,6 +617,14 @@ div:hover > .git-gutter-marker.git-add {
 
 div:hover > .git-gutter-marker.git-delete {
     height: 8px;
+}
+
+div:hover > .git-gutter-marker.git-topdelete {
+    height: 8px;
+}
+
+div:hover > .git-gutter-marker.git-changedelete {
+    font-weight: var(--font-bold);
 }
 
 .git-gutter-marker.git-changedelete {
@@ -662,4 +671,24 @@ div:hover > .git-gutter-marker.git-delete {
     .git-signs-gutter {
         margin-inline-start: -1rem;
     }
+}
+
+/* .git-changes-status-bar > * { */
+/*     margin-right: 4px; */
+/* } */
+
+.git-changes-status-bar-colored {
+    .git-add {
+        color: var(--color-green);
+    }
+    .git-change {
+        color: var(--color-yellow);
+    }
+    .git-delete {
+        color: var(--color-red);
+    }
+}
+
+.git-changes-status-bar .git-change {
+    margin: 0 4px;
 }

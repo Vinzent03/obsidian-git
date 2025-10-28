@@ -8,6 +8,8 @@ import {
 import { Hunks, type Hunk } from "../signs/hunks";
 import { computeHunks } from "./diff";
 import type { Chunk } from "@codemirror/merge";
+import { pluginRef } from "src/pluginGlobalRef";
+import { editorInfoField } from "obsidian";
 
 /**
  * Given a document and a position, return the corresponding line number in the
@@ -156,7 +158,7 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
                 prev.compareTextHead = effect.value.compareTextHead;
             }
         }
-        if (prev.compareText) {
+        if (prev.compareText !== undefined) {
             const editorText = transaction.state.doc.toString();
             if (newCompare) {
                 prev.chunks = undefined;
@@ -179,6 +181,12 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
                 //     hunks,
                 //     prev
                 // );
+
+                const file = transaction.state.field(editorInfoField).file;
+                pluginRef.plugin?.editorIntegration.signsFeature.changeStatusBar?.display(
+                    hunks,
+                    file
+                );
             }
         } else {
             prev.compareText = undefined;

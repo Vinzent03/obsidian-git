@@ -448,24 +448,63 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             if (plugin.gitManager instanceof SimpleGit) {
-                new Setting(containerEl).setName("Signs").setHeading();
                 new Setting(containerEl)
-                    .setName("Show Git diff hunks in the editor")
+                    .setName("Hunk management")
                     .setDesc(
-                        "This allows you to see your changes right in your editor and stage/reset individual hunks."
+                        "Hunks are sections of grouped line changes right in your editor."
+                    )
+                    .setHeading();
+
+                new Setting(containerEl)
+                    .setName("Signs")
+                    .setDesc(
+                        "This allows you to see your changes right in your editor via colored markers and stage/reset/preview individual hunks."
                     )
                     .addToggle((toggle) =>
                         toggle
-                            .setValue(plugin.settings.signs.enabled)
+                            .setValue(plugin.settings.hunks.showSigns)
                             .onChange(async (value) => {
-                                plugin.settings.signs.enabled = value;
+                                plugin.settings.hunks.showSigns = value;
                                 await plugin.saveSettings();
-                                if (value) {
-                                    plugin.editorIntegration.activateSigns();
-                                } else {
-                                    plugin.editorIntegration.deactivateSigns();
-                                }
+                                plugin.editorIntegration.refreshSignsSettings();
                             })
+                    );
+
+                new Setting(containerEl)
+                    .setName("Hunk commands")
+                    .setDesc(
+                        "Adds commands to stage/reset individual Git diff hunks and navigate between them via 'Go to next/prev hunk' commands."
+                    )
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(plugin.settings.hunks.hunkCommands)
+                            .onChange(async (value) => {
+                                plugin.settings.hunks.hunkCommands = value;
+                                await plugin.saveSettings();
+
+                                plugin.editorIntegration.refreshSignsSettings();
+                            })
+                    );
+
+                new Setting(containerEl)
+                    .setName("Status bar with summary of line changes")
+                    .addDropdown((toggle) =>
+                        toggle
+                            .addOptions({
+                                disabled: "Disabled",
+                                colored: "Colored",
+                                monochrome: "Monochrome",
+                            })
+                            .setValue(plugin.settings.hunks.statusBar)
+                            .onChange(
+                                async (
+                                    option: ObsidianGitSettings["hunks"]["statusBar"]
+                                ) => {
+                                    plugin.settings.hunks.statusBar = option;
+                                    await plugin.saveSettings();
+                                    plugin.editorIntegration.refreshSignsSettings();
+                                }
+                            )
                     );
 
                 new Setting(containerEl)

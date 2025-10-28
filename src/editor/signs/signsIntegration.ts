@@ -3,8 +3,13 @@ import type { EventRef, WorkspaceLeaf } from "obsidian";
 import { MarkdownView, Platform, TFile } from "obsidian";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
-import { enabledSignsExtensions, SignsProvider } from "./signsProvider";
+import {
+    enabledHunksExtensions,
+    enabledSignsExtensions,
+    SignsProvider,
+} from "./signsProvider";
 import { eventsPerFilePathSingleton } from "../eventsPerFilepath";
+import { ChangesStatusBar } from "./changesStatusBar";
 
 /**
  * Manages the interaction between Obsidian (file-open event, modification event, etc.)
@@ -18,6 +23,7 @@ export class SignsFeature {
     private pluginRefreshedEvent?: EventRef;
     private gutterContextMenuEvent?: EventRef;
     private codeMirrorExtensions: Extension[] = [];
+    public changeStatusBar?: ChangesStatusBar;
 
     constructor(private plg: ObsidianGit) {}
 
@@ -28,7 +34,11 @@ export class SignsFeature {
     }
 
     public conditionallyActivateBySettings() {
-        if (this.plg.settings.signs.enabled) {
+        if (
+            this.plg.settings.hunks.showSigns ||
+            this.plg.settings.hunks.statusBar != "disabled" ||
+            this.plg.settings.hunks.hunkCommands
+        ) {
             this.activateFeature();
         }
     }
@@ -42,6 +52,14 @@ export class SignsFeature {
             this.createEventHandlers();
 
             this.activateCodeMirrorExtensions();
+
+            if (this.plg.settings.hunks.statusBar != "disabled") {
+                const statusBarEl = this.plg.addStatusBarItem();
+                this.changeStatusBar = new ChangesStatusBar(
+                    statusBarEl,
+                    this.plg
+                );
+            }
         } catch (e) {
             console.warn("Git: Error while loading signs feature.", e);
             this.deactivateFeature();
@@ -59,6 +77,8 @@ export class SignsFeature {
 
         this.signsProvider?.destroy();
         this.signsProvider = undefined;
+        this.changeStatusBar?.remove();
+        this.changeStatusBar = undefined;
     }
 
     public isAvailableOnCurrentPlatform(): {
@@ -77,7 +97,7 @@ export class SignsFeature {
     // ========================= REFRESH ==========================
 
     public refresh() {
-        if (this.plg.settings.signs.enabled) {
+        if (this.plg.settings.hunks.showSigns) {
             this.plg.app.workspace.iterateAllLeaves(this.handleWorkspaceLeaf);
         }
     }
@@ -87,7 +107,10 @@ export class SignsFeature {
     private activateCodeMirrorExtensions() {
         // Yes, we need to directly modify the array and notify the change to have
         // toggleable Codemirror extensions.
-        this.codeMirrorExtensions.push(enabledSignsExtensions);
+        this.codeMirrorExtensions.push(enabledHunksExtensions);
+        if (this.plg.settings.hunks.showSigns) {
+            this.codeMirrorExtensions.push(enabledSignsExtensions);
+        }
         this.plg.app.workspace.updateOptions();
 
         // Handle all already opened files

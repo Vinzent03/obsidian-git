@@ -44,8 +44,10 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     authorInHistoryView: "hide",
     dateInHistoryView: false,
     diffStyle: "split",
-    signs: {
-        enabled: false,
+    hunks: {
+        showSigns: false,
+        hunkCommands: false,
+        statusBar: "disabled",
     },
     lineAuthor: {
         show: false,

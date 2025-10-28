@@ -31,7 +31,7 @@ class GitGutterMarker extends GutterMarker {
 export const signsMarker = StateField.define({
     create: () => RangeSet.empty,
     update: (rangeSet, tr) => {
-        const data = tr.state.field(hunksState);
+        const data = tr.state.field(hunksState, false);
         if (!data) {
             return RangeSet.empty;
         }

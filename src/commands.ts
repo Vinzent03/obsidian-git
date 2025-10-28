@@ -492,7 +492,10 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Reset hunk",
         editorCheckCallback(checking, _, __) {
             if (checking) {
-                return plugin.hunkActions.editor !== undefined;
+                return (
+                    plugin.settings.hunks.hunkCommands &&
+                    plugin.hunkActions.editor !== undefined
+                );
             }
 
             plugin.hunkActions.resetHunk();
@@ -504,7 +507,10 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Stage hunk",
         editorCheckCallback: (checking, _, __) => {
             if (checking) {
-                return plugin.hunkActions.editor !== undefined;
+                return (
+                    plugin.settings.hunks.hunkCommands &&
+                    plugin.hunkActions.editor !== undefined
+                );
             }
             plugin.promiseQueue.addTask(() => plugin.hunkActions.stageHunk());
         },
@@ -515,7 +521,10 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Preview hunk",
         editorCheckCallback: (checking, _, __) => {
             if (checking) {
-                return plugin.hunkActions.editor !== undefined;
+                return (
+                    plugin.settings.hunks.hunkCommands &&
+                    plugin.hunkActions.editor !== undefined
+                );
             }
             const editor = plugin.hunkActions.editor!.editor;
             togglePreviewHunk(editor);
@@ -527,7 +536,10 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Go to next hunk",
         editorCheckCallback: (checking, _, __) => {
             if (checking) {
-                return plugin.hunkActions.editor !== undefined;
+                return (
+                    plugin.settings.hunks.hunkCommands &&
+                    plugin.hunkActions.editor !== undefined
+                );
             }
             plugin.hunkActions.goToHunk("next");
         },
@@ -538,7 +550,10 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Go to previous hunk",
         editorCheckCallback: (checking, _, __) => {
             if (checking) {
-                return plugin.hunkActions.editor !== undefined;
+                return (
+                    plugin.settings.hunks.hunkCommands &&
+                    plugin.hunkActions.editor !== undefined
+                );
             }
             plugin.hunkActions.goToHunk("prev");
         },

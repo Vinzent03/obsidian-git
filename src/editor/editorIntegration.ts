@@ -34,11 +34,17 @@ export class EditorIntegration {
         this.lineAuthoringFeature.deactivateFeature();
     }
 
-    activateSigns() {
-        this.signsFeature.activateFeature();
-    }
-
-    deactivateSigns() {
-        this.signsFeature.deactivateFeature();
+    refreshSignsSettings() {
+        const hunkSettings = this.plg.settings.hunks;
+        if (
+            hunkSettings.showSigns ||
+            hunkSettings.statusBar != "disabled" ||
+            hunkSettings.hunkCommands
+        ) {
+            this.signsFeature.deactivateFeature();
+            this.signsFeature.activateFeature();
+        } else {
+            this.signsFeature.deactivateFeature();
+        }
     }
 }
