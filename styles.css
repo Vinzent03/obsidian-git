@@ -597,56 +597,56 @@ which itself is adapted from the diff2html library with the following original l
     background-color: var(--color-green);
     justify-self: center;
     height: inherit;
-    width: 3px;
+    width: 0.2rem;
 }
 
 .git-gutter-marker.git-change {
     background-color: var(--color-yellow);
     justify-self: center;
     height: inherit;
-    width: 3px;
-}
-
-div:hover > .git-gutter-marker.git-change {
-    width: 8px;
-}
-
-div:hover > .git-gutter-marker.git-add {
-    width: 8px;
-}
-
-div:hover > .git-gutter-marker.git-delete {
-    height: 8px;
-}
-
-div:hover > .git-gutter-marker.git-topdelete {
-    height: 8px;
-}
-
-div:hover > .git-gutter-marker.git-changedelete {
-    font-weight: var(--font-bold);
+    width: 0.2rem;
 }
 
 .git-gutter-marker.git-changedelete {
     color: var(--color-yellow);
-    font-weight: var(--font-medium);
-    font-size: var(--font-ui-small);
+    font-weight: var(--font-bold);
+    font-size: 1rem;
     justify-self: center;
     height: inherit;
 }
 
 .git-gutter-marker.git-delete {
     background-color: var(--color-red);
-    height: 3px;
-    width: 12px;
+    height: 0.2rem;
+    width: 0.8rem;
     align-self: end;
 }
 
 .git-gutter-marker.git-topdelete {
     background-color: var(--color-red);
-    height: 3px;
-    width: 12px;
+    height: 0.2rem;
+    width: 0.8rem;
     align-self: start;
+}
+
+div:hover > .git-gutter-marker.git-change {
+    width: 0.6rem;
+}
+
+div:hover > .git-gutter-marker.git-add {
+    width: 0.6rem;
+}
+
+div:hover > .git-gutter-marker.git-delete {
+    height: 0.6rem;
+}
+
+div:hover > .git-gutter-marker.git-topdelete {
+    height: 0.6rem;
+}
+
+div:hover > .git-gutter-marker.git-changedelete {
+    font-weight: var(--font-bold);
 }
 
 .git-gutter-marker.staged {
