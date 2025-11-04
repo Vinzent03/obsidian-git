@@ -1,5 +1,4 @@
 import type { Extension } from "@codemirror/state";
-import { Prec } from "@codemirror/state";
 import type { TFile } from "obsidian";
 import { eventsPerFilePathSingleton } from "src/editor/eventsPerFilepath";
 import type ObsidianGit from "src/main";

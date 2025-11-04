@@ -673,10 +673,6 @@ div:hover > .git-gutter-marker.git-changedelete {
     }
 }
 
-/* .git-changes-status-bar > * { */
-/*     margin-right: 4px; */
-/* } */
-
 .git-changes-status-bar-colored {
     .git-add {
         color: var(--color-green);
@@ -689,6 +685,10 @@ div:hover > .git-gutter-marker.git-changedelete {
     }
 }
 
+.git-changes-status-bar .git-add {
+    margin-right: 0.3em;
+}
+
 .git-changes-status-bar .git-change {
-    margin: 0 4px;
+    margin-right: 0.3em;
 }
