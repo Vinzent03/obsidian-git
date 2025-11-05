@@ -20,6 +20,7 @@ export class SignsFeature {
     private signsProvider?: SignsProvider;
     private workspaceLeafChangeEvent?: EventRef;
     private fileRenameEvent?: EventRef;
+    private intervalRefreshEvent?: number;
     private pluginRefreshedEvent?: EventRef;
     private gutterContextMenuEvent?: EventRef;
     private codeMirrorExtensions: Extension[] = [];
@@ -133,9 +134,12 @@ export class SignsFeature {
         this.fileRenameEvent = this.createFileRenameEvent();
         this.pluginRefreshedEvent = this.createPluginRefreshedEvent();
 
+        this.intervalRefreshEvent = this.createIntervalRefreshEvent();
+
         this.plg.registerEvent(this.workspaceLeafChangeEvent);
         this.plg.registerEvent(this.fileRenameEvent);
         this.plg.registerEvent(this.pluginRefreshedEvent);
+        this.plg.registerInterval(this.intervalRefreshEvent);
     }
 
     private destroyEventHandlers() {
@@ -143,6 +147,7 @@ export class SignsFeature {
         this.plg.app.vault.offref(this.fileRenameEvent!);
         this.plg.app.workspace.offref(this.pluginRefreshedEvent!);
         this.plg.app.workspace.offref(this.gutterContextMenuEvent!);
+        window.clearInterval(this.intervalRefreshEvent);
     }
 
     private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
@@ -189,9 +194,21 @@ export class SignsFeature {
     }
 
     private createPluginRefreshedEvent(): EventRef {
-        return this.plg.app.workspace.on("obsidian-git:refreshed", () => {
+        return this.plg.app.workspace.on("obsidian-git:refresh", () => {
             this.refresh();
         });
+    }
+
+    private createIntervalRefreshEvent(): number {
+        // Refresh every 10 seconds the active editor to account for external
+        // git index changes
+        return window.setInterval(() => {
+            if (this.plg.app.workspace.activeEditor?.file) {
+                this.signsProvider
+                    ?.trackChanged(this.plg.app.workspace.activeEditor.file)
+                    .catch(console.error);
+            }
+        }, 10 * 1000);
     }
 
     //TODO do we need this?

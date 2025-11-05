@@ -352,7 +352,7 @@ export default class ObsidianGit extends Plugin {
             this.gitManager.getRelativeVaultPath(".gitignore"),
             "\n" + gitignoreRule
         );
-        return this.refresh();
+        this.app.workspace.trigger("obsidian-git:refresh");
     }
 
     handleFileMenu(
