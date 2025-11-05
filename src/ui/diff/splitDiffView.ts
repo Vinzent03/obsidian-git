@@ -108,7 +108,10 @@ export default class SplitDiffView extends ItemView {
                 if (file) {
                     this.ignoreNextModification = true;
                     this.plugin.app.vault.adapter
-                        .write(file, data)
+                        .write(
+                            this.plugin.gitManager.getRelativeVaultPath(file),
+                            data
+                        )
                         .catch((e) => this.plugin.displayError(e));
                 }
             },
