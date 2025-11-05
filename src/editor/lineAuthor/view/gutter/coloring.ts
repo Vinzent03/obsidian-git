@@ -1,6 +1,6 @@
 import type { App } from "obsidian";
-import type { LineAuthorSettings } from "src/lineAuthor/model";
-import { maxAgeInDaysFromSettings } from "src/lineAuthor/model";
+import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
+import { maxAgeInDaysFromSettings } from "src/editor/lineAuthor/model";
 import type { GitTimestamp } from "src/types";
 
 /**
