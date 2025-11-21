@@ -2,7 +2,11 @@ import type { Extension } from "@codemirror/state";
 import type { TFile } from "obsidian";
 import { eventsPerFilePathSingleton } from "src/editor/eventsPerFilepath";
 import type ObsidianGit from "src/main";
-import { hunksState, type GitCompareResult } from "../signs/signs";
+import {
+    computeHunksDebouncerStateField,
+    hunksState,
+    type GitCompareResult,
+} from "../signs/signs";
 import { signsGutter, signsMarker } from "../signs/gutter";
 import {
     cursorTooltipBaseTheme,
@@ -79,4 +83,7 @@ export const enabledSignsExtensions: Extension[] = [
     selectedHunksState,
 ];
 
-export const enabledHunksExtensions = hunksState;
+export const enabledHunksExtensions = [
+    hunksState,
+    computeHunksDebouncerStateField,
+];

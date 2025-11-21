@@ -2,7 +2,7 @@ import { RangeSet, StateField, Transaction } from "@codemirror/state";
 import { EditorView, gutter, GutterMarker } from "@codemirror/view";
 import { Hunks, type Hunk, type SignType } from "./hunks";
 import {
-    GitCompareResultEffectType,
+    DebouncedComputeHunksEffectType,
     hunksState,
     HunksStateHelper,
 } from "./signs";
@@ -35,10 +35,14 @@ export const signsMarker = StateField.define({
         if (!data) {
             return RangeSet.empty;
         }
-        const isNewCompare = tr.effects.some((effect) =>
-            effect.is(GitCompareResultEffectType)
+        const newDebouncedHunks = tr.effects.some((effect) =>
+            effect.is(DebouncedComputeHunksEffectType)
         );
-        if (tr.docChanged || isNewCompare) {
+
+        if (
+            newDebouncedHunks ||
+            ((tr.docChanged || rangeSet.size == 0) && data.isDirty == false)
+        ) {
             const linesWithSign = new Set<number>();
             const markers = getMarkers(tr, data.hunks, false, linesWithSign);
             const stagedMarkers = getMarkers(
@@ -49,6 +53,8 @@ export const signsMarker = StateField.define({
             );
             rangeSet = RangeSet.of([...markers, ...stagedMarkers], true);
             return rangeSet;
+        } else if (tr.docChanged) {
+            rangeSet = rangeSet.map(tr.changes);
         }
         return rangeSet;
     },

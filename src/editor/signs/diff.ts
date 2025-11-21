@@ -189,6 +189,11 @@ export function rawHunkFromChunk(
     return rawHunk;
 }
 
+const diffConfig = {
+    scanLimit: 1000,
+    timeout: 200,
+};
+
 function diffViaCMMerge(
     textA: string,
     textB: string,
@@ -199,8 +204,8 @@ function diffViaCMMerge(
     const bDoc = Text.of(textB.split("\n"));
     const newChunks =
         chunks && changes
-            ? Chunk.updateB(chunks, aDoc, bDoc, changes)
-            : Chunk.build(aDoc, bDoc);
+            ? Chunk.updateB(chunks, aDoc, bDoc, changes, diffConfig)
+            : Chunk.build(aDoc, bDoc, diffConfig);
     const rawHunks: RawHunk[] = [];
     for (let i = 0; i < newChunks.length; i++) {
         const chunk = newChunks[i];
@@ -220,7 +225,8 @@ export function computeHunks(
     chunks: readonly Chunk[] | undefined,
     changes: ChangeDesc | undefined
 ): { hunks: Hunk[]; chunks: readonly Chunk[] } {
-    return diffViaCMMerge(textA, textB, chunks, changes);
+    const res = diffViaCMMerge(textA, textB, chunks, changes);
+    return res;
     // const lineDiff = diff.diffLines(textA, textB, {
     //     newlineIsToken: true,
     // });

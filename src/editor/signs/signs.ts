@@ -1,4 +1,5 @@
 import {
+    ChangeDesc,
     EditorState,
     StateEffect,
     StateField,
@@ -9,7 +10,12 @@ import { Hunks, type Hunk } from "../signs/hunks";
 import { computeHunks } from "./diff";
 import type { Chunk } from "@codemirror/merge";
 import { pluginRef } from "src/pluginGlobalRef";
-import { editorInfoField } from "obsidian";
+import {
+    debounce,
+    editorEditorField,
+    editorInfoField,
+    type Debouncer,
+} from "obsidian";
 
 /**
  * Given a document and a position, return the corresponding line number in the
@@ -27,7 +33,7 @@ export function lineFromPos(doc: Text, pos: number): number {
 export abstract class HunksStateHelper {
     static hasHunksData(state: EditorState): boolean {
         const data = state.field(hunksState, false);
-        return !!data;
+        return !!data && !data.isDirty;
     }
 
     static getHunks(state: EditorState, staged: boolean): Hunk[] {
@@ -142,70 +148,205 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
 >({
     create: (_state) => undefined,
     update: (previous, transaction) => {
-        const prev: HunksData = previous
+        const hunksData: HunksData = previous
             ? { ...previous }
             : {
+                  maxDiffTimeMs: 0,
                   hunks: [],
                   stagedHunks: [],
                   chunks: undefined,
+                  isDirty: false,
               };
         let newCompare = false;
 
         for (const effect of transaction.effects) {
             if (effect.is(GitCompareResultEffectType)) {
-                newCompare = true;
-                prev.compareText = effect.value.compareText;
-                prev.compareTextHead = effect.value.compareTextHead;
+                hunksData.compareText = effect.value.compareText;
+                hunksData.compareTextHead = effect.value.compareTextHead;
+
+                // Only issue new hunk computation if compareText has changed
+                newCompare = previous?.compareText !== effect.value.compareText;
+                if (newCompare) {
+                    hunksData.chunks = undefined;
+                }
+            }
+            if (effect.is(DebouncedComputeHunksEffectType)) {
+                applyHunkComputation(
+                    hunksData,
+                    effect.value,
+                    transaction.state
+                );
             }
         }
-        if (prev.compareText !== undefined) {
-            const editorText = transaction.state.doc.toString();
-            if (newCompare) {
-                prev.chunks = undefined;
-            }
+        if (hunksData.compareText !== undefined) {
             if (newCompare || transaction.docChanged) {
-                const { hunks, chunks } = computeHunks(
-                    prev.compareText,
-                    editorText,
-                    prev.chunks,
-                    transaction.changes
+                hunksData.isDirty = true;
+                const res = scheduleHunkComputation(
+                    transaction,
+                    hunksData.compareText,
+                    hunksData.chunks,
+                    hunksData.maxDiffTimeMs
                 );
-                // const headHunks = computeHunks(
-                //     prev.compareTextHead ?? "",
-                //     editorText
-                // );
-                prev.hunks = hunks;
-                prev.chunks = chunks;
-                // prev.stagedHunks = Hunks.computeStagedHunks(
-                //     headHunks,
-                //     hunks,
-                //     prev
-                // );
-
-                const file = transaction.state.field(editorInfoField).file;
-                pluginRef.plugin?.editorIntegration.signsFeature.changeStatusBar?.display(
-                    hunks,
-                    file
-                );
+                if (res) {
+                    applyHunkComputation(hunksData, res, transaction.state);
+                }
             }
         } else {
-            prev.compareText = undefined;
-            prev.compareTextHead = undefined;
-            prev.chunks = undefined;
-            prev.hunks = [];
-            prev.stagedHunks = [];
+            hunksData.compareText = undefined;
+            hunksData.compareTextHead = undefined;
+            hunksData.chunks = undefined;
+            hunksData.hunks = [];
+            hunksData.stagedHunks = [];
+            hunksData.isDirty = false;
         }
-        return prev;
+        return hunksData;
     },
 });
 
+function applyHunkComputation(
+    hunkData: HunksData,
+    computeData: ComputedHunksData,
+    state: EditorState
+) {
+    hunkData.hunks = computeData.hunks;
+    hunkData.chunks = computeData.chunks;
+    hunkData.isDirty = false;
+    hunkData.maxDiffTimeMs = Math.max(
+        0.95 * hunkData.maxDiffTimeMs,
+        computeData.diffDuration
+    );
+    const file = state.field(editorInfoField).file;
+    pluginRef.plugin?.editorIntegration.signsFeature.changeStatusBar?.display(
+        hunkData.hunks,
+        file
+    );
+}
+
+export const computeHunksDebouncerStateField = StateField.define<{
+    changeDesc?: ChangeDesc;
+    debouncer: Debouncer<
+        [
+            {
+                state: EditorState;
+                compareText: string;
+                previousChunks: readonly Chunk[] | undefined;
+                changeDesc: ChangeDesc | undefined;
+            },
+        ],
+        void
+    >;
+}>({
+    create: () => {
+        return {
+            debouncer: debounce(
+                (data) => {
+                    const { state, compareText, previousChunks, changeDesc } =
+                        data;
+                    const res = computeHunksTimed(
+                        state,
+                        compareText,
+                        previousChunks,
+                        changeDesc
+                    );
+                    state.field(editorEditorField).dispatch({
+                        effects: DebouncedComputeHunksEffectType.of(res),
+                    });
+                },
+                1000,
+                true
+            ),
+            maxDiffTimeMs: 0,
+        };
+    },
+    update: (data, transaction) => {
+        for (const effect of transaction.effects) {
+            if (effect.is(DebouncedComputeHunksEffectType)) {
+                data.changeDesc = undefined;
+                return data;
+            }
+        }
+        if (!data.changeDesc && transaction.changes) {
+            data.changeDesc = transaction.changes;
+        } else {
+            data.changeDesc = data.changeDesc?.composeDesc(transaction.changes);
+        }
+        return data;
+    },
+});
+
+function computeHunksTimed(
+    state: EditorState,
+    compareText: string,
+    previousChunks: readonly Chunk[] | undefined,
+    changeDesc: ChangeDesc | undefined
+): ComputedHunksData {
+    const editorText = state.doc.toString();
+
+    const startTime = performance.now();
+    const { hunks, chunks } = computeHunks(
+        compareText,
+        editorText,
+        previousChunks,
+        changeDesc
+    );
+    const diffDuration = performance.now() - startTime;
+    return { hunks, chunks, diffDuration };
+}
+
+function scheduleHunkComputation(
+    transaction: Transaction,
+    compareText: string,
+    previousChunks: readonly Chunk[] | undefined,
+    maxDiffTimeMs: number
+): ComputedHunksData | undefined {
+    const state = transaction.state;
+    const changeLength = Math.abs(
+        transaction.changes.length - transaction.changes.newLength
+    );
+
+    const debouncerField = state.field(computeHunksDebouncerStateField);
+
+    // Debounce large changes or if a previous diff took long time
+    if (changeLength > 1000 || maxDiffTimeMs > 16) {
+        debouncerField.debouncer({
+            state,
+            compareText,
+            previousChunks,
+            changeDesc: debouncerField.changeDesc,
+        });
+    } else {
+        // This technically breaks the immutability of the StateField, but I
+        // think it's acceptable here. The debouncer itself is not very
+        // immutable either way.
+        debouncerField.changeDesc = undefined;
+
+        return computeHunksTimed(
+            state,
+            compareText,
+            previousChunks,
+            transaction.changes
+        );
+    }
+}
+
 export const GitCompareResultEffectType =
     StateEffect.define<GitCompareResult>();
+
+export const DebouncedComputeHunksEffectType =
+    StateEffect.define<ComputedHunksData>();
+
+export type ComputedHunksData = {
+    hunks: Hunk[];
+    chunks: readonly Chunk[] | undefined;
+    diffDuration: number;
+};
 
 export type HunksData = {
     hunks: Hunk[];
     stagedHunks: Hunk[];
     chunks: readonly Chunk[] | undefined;
+    isDirty: boolean;
+    maxDiffTimeMs: number;
 } & GitCompareResult;
 
 export type GitCompareResult = {
