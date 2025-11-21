@@ -1,7 +1,7 @@
 import type { Editor, MarkdownView, Menu } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
-import type { LineAuthorSettings } from "src/lineAuthor/model";
-import { findGutterElementUnderMouse } from "src/lineAuthor/view/gutter/gutterElementSearch";
+import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
+import { findGutterElementUnderMouse } from "src/editor/lineAuthor/view/gutter/gutterElementSearch";
 import { pluginRef } from "src/pluginGlobalRef";
 import type { BlameCommit } from "src/types";
 import { impossibleBranch } from "src/utils";

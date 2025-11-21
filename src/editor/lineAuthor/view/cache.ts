@@ -1,7 +1,7 @@
 import type { RangeSet } from "@codemirror/state";
 import type { GutterMarker } from "@codemirror/view";
-import { latestSettings } from "src/lineAuthor/model";
-import type { LineAuthoringGutter } from "src/lineAuthor/view/gutter/gutter";
+import { latestSettings } from "src/editor/lineAuthor/model";
+import type { LineAuthoringGutter } from "src/editor/lineAuthor/view/gutter/gutter";
 import { median } from "src/utils";
 
 /*
