@@ -3,6 +3,7 @@ import { EditorView, gutter, GutterMarker } from "@codemirror/view";
 import { Hunks, type Hunk, type SignType } from "./hunks";
 import {
     DebouncedComputeHunksEffectType,
+    GitCompareResultEffectType,
     hunksState,
     HunksStateHelper,
 } from "./signs";
@@ -39,8 +40,14 @@ export const signsMarker = StateField.define({
             effect.is(DebouncedComputeHunksEffectType)
         );
 
+        // Show new hunks for new compare results independent of a doc change
+        const newCompareResult = tr.effects.some((effect) =>
+            effect.is(GitCompareResultEffectType)
+        );
+
         if (
             newDebouncedHunks ||
+            newCompareResult ||
             ((tr.docChanged || rangeSet.size == 0) && data.isDirty == false)
         ) {
             const linesWithSign = new Set<number>();
