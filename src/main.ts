@@ -1513,19 +1513,20 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             leaf?.view instanceof SplitDiffView
         ) {
             const path = leaf.view.state.bFile;
+            const escapedPath = path.replace(/["\\]/g, "\\$&");
             this.lastDiffViewState = leaf.view.getState();
             let el: Element | undefined | null;
             if (sourceControlLeaf && leaf.view.state.aRef == "HEAD") {
                 el = sourceControlLeaf.view.containerEl.querySelector(
-                    `div.staged div.tree-item-self[data-path='${path}']`
+                    `div.staged div.tree-item-self[data-path="${escapedPath}"]`
                 );
             } else if (sourceControlLeaf && leaf.view.state.aRef == "") {
                 el = sourceControlLeaf.view.containerEl.querySelector(
-                    `div.changes div.tree-item-self[data-path='${path}']`
+                    `div.changes div.tree-item-self[data-path="${escapedPath}"]`
                 );
             } else if (historyLeaf) {
                 el = historyLeaf.view.containerEl.querySelector(
-                    `div.tree-item-self[data-path='${path}']`
+                    `div.tree-item-self[data-path='${escapedPath}']`
                 );
             }
             el?.addClass("is-active");
