@@ -1118,6 +1118,7 @@ export class SimpleGit extends GitManager {
             const networkFailure =
                 message.contains("Could not resolve host") ||
                 message.contains("Unable to resolve host") ||
+                message.contains("Unable to open connection") ||
                 message.match(
                     /ssh: connect to host .*? port .*?: Operation timed out/
                 ) != null ||
