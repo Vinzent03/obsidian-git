@@ -1,7 +1,7 @@
 import * as cssColorConverter from "css-color-converter";
 import { spawn, type SpawnOptionsWithoutStdio } from "child_process";
 import deepEqual from "deep-equal";
-import type { App, RGB, WorkspaceLeaf } from "obsidian";
+import type { App, ItemView, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
 
@@ -248,6 +248,33 @@ export function convertPathToAbsoluteGitignoreRule({
     // Then escape each trailing whitespace character individually, because git trims trailing whitespace from the end of the rule.
     // Files normally end with a file extension, not whitespace, but a file with trailing whitespace can appear if Obsidian's "Detect all file extensions" setting is turned on.
     return escaped.replace(/\s(?=\s*$)/g, String.raw`\ `);
+}
+
+/**
+ * When hovering a link going to `to`, show the Obsidian hover-preview of that note.
+ *
+ * You probably have to hold down `Ctrl` when hovering the link for the preview to appear!
+ * @param  {MouseEvent} event
+ * @param  {YourView} view The view with the link being hovered
+ * @param  {string} to The basename of the note to preview.
+ * @template YourView The ViewType of your view
+ * @returns void
+ */
+export function hoverPreview<YourView extends ItemView>(
+    app: App,
+    event: MouseEvent,
+    view: YourView,
+    to: string
+): void {
+    const targetEl = event.target as HTMLElement;
+
+    app.workspace.trigger("hover-link", {
+        event,
+        source: view.getViewType(),
+        hoverParent: view,
+        targetEl,
+        linktext: to,
+    });
 }
 
 export function spawnAsync(

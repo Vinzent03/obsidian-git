@@ -13,7 +13,6 @@ import {
     moment,
 } from "obsidian";
 import * as path from "path";
-import { LineAuthoringFeature } from "src/lineAuthor/lineAuthorIntegration";
 import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/setting/settings";
@@ -61,6 +60,8 @@ import {
     splitRemoteBranch,
 } from "./utils";
 import { DiscardModal, type DiscardResult } from "./ui/modals/discardModal";
+import { HunkActions } from "./editor/signs/hunkActions";
+import { EditorIntegration } from "./editor/editorIntegration";
 
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
@@ -87,7 +88,8 @@ export default class ObsidianGit extends Plugin {
     // Used to store the path of the file that is currently shown in the diff view.
     lastDiffViewState: Record<string, unknown> | undefined;
     intervalsToClear: number[] = [];
-    lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(this);
+    editorIntegration: EditorIntegration = new EditorIntegration(this);
+    hunkActions = new HunkActions(this);
 
     /**
      * Debouncer for the refresh of the git status for the source control view after file changes.
@@ -142,9 +144,7 @@ export default class ObsidianGit extends Plugin {
         // ui after every rename event.
     }
 
-    refreshUpdatedHead() {
-        this.lineAuthoringFeature.refreshLineAuthorViews();
-    }
+    refreshUpdatedHead() {}
 
     async onload() {
         console.log(
@@ -315,7 +315,7 @@ export default class ObsidianGit extends Plugin {
             defaultMod: true,
         });
 
-        this.lineAuthoringFeature.onLoadPlugin();
+        this.editorIntegration.onLoadPlugin();
 
         this.setRefreshDebouncer();
 
@@ -352,7 +352,7 @@ export default class ObsidianGit extends Plugin {
             this.gitManager.getRelativeVaultPath(".gitignore"),
             "\n" + gitignoreRule
         );
-        return this.refresh();
+        this.app.workspace.trigger("obsidian-git:refresh");
     }
 
     handleFileMenu(
@@ -497,7 +497,7 @@ export default class ObsidianGit extends Plugin {
     unloadPlugin() {
         this.gitReady = false;
 
-        this.lineAuthoringFeature.deactivateFeature();
+        this.editorIntegration.onUnloadPlugin();
         this.automaticsManager.unload();
         this.branchBar?.remove();
         this.statusBar?.remove();
@@ -596,7 +596,7 @@ export default class ObsidianGit extends Plugin {
                     }
                     await this.branchBar?.display();
 
-                    this.lineAuthoringFeature.conditionallyActivateBySettings();
+                    this.editorIntegration.onReady();
 
                     this.app.workspace.trigger("obsidian-git:refresh");
                     /// Among other things, this notifies the history view that git is ready

@@ -1,6 +1,6 @@
 import { zeroCommit } from "src/gitManager/simpleGit";
-import type { LineAuthorSettings } from "src/lineAuthor/model";
-import { lineAuthoringGutterMarker } from "src/lineAuthor/view/gutter/gutter";
+import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
+import { lineAuthoringGutterMarker } from "src/editor/lineAuthor/view/gutter/gutter";
 import type { Blame } from "src/types";
 
 /**

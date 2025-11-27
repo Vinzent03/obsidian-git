@@ -1,4 +1,4 @@
-import { attachedGutterElements } from "src/lineAuthor/view/cache";
+import { attachedGutterElements } from "src/editor/lineAuthor/view/cache";
 
 const mouseXY = { x: -10, y: -10 };
 

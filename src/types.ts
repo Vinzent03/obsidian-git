@@ -1,4 +1,4 @@
-import type { LineAuthorSettings } from "src/lineAuthor/model";
+import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
 
 export interface ObsidianGitSettings {
     commitMessage: string;
@@ -65,6 +65,11 @@ export interface ObsidianGitSettings {
     authorInHistoryView: ShowAuthorInHistoryView;
     dateInHistoryView: boolean;
     diffStyle: "git_unified" | "split";
+    hunks: {
+        hunkCommands: boolean;
+        showSigns: boolean;
+        statusBar: "disabled" | "colored" | "monochrome";
+    };
 }
 
 /**
