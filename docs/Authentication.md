@@ -47,7 +47,7 @@ To securely store the username and password permanently without having to reente
 To set `libsecret` as your credential helper execute the following in the terminal from the directory of your vault/repository. You can also add the `--global` flag to set that setting for all other repositories on your device, too.
 
 ```bash
-git config set credential.helper libsecret
+git config credential.helper libsecret
 ```
 
 You have to do one authentication action (clone/pull/push) after setting the helper in the terminal. After that you should be able to clone/pull/push in Obsidian without any issues.
