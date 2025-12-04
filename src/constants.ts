@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     showFileMenu: true,
     authorInHistoryView: "hide",
     dateInHistoryView: false,
+    showGitRefsInHistoryView: true,
     diffStyle: "split",
     lineAuthor: {
         show: false,

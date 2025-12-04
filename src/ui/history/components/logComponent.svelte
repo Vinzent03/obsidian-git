@@ -47,7 +47,7 @@
     <div class="tree-item nav-folder" class:is-collapsed={isCollapsed}>
         <div
             class="tree-item-self is-clickable nav-folder-title"
-            aria-label={`${log.refs.length > 0 ? log.refs.join(", ") + "\n" : ""}${log.author?.name}
+            aria-label={`${plugin.settings.showGitRefsInHistoryView && log.refs.length > 0 ? log.refs.join(", ") + "\n" : ""}${log.author?.name}
 ${moment(log.date).format(plugin.settings.commitDateFormat)}
 ${log.message}`}
             data-tooltip-position={side}
@@ -72,7 +72,7 @@ ${log.message}`}
                 >
             </div>
             <div>
-                {#if log.refs.length > 0}
+                {#if plugin.settings.showGitRefsInHistoryView && log.refs.length > 0}
                     <div class="git-ref">
                         {log.refs.join(", ")}
                     </div>
