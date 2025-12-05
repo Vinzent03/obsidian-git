@@ -64,6 +64,7 @@ export interface ObsidianGitSettings {
     showFileMenu: boolean;
     authorInHistoryView: ShowAuthorInHistoryView;
     dateInHistoryView: boolean;
+    showGitRefsInHistoryView: boolean;
     diffStyle: "git_unified" | "split";
 }
 

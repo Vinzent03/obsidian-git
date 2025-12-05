@@ -491,6 +491,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
+        new Setting(containerEl)
+            .setName("Show git refs")
+            .setDesc(
+                "Show git references (like HEAD, branches, tags) in the history view."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.showGitRefsInHistoryView)
+                    .onChange(async (value) => {
+                        plugin.settings.showGitRefsInHistoryView = value;
+                        await plugin.saveSettings();
+                        await plugin.refresh();
+                    })
+            );
+
         new Setting(containerEl).setName("Source control view").setHeading();
 
         new Setting(containerEl)
