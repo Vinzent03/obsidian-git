@@ -82,6 +82,7 @@
     align-items: center;
     justify-content: center;
     width: 11px;
+    flex-shrink: 0;
 }
 
 .git-tools .type[data-type="M"] {
@@ -101,6 +102,31 @@
 .workspace-leaf-content[data-type="git-view"] .tree-item-self,
 .workspace-leaf-content[data-type="git-history-view"] .tree-item-self {
     align-items: center;
+    flex-wrap: nowrap;
+    min-height: unset;
+}
+.workspace-leaf-content[data-type="git-view"] .tree-item-inner,
+.workspace-leaf-content[data-type="git-history-view"] .tree-item-inner {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.workspace-leaf-content[data-type="git-view"] .git-tools,
+.workspace-leaf-content[data-type="git-history-view"] .git-tools {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.workspace-leaf-content[data-type="git-view"] .nav-folder-title {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+.workspace-leaf-content[data-type="git-view"] .nav-folder-title .tree-item-inner {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
 }
 
 .workspace-leaf-content[data-type="git-view"]
