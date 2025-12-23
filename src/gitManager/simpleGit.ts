@@ -81,6 +81,18 @@ export class SimpleGit extends GitManager {
             }
             if (gitDir) {
                 process.env["GIT_DIR"] = gitDir;
+                if (!process.env["GIT_WORK_TREE"]) {
+                    const inferredWorkTree = path.dirname(gitDir);
+                    const cleanVault = normalizePath(vaultBasePath);
+                    const cleanWorkTree = normalizePath(inferredWorkTree);
+
+                    if (
+                        cleanVault === cleanWorkTree ||
+                        cleanVault.startsWith(cleanWorkTree + "/")
+                    ) {
+                        process.env["GIT_WORK_TREE"] = inferredWorkTree;
+                    }
+                }
             }
             for (const envVar of envVars) {
                 const [key, value] = envVar.split("=");
