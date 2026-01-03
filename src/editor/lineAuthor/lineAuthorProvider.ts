@@ -1,15 +1,17 @@
 import type { Extension } from "@codemirror/state";
 import { Prec } from "@codemirror/state";
 import type { TFile } from "obsidian";
-import { subscribeNewEditor } from "src/lineAuthor/control";
-import { eventsPerFilePathSingleton } from "src/lineAuthor/eventsPerFilepath";
-import type { LineAuthoring, LineAuthoringId } from "src/lineAuthor/model";
-import { lineAuthorState, lineAuthoringId } from "src/lineAuthor/model";
-import { clearViewCache } from "src/lineAuthor/view/cache";
-import { lineAuthorGutter } from "src/lineAuthor/view/view";
+import { eventsPerFilePathSingleton } from "src/editor/eventsPerFilepath";
+import type {
+    LineAuthoring,
+    LineAuthoringId,
+} from "src/editor/lineAuthor/model";
+import { lineAuthorState, lineAuthoringId } from "src/editor/lineAuthor/model";
+import { clearViewCache } from "src/editor/lineAuthor/view/cache";
+import { lineAuthorGutter } from "src/editor/lineAuthor/view/view";
 import type ObsidianGit from "src/main";
 
-export { previewColor } from "src/lineAuthor/view/gutter/coloring";
+export { previewColor } from "src/editor/lineAuthor/view/gutter/coloring";
 /**
  * * handles changes in git head, filesystem, etc. by initiating computation
  * * Initiates the line authoring computation via
@@ -50,13 +52,12 @@ export class LineAuthorProvider {
 
     public destroy() {
         this.lineAuthorings.clear();
-        eventsPerFilePathSingleton.clear();
         clearViewCache();
     }
 
     private async computeLineAuthorInfo(filepath: string) {
         const gitManager =
-            this.plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform()
+            this.plugin.editorIntegration.lineAuthoringFeature.isAvailableOnCurrentPlatform()
                 .gitManager;
 
         const headRevision =
@@ -103,7 +104,6 @@ export class LineAuthorProvider {
 // =========================================================
 
 export const enabledLineAuthorInfoExtensions: Extension = Prec.high([
-    subscribeNewEditor,
     lineAuthorState,
     lineAuthorGutter,
 ]);

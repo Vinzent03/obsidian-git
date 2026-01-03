@@ -14,14 +14,14 @@ import {
 } from "src/constants";
 import { IsomorphicGit } from "src/gitManager/isomorphicGit";
 import { SimpleGit } from "src/gitManager/simpleGit";
-import { previewColor } from "src/lineAuthor/lineAuthorProvider";
+import { previewColor } from "src/editor/lineAuthor/lineAuthorProvider";
 import type {
     LineAuthorDateTimeFormatOptions,
     LineAuthorDisplay,
     LineAuthorFollowMovement,
     LineAuthorSettings,
     LineAuthorTimezoneOption,
-} from "src/lineAuthor/model";
+} from "src/editor/lineAuthor/model";
 import type ObsidianGit from "src/main";
 import type {
     ObsidianGitSettings,
@@ -448,6 +448,65 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
             if (plugin.gitManager instanceof SimpleGit) {
+                new Setting(containerEl)
+                    .setName("Hunk management")
+                    .setDesc(
+                        "Hunks are sections of grouped line changes right in your editor."
+                    )
+                    .setHeading();
+
+                new Setting(containerEl)
+                    .setName("Signs")
+                    .setDesc(
+                        "This allows you to see your changes right in your editor via colored markers and stage/reset/preview individual hunks."
+                    )
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(plugin.settings.hunks.showSigns)
+                            .onChange(async (value) => {
+                                plugin.settings.hunks.showSigns = value;
+                                await plugin.saveSettings();
+                                plugin.editorIntegration.refreshSignsSettings();
+                            })
+                    );
+
+                new Setting(containerEl)
+                    .setName("Hunk commands")
+                    .setDesc(
+                        "Adds commands to stage/reset individual Git diff hunks and navigate between them via 'Go to next/prev hunk' commands."
+                    )
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(plugin.settings.hunks.hunkCommands)
+                            .onChange(async (value) => {
+                                plugin.settings.hunks.hunkCommands = value;
+                                await plugin.saveSettings();
+
+                                plugin.editorIntegration.refreshSignsSettings();
+                            })
+                    );
+
+                new Setting(containerEl)
+                    .setName("Status bar with summary of line changes")
+                    .addDropdown((toggle) =>
+                        toggle
+                            .addOptions({
+                                disabled: "Disabled",
+                                colored: "Colored",
+                                monochrome: "Monochrome",
+                            })
+                            .setValue(plugin.settings.hunks.statusBar)
+                            .onChange(
+                                async (
+                                    option: ObsidianGitSettings["hunks"]["statusBar"]
+                                ) => {
+                                    plugin.settings.hunks.statusBar = option;
+                                    await plugin.saveSettings();
+                                    plugin.editorIntegration.refreshSignsSettings();
+                                }
+                            )
+                    );
+
                 new Setting(containerEl)
                     .setName("Line author information")
                     .setHeading();
@@ -940,8 +999,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         this.settings.lineAuthor.show = show;
         void this.plugin.saveSettings();
 
-        if (show) this.plugin.lineAuthoringFeature.activateFeature();
-        else this.plugin.lineAuthoringFeature.deactivateFeature();
+        if (show) this.plugin.editorIntegration.activateLineAuthoring();
+        else this.plugin.editorIntegration.deactiveLineAuthoring();
     }
 
     /**
@@ -953,7 +1012,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     >(key: K, value: ObsidianGitSettings["lineAuthor"][K]): Promise<void> {
         this.settings.lineAuthor[key] = value;
         await this.plugin.saveSettings();
-        this.plugin.lineAuthoringFeature.refreshLineAuthorViews();
+        this.plugin.editorIntegration.lineAuthoringFeature.refreshLineAuthorViews();
     }
 
     /**
@@ -977,7 +1036,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             "Show commit authoring information next to each line"
         );
 
-        if (!this.plugin.lineAuthoringFeature.isAvailableOnCurrentPlatform()) {
+        if (
+            !this.plugin.editorIntegration.lineAuthoringFeature.isAvailableOnCurrentPlatform()
+        ) {
             baseLineAuthorInfoSetting
                 .setDesc("Only available on desktop currently.")
                 .setDisabled(true);

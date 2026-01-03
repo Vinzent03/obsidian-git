@@ -1,12 +1,18 @@
 import { moment } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
-import type { LineAuthoring, LineAuthorSettings } from "src/lineAuthor/model";
-import { latestSettings, maxAgeInDaysFromSettings } from "src/lineAuthor/model";
-import { computeAdaptiveInitialColoringAgeInDays } from "src/lineAuthor/view/cache";
+import type {
+    LineAuthoring,
+    LineAuthorSettings,
+} from "src/editor/lineAuthor/model";
+import {
+    latestSettings,
+    maxAgeInDaysFromSettings,
+} from "src/editor/lineAuthor/model";
+import { computeAdaptiveInitialColoringAgeInDays } from "src/editor/lineAuthor/view/cache";
 import {
     lineAuthoringGutterMarker,
     TextGutter,
-} from "src/lineAuthor/view/gutter/gutter";
+} from "src/editor/lineAuthor/view/gutter/gutter";
 import type { Blame, BlameCommit, GitTimestamp, UserEmail } from "src/types";
 import { momentToEpochSeconds } from "src/utils";
 

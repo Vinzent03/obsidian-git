@@ -5,12 +5,12 @@ import { SimpleGit } from "src/gitManager/simpleGit";
 import {
     LineAuthorProvider,
     enabledLineAuthorInfoExtensions,
-} from "src/lineAuthor/lineAuthorProvider";
-import type { LineAuthorSettings } from "src/lineAuthor/model";
-import { provideSettingsAccess } from "src/lineAuthor/model";
-import { handleContextMenu } from "src/lineAuthor/view/contextMenu";
-import { setTextColorCssBasedOnSetting } from "src/lineAuthor/view/gutter/coloring";
-import { prepareGutterSearchForContextMenuHandling } from "src/lineAuthor/view/gutter/gutterElementSearch";
+} from "./lineAuthorProvider";
+import type { LineAuthorSettings } from "./model";
+import { provideSettingsAccess } from "./model";
+import { handleContextMenu } from "./view/contextMenu";
+import { setTextColorCssBasedOnSetting } from "./view/gutter/coloring";
+import { prepareGutterSearchForContextMenuHandling } from "./view/gutter/gutterElementSearch";
 import type ObsidianGit from "src/main";
 
 /**
@@ -23,6 +23,7 @@ export class LineAuthoringFeature {
     private fileOpenEvent?: EventRef;
     private workspaceLeafChangeEvent?: EventRef;
     private fileModificationEvent?: EventRef;
+    private headChangeEvent?: EventRef;
     private refreshOnCssChangeEvent?: EventRef;
     private fileRenameEvent?: EventRef;
     private gutterContextMenuEvent?: EventRef;
@@ -133,6 +134,7 @@ export class LineAuthoringFeature {
         this.fileOpenEvent = this.createFileOpenEvent();
         this.workspaceLeafChangeEvent = this.createWorkspaceLeafChangeEvent();
         this.fileModificationEvent = this.createVaultFileModificationHandler();
+        this.headChangeEvent = this.createHeadChangeEvent();
         this.refreshOnCssChangeEvent = this.createCssRefreshHandler();
         this.fileRenameEvent = this.createFileRenameEvent();
 
@@ -143,16 +145,19 @@ export class LineAuthoringFeature {
         this.plg.registerEvent(this.fileOpenEvent);
         this.plg.registerEvent(this.workspaceLeafChangeEvent);
         this.plg.registerEvent(this.fileModificationEvent);
+        this.plg.registerEvent(this.headChangeEvent);
         this.plg.registerEvent(this.fileRenameEvent);
     }
 
     private destroyEventHandlers() {
+        this.plg.app.workspace.offref(this.gutterContextMenuEvent!);
         this.plg.app.workspace.offref(this.refreshOnCssChangeEvent!);
         this.plg.app.workspace.offref(this.fileOpenEvent!);
         this.plg.app.workspace.offref(this.workspaceLeafChangeEvent!);
         this.plg.app.workspace.offref(this.refreshOnCssChangeEvent!);
+        this.plg.app.vault.offref(this.fileModificationEvent!);
+        this.plg.app.workspace.offref(this.headChangeEvent!);
         this.plg.app.vault.offref(this.fileRenameEvent!);
-        this.plg.app.workspace.offref(this.gutterContextMenuEvent!);
     }
 
     private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
@@ -209,6 +214,12 @@ export class LineAuthoringFeature {
                 anyPath instanceof TFile &&
                 this.lineAuthorInfoProvider?.trackChanged(anyPath)
         );
+    }
+
+    private createHeadChangeEvent(): EventRef {
+        return this.plg.app.workspace.on("obsidian-git:head-change", () => {
+            this.refreshLineAuthorViews();
+        });
     }
 
     private createCssRefreshHandler(): EventRef {

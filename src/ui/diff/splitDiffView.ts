@@ -1,12 +1,12 @@
 import type { Debouncer, ViewStateResult, WorkspaceLeaf } from "obsidian";
-import { debounce, ItemView, Platform } from "obsidian";
+import { debounce, ItemView, Platform, setIcon } from "obsidian";
 import { SPLIT_DIFF_VIEW_CONFIG } from "src/constants";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
 import type { DiffViewState } from "src/types";
 
 import { history, indentWithTab, standardKeymap } from "@codemirror/commands";
-import { MergeView } from "@codemirror/merge";
+import { getChunks, MergeView } from "@codemirror/merge";
 import { highlightSelectionMatches, search } from "@codemirror/search";
 import { EditorState, Transaction } from "@codemirror/state";
 import {
@@ -17,6 +17,8 @@ import {
     ViewPlugin,
 } from "@codemirror/view";
 import { GitError } from "simple-git";
+import { Hunks } from "src/editor/signs/hunks";
+import { rawHunkFromChunk, rawHunksToHunks } from "src/editor/signs/diff";
 
 // This class is not extending `FileView', because it needs a `TFile`, which is not possible for dot files like `.gitignore`, which this editor should support as well.`
 export default class SplitDiffView extends ItemView {
@@ -128,8 +130,16 @@ export default class SplitDiffView extends ItemView {
         if (this.state?.bFile != null) {
             let fileName = this.state.bFile.split("/").last();
             if (fileName?.endsWith(".md")) fileName = fileName.slice(0, -3);
+            let suffix: string;
+            if (this.state.bRef == undefined) {
+                suffix = " (Working Tree)";
+            } else if (this.state.bRef == "") {
+                suffix = " (Index)";
+            } else {
+                suffix = "(" + this.state.bRef.substring(0, 7) + ")";
+            }
 
-            return `Diff: ${fileName}`;
+            return `Diff: ${fileName} ${suffix}`;
         }
         return SPLIT_DIFF_VIEW_CONFIG.name;
     }
@@ -265,6 +275,92 @@ export default class SplitDiffView extends ItemView {
         this.refreshing = false;
     }
 
+    renderButtons(): HTMLElement {
+        const contentEl = document.createElement("div");
+
+        const stageButton = contentEl.createDiv();
+        stageButton.addClass("clickable-icon");
+        stageButton.setAttr(
+            "aria-label",
+            this.state.bRef == undefined ? "Stage hunk" : "Unstage hunk"
+        );
+        setIcon(stageButton, this.state.bRef == undefined ? "plus" : "minus");
+
+        stageButton.onmousedown = async (_) => {
+            const bEditor = this.mergeView!.b;
+            const aEditor = this.mergeView!.a;
+            const chunks = getChunks(bEditor.state)!;
+            const index = contentEl.parentElement?.indexOf(contentEl);
+
+            const chunk = chunks.chunks[index!];
+
+            const rawHunk = rawHunkFromChunk(
+                chunk,
+                aEditor.state.doc,
+                bEditor.state.doc
+            );
+            const hunk = rawHunksToHunks(
+                this.mergeView!.a.state.doc.toString(),
+                this.mergeView!.b.state.doc.toString(),
+                [rawHunk]
+            )[0];
+
+            const patch =
+                Hunks.createPatch(
+                    this.state.bFile,
+                    [hunk],
+                    "100644",
+                    this.state.bRef != undefined
+                ).join("\n") + "\n";
+            await (this.plugin.gitManager as SimpleGit).applyPatch(patch);
+
+            this.plugin.app.workspace.trigger("obsidian-git:refresh");
+        };
+
+        if (this.state.bRef == undefined) {
+            const resetButton = contentEl.createDiv();
+            resetButton.addClass("clickable-icon");
+            resetButton.setAttr("aria-label", "Reset hunk");
+            setIcon(resetButton, "undo");
+            resetButton.onmousedown = (_) => {
+                const source = this.mergeView!.a;
+                const dest = this.mergeView!.b;
+                const chunks = getChunks(dest.state)!;
+                const index = contentEl.parentElement?.indexOf(contentEl);
+
+                const chunk = chunks.chunks[index!];
+
+                if (chunk) {
+                    const srcFrom = chunk.fromA;
+                    const srcTo = chunk.toA;
+                    const destFrom = chunk.fromB;
+                    const destTo = chunk.toB;
+                    let insert = source.state.sliceDoc(
+                        srcFrom,
+                        Math.max(srcFrom, srcTo - 1)
+                    );
+                    if (srcFrom != srcTo && destTo <= dest.state.doc.length)
+                        insert += source.state.lineBreak;
+                    dest.dispatch({
+                        changes: {
+                            from: destFrom,
+                            to: Math.min(dest.state.doc.length, destTo),
+                            insert,
+                        },
+                        userEvent: "revert",
+                    });
+                }
+            };
+        }
+
+        // Prevent the default revert behavior by codemirror to apply
+        contentEl.onmousedown = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        };
+        return contentEl;
+    }
+
     async createMergeView() {
         if (
             this.state?.aFile &&
@@ -280,7 +376,8 @@ export default class SplitDiffView extends ItemView {
             container.empty();
 
             // new
-            this.contentEl.addClass("git-split-diff-view");
+
+            this.contentEl.addClass("git-split-diff-view", "git-diff");
             this.bIsEditable = await this.bShouldBeEditable();
 
             const aText = await this.gitShow(this.state.aRef, this.state.aFile);
@@ -358,6 +455,10 @@ export default class SplitDiffView extends ItemView {
                 "cm-content",
             ]);
 
+            const showButtons =
+                this.plugin.gitManager instanceof SimpleGit &&
+                (this.state.bRef === undefined || this.state.bRef === "");
+
             this.mergeView = new MergeView({
                 b: bState,
                 a: aState,
@@ -365,6 +466,10 @@ export default class SplitDiffView extends ItemView {
                     minSize: 6,
                     margin: 4,
                 },
+                renderRevertControl: showButtons
+                    ? () => this.renderButtons()
+                    : undefined,
+                revertControls: showButtons ? "a-to-b" : undefined,
                 diffConfig: {
                     scanLimit: this.bIsEditable ? 1000 : 10000, // default is 500
                 },
