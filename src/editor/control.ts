@@ -8,7 +8,7 @@ import { newComputationResultAsTransaction } from "./lineAuthor/model";
 import {
     newGitCompareResultAsTransaction,
     type GitCompareResult,
-} from "./signs/signs";
+} from "./signs/hunkState";
 
 /*
 ================== CONTROL ======================

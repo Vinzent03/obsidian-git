@@ -5,7 +5,7 @@ import {
     type Tooltip,
     type TooltipView,
 } from "@codemirror/view";
-import { GitCompareResultEffectType, hunksState } from "./signs";
+import { GitCompareResultEffectType, hunksState } from "./hunkState";
 import { Hunks, type Hunk } from "./hunks";
 import { html } from "diff2html";
 import { ColorSchemeType } from "diff2html/lib/types";

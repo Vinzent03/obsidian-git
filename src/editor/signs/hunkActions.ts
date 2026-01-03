@@ -1,5 +1,5 @@
 import { editorInfoField, type Editor } from "obsidian";
-import { HunksStateHelper } from "./signs";
+import { HunksStateHelper } from "./hunkState";
 import type { EditorView } from "codemirror";
 import type ObsidianGit from "src/main";
 import { Hunks } from "./hunks";

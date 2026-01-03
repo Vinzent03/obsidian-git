@@ -1,7 +1,7 @@
 import { Hunks, type Hunk } from "../signs/hunks";
 import { Chunk } from "@codemirror/merge";
 import { ChangeDesc, Text } from "@codemirror/state";
-import { lineFromPos } from "./signs";
+import { lineFromPos } from "./hunkState";
 
 // function diffMatchPatch(
 //     text1: string,

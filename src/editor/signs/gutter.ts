@@ -6,7 +6,7 @@ import {
     GitCompareResultEffectType,
     hunksState,
     HunksStateHelper,
-} from "./signs";
+} from "./hunkState";
 import { togglePreviewHunk } from "./tooltip";
 
 class GitGutterMarker extends GutterMarker {

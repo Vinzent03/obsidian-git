@@ -6,7 +6,7 @@ import {
     computeHunksDebouncerStateField,
     hunksState,
     type GitCompareResult,
-} from "../signs/signs";
+} from "../signs/hunkState";
 import { signsGutter, signsMarker } from "../signs/gutter";
 import {
     cursorTooltipBaseTheme,

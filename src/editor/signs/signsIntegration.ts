@@ -152,9 +152,7 @@ export class SignsFeature {
 
     private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
         if (!this.signsProvider) {
-            console.warn(
-                "Git: undefined lineAuthorInfoProvider. Unexpected situation."
-            );
+            console.warn("Git: undefined signsProvider. Unexpected situation.");
             return;
         }
         const obsView = leaf?.view;
@@ -209,12 +207,5 @@ export class SignsFeature {
                     .catch(console.error);
             }
         }, 10 * 1000);
-    }
-
-    //TODO do we need this?
-    private createHeadChangeEvent(): EventRef {
-        return this.plg.app.workspace.on("obsidian-git:head-change", () => {
-            this.refresh();
-        });
     }
 }

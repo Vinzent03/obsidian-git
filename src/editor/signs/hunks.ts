@@ -1,4 +1,4 @@
-import type { GitCompareResult } from "./signs";
+import type { GitCompareResult } from "./hunkState";
 
 export type HunkType = "add" | "change" | "delete";
 

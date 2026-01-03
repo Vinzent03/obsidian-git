@@ -6,7 +6,7 @@ import {
     Text,
     Transaction,
 } from "@codemirror/state";
-import { Hunks, type Hunk } from "../signs/hunks";
+import { Hunks, type Hunk } from "./hunks";
 import { computeHunks } from "./diff";
 import type { Chunk } from "@codemirror/merge";
 import { pluginRef } from "src/pluginGlobalRef";
