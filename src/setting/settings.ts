@@ -770,6 +770,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (plugin.gitManager instanceof SimpleGit)
             new Setting(containerEl)
                 .setName("Custom Git binary path")
+                .setDesc(
+                    "Specify the path to the Git binary/executable. Git should already be in your PATH. Should only be necessary for a custom Git installation."
+                )
                 .addText((cb) => {
                     cb.setValue(plugin.localStorage.getGitPath() ?? "");
                     cb.setPlaceholder("git");
@@ -842,7 +845,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Custom Git directory path (Instead of '.git')")
             .setDesc(
-                `Requires restart of Obsidian to take effect. Use "\\" instead of "/" on Windows.`
+                `Corresponds to the GIT_DIR environment variable. Requires restart of Obsidian to take effect. Use "\\" instead of "/" on Windows.`
             )
             .addText((cb) => {
                 cb.setValue(plugin.settings.gitDir);
