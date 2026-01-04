@@ -78,6 +78,9 @@ importers:
       '@types/diff':
         specifier: ^5.2.3
         version: 5.2.3
+      '@types/diff3':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@types/node':
         specifier: ^22.17.0
         version: 22.17.0
@@ -436,6 +439,9 @@ packages:
 
   '@types/deep-equal@1.0.4':
     resolution: {integrity: sha512-tqdiS4otQP4KmY0PR3u6KbZ5EWvhNdUoS/jc93UuK23C220lOZ/9TvjfxdPcKvqwwDVtmtSCrnr0p/2dirAxkA==}
+
+  '@types/diff3@0.0.2':
+    resolution: {integrity: sha512-X4VS60B44m7xh6bln6372LXdxS0iWWNbiZV4cfEC1WmHuew1lT3FxXnXZIwxV8qhIGJO5TsFo8VBHsVftUgKNw==}
 
   '@types/diff@5.2.3':
     resolution: {integrity: sha512-K0Oqlrq3kQMaO2RhfrNQX5trmt+XLyom88zS0u84nnIcLvFnRUMRRHmrGny5GSM+kNO9IZLARsdQHDzkhAgmrQ==}
@@ -2383,6 +2389,8 @@ snapshots:
       '@types/ms': 2.1.0
 
   '@types/deep-equal@1.0.4': {}
+
+  '@types/diff3@0.0.2': {}
 
   '@types/diff@5.2.3': {}
 
