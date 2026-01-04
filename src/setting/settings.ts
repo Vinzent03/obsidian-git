@@ -25,6 +25,7 @@ import type {
 import type ObsidianGit from "src/main";
 import type {
     ObsidianGitSettings,
+    MergeStrategy,
     ShowAuthorInHistoryView,
     SyncMethod,
 } from "src/types";
@@ -397,6 +398,26 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             await plugin.saveSettings();
                         });
                     });
+
+            new Setting(containerEl)
+                .setName("Merge strategy on conflicts")
+                .setDesc(
+                    "Decide how to solve conflicts when pulling remote changes. This can be used to favor your local changes or the remote changes automatically."
+                )
+                .addDropdown((dropdown) => {
+                    const options: Record<MergeStrategy, string> = {
+                        none: "None (git default)",
+                        ours: "Our changes",
+                        theirs: "Their changes",
+                    };
+                    dropdown.addOptions(options);
+                    dropdown.setValue(plugin.settings.mergeStrategy);
+
+                    dropdown.onChange(async (option: MergeStrategy) => {
+                        plugin.settings.mergeStrategy = option;
+                        await plugin.saveSettings();
+                    });
+                });
 
             new Setting(containerEl)
                 .setName("Pull on startup")

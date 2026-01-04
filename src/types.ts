@@ -14,6 +14,7 @@ export interface ObsidianGitSettings {
     autoPullOnBoot: boolean;
     autoCommitOnlyStaged: boolean;
     syncMethod: SyncMethod;
+    mergeStrategy: MergeStrategy;
     /**
      * Whether to push on commit-and-sync
      */
@@ -84,6 +85,8 @@ export function mergeSettingsByPriority(
 }
 
 export type SyncMethod = "rebase" | "merge" | "reset";
+
+export type MergeStrategy = "none" | "ours" | "theirs";
 
 export type ShowAuthorInHistoryView = "full" | "initials" | "hide";
 

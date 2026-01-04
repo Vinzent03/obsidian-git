@@ -25,6 +25,7 @@ import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
 import { MyAdapter } from "./myAdapter";
+import diff3Merge from "diff3";
 
 export class IsomorphicGit extends GitManager {
     private readonly FILE = 0;
@@ -476,6 +477,37 @@ export class IsomorphicGit extends GitManager {
                     ours: branchInfo.current,
                     theirs: branchInfo.tracking!,
                     abortOnConflict: false,
+                    mergeDriver:
+                        this.plugin.settings.mergeStrategy !== "none"
+                            ? ({ contents }) => {
+                                  const baseContent = contents[0];
+                                  const ourContent = contents[1];
+                                  const theirContent = contents[2];
+
+                                  const LINEBREAKS = /^.*(\r?\n|$)/gm;
+                                  const ours =
+                                      ourContent.match(LINEBREAKS) ?? [];
+                                  const base =
+                                      baseContent.match(LINEBREAKS) ?? [];
+                                  const theirs =
+                                      theirContent.match(LINEBREAKS) ?? [];
+                                  const result = diff3Merge(ours, base, theirs);
+                                  let mergedText = "";
+                                  for (const item of result) {
+                                      if (item.ok) {
+                                          mergedText += item.ok.join("");
+                                      }
+                                      if (item.conflict) {
+                                          mergedText +=
+                                              this.plugin.settings
+                                                  .mergeStrategy === "ours"
+                                                  ? item.conflict.a.join("")
+                                                  : item.conflict.b.join("");
+                                      }
+                                  }
+                                  return { cleanMerge: true, mergedText };
+                              }
+                            : undefined,
                 })
             );
             if (!mergeRes.alreadyMerged) {

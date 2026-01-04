@@ -44,6 +44,9 @@ importers:
       diff2html:
         specifier: ^3.4.52
         version: 3.4.52
+      diff3:
+        specifier: ^0.0.4
+        version: 0.0.4
       isomorphic-git:
         specifier: ^1.32.2
         version: 1.32.2
@@ -69,6 +72,12 @@ importers:
       '@types/deep-equal':
         specifier: ^1.0.4
         version: 1.0.4
+      '@types/diff':
+        specifier: ^5.2.3
+        version: 5.2.3
+      '@types/diff3':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@types/node':
         specifier: ^22.17.0
         version: 22.17.0
@@ -427,6 +436,12 @@ packages:
 
   '@types/deep-equal@1.0.4':
     resolution: {integrity: sha512-tqdiS4otQP4KmY0PR3u6KbZ5EWvhNdUoS/jc93UuK23C220lOZ/9TvjfxdPcKvqwwDVtmtSCrnr0p/2dirAxkA==}
+
+  '@types/diff3@0.0.2':
+    resolution: {integrity: sha512-X4VS60B44m7xh6bln6372LXdxS0iWWNbiZV4cfEC1WmHuew1lT3FxXnXZIwxV8qhIGJO5TsFo8VBHsVftUgKNw==}
+
+  '@types/diff@5.2.3':
+    resolution: {integrity: sha512-K0Oqlrq3kQMaO2RhfrNQX5trmt+XLyom88zS0u84nnIcLvFnRUMRRHmrGny5GSM+kNO9IZLARsdQHDzkhAgmrQ==}
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
@@ -822,6 +837,9 @@ packages:
 
   diff3@0.0.3:
     resolution: {integrity: sha512-iSq8ngPOt0K53A6eVr4d5Kn6GNrM2nQZtC740pzIriHtn4pOQ2lyzEXQMBeVcWERN0ye7fhBsk9PbLLQOnUx/g==}
+
+  diff3@0.0.4:
+    resolution: {integrity: sha512-f1rQ7jXDn/3i37hdwRk9ohqcvLRH3+gEIgmA6qEM280WUOh7cOr3GXV8Jm5sPwUs46Nzl48SE8YNLGJoaLuodg==}
 
   diff@7.0.0:
     resolution: {integrity: sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw==}
@@ -2360,6 +2378,10 @@ snapshots:
 
   '@types/deep-equal@1.0.4': {}
 
+  '@types/diff3@0.0.2': {}
+
+  '@types/diff@5.2.3': {}
+
   '@types/estree@1.0.8': {}
 
   '@types/json-schema@7.0.15': {}
@@ -2840,6 +2862,8 @@ snapshots:
       highlight.js: 11.9.0
 
   diff3@0.0.3: {}
+
+  diff3@0.0.4: {}
 
   diff@7.0.0: {}
 

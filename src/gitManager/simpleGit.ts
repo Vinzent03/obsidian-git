@@ -636,12 +636,20 @@ export class SimpleGit extends GitManager {
                     this.plugin.settings.syncMethod === "rebase"
                 ) {
                     try {
+                        const args = [branchInfo.tracking!];
+
+                        if (this.plugin.settings.mergeStrategy !== "none") {
+                            args.push(
+                                `--strategy-option=${this.plugin.settings.mergeStrategy}`
+                            );
+                        }
+
                         switch (this.plugin.settings.syncMethod) {
                             case "merge":
-                                await this.git.merge([branchInfo.tracking!]);
+                                await this.git.merge(args);
                                 break;
                             case "rebase":
-                                await this.git.rebase([branchInfo.tracking!]);
+                                await this.git.rebase(args);
                         }
                     } catch (err) {
                         this.plugin.displayError(
