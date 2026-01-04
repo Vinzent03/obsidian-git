@@ -478,7 +478,7 @@ export class IsomorphicGit extends GitManager {
                     theirs: branchInfo.tracking!,
                     abortOnConflict: false,
                     mergeDriver:
-                        this.plugin.settings.resolutionMethod !== "none"
+                        this.plugin.settings.mergeStrategy !== "none"
                             ? ({ contents }) => {
                                   const baseContent = contents[0];
                                   const ourContent = contents[1];
@@ -500,7 +500,7 @@ export class IsomorphicGit extends GitManager {
                                       if (item.conflict) {
                                           mergedText +=
                                               this.plugin.settings
-                                                  .resolutionMethod === "ours"
+                                                  .mergeStrategy === "ours"
                                                   ? item.conflict.a.join("")
                                                   : item.conflict.b.join("");
                                       }

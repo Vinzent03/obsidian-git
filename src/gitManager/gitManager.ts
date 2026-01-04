@@ -5,7 +5,6 @@ import type {
     DiffFile,
     FileStatusResult,
     LogEntry,
-    ResolutionMethod,
     Status,
     TreeItem,
     UnstagedFile,

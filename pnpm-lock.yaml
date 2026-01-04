@@ -127,7 +127,7 @@ importers:
         specifier: 5.8.3
         version: 5.8.3
       typescript-eslint:
-        specifier: ^8.8.1
+        specifier: ^8.38.0
         version: 8.38.0(eslint@9.32.0(supports-color@9.4.0))(supports-color@9.4.0)(typescript@5.8.3)
 
 packages:

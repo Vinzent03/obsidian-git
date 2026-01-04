@@ -1074,6 +1074,11 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
+    /** Used for internals
+     *  Returns whether the pull added a commit or not.
+     *
+     *  See {@link pullChangesFromRemote} for the command version.
+     */
     async pull(): Promise<false | number> {
         if (!(await this.remotesAreSet())) {
             return false;

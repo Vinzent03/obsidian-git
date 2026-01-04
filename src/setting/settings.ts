@@ -25,7 +25,7 @@ import type {
 import type ObsidianGit from "src/main";
 import type {
     ObsidianGitSettings,
-    ResolutionMethod,
+    MergeStrategy,
     ShowAuthorInHistoryView,
     SyncMethod,
 } from "src/types";
@@ -400,21 +400,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     });
 
             new Setting(containerEl)
-                .setName("Conflict resolution strategy")
+                .setName("Merge strategy on conflicts")
                 .setDesc(
-                    "Decide how to solve conflicts when pulling remote changes"
+                    "Decide how to solve conflicts when pulling remote changes. This can be used to favor your local changes or the remote changes automatically."
                 )
                 .addDropdown((dropdown) => {
-                    const options: Record<ResolutionMethod, string> = {
+                    const options: Record<MergeStrategy, string> = {
                         none: "None (git default)",
                         ours: "Our changes",
                         theirs: "Their changes",
                     };
                     dropdown.addOptions(options);
-                    dropdown.setValue(plugin.settings.resolutionMethod);
+                    dropdown.setValue(plugin.settings.mergeStrategy);
 
-                    dropdown.onChange(async (option: ResolutionMethod) => {
-                        plugin.settings.resolutionMethod = option;
+                    dropdown.onChange(async (option: MergeStrategy) => {
+                        plugin.settings.mergeStrategy = option;
                         await plugin.saveSettings();
                     });
                 });

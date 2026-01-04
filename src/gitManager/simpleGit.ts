@@ -602,9 +602,6 @@ export class SimpleGit extends GitManager {
                 this.plugin.log(
                     "No tracking branch found. Ignoring pull of main repo and updating submodules only."
                 );
-                this.plugin.displayMessage(
-                    "No tracking branch found. Ignoring pull of main repo and updating submodules only."
-                );
                 return;
             }
 
@@ -621,9 +618,9 @@ export class SimpleGit extends GitManager {
                     try {
                         const args = [branchInfo.tracking!];
 
-                        if (this.plugin.settings.resolutionMethod !== "none") {
+                        if (this.plugin.settings.mergeStrategy !== "none") {
                             args.push(
-                                `--strategy-option=${this.plugin.settings.resolutionMethod}`
+                                `--strategy-option=${this.plugin.settings.mergeStrategy}`
                             );
                         }
 
@@ -654,7 +651,6 @@ export class SimpleGit extends GitManager {
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             `Sync failed (${this.plugin.settings.syncMethod}): ${"message" in err ? err.message : err}`
                         );
-                        err = true;
                     }
                 }
                 this.app.workspace.trigger("obsidian-git:head-change");
