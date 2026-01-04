@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.36.0](https://github.com/Vinzent03/obsidian-git/compare/2.35.2...2.36.0) (2026-01-04)
+
+
+### Features
+
+* buttons for hunk actions and display on click ([a3dcd02](https://github.com/Vinzent03/obsidian-git/commit/a3dcd02fba27afc895968af6df6e752c5f06842f))
+* command to preview hunk ([7f26cfe](https://github.com/Vinzent03/obsidian-git/commit/7f26cfe131b6ec47c2c361d510855a19a412bcaf))
+* display hunk changes inline ([f346cac](https://github.com/Vinzent03/obsidian-git/commit/f346cac94199b0a97fda8c8d7908765c075d6109))
+* go to prev/next hunk commands ([48d6658](https://github.com/Vinzent03/obsidian-git/commit/48d66580564fd4105291cdae56180d7e005a080a))
+* granular settings and change status bar ([29bd5ae](https://github.com/Vinzent03/obsidian-git/commit/29bd5ae0ff916b33b43bff028340ee476ad7b81c))
+* hunk actions ([1c32ceb](https://github.com/Vinzent03/obsidian-git/commit/1c32ceb038f112c674ed102dc78bf36a2c7018cf))
+* specify merge strategy in settings ([#934](https://github.com/Vinzent03/obsidian-git/issues/934)) ([d64e4d7](https://github.com/Vinzent03/obsidian-git/commit/d64e4d7dfa57a7f5fb2073f9ebaaa2643acefdf8))
+* stage hunk ([5f0a5a2](https://github.com/Vinzent03/obsidian-git/commit/5f0a5a2344b2d390e0da300f50ed88d0221ec1f6))
+* stage individual hunks from split diff view ([47e97c9](https://github.com/Vinzent03/obsidian-git/commit/47e97c9911655227de401d4da8eccbc160040f95))
+
+
+### Bug Fixes
+
+* detect another error message for offline mode ([387d4bd](https://github.com/Vinzent03/obsidian-git/commit/387d4bd895a5fd04df80cd0705705d93e7fce4bd)), closes [#990](https://github.com/Vinzent03/obsidian-git/issues/990)
+* disable staged hunks as their computation is not feasible ([5ff0fed](https://github.com/Vinzent03/obsidian-git/commit/5ff0fede7f15d4ae3e7e9e0b2c445ec1cced0d59))
+* don't discard ignored files ([5483881](https://github.com/Vinzent03/obsidian-git/commit/54838815eae722a386de17fff71a1434bc6d9f84)), closes [#1006](https://github.com/Vinzent03/obsidian-git/issues/1006)
+* don't remove dom elements in line authoring ([4b29d76](https://github.com/Vinzent03/obsidian-git/commit/4b29d76df035be329c55f5718a0542a85bf2f941))
+* escape file path for css selector ([c6fcbdf](https://github.com/Vinzent03/obsidian-git/commit/c6fcbdf7fa813bfcf3047fd41174d60ea3ffdbf1)), closes [#986](https://github.com/Vinzent03/obsidian-git/issues/986)
+* fallback to debounced diff for slow diffs ([cfac162](https://github.com/Vinzent03/obsidian-git/commit/cfac162d52cddc5b3435ae95277ea1a7cce8ba9c))
+* make diff buttons horizontal ([5d2627c](https://github.com/Vinzent03/obsidian-git/commit/5d2627c3b31ec233402c5cf58f3e86a292ee19a1))
+* only show non 0 numbers in change status bar ([9ee0c06](https://github.com/Vinzent03/obsidian-git/commit/9ee0c06c0d5595f89fdc371942a1f60692d87403))
+* properly disable signs via settings ([bda731b](https://github.com/Vinzent03/obsidian-git/commit/bda731b15f36f69219e54943be1caace6b5de47a))
+* properly manage extensions ([067144c](https://github.com/Vinzent03/obsidian-git/commit/067144cd3c6fddd88eb3c478de7baf6a46efb459))
+* properly show tooltip ([f5a48af](https://github.com/Vinzent03/obsidian-git/commit/f5a48afde5e6ce3a971f70a2b3866313045b3bd8))
+* refresh cached file index version every 10 seconds ([4ba53a4](https://github.com/Vinzent03/obsidian-git/commit/4ba53a428bc61285f1bec37112f2996f234dcc12))
+* reset changing an empty line ([9549bde](https://github.com/Vinzent03/obsidian-git/commit/9549bde6bd58f8186a558c5157a8f5ad3a9e4737))
+* reset new empty line ([8cf494e](https://github.com/Vinzent03/obsidian-git/commit/8cf494e7375b62c4ec3e4cdefc8310c53dca0e19))
+* select hunks and unstage no_nl_at_eof ([67ea27e](https://github.com/Vinzent03/obsidian-git/commit/67ea27e6925c901d6963ca27e7bf7a98a8bd29ed))
+* show signs for new hunks on refresh ([491784d](https://github.com/Vinzent03/obsidian-git/commit/491784d381528c4f168da2399d7327c37e55479f))
+* show tooltip for topdelete ([adae383](https://github.com/Vinzent03/obsidian-git/commit/adae383b0d661389d1e357a3e435d40f7025b939))
+* small fixes ([b90eeb8](https://github.com/Vinzent03/obsidian-git/commit/b90eeb8229620f2d613b6816212709ce1b87a199))
+* update settings description ([5e13e49](https://github.com/Vinzent03/obsidian-git/commit/5e13e492118c36beca22b4f138d7ec481a95f3ba))
+* update styling ([ebd9734](https://github.com/Vinzent03/obsidian-git/commit/ebd973471ddfa7e267ad85c442a89f9ef2dd1eb1))
+* use rem instead of px for dimensions ([60e11b7](https://github.com/Vinzent03/obsidian-git/commit/60e11b77ca2a49281d9c79ce45d7a858dfa7a905))
+
 ### [2.35.2](https://github.com/Vinzent03/obsidian-git/compare/2.35.1...2.35.2) (2025-11-05)
 
 
