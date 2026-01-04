@@ -5,7 +5,7 @@ import { normalizePath, Notice, Platform } from "obsidian";
 import * as path from "path";
 import { resolve, sep } from "path";
 import type * as simple from "simple-git";
-import simpleGit, { GitError } from "simple-git";
+import simpleGit, { GitError, CleanOptions } from "simple-git";
 import {
     ASK_PASS_INPUT_FILE,
     ASK_PASS_SCRIPT,
@@ -569,19 +569,17 @@ export class SimpleGit extends GitManager {
     async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {
         const dir = opts?.path;
         this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
-        const args = [
-            "ls-files",
-            "--others",
-            "--exclude-standard",
-            "--directory",
-        ];
+        const args = [];
         if (dir != undefined) {
             args.push("--", dir);
         }
-        const untrackedFiles = await this.git.raw(args);
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        const untrackedFiles = await this.git.clean(
+            CleanOptions.RECURSIVE + CleanOptions.DRY_RUN,
+            args
+        );
 
-        return untrackedFiles.split(/\r\n|\r|\n/).filter((e) => e.length > 0);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        return untrackedFiles.paths;
     }
 
     async hashObject(filepath: string): Promise<string> {
