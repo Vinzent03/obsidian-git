@@ -13,7 +13,7 @@ import {
     DEFAULT_WIN_GIT_PATH,
     GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
 } from "src/constants";
-import type { LineAuthorFollowMovement } from "src/lineAuthor/model";
+import type { LineAuthorFollowMovement } from "src/editor/lineAuthor/model";
 import { GeneralModal } from "src/ui/modals/generalModal";
 import type ObsidianGit from "../main";
 import type {
@@ -76,7 +76,7 @@ export class SimpleGit extends GitManager {
             const envVars = this.plugin.localStorage.getEnvVars();
             const gitDir = this.plugin.settings.gitDir;
             if (pathPaths.length > 0) {
-                const path = process.env["PATH"] + ":" + pathPaths.join(":");
+                const path = pathPaths.join(":") + ":" + process.env["PATH"];
                 process.env["PATH"] = path;
             }
             if (gitDir) {
@@ -169,32 +169,41 @@ export class SimpleGit extends GitManager {
         return filePath;
     }
 
-    async askpass(): Promise<void> {
+    private get absPluginConfigPath(): string {
         const adapter = this.app.vault.adapter as FileSystemAdapter;
         const vaultPath = adapter.getBasePath();
-        const absPluginConfigPath = path.join(
+        return path.join(
             vaultPath,
             this.app.vault.configDir,
             "plugins",
             "obsidian-git"
         );
+    }
+
+    private get relPluginConfigPath(): string {
+        return path.join(this.app.vault.configDir, "plugins", "obsidian-git");
+    }
+    async askpass(): Promise<void> {
+        const adapter = this.app.vault.adapter as FileSystemAdapter;
         const relPluginConfigDir =
             this.app.vault.configDir + "/plugins/obsidian-git/";
 
         await this.addAskPassScriptToExclude();
 
         await fsPromises.writeFile(
-            path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
+            path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
             ASK_PASS_SCRIPT
         );
         await fsPromises.chmod(
-            path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
+            path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
             0o755
         );
         this.watchAbortController = new AbortController();
         const { signal } = this.watchAbortController;
         try {
-            const watcher = fsPromises.watch(absPluginConfigPath, { signal });
+            const watcher = fsPromises.watch(this.absPluginConfigPath, {
+                signal,
+            });
 
             for await (const event of watcher) {
                 if (event.filename != ASK_PASS_INPUT_FILE) continue;
@@ -229,12 +238,12 @@ export class SimpleGit extends GitManager {
         } catch (error) {
             this.plugin.displayError(error);
             await fsPromises.rm(
-                path.join(absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
+                path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
                 { force: true }
             );
             await fsPromises.rm(
                 path.join(
-                    absPluginConfigPath,
+                    this.absPluginConfigPath,
                     `${ASK_PASS_SCRIPT_FILE}.response`
                 ),
                 { force: true }
@@ -341,7 +350,7 @@ export class SimpleGit extends GitManager {
         result.catch((err) =>
             console.warn("obsidian-git: rev-parse error:", err)
         );
-        return result;
+        return (await result).trim();
     }
 
     async getSubmodulePaths(): Promise<string[]> {
@@ -544,6 +553,17 @@ export class SimpleGit extends GitManager {
             await this.git.checkout(["--", filepath]);
         }
         this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+    }
+
+    async applyPatch(patch: string): Promise<void> {
+        const patchPath = path.join(this.relPluginConfigPath, "patch");
+        await this.app.vault.adapter.write(patchPath, patch);
+        await this.git.applyPatch(patchPath, {
+            "--cached": null,
+            "--unidiff-zero": null,
+            "--whitespace": "nowarn",
+        });
+        await this.app.vault.adapter.remove(patchPath);
     }
 
     async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {
@@ -1075,9 +1095,19 @@ export class SimpleGit extends GitManager {
     }
 
     async getLastCommitTime(): Promise<Date | undefined> {
-        const res = await this.git.log({ n: 1 });
-        if (res != null && res.latest != null) {
-            return new Date(res.latest.date);
+        try {
+            const res = await this.git.log({ n: 1 });
+            if (res != null && res.latest != null) {
+                return new Date(res.latest.date);
+            }
+        } catch (error) {
+            if (error instanceof GitError) {
+                if (error.message.contains("does not have any commits yet")) {
+                    return undefined;
+                }
+            } else {
+                throw error;
+            }
         }
     }
 
@@ -1116,6 +1146,7 @@ export class SimpleGit extends GitManager {
             const networkFailure =
                 message.contains("Could not resolve host") ||
                 message.contains("Unable to resolve host") ||
+                message.contains("Unable to open connection") ||
                 message.match(
                     /ssh: connect to host .*? port .*?: Operation timed out/
                 ) != null ||

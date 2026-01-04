@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.35.2](https://github.com/Vinzent03/obsidian-git/compare/2.35.1...2.35.2) (2025-11-05)
+
+
+### Bug Fixes
+
+* catch aborted clone depth modal ([d11579c](https://github.com/Vinzent03/obsidian-git/commit/d11579c96932f0b2c16c7306c5a05cfbae2509b1))
+* only check files to be committed for big files ([91654ef](https://github.com/Vinzent03/obsidian-git/commit/91654ef1e0a29fe4b8e67612b25c314a2cb95eb9)), closes [#966](https://github.com/Vinzent03/obsidian-git/issues/966)
+* prepend custom PATH instead of append ([b8da471](https://github.com/Vinzent03/obsidian-git/commit/b8da471eaf342eb3450cc13cc7a3c57887c7e7d3)), closes [#981](https://github.com/Vinzent03/obsidian-git/issues/981)
+* save edits from split diff view for repo not in vault root ([71fe8dc](https://github.com/Vinzent03/obsidian-git/commit/71fe8dc1be54bfb2aa9dd3d1861b778c212a3a35)), closes [#985](https://github.com/Vinzent03/obsidian-git/issues/985)
+* trim git object result ([0f3d368](https://github.com/Vinzent03/obsidian-git/commit/0f3d368fea440f4a703ea8db21798c2af6d64557))
+
+### [2.35.1](https://github.com/Vinzent03/obsidian-git/compare/2.35.0...2.35.1) (2025-09-19)
+
+
+### Bug Fixes
+
+* correctly abort selection when no branch selected ([23c009a](https://github.com/Vinzent03/obsidian-git/commit/23c009a2e9d23f0be6c882b2b992248e24bcf2da))
+* don't collapse changed files on stage and add bottom padding ([3832059](https://github.com/Vinzent03/obsidian-git/commit/38320597ec712804eecc04dfcd64ce774963c303))
+* get last commit time on branch without commits ([73300a1](https://github.com/Vinzent03/obsidian-git/commit/73300a1bf7c6333ea389a6792f73ea412b7f751d))
+* Prevent jitter of refresh icon in mobile ([#941](https://github.com/Vinzent03/obsidian-git/issues/941)) ([180a314](https://github.com/Vinzent03/obsidian-git/commit/180a314ca65bf666a8e15aaa07dc0d6b1e1ec838))
+* refresh view when staging files from menu ([1bd92c3](https://github.com/Vinzent03/obsidian-git/commit/1bd92c3961ac311312ff20e9fa2e3067a95c0434))
+
 ## [2.35.0](https://github.com/Vinzent03/obsidian-git/compare/2.34.0...2.35.0) (2025-08-07)
 
 

@@ -1,0 +1,120 @@
+import { editorInfoField, type Editor } from "obsidian";
+import { HunksStateHelper } from "./hunkState";
+import type { EditorView } from "codemirror";
+import type ObsidianGit from "src/main";
+import { Hunks } from "./hunks";
+import type { SimpleGit } from "src/gitManager/simpleGit";
+
+export class HunkActions {
+    constructor(private readonly plugin: ObsidianGit) {}
+
+    get editor(): { obEditor: Editor; editor: EditorView } | undefined {
+        const obEditor = this.plugin.app.workspace.activeEditor?.editor;
+        // @ts-expect-error, not typed
+        const editor = obEditor?.cm as EditorView;
+
+        if (!obEditor || !HunksStateHelper.hasHunksData(editor.state)) {
+            return undefined;
+        }
+        return { editor, obEditor };
+    }
+
+    private get gitManager(): SimpleGit {
+        return this.plugin.gitManager as SimpleGit;
+    }
+
+    resetHunk(pos?: number): void {
+        if (!this.editor) {
+            return;
+        }
+        const { editor, obEditor } = this.editor;
+        const hunk = HunksStateHelper.getHunk(editor.state, false, pos);
+        if (hunk) {
+            let lstart: number, lend: number;
+            if (hunk.type === "delete") {
+                lstart = hunk.added.start + 1;
+                lend = hunk.added.start + 1;
+            } else {
+                lstart = hunk.added.start - 0;
+                lend = hunk.added.start - 1 + hunk.added.count;
+            }
+            const from = editor.state.doc.line(lstart).from;
+            const to =
+                hunk.type === "delete"
+                    ? editor.state.doc.line(lend).from
+                    : editor.state.doc.line(lend).to + 1;
+            let lines = hunk.removed.lines.join("\n");
+            if (hunk.removed.lines.length > 0 && !hunk.removed.no_nl_at_eof) {
+                lines += "\n";
+            }
+
+            obEditor.replaceRange(
+                lines,
+                obEditor.offsetToPos(from),
+                obEditor.offsetToPos(to)
+            );
+
+            obEditor.setSelection(obEditor.offsetToPos(from));
+        }
+    }
+
+    async stageHunk(pos?: number): Promise<void> {
+        if (!(await this.plugin.isAllInitialized())) {
+            return;
+        }
+        if (!this.editor) {
+            return;
+        }
+        const { editor } = this.editor;
+
+        let hunk = HunksStateHelper.getHunk(editor.state, false, pos);
+        let invert = false;
+        if (!hunk) {
+            hunk = HunksStateHelper.getHunk(editor.state, true, pos);
+            invert = true;
+        }
+        if (!hunk) {
+            return;
+        }
+        const filepath = editor.state.field(editorInfoField).file!.path;
+
+        const patch =
+            Hunks.createPatch(filepath, [hunk], "100644", invert).join("\n") +
+            "\n";
+        await this.gitManager.applyPatch(patch);
+
+        this.plugin.app.workspace.trigger("obsidian-git:refresh");
+    }
+
+    goToHunk(direction: "first" | "last" | "next" | "prev"): void {
+        if (!this.editor) {
+            return;
+        }
+        const { editor, obEditor } = this.editor;
+        const hunks = HunksStateHelper.getHunks(editor.state, false);
+
+        const currentLine = obEditor.getCursor().line + 1;
+        const hunkIndex = Hunks.findNearestHunk(
+            currentLine,
+            hunks,
+            direction,
+            true
+        );
+        if (hunkIndex == undefined) {
+            return;
+        }
+        const hunk = hunks[hunkIndex];
+
+        if (hunk) {
+            const line = hunk.added.start - 1;
+            obEditor.setCursor(line, 0);
+            obEditor.scrollIntoView(
+                {
+                    from: { line: line, ch: 0 },
+                    to: { line: line + 1, ch: 0 },
+                },
+                true
+            );
+        }
+    }
+}

@@ -62,7 +62,7 @@ export class GeneralModal extends SuggestModal<string> {
         }
     }
 
-    openAndGetResult(): Promise<string> {
+    openAndGetResult(): Promise<string | undefined> {
         return new Promise((resolve) => {
             this.resolve = resolve;
             this.open();

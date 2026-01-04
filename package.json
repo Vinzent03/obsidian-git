@@ -1,6 +1,6 @@
 {
     "name": "obsidian-git",
-    "version": "2.35.0",
+    "version": "2.35.2",
     "description": "Integrate Git version control with automatic backup and other advanced features in Obsidian.md",
     "main": "main.js",
     "scripts": {
@@ -49,7 +49,7 @@
     },
     "dependencies": {
         "@codemirror/commands": "^6.8.1",
-        "@codemirror/merge": "^6.10.2",
+        "@codemirror/merge": "^6.11.2",
         "@codemirror/search": "^6.5.11",
         "@codemirror/state": "^6.5.2",
         "@codemirror/view": "^6.38.1",
@@ -58,12 +58,11 @@
         "css-color-converter": "^2.0.0",
         "debug": "^4.4.1",
         "deep-equal": "^2.2.3",
-        "diff": "^7.0.0",
+        "diff": "^8.0.0",
         "diff2html": "^3.4.52",
         "diff3": "^0.0.4",
         "isomorphic-git": "^1.32.2",
         "js-sha256": "^0.9.0",
-        "obsidian-community-lib": "github:Vinzent03/obsidian-community-lib#upgrade",
         "simple-git": "github:Vinzent03/git-js#release",
         "supports-color": "^9.4.0",
         "svelte": "^5.37.1"

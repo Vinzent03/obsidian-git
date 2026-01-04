@@ -20,6 +20,7 @@ export default class DiffView extends ItemView {
         super(leaf);
         this.parser = new DOMParser();
         this.navigation = true;
+        this.contentEl.addClass("git-diff");
         this.gitRefreshRef = this.app.workspace.on(
             "obsidian-git:status-changed",
             () => {
