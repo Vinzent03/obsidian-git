@@ -8,6 +8,12 @@
     }
 }
 
+.git-signs-gutter {
+    .cm-gutterElement {
+        padding-top: 0 !important;
+    }
+}
+
 .workspace-leaf-content[data-type="git-view"] .button-border {
     border: 2px solid var(--interactive-accent);
     border-radius: var(--radius-s);
