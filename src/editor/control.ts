@@ -6,6 +6,7 @@ import { eventsPerFilePathSingleton } from "./eventsPerFilepath";
 import type { LineAuthoring, LineAuthoringId } from "./lineAuthor/model";
 import { newComputationResultAsTransaction } from "./lineAuthor/model";
 import {
+    hunksState,
     newGitCompareResultAsTransaction,
     type GitCompareResult,
 } from "./signs/hunkState";
@@ -57,8 +58,16 @@ export class FileSubscriber {
 
         // using "this.state" directly here leads to some problems when closing panes. Hence, "this.view.state"
         const state = this.view.state;
-        const transaction = newGitCompareResultAsTransaction(data, state);
-        this.view.dispatch(transaction);
+        const hunkState = state.field(hunksState);
+        if (
+            !hunkState ||
+            hunkState.compareText != data.compareText ||
+            hunkState.compareTextHead != data.compareTextHead
+        ) {
+            const transaction = newGitCompareResultAsTransaction(data, state);
+
+            this.view.dispatch(transaction);
+        }
     }
 
     public updateToNewState(state: EditorState) {
