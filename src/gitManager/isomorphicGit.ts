@@ -89,6 +89,7 @@ export class IsomorphicGit extends GitManager {
                     const password = await new GeneralModal(this.plugin, {
                         placeholder:
                             "Specify your password/personal access token",
+                        obscure: true,
                     }).openAndGetResult();
                     if (password) {
                         this.plugin.localStorage.setUsername(username);
