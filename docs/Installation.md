@@ -60,6 +60,6 @@ $ flatpak run md.obsidian.Obsidian
 ```
 [Source of this snippet](https://github.com/flathub/md.obsidian.Obsidian/issues/5#issuecomment-736974662)
 
-## MacOS
+# MacOS
 
 Nothing specific.
