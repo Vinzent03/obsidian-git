@@ -6,9 +6,9 @@ A powerful community plugin for [Obsidian.md](Obsidian.md) that brings Git integ
 
 All setup instructions (including mobile), common issues, tips, and advanced configuration can be found in the 📖 [full documentation](https://publish.obsidian.md/git-doc).
 
-> 👉 Mobile users: The plugin is **highly unstable ⚠️ !** Please check the dedicated [Mobile](#-mobile-support-%EF%B8%8F--experimental) section below.
+> Mobile users: The plugin is **highly unstable ⚠️ !** Please check the dedicated [Mobile](#-mobile-support-%EF%B8%8F--experimental) section below.
 
-## ✨ Key Features
+## Key Features
 
 - 🔁 **Automatic commit-and-sync** (commit, pull, and push) on a schedule.
 - 📥 **Auto-pull on Obsidian startup**
@@ -16,9 +16,10 @@ All setup instructions (including mobile), common issues, tips, and advanced con
 - 🔧 **Source Control View** to stage/unstage, commit and diff files - Open it with the `Open source control view` command.
 - 📜 **History View** for browsing commit logs and changed files - Open it with the `Open history view` command.
 - 🔍 **Diff View** for viewing changes in a file - Open it with the `Open diff view` command.
-- 🔗 GitHub integration to open files and history in your browser
+- 📝 **Signs in the editor** to indicate added, modified, and deleted lines/hunks (desktop only).
+- GitHub integration to open files and history in your browser
 
-> 🧩 For detailed file history, consider pairing this plugin with the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin.
+> For detailed file history, consider pairing this plugin with the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin.
 
 ## UI Previews
 
@@ -41,7 +42,13 @@ Open it from the source control view or via the `Open diff view` command.
 
 ![Diff View](https://raw.githubusercontent.com/Vinzent03/obsidian-git/master/images/diff-view.png)
 
-## ⚙️ Available Commands
+### 📝 Signs in the Editor
+
+View line-by-line changes directly in the editor with added, modified, and deleted line/hunk indicators. You can stage and reset changes right from the signs. There also commands to navigate between hunks and stage/reset hunks under the cursor. Needs to be enabled in the plugin settings.
+
+![Signs](https://raw.githubusercontent.com/Vinzent03/obsidian-git/master/images/signs.png)
+
+## Available Commands
 > Not exhaustive - these are just some of the most common commands. For a full list, see the Command Palette in Obsidian.
 
 - 🔄 Changes
