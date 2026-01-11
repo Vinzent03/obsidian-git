@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.36.1](https://github.com/Vinzent03/obsidian-git/compare/2.36.0...2.36.1) (2026-01-11)
+
+
+### Bug Fixes
+
+* align font size in unified diff with Obsidian ([99b2522](https://github.com/Vinzent03/obsidian-git/commit/99b25224a0a38b2a9885ddada7bad6774e70cd7f)), closes [#1008](https://github.com/Vinzent03/obsidian-git/issues/1008)
+* align signs properly with different line heights ([5bdf09c](https://github.com/Vinzent03/obsidian-git/commit/5bdf09c464d25e6dfb8b685f64c2a3c5af901f79))
+* less gutter updates for same git result ([4da4c64](https://github.com/Vinzent03/obsidian-git/commit/4da4c647feded146f2e5896e20b50b2319415d0d))
+* obscure password prompt in isomorphic-git auth ([#1007](https://github.com/Vinzent03/obsidian-git/issues/1007)) ([174cad8](https://github.com/Vinzent03/obsidian-git/commit/174cad88ab81e232e6b14abaebe4482afefa3846))
+
 ## [2.36.0](https://github.com/Vinzent03/obsidian-git/compare/2.35.2...2.36.0) (2026-01-04)
 
 
