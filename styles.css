@@ -10,6 +10,9 @@
 
 .git-signs-gutter {
     .cm-gutterElement {
+        /* Needed to align the sign properly for different line heigts. Such as
+         * when having a heading or list item.
+         */
         padding-top: 0 !important;
     }
 }
@@ -270,7 +273,7 @@ which itself is adapted from the diff2html library with the following original l
     .d2h-diff-table {
         border-collapse: collapse;
         font-family: var(--font-monospace);
-        font-size: var(--font-text-size);
+        font-size: var(--code-size);
         width: 100%;
     }
     .d2h-files-diff {
@@ -281,6 +284,8 @@ which itself is adapted from the diff2html library with the following original l
 		overflow-y: scroll;
 		*/
         border-radius: 5px;
+        font-size: var(--font-text-size);
+        line-height: var(--line-height-normal);
     }
     .d2h-file-side-diff {
         display: inline-block;
