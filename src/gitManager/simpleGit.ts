@@ -700,7 +700,7 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async push(): Promise<number | undefined> {
+    async push(): Promise<number | undefined | null> {
         this.plugin.setPluginState({ gitAction: CurrentGitAction.push });
         try {
             if (this.plugin.settings.updateSubmodules) {
@@ -714,7 +714,7 @@ export class SimpleGit extends GitManager {
                 console.log(res);
             }
             const status = await this.git.status();
-            const trackingBranch = status.tracking!;
+            const trackingBranch = status.tracking;
             const currentBranch = status.current!;
 
             if (!trackingBranch && this.plugin.settings.updateSubmodules) {
@@ -723,14 +723,16 @@ export class SimpleGit extends GitManager {
                 );
                 return undefined;
             }
-
-            const remoteChangedFiles = (
-                await this.git.diffSummary([
-                    currentBranch,
-                    trackingBranch,
-                    "--",
-                ])
-            ).changed;
+            let remoteChangedFiles: number | null = null;
+            if (trackingBranch) {
+                remoteChangedFiles = (
+                    await this.git.diffSummary([
+                        currentBranch,
+                        trackingBranch,
+                        "--",
+                    ])
+                ).changed;
+            }
 
             await this.git.env({ ...process.env, OBSIDIAN_GIT: 1 }).push();
 
@@ -938,9 +940,17 @@ export class SimpleGit extends GitManager {
         }
     }
 
-    async getConfig(path: string): Promise<string | undefined> {
-        const config = await this.git.listConfig("local");
-        const res = config.all[path];
+    async getConfig(
+        path: string,
+        scope: "local" | "global" | "all" = "local"
+    ): Promise<string | undefined> {
+        let config: simple.ConfigListSummary;
+        if (scope == "all") {
+            config = await this.git.listConfig();
+        } else {
+            config = await this.git.listConfig(scope);
+        }
+        const res = config.all[path.toLowerCase()];
         if (typeof res === "string" || res == undefined) {
             return res;
         } else {

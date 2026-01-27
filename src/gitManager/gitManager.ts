@@ -58,7 +58,14 @@ export abstract class GitManager {
 
     abstract pull(): Promise<FileStatusResult[] | undefined>;
 
-    abstract push(): Promise<number | undefined>;
+    /**
+     * Pushes to the remote repository.
+     *
+     * @returns `numper`: number of pushed files
+     * @returns `undefined` for other states, but a notification is done elsewhere
+     * @returns `null` if push was successful, but changed files could not be determined
+     */
+    abstract push(): Promise<number | undefined | null>;
 
     abstract getUnpushedCommits(): Promise<number>;
 
@@ -87,7 +94,10 @@ export abstract class GitManager {
         value: string | number | boolean | undefined
     ): Promise<void>;
 
-    abstract getConfig(path: string): Promise<string | undefined>;
+    abstract getConfig(
+        path: string,
+        scope?: string
+    ): Promise<string | undefined>;
 
     abstract fetch(remote?: string): Promise<void>;
 

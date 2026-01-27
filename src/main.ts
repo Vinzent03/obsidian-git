@@ -1076,7 +1076,9 @@ export default class ObsidianGit extends Plugin {
             const pushedFiles = await this.gitManager.push();
 
             if (pushedFiles !== undefined) {
-                if (pushedFiles > 0) {
+                if (pushedFiles === null) {
+                    this.displayMessage(`Pushed to remote`);
+                } else if (pushedFiles > 0) {
                     this.displayMessage(
                         `Pushed ${pushedFiles} ${
                             pushedFiles == 1 ? "file" : "files"
@@ -1270,6 +1272,13 @@ export default class ObsidianGit extends Plugin {
      */
     async remotesAreSet(): Promise<boolean> {
         if (this.settings.updateSubmodules) {
+            return true;
+        }
+        if (
+            this.gitManager instanceof SimpleGit &&
+            (await this.gitManager.getConfig("push.autoSetupRemote", "all")) ==
+                "true"
+        ) {
             return true;
         }
         if (!(await this.gitManager.branchInfo()).tracking) {
