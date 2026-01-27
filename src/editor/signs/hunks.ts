@@ -1,3 +1,10 @@
+/**
+ * This file contains code translated from Lua to TypeScript.
+ * Original Source: https://github.com/lewis6991/gitsigns.nvim/blob/main/lua/gitsigns/hunks.lua
+ * Original Author: Lewis Russell
+ * License: MIT
+ * Original Copyright (c) 2020 Lewis Russell
+ */
 import type { GitCompareResult } from "./hunkState";
 
 export type HunkType = "add" | "change" | "delete";
@@ -31,16 +38,6 @@ export interface StatusObj {
     changed: number;
     removed: number;
 }
-
-export interface HlMark {
-    start_row: number;
-    hl_group: string;
-    end_row?: number;
-    start_col?: number;
-    end_col?: number;
-}
-
-export type LineSpec = [[string, HlMark[], string?]];
 
 export abstract class Hunks {
     static createHunk(
@@ -556,36 +553,5 @@ export abstract class Hunks {
         //     }
         // }
         return filteredHunks;
-    }
-
-    linespecForHunk(hunk: Hunk, stripCr: boolean = false): LineSpec[] {
-        const hls: LineSpec[] = [];
-
-        let removed = hunk.removed.lines;
-        let added = hunk.added.lines;
-
-        if (stripCr) {
-            removed = removed.map((l) => l.replace(/\r$/, ""));
-            added = added.map((l) => l.replace(/\r$/, ""));
-        }
-
-        for (const spec of [
-            { sym: "-", lines: removed, hl: "GitSignsDeletePreview" },
-            { sym: "+", lines: added, hl: "GitSignsAddPreview" },
-        ]) {
-            for (const l of spec.lines) {
-                const mark: HlMark = {
-                    start_row: 0,
-                    hl_group: spec.hl,
-                    end_row: 1,
-                };
-                hls.push([[spec.sym + l, [mark]]]);
-            }
-        }
-
-        // Note: Word diff functionality would require porting diff_int module
-        // Placeholder for internal diff highlighting
-
-        return hls;
     }
 }
