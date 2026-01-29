@@ -282,32 +282,30 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             new Setting(containerEl).setName("Commit message").setHeading();
 
-            new Setting(containerEl)
+            const manualCommitMessageSetting = new Setting(containerEl)
                 .setName("Commit message on manual commit")
                 .setDesc(
                     "Available placeholders: {{date}}" +
                         " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message). Leave empty to require manual input on each commit."
-                )
-                .addTextArea((text) => {
-                    text.setValue(plugin.settings.commitMessage);
-                    text.onChange(async (value) => {
-                        plugin.settings.commitMessage = value;
-                        await plugin.saveSettings();
-                    });
-                })
-                .addButton((button) => {
+                );
+            manualCommitMessageSetting.addTextArea((text) => {
+                manualCommitMessageSetting.addButton((button) => {
                     button
-                        .setButtonText("Default")
+                        .setIcon("reset")
                         .setTooltip(
                             `Set to default: "${DEFAULT_SETTINGS.commitMessage}"`
                         )
-                        .onClick(async () => {
-                            plugin.settings.commitMessage =
-                                DEFAULT_SETTINGS.commitMessage;
-                            await plugin.saveSettings();
-                            this.display();
+                        .onClick(() => {
+                            text.setValue(DEFAULT_SETTINGS.commitMessage);
+                            text.onChanged();
                         });
                 });
+                text.setValue(plugin.settings.commitMessage);
+                text.onChange(async (value) => {
+                    plugin.settings.commitMessage = value;
+                    await plugin.saveSettings();
+                });
+            });
 
             new Setting(containerEl)
                 .setName("Commit message script")
