@@ -163,7 +163,15 @@ export type LineAuthorSettings = {
     textColorCss: string;
     ignoreWhitespace: boolean;
     gutterSpacingFallbackLength: number;
+    /** Where to display line author info */
+    displayLocation: LineAuthorDisplayLocation;
+    /** What to display in the status bar */
+    statusBarDisplayOptions: LineAuthorStatusBarDisplay;
 };
+
+export type LineAuthorStatusBarDisplay = "author" | "date" | "author+date";
+
+export type LineAuthorDisplayLocation = "gutter" | "status-bar" | "both";
 
 export type LineAuthorFollowMovement =
     | "inactive"

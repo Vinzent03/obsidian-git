@@ -12,6 +12,7 @@ import { handleContextMenu } from "./view/contextMenu";
 import { setTextColorCssBasedOnSetting } from "./view/gutter/coloring";
 import { prepareGutterSearchForContextMenuHandling } from "./view/gutter/gutterElementSearch";
 import type ObsidianGit from "src/main";
+import { LineAuthorStatusBar } from "./lineAuthorStatusBar";
 
 /**
  * Manages the interaction between Obsidian (file-open event, modification event, etc.)
@@ -28,6 +29,7 @@ export class LineAuthoringFeature {
     private fileRenameEvent?: EventRef;
     private gutterContextMenuEvent?: EventRef;
     private codeMirrorExtensions: Extension[] = [];
+    public lineAuthorStatusBar?: LineAuthorStatusBar;
 
     constructor(private plg: ObsidianGit) {}
 
@@ -54,13 +56,36 @@ export class LineAuthoringFeature {
         try {
             if (!this.isAvailableOnCurrentPlatform().available) return;
 
+            const displayLocation =
+                this.plg.settings.lineAuthor.displayLocation ?? "gutter";
+
             setTextColorCssBasedOnSetting(this.plg.settings.lineAuthor);
 
             this.lineAuthorInfoProvider = new LineAuthorProvider(this.plg);
 
             this.createEventHandlers();
 
+            // Always activate CodeMirror extensions (needed for status bar to read state)
             this.activateCodeMirrorExtensions();
+
+            // Hide gutter if displayLocation is "status-bar" only
+            if (displayLocation === "status-bar") {
+                document.body.addClass("git-line-author-hide-gutter");
+            } else {
+                document.body.removeClass("git-line-author-hide-gutter");
+            }
+
+            // Create status bar if displayLocation is "status-bar" or "both"
+            if (
+                displayLocation === "status-bar" ||
+                displayLocation === "both"
+            ) {
+                const statusBarEl = this.plg.addStatusBarItem();
+                this.lineAuthorStatusBar = new LineAuthorStatusBar(
+                    statusBarEl,
+                    this.plg
+                );
+            }
 
             console.log(this.plg.manifest.name + ": Enabled line authoring.");
         } catch (e) {
@@ -80,6 +105,11 @@ export class LineAuthoringFeature {
 
         this.lineAuthorInfoProvider?.destroy();
         this.lineAuthorInfoProvider = undefined;
+
+        this.lineAuthorStatusBar?.remove();
+        this.lineAuthorStatusBar = undefined;
+
+        document.body.removeClass("git-line-author-hide-gutter");
 
         console.log(this.plg.manifest.name + ": Disabled line authoring.");
     }

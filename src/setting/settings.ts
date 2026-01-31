@@ -18,8 +18,10 @@ import { previewColor } from "src/editor/lineAuthor/lineAuthorProvider";
 import type {
     LineAuthorDateTimeFormatOptions,
     LineAuthorDisplay,
+    LineAuthorDisplayLocation,
     LineAuthorFollowMovement,
     LineAuthorSettings,
+    LineAuthorStatusBarDisplay,
     LineAuthorTimezoneOption,
 } from "src/editor/lineAuthor/model";
 import type ObsidianGit from "src/main";
@@ -1111,6 +1113,66 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         this.lineAuthorSettingHandler("showCommitHash", value)
                     );
                 });
+
+            new Setting(this.containerEl)
+                .setName("Display location")
+                .setDesc("Choose where to display line author information.")
+                .addDropdown((dropdown) => {
+                    const options: Record<LineAuthorDisplayLocation, string> = {
+                        gutter: "Gutter (left side, default)",
+                        "status-bar": "Status bar (bottom)",
+                        both: "Both",
+                    };
+                    dropdown.addOptions(options);
+                    dropdown.setValue(
+                        this.settings.lineAuthor.displayLocation ?? "gutter"
+                    );
+                    dropdown.onChange(
+                        async (value: LineAuthorDisplayLocation) => {
+                            await this.lineAuthorSettingHandler(
+                                "displayLocation",
+                                value
+                            );
+                            this.refreshDisplayWithDelay();
+                        }
+                    );
+                });
+
+            const displayLocation =
+                this.settings.lineAuthor.displayLocation ?? "gutter";
+            const showStatusBarOptions =
+                displayLocation === "status-bar" || displayLocation === "both";
+
+            if (showStatusBarOptions) {
+                new Setting(this.containerEl)
+                    .setName("Status bar content")
+                    .setDesc(
+                        "Choose what information to show in the status bar."
+                    )
+                    .addDropdown((dropdown) => {
+                        const options: Record<
+                            LineAuthorStatusBarDisplay,
+                            string
+                        > = {
+                            author: "Author only",
+                            date: "Date only",
+                            "author+date": "Author and date (default)",
+                        };
+                        dropdown.addOptions(options);
+                        dropdown.setValue(
+                            this.settings.lineAuthor.statusBarDisplayOptions ??
+                                "author+date"
+                        );
+                        dropdown.onChange(
+                            async (value: LineAuthorStatusBarDisplay) => {
+                                await this.lineAuthorSettingHandler(
+                                    "statusBarDisplayOptions",
+                                    value
+                                );
+                            }
+                        );
+                    });
+            }
 
             new Setting(this.containerEl)
                 .setName("Author name display")
