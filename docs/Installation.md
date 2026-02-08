@@ -62,4 +62,59 @@ $ flatpak run md.obsidian.Obsidian
 
 # MacOS
 
-Nothing specific.
+Homebrew is an open source package manager for macOS that simplifies installing, updating, and managing software from the command line. This is a highly recommended tool since macOS does not include a built in package manager.
+
+## Prerequisites
+
+1. Ensure you have Apple macOS `Catalina (10.15)` or newer
+2. Older macOS releases may work but are not officially supported.
+3. Install Xcode Command Line Tools
+
+```zsh
+xcode-select --install
+```
+
+## Install Homebrew
+
+Run the Homebrew installer script and then execute it
+
+```zsh
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+If the installer does not automatically add Homebrew to your PATH, add the appropriate directory for your Mac architecture and then reload your shell.
+
+- Intel Macs
+
+```zsh
+export PATH=/usr/local/bin:$PATH
+```
+
+- Apple Silicon Macs
+
+```zsh
+export PATH=/opt/homebrew/bin:$PATH
+```
+
+- Reload the shell
+
+```zsh
+source ~/.zprofile
+# or
+source ~/.zshrc
+```
+
+## Install Git
+
+```zsh
+brew install git
+```
+
+## Install Obsidian
+
+Install Obsidian using Homebrew Cask
+
+```zsh
+brew install --cask obsidian
+```
+
