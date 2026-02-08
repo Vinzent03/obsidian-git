@@ -124,6 +124,13 @@ export class SimpleGit extends GitManager {
             if (process.env["SSH_ASKPASS"] == undefined) {
                 process.env["SSH_ASKPASS"] = askPassPath;
             }
+
+            // OpenSSH requires DISPLAY variable to be set for SSH_ASKPASS to
+            // detect a graphical environment. This is not the case for e.g.
+            // Windows. Setting SSH_ASKPASS_REQUIRE to "force" makes it use
+            // SSH_ASKPASS even without DISPLAY, which allows the askpass script
+            // to work on Windows as well.
+            process.env["SSH_ASKPASS_REQUIRE"] = "force";
             process.env["OBSIDIAN_GIT_CREDENTIALS_INPUT"] = path.join(
                 absolutePluginConfigPath,
                 ASK_PASS_INPUT_FILE
@@ -209,6 +216,9 @@ export class SimpleGit extends GitManager {
                 if (event.filename != ASK_PASS_INPUT_FILE) continue;
                 const triggerFilePath =
                     relPluginConfigDir + ASK_PASS_INPUT_FILE;
+
+                // Wait a bit to ensure the file is fully removed
+                await new Promise((res) => setTimeout(res, 200));
                 if (!(await adapter.exists(triggerFilePath))) continue;
 
                 const data = await adapter.read(triggerFilePath);
@@ -264,6 +274,9 @@ export class SimpleGit extends GitManager {
      */
     async addAskPassScriptToExclude(): Promise<void> {
         try {
+            if (!(await this.git.checkIsRepo())) {
+                return;
+            }
             const absoluteExcludeFilePath = await this.git.revparse([
                 "--path-format=absolute",
                 "--git-path",
@@ -930,6 +943,9 @@ export class SimpleGit extends GitManager {
             ),
             depth ? ["--depth", `${depth}`] : []
         );
+
+        // Set required attributes like `absoluteRepoPath` and add the script to the exclude file if needed.
+        await this.setGitInstance();
     }
 
     async setConfig(path: string, value: string | undefined): Promise<void> {

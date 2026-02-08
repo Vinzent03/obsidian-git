@@ -93,7 +93,7 @@ export const DIFF_VIEW_CONFIG = {
 };
 
 export const DEFAULT_WIN_GIT_PATH = "C:\\Program Files\\Git\\cmd\\git.exe";
-export const ASK_PASS_INPUT_FILE = "git_credentials_input";
+export const ASK_PASS_INPUT_FILE = ".git_credentials_input";
 export const ASK_PASS_SCRIPT_FILE = "obsidian_askpass.sh";
 
 export const ASK_PASS_SCRIPT = `#!/bin/sh
