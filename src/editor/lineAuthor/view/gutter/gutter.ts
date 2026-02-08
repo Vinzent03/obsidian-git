@@ -1,6 +1,6 @@
 import { GutterMarker } from "@codemirror/view";
 import { sha256 } from "js-sha256";
-import { moment } from "obsidian";
+import { moment, setTooltip } from "obsidian";
 import { DATE_FORMAT, DATE_TIME_FORMAT_MINUTES } from "src/constants";
 import type {
     LineAuthorDateTimeFormatOptions,
@@ -185,6 +185,9 @@ export class LineAuthoringGutter extends GutterMarker {
             "data-author-email",
             commit?.author?.email ?? ""
         );
+
+        setTooltip(templateElt, commit?.summary ?? "");
+
         enrichCommitInfoForContextMenu(commit, isWaitingGutter, templateElt);
 
         function prepareForDomAttachment(): HTMLElement {
