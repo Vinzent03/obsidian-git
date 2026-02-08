@@ -3,8 +3,9 @@ import tsParser from "@typescript-eslint/parser";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintPluginSvelte from "eslint-plugin-svelte";
+import { defineConfig } from "eslint/config";
 
-export default tseslint.config(
+export default defineConfig(
     {
         ignores: ["**/node_modules/", "**/main.js"],
     },

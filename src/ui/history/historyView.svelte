@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { setIcon, type EventRef } from "obsidian";
+    import { setIcon } from "obsidian";
     import { SimpleGit } from "src/gitManager/simpleGit";
     import type ObsidianGit from "src/main";
     import type { LogEntry } from "src/types";
-    import { onDestroy, onMount } from "svelte";
+    import { onMount } from "svelte";
     import LogComponent from "./components/logComponent.svelte";
     import type HistoryView from "./historyView";
 
@@ -17,7 +17,6 @@
     let buttons: HTMLElement[] = $state([]);
     let logs: LogEntry[] | undefined = $state();
     let showTree: boolean = $state(plugin.settings.treeStructure);
-    let refreshRef: EventRef;
 
     let layoutBtn: HTMLElement | undefined = $state();
 
@@ -27,17 +26,17 @@
         }
     });
 
-    refreshRef = view.app.workspace.on(
-        "obsidian-git:head-change",
-        () => void refresh().catch(console.error)
-    );
+    onMount(() => {
+        view.registerEvent(
+            view.app.workspace.on(
+                "obsidian-git:head-change",
+                () => void refresh().catch(console.error)
+            )
+        );
+    });
 
     $effect(() => {
         buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
-    });
-
-    onDestroy(() => {
-        view.app.workspace.offref(refreshRef);
     });
 
     onMount(() => {
