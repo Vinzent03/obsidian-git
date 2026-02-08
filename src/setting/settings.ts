@@ -282,29 +282,30 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             new Setting(containerEl).setName("Commit message").setHeading();
 
-            new Setting(containerEl)
+            const manualCommitMessageSetting = new Setting(containerEl)
                 .setName("Commit message on manual commit")
                 .setDesc(
                     "Available placeholders: {{date}}" +
-                        " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message)."
-                )
-                .addTextArea((text) => {
-                    text.setPlaceholder(
-                        DEFAULT_SETTINGS.commitMessage
-                    ).onChange(async (value) => {
-                        if (value === "") {
-                            plugin.settings.commitMessage =
-                                DEFAULT_SETTINGS.commitMessage;
-                        } else {
-                            plugin.settings.commitMessage = value;
-                        }
-                        await plugin.saveSettings();
-                    });
-                    this.setNonDefaultValue({
-                        text,
-                        settingsProperty: "commitMessage",
-                    });
+                        " (see below), {{hostname}} (see below), {{numFiles}} (number of changed files in the commit) and {{files}} (changed files in commit message). Leave empty to require manual input on each commit."
+                );
+            manualCommitMessageSetting.addTextArea((text) => {
+                manualCommitMessageSetting.addButton((button) => {
+                    button
+                        .setIcon("reset")
+                        .setTooltip(
+                            `Set to default: "${DEFAULT_SETTINGS.commitMessage}"`
+                        )
+                        .onClick(() => {
+                            text.setValue(DEFAULT_SETTINGS.commitMessage);
+                            text.onChanged();
+                        });
                 });
+                text.setValue(plugin.settings.commitMessage);
+                text.onChange(async (value) => {
+                    plugin.settings.commitMessage = value;
+                    await plugin.saveSettings();
+                });
+            });
 
             new Setting(containerEl)
                 .setName("Commit message script")

@@ -996,6 +996,16 @@ export default class ObsidianGit extends Plugin {
                         cmtMessage = res.stdout;
                     }
                 }
+
+                // Check if commit message is empty after all processing
+                if (!cmtMessage || cmtMessage.trim() === "") {
+                    new Notice("Commit aborted: No commit message provided");
+                    this.setPluginState({
+                        gitAction: CurrentGitAction.idle,
+                    });
+                    return false;
+                }
+
                 let committedFiles: number | undefined;
                 if (onlyStaged) {
                     committedFiles = await this.gitManager.commit({
