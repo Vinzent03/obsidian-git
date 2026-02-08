@@ -170,7 +170,7 @@ export class LineAuthoringGutter extends GutterMarker {
     ) {
         const templateElt = window.createDiv();
 
-        templateElt.innerText = text;
+        templateElt.setText(text);
 
         const { color, daysSinceCommit } = coloringBasedOnCommitAge(
             commit?.author?.epochSeconds,
@@ -180,6 +180,11 @@ export class LineAuthoringGutter extends GutterMarker {
 
         templateElt.style.backgroundColor = color;
 
+        templateElt.setAttribute("data-author", commit?.author?.name ?? "");
+        templateElt.setAttribute(
+            "data-author-email",
+            commit?.author?.email ?? ""
+        );
         enrichCommitInfoForContextMenu(commit, isWaitingGutter, templateElt);
 
         function prepareForDomAttachment(): HTMLElement {
