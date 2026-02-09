@@ -14,9 +14,22 @@ git config --global credential.helper osxkeychain
 
 You have to do one authentication action (clone/pull/push) after setting the helper in the terminal. After that you should be able to clone/pull/push in Obsidian without any issues.
 
-## SSH
+To remove or update stored credentials, open Keychain Access, search for entries for your remote host (e.g. github.com), and delete or update the matching entry.
 
-Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#adding-your-ssh-key-to-the-ssh-agent).
+![[keychain-access-macos-git.png|40%]]
+
+For more details see GitHub documentation on [Caching Credentials](https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git)
+
+If the osxkeychain helper is missing or the command fails, update Git using Homebrew or download it from https://git-scm.com
+
+### SSH
+
+macOS includes native SSH support. For concise provider documentation, see GitHub pages on generating an SSH key and adding it to the ssh-agent.
+
+- [Generate a key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
+- [Add the key to the agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
+
 
 # Windows
 
@@ -83,5 +96,20 @@ You should get a new window to enter your username/password when using a Git act
 #### SSH_PASS integrated in Obsidian
 The plugin now automatically provides an integrated script for the `SSH_ASKPASS` environment variable, if no other program is set, that opens a modal in Obsidian whenever Git asks for username or password.
 
-## SSH
+#### SSH
 With one of the above [[#SSH_PASS Tools]]  installed to enter your passphrase, you can use ssh with a passphrase. Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linuxu#adding-your-ssh-key-to-the-ssh-agent).
+
+# MacOS
+
+## HTTPS
+
+### Storing
+Configure Git to store HTTPS credentials in the macOS keychain with this command.
+
+```zsh
+git config --global credential.helper osxkeychain
+```
+
+Perform one authentication action, for example clone, pull, or push, after setting the helper so the credentials are saved in Keychain Access.
+
+
