@@ -98,18 +98,3 @@ The plugin now automatically provides an integrated script for the `SSH_ASKPASS`
 
 #### SSH
 With one of the above [[#SSH_PASS Tools]]  installed to enter your passphrase, you can use ssh with a passphrase. Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linuxu#adding-your-ssh-key-to-the-ssh-agent).
-
-# MacOS
-
-## HTTPS
-
-### Storing
-Configure Git to store HTTPS credentials in the macOS keychain with this command.
-
-```zsh
-git config --global credential.helper osxkeychain
-```
-
-Perform one authentication action, for example clone, pull, or push, after setting the helper so the credentials are saved in Keychain Access.
-
-
