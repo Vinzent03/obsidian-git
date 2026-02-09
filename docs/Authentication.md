@@ -96,5 +96,5 @@ You should get a new window to enter your username/password when using a Git act
 #### SSH_PASS integrated in Obsidian
 The plugin now automatically provides an integrated script for the `SSH_ASKPASS` environment variable, if no other program is set, that opens a modal in Obsidian whenever Git asks for username or password.
 
-#### SSH
+## SSH
 With one of the above [[#SSH_PASS Tools]]  installed to enter your passphrase, you can use ssh with a passphrase. Remember you still have to setup ssh correctly, like adding your SSH key to the `ssh-agent`. GitHub provides a great documentation on how to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linux#generating-a-new-ssh-key) and then on how to [add the SSH key to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=linuxu#adding-your-ssh-key-to-the-ssh-agent).
