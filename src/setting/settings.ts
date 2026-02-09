@@ -45,6 +45,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         super(app, plugin);
     }
 
+    icon = "git-pull-request";
+
     private get settings() {
         return this.plugin.settings;
     }
