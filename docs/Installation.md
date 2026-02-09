@@ -29,7 +29,8 @@ Installing [GitHub Desktop](https://github.com/apps/desktop) is **not** enough! 
 Install Git from the official [website](https://git-scm.com/download/win) with all default settings.
 Make sure you have `3rd-party software` access enabled.
 
-![[third-party-windows-git.png]]
+<img src="/docs/assets/third-party-windows-git.png" alt="third-party-windows-git" width="50%" height="50%">
+
 
 Enable Git Credential Manager. You can verify this for existing installations by executing the following. It should ouput `manager`.
 
@@ -37,7 +38,7 @@ Enable Git Credential Manager. You can verify this for existing installations by
 git config credential.helper
 ```
 
-![[credential-manager-windows-git.png]]
+<img src="/docs/assets/credential-manager-windows-git.png" alt="credential-manager-windows-git" width="50%" height="50%">
 
 
 # Linux

@@ -16,7 +16,7 @@ You have to do one authentication action (clone/pull/push) after setting the hel
 
 To remove or update stored credentials, open Keychain Access, search for entries for your remote host (e.g. github.com), and delete or update the matching entry.
 
-![[keychain-access-macos-git.png|40%]]
+<img src="/docs/assets/keychain-access-macos-git.png" alt="keychain-access-macos-git" width="50%" height="50%">
 
 For more details see GitHub documentation on [Caching Credentials](https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git)
 
