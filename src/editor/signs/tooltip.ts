@@ -10,7 +10,7 @@ import { Hunks, type Hunk } from "./hunks";
 import { html } from "diff2html";
 import { ColorSchemeType } from "diff2html/lib/types";
 import { pluginRef } from "src/pluginGlobalRef";
-import { editorEditorField, setIcon } from "obsidian";
+import { editorEditorField, MarkdownView, setIcon } from "obsidian";
 
 const selectHunkEffectType = StateEffect.define<{
     pos: number;
@@ -179,8 +179,23 @@ function createTooltip(
         togglePreviewHunk(editor, pos);
     };
 
+    const scope =
+        pluginRef.plugin?.app.workspace.getActiveViewOfType(
+            MarkdownView
+        )?.scope;
+
+    const eventHandler = scope?.register(null, "Escape", (_, __) => {
+        // close on escape
+        togglePreviewHunk(editor, pos);
+    });
+
     return {
         dom: contentEl,
+        destroy: () => {
+            if (eventHandler) {
+                scope?.unregister(eventHandler);
+            }
+        },
         update: (update) => {
             pos = update.changes.mapPos(pos);
         },
