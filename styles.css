@@ -703,3 +703,31 @@ div:hover > .git-gutter-marker.git-changedelete {
 .git-changes-status-bar .git-change {
     margin-right: 0.3em;
 }
+
+/* ====================== Line Author Status Bar ====================== */
+
+.git-line-author-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+}
+
+.git-line-author-status-bar .git-line-author-info {
+    color: var(--text-muted);
+    font-size: var(--status-bar-font-size);
+}
+
+.git-line-author-status-bar .git-line-author-untracked {
+    color: var(--text-faint);
+    font-style: italic;
+}
+
+.git-line-author-status-bar .git-line-author-uncommitted {
+    color: var(--color-yellow);
+}
+
+/* Hide gutter when only status bar is enabled */
+.git-line-author-hide-gutter .cm-gutterElement.obs-git-blame-gutter,
+.git-line-author-hide-gutter .line-author-gutter-container {
+    display: none !important;
+}
