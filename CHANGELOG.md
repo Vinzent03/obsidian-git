@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.37.0](https://github.com/Vinzent03/obsidian-git/compare/2.36.1...2.37.0) (2026-02-13)
+
+
+### Features
+
+* add settings pane icon ([5ea08b8](https://github.com/Vinzent03/obsidian-git/commit/5ea08b874e2bfdc532e8e351921a4a3d97ff41bb))
+* allow empty default manual commit message ([#1022](https://github.com/Vinzent03/obsidian-git/issues/1022)) ([20c942e](https://github.com/Vinzent03/obsidian-git/commit/20c942e4780e9ed272c92824f89b703dd59f53db))
+* close hunk preview with escape key ([fd9bef8](https://github.com/Vinzent03/obsidian-git/commit/fd9bef871ceed52834cae41add670ed5d59420b5)), closes [#1027](https://github.com/Vinzent03/obsidian-git/issues/1027)
+* respect push.autoSetupRemote config ([bde2b3d](https://github.com/Vinzent03/obsidian-git/commit/bde2b3df909e4557e15591d6def20a80e15cec40)), closes [#1020](https://github.com/Vinzent03/obsidian-git/issues/1020)
+* set author info as html attribute in line author information ([fad0dae](https://github.com/Vinzent03/obsidian-git/commit/fad0dae28391cba62744103165ddf0a909fa1014)), closes [#1017](https://github.com/Vinzent03/obsidian-git/issues/1017)
+* show commit summary as tooltip in line author information ([8746e4a](https://github.com/Vinzent03/obsidian-git/commit/8746e4a4f9591a0f83c42d71b1cdb44911364f80))
+
+
+### Bug Fixes
+
+* some ssh askpass fixes ([b89d095](https://github.com/Vinzent03/obsidian-git/commit/b89d095a2b8a2b6ef943772c0d54602be74e6229)), closes [#994](https://github.com/Vinzent03/obsidian-git/issues/994)
+
 ### [2.36.1](https://github.com/Vinzent03/obsidian-git/compare/2.36.0...2.36.1) (2026-01-11)
 
 
