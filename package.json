@@ -30,7 +30,7 @@
         "@types/diff": "^5.2.3",
         "@types/diff3": "^0.0.2",
         "@types/node": "^22.19.10",
-        "@typescript-eslint/parser": "8.47.0", // From 8.48.0 on, types in svelte files are no longer recognized.
+        "@typescript-eslint/parser": "8.47.0",
         "esbuild": "^0.24.2",
         "esbuild-svelte": "^0.8.2",
         "eslint": "^9.39.2",
