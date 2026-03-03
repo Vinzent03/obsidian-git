@@ -1,3 +1,4 @@
+import { hostname as osHostname } from "os";
 import { type App, moment } from "obsidian";
 import type ObsidianGit from "../main";
 import type {
@@ -274,7 +275,14 @@ export abstract class GitManager {
             template = template.replace("{{numFiles}}", String(numFiles));
         }
         if (template.includes("{{hostname}}")) {
-            const hostname = this.plugin.localStorage.getHostname() || "";
+            let hostname = this.plugin.localStorage.getHostname() || "";
+            if (!hostname) {
+                try {
+                    hostname = osHostname();
+                } catch {
+                    // os module not available (e.g., on mobile)
+                }
+            }
             template = template.replace("{{hostname}}", hostname);
         }
 
