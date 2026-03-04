@@ -347,7 +347,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("{{hostname}} placeholder replacement")
                 .setDesc(
-                    "Specify custom hostname for every device. Defaults to the OS hostname if not set."
+                    "Specify custom hostname for every device. Defaults to the OS hostname if not set on desktop."
                 )
                 .addText((text) =>
                     text
