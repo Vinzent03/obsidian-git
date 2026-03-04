@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.38.0](https://github.com/Vinzent03/obsidian-git/compare/2.37.1...2.38.0) (2026-03-04)
+
+
+### Features
+
+* Default {{hostname}} placeholder to OS hostname when not explicitly configured ([#1044](https://github.com/Vinzent03/obsidian-git/issues/1044)) ([1cc045d](https://github.com/Vinzent03/obsidian-git/commit/1cc045dbc2a93b33d6c0ef02e6752a889685efdd))
+
+
+### Bug Fixes
+
+* do not alter Obsidian's own process env vars ([b8bd1ec](https://github.com/Vinzent03/obsidian-git/commit/b8bd1ec521561f6888857852cb565f66cc6a2241)), closes [#1041](https://github.com/Vinzent03/obsidian-git/issues/1041)
+* handle having a config value defined multiple times ([8e15ddc](https://github.com/Vinzent03/obsidian-git/commit/8e15ddc3bc2ce27b8c0afbc736ccc0258daffe3b)), closes [#1038](https://github.com/Vinzent03/obsidian-git/issues/1038)
+* wrap buttons in source control view ([932b7a0](https://github.com/Vinzent03/obsidian-git/commit/932b7a0b617b4f09d70fa7f48072e13ecd5f7f05)), closes [#1011](https://github.com/Vinzent03/obsidian-git/issues/1011)
+
 ### [2.37.1](https://github.com/Vinzent03/obsidian-git/compare/2.37.0...2.37.1) (2026-02-15)
 
 ## [2.37.0](https://github.com/Vinzent03/obsidian-git/compare/2.36.1...2.37.0) (2026-02-13)
