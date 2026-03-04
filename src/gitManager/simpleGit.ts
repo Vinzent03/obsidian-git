@@ -963,18 +963,11 @@ export class SimpleGit extends GitManager {
         path: string,
         scope: "local" | "global" | "all" = "local"
     ): Promise<string | undefined> {
-        let config: simple.ConfigListSummary;
-        if (scope == "all") {
-            config = await this.git.listConfig();
-        } else {
-            config = await this.git.listConfig(scope);
-        }
-        const res = config.all[path.toLowerCase()];
-        if (typeof res === "string" || res == undefined) {
-            return res;
-        } else {
-            throw new Error("Config value is not a string");
-        }
+        const res = await this.git.getConfig(
+            path.toLowerCase(),
+            scope == "all" ? undefined : scope
+        );
+        return res.value ?? undefined;
     }
 
     async fetch(remote?: string): Promise<void> {
