@@ -75,16 +75,17 @@ export class SimpleGit extends GitManager {
             const pathPaths = this.plugin.localStorage.getPATHPaths();
             const envVars = this.plugin.localStorage.getEnvVars();
             const gitDir = this.plugin.settings.gitDir;
+            const envs = { ...process.env };
             if (pathPaths.length > 0) {
-                const path = pathPaths.join(":") + ":" + process.env["PATH"];
-                process.env["PATH"] = path;
+                const path = pathPaths.join(":") + ":" + envs["PATH"];
+                envs["PATH"] = path;
             }
             if (gitDir) {
-                process.env["GIT_DIR"] = gitDir;
+                envs["GIT_DIR"] = gitDir;
             }
             for (const envVar of envVars) {
                 const [key, value] = envVar.split("=");
-                process.env[key] = value;
+                envs[key] = value;
             }
 
             const SIMPLE_GIT_NAMESPACE = "simple-git";
@@ -121,8 +122,8 @@ export class SimpleGit extends GitManager {
                 ASK_PASS_SCRIPT_FILE
             );
 
-            if (process.env["SSH_ASKPASS"] == undefined) {
-                process.env["SSH_ASKPASS"] = askPassPath;
+            if (envs["SSH_ASKPASS"] == undefined) {
+                envs["SSH_ASKPASS"] = askPassPath;
             }
 
             // OpenSSH requires DISPLAY variable to be set for SSH_ASKPASS to
@@ -130,14 +131,18 @@ export class SimpleGit extends GitManager {
             // Windows. Setting SSH_ASKPASS_REQUIRE to "force" makes it use
             // SSH_ASKPASS even without DISPLAY, which allows the askpass script
             // to work on Windows as well.
-            process.env["SSH_ASKPASS_REQUIRE"] = "force";
-            process.env["OBSIDIAN_GIT_CREDENTIALS_INPUT"] = path.join(
+            envs["SSH_ASKPASS_REQUIRE"] = "force";
+            envs["OBSIDIAN_GIT_CREDENTIALS_INPUT"] = path.join(
                 absolutePluginConfigPath,
                 ASK_PASS_INPUT_FILE
             );
-            if (process.env["SSH_ASKPASS"] == askPassPath) {
+            if (envs["SSH_ASKPASS"] == askPassPath) {
                 this.askpass().catch((e) => this.plugin.displayError(e));
             }
+
+            envs["OBSIDIAN_GIT"] = "1";
+
+            this.git = this.git.env(envs);
         }
     }
 
@@ -717,13 +722,11 @@ export class SimpleGit extends GitManager {
         this.plugin.setPluginState({ gitAction: CurrentGitAction.push });
         try {
             if (this.plugin.settings.updateSubmodules) {
-                const res = await this.git
-                    .env({ ...process.env, OBSIDIAN_GIT: 1 })
-                    .subModule([
-                        "foreach",
-                        "--recursive",
-                        `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`,
-                    ]);
+                const res = await this.git.subModule([
+                    "foreach",
+                    "--recursive",
+                    `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`,
+                ]);
                 console.log(res);
             }
             const status = await this.git.status();
@@ -747,7 +750,7 @@ export class SimpleGit extends GitManager {
                 ).changed;
             }
 
-            await this.git.env({ ...process.env, OBSIDIAN_GIT: 1 }).push();
+            await this.git.push();
 
             return remoteChangedFiles;
         } catch (e) {

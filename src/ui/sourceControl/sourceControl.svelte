@@ -42,7 +42,6 @@
 
     let showTree = $derived(plugin.settings.treeStructure);
     onMount(() => {
-        console.log("Git view mounted");
         view.registerEvent(
             view.app.workspace.on(
                 "obsidian-git:loading-status",
