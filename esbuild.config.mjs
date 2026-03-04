@@ -22,6 +22,7 @@ const context = await esbuild.context({
         "electron",
         "child_process",
         "fs",
+        "os",
         "path",
         "moment",
         "node:events",

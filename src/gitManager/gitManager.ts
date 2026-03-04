@@ -1,4 +1,5 @@
-import { type App, moment } from "obsidian";
+import { hostname as osHostname } from "os";
+import { type App, moment, Platform } from "obsidian";
 import type ObsidianGit from "../main";
 import type {
     BranchInfo,
@@ -274,7 +275,10 @@ export abstract class GitManager {
             template = template.replace("{{numFiles}}", String(numFiles));
         }
         if (template.includes("{{hostname}}")) {
-            const hostname = this.plugin.localStorage.getHostname() || "";
+            let hostname = this.plugin.localStorage.getHostname() || "";
+            if (!hostname && Platform.isDesktopApp) {
+                hostname = osHostname();
+            }
             template = template.replace("{{hostname}}", hostname);
         }
 
