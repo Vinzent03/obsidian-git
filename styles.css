@@ -81,6 +81,11 @@
     height: 100%;
 }
 
+/* Re-enable wrapping of nav buttns to prevent overflow on smaller screens #*/
+.workspace-drawer .git-view .nav-buttons-container {
+    flex-wrap: wrap;
+}
+
 .git-tools {
     display: flex;
     margin-left: auto;
