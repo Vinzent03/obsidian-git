@@ -900,15 +900,58 @@ export class SimpleGit extends GitManager {
         return this.git.show([commitHash + ":" + path]);
     }
 
+    private async getLocalBranchUpstream(localBranchName: string): Promise<string | undefined> {
+        try {
+            const upstream = await this.git.raw([
+                "rev-parse",
+                "--abbrev-ref",
+                `${localBranchName}@{upstream}`,
+            ]);
+            const trimmed = upstream.trim();
+            return trimmed.length > 0 ? trimmed : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private getAvailableLocalBranchName(
+        remoteBranchName: string,
+        remote: string,
+        existingBranchNames: string[]
+    ): string {
+        const preferred = remoteBranchName;
+        if (!existingBranchNames.includes(preferred)) {
+            return preferred;
+        }
+        const base = `${remoteBranchName}-${remote}`;
+        let candidate = base;
+        let n = 0;
+        while (existingBranchNames.includes(candidate)) {
+            n += 1;
+            candidate = `${base}-${n}`;
+        }
+        return candidate;
+    }
+
     async checkout(branch: string, remote?: string): Promise<void> {
         if (remote) {
             const remoteBranch = `${remote}/${branch}`;
             const branchInfo = await this.branchInfo();
+            const localBranchExists = branchInfo.branches.includes(branch);
 
-            if (branchInfo.branches.includes(branch)) {
+            const existingBranchTracksRemote =
+                localBranchExists &&
+                (await this.getLocalBranchUpstream(branch)) === remoteBranch;
+
+            if (existingBranchTracksRemote) {
                 await this.git.checkout(branch);
             } else {
-                await this.git.checkout(["-b", branch, remoteBranch]);
+                const localBranchName = this.getAvailableLocalBranchName(
+                    branch,
+                    remote,
+                    branchInfo.branches
+                );
+                await this.git.checkout(["-b", localBranchName, remoteBranch]);
             }
         } else {
             await this.git.checkout(branch);
