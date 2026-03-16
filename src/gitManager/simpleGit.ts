@@ -902,9 +902,18 @@ export class SimpleGit extends GitManager {
 
     async checkout(branch: string, remote?: string): Promise<void> {
         if (remote) {
-            branch = `${remote}/${branch}`;
+            const remoteBranch = `${remote}/${branch}`;
+            const branchInfo = await this.branchInfo();
+
+            if (branchInfo.branches.includes(branch)) {
+                await this.git.checkout(branch);
+            } else {
+                await this.git.checkout(["-b", branch, remoteBranch]);
+            }
+        } else {
+            await this.git.checkout(branch);
         }
-        await this.git.checkout(branch);
+
         if (this.plugin.settings.submoduleRecurseCheckout) {
             const submodulePaths = await this.getSubmodulePaths();
             for (const submodulePath of submodulePaths) {
