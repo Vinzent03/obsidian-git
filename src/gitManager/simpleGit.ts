@@ -900,11 +900,87 @@ export class SimpleGit extends GitManager {
         return this.git.show([commitHash + ":" + path]);
     }
 
+    private async getLocalBranchUpstream(
+        localBranchName: string
+    ): Promise<string | undefined> {
+        // Returns the configured upstream ref for a local branch (e.g. `origin/main`), using
+        // Return undefined when no upstream exists or if git throws an error.
+        try {
+            const upstream = await this.git.raw([
+                "rev-parse",
+                "--abbrev-ref",
+                `${localBranchName}@{upstream}`,
+            ]);
+            const trimmed = upstream.trim();
+            return trimmed.length > 0 ? trimmed : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private getAvailableLocalBranchName(
+        remoteBranchName: string,
+        remote: string,
+        existingBranchNames: string[]
+    ): string {
+        // Chooses a local branch name that does not collide with `existingBranchNames`.
+        // Prefers `remoteBranchName`, then `<remoteBranchName>-<remote>`, then that base with `-1`, `-2`, …
+        //
+        // Ex.: for a remote branch `origin/my-branch`
+        // - `my-branch` is preferred
+        // - `my-branch-origin` is next
+        // - `my-branch-origin-1` is next
+        // - `my-branch-origin-2` is next
+        // - etc.
+
+        const preferred = remoteBranchName;
+        if (!existingBranchNames.includes(preferred)) {
+            return preferred;
+        }
+        const base = `${remoteBranchName}-${remote}`;
+        let candidate = base;
+        let n = 0;
+        while (existingBranchNames.includes(candidate)) {
+            n += 1;
+            candidate = `${base}-${n}`;
+        }
+        return candidate;
+    }
+
     async checkout(branch: string, remote?: string): Promise<void> {
         if (remote) {
-            branch = `${remote}/${branch}`;
+            // If we're trying to checkout a remote branch we'll either switch to an existing local branch that
+            // already tracks it, or create a new local branch from the remote tip (name may be disambiguated).
+            const remoteBranch = `${remote}/${branch}`;
+            const branchInfo = await this.branchInfo();
+            const localBranchExists = branchInfo.branches.includes(branch);
+
+            // We found a local branch with the "correct" name, but it might track
+            // a different remote, so we'll double check before proceeding.
+            const existingBranchTracksRemote =
+                localBranchExists &&
+                (await this.getLocalBranchUpstream(branch)) === remoteBranch;
+
+            if (existingBranchTracksRemote) {
+                // The local branch already exists AND it tracked the correct remote, so we can simply switch to it.
+                await this.git.checkout(branch);
+            } else {
+                // The local branch doesn't exist or it tracks a different remote, so we'll need to create a new local branch.
+                // First we need to find a suitable name for the new local branch.
+                const localBranchName = this.getAvailableLocalBranchName(
+                    branch,
+                    remote,
+                    branchInfo.branches
+                );
+
+                // Finally, we can use `git checkout -b` to create the new local branch and set it to track the remote branch.
+                await this.git.checkout(["-b", localBranchName, remoteBranch]);
+            }
+        } else {
+            // Checkout an existing local branch (no remote specified).
+            await this.git.checkout(branch);
         }
-        await this.git.checkout(branch);
+
         if (this.plugin.settings.submoduleRecurseCheckout) {
             const submodulePaths = await this.getSubmodulePaths();
             for (const submodulePath of submodulePaths) {
