@@ -233,9 +233,18 @@ export class SimpleGit extends GitManager {
                 if (data.length > 60) {
                     notice = new Notice(data, 999_999);
                 }
+                let obscure = true;
+
+                // This does only work for English output.
+                // There is no general way detect the type of input asked for.
+                // We could enfore english output, but that is not beneficial
+                // for the user either.
+                if (data.contains("Username for")) {
+                    obscure = false;
+                }
                 const response = await new GeneralModal(this.plugin, {
                     allowEmpty: true,
-                    obscure: true,
+                    obscure,
                     placeholder:
                         data.length > 60
                             ? "Enter a response to the message."
