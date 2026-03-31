@@ -13,6 +13,7 @@ import {
     moment,
 } from "obsidian";
 import * as path from "path";
+import * as fsPromises from "fs/promises";
 import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/setting/settings";
@@ -980,9 +981,31 @@ export default class ObsidianGit extends Plugin {
                         "{{date}}",
                         moment().format(this.settings.commitDateFormat)
                     );
+                    let shPath = "sh";
+                    if (Platform.isWin) {
+                        shPath =
+                            process.env.PROGRAMFILES + "\\Git\\bin\\sh.exe";
+                        let shExists = false;
+                        try {
+                            await fsPromises.access(
+                                shPath,
+                                fsPromises.constants.X_OK
+                            );
+                            shExists = true;
+                        } catch {
+                            shExists = false;
+                        }
+
+                        if (!shExists) {
+                            this.displayError(
+                                `Cannot find sh.exe at ${shPath}. Please make sure Git is properly installed.`
+                            );
+                            return false;
+                        }
+                    }
 
                     const res = await spawnAsync(
-                        "sh",
+                        shPath,
                         ["-c", formattedScript],
                         { cwd: this.gitManager.absoluteRepoPath }
                     );
