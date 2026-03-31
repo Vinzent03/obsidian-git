@@ -46,7 +46,7 @@ jobs:
             - name: Install modules
               run: pnpm install
             - name: Run tsc
-              run: tsc --noEmit
+              run: pnpm run tsc --noEmit
     build:
         runs-on: ubuntu-latest
         steps:
