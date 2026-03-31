@@ -900,7 +900,9 @@ export class SimpleGit extends GitManager {
         return this.git.show([commitHash + ":" + path]);
     }
 
-    private async getLocalBranchUpstream(localBranchName: string): Promise<string | undefined> {
+    private async getLocalBranchUpstream(
+        localBranchName: string
+    ): Promise<string | undefined> {
         // Returns the configured upstream ref for a local branch (e.g. `origin/main`), using
         // Return undefined when no upstream exists or if git throws an error.
         try {
@@ -953,7 +955,7 @@ export class SimpleGit extends GitManager {
             const branchInfo = await this.branchInfo();
             const localBranchExists = branchInfo.branches.includes(branch);
 
-            // We found a local branch with the "correct" name, but it might track 
+            // We found a local branch with the "correct" name, but it might track
             // a different remote, so we'll double check before proceeding.
             const existingBranchTracksRemote =
                 localBranchExists &&
