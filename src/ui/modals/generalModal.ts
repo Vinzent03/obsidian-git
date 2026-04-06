@@ -1,5 +1,6 @@
 import { SuggestModal } from "obsidian";
 import type ObsidianGit from "src/main";
+import { t } from "src/lang/helpers";
 
 export interface OptionalGeneralModalConfig {
     options?: string[];
@@ -85,7 +86,7 @@ export class GeneralModal extends SuggestModal<string> {
         } else if (this.config.allowEmpty) {
             return [query.length > 0 ? query : " ", ...this.config.options];
         } else {
-            return [query.length > 0 ? query : "...", ...this.config.options];
+            return [query.length > 0 ? query : t("..."), ...this.config.options];
         }
     }
 

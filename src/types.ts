@@ -71,6 +71,7 @@ export interface ObsidianGitSettings {
         showSigns: boolean;
         statusBar: "disabled" | "colored" | "monochrome";
     };
+    language: string;
 }
 
 /**

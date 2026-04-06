@@ -38,6 +38,7 @@
         "obsidian": "^1.11.4",
         "prettier": "3.3.2",
         "prettier-plugin-svelte": "^3.4.1",
+        "sass": "^1.99.0",
         "scss": "^0.2.4",
         "standard-version": "^9.5.0",
         "svelte-check": "^4.3.6",

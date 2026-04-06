@@ -1,5 +1,6 @@
 import type { App } from "obsidian";
 import { Modal } from "obsidian";
+import { t } from "src/lang/helpers";
 
 export class IgnoreModal extends Modal {
     resolve:
@@ -21,7 +22,7 @@ export class IgnoreModal extends Modal {
 
     onOpen() {
         const { contentEl, titleEl } = this;
-        titleEl.setText("Edit .gitignore");
+        titleEl.setText(t("Edit .gitignore"));
         const div = contentEl.createDiv();
 
         const text = div.createEl("textarea", {
@@ -32,7 +33,7 @@ export class IgnoreModal extends Modal {
 
         div.createEl("button", {
             cls: ["mod-cta", "obsidian-git-center-button"],
-            text: "Save",
+            text: t("Save"),
         }).addEventListener("click", () => {
             this.resolve!(text.value);
             this.close();

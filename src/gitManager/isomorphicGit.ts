@@ -24,6 +24,7 @@ import { CurrentGitAction, type DiffFile } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
+import { t } from "../lang/helpers";
 import { MyAdapter } from "./myAdapter";
 import diff3Merge from "diff3";
 
@@ -80,15 +81,18 @@ export class IsomorphicGit extends GitManager {
             },
             onAuthFailure: async () => {
                 new Notice(
-                    "Authentication failed. Please try with different credentials"
+                    t(
+                        "Authentication failed. Please try with different credentials"
+                    )
                 );
                 const username = await new GeneralModal(this.plugin, {
-                    placeholder: "Specify your username",
+                    placeholder: t("Specify your username"),
                 }).openAndGetResult();
                 if (username) {
                     const password = await new GeneralModal(this.plugin, {
-                        placeholder:
-                            "Specify your password/personal access token",
+                        placeholder: t(
+                            "Specify your password/personal access token"
+                        ),
                         obscure: true,
                     }).openAndGetResult();
                     if (password) {
@@ -152,7 +156,7 @@ export class IsomorphicGit extends GitManager {
         let notice: Notice | undefined;
         const timeout = window.setTimeout(() => {
             notice = new Notice(
-                "This takes longer: Getting status",
+                t("This takes longer: Getting status"),
                 this.noticeLength
             );
         }, 20000);
@@ -444,14 +448,14 @@ export class IsomorphicGit extends GitManager {
     }
 
     getProgressText(action: string, event: GitProgressEvent): string {
-        let out = `${action} progress:`;
+        let out = t("%1 progress:", action);
         if (event.phase) {
             out = `${out} ${event.phase}:`;
         }
         if (event.loaded) {
             out = `${out} ${event.loaded}`;
             if (event.total) {
-                out = `${out} of ${event.total}`;
+                out = t("%1 of %2", out, event.total.toString());
             }
         }
         return out;
@@ -462,7 +466,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async pull(): Promise<FileStatusResult[]> {
-        const progressNotice = this.showNotice("Initializing pull");
+        const progressNotice = this.showNotice(t("Initializing pull"));
         try {
             this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
 
@@ -519,7 +523,7 @@ export class IsomorphicGit extends GitManager {
                         onProgress: (progress) => {
                             if (progressNotice !== undefined) {
                                 progressNotice.noticeEl.innerText =
-                                    this.getProgressText("Checkout", progress);
+                                    this.getProgressText(t("Checkout"), progress);
                             }
                         },
                         remote: branchInfo.remote,
@@ -534,7 +538,7 @@ export class IsomorphicGit extends GitManager {
                 upstreamCommit
             );
 
-            this.showNotice("Finished pull", false);
+            this.showNotice(t("Finished pull"), false);
 
             return changedFiles.map<FileStatusResult>((file) => ({
                 path: file.path,
@@ -561,7 +565,7 @@ export class IsomorphicGit extends GitManager {
         if (!(await this.canPush())) {
             return 0;
         }
-        const progressNotice = this.showNotice("Initializing push");
+        const progressNotice = this.showNotice(t("Initializing push"));
         try {
             this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
             const status = await this.branchInfo();
@@ -581,7 +585,7 @@ export class IsomorphicGit extends GitManager {
                     onProgress: (progress) => {
                         if (progressNotice !== undefined) {
                             progressNotice.noticeEl.innerText =
-                                this.getProgressText("Pushing", progress);
+                                this.getProgressText(t("Pushing"), progress);
                         }
                     },
                 })
@@ -723,7 +727,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async clone(url: string, dir: string, depth?: number): Promise<void> {
-        const progressNotice = this.showNotice("Initializing clone");
+        const progressNotice = this.showNotice(t("Initializing clone"));
         try {
             await this.wrapFS(
                 git.clone({
@@ -734,7 +738,7 @@ export class IsomorphicGit extends GitManager {
                     onProgress: (progress) => {
                         if (progressNotice !== undefined) {
                             progressNotice.noticeEl.innerText =
-                                this.getProgressText("Cloning", progress);
+                                this.getProgressText(t("Cloning"), progress);
                         }
                     },
                 })
@@ -780,7 +784,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async fetch(remote?: string): Promise<void> {
-        const progressNotice = this.showNotice("Initializing fetch");
+        const progressNotice = this.showNotice(t("Initializing fetch"));
 
         try {
             const args = {
@@ -788,7 +792,7 @@ export class IsomorphicGit extends GitManager {
                 onProgress: (progress: GitProgressEvent) => {
                     if (progressNotice !== undefined) {
                         progressNotice.noticeEl.innerText =
-                            this.getProgressText("Fetching", progress);
+                            this.getProgressText(t("Fetching"), progress);
                     }
                 },
                 remote: remote ?? (await this.getCurrentRemote()),

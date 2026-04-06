@@ -4,6 +4,7 @@ import deepEqual from "deep-equal";
 import type { App, ItemView, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
+import { t } from "./lang/helpers";
 
 export function assertNever(x: never): never {
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
@@ -15,11 +16,11 @@ export function plural(
     singular: string,
     plural?: string
 ): string {
-    if (count === 1) {
-        return `${count} ${singular}`;
-    } else {
-        return `${count} ${plural ?? singular + "s"}`;
-    }
+    return t(
+        "%1 %2",
+        count.toString(),
+        count === 1 ? t(singular) : t(plural ?? singular + "s")
+    );
 }
 
 export const worthWalking = (filepath: string, root?: string) => {
@@ -172,8 +173,8 @@ export function getDisplayPath(path: string): string {
 }
 
 export function formatMinutes(minutes: number): string {
-    if (minutes === 1) return "1 minute";
-    return `${minutes} minutes`;
+    if (minutes === 1) return t("1 minute");
+    return t("%1 minutes", minutes.toString());
 }
 
 export function getExtensionFromPath(path: string): string {

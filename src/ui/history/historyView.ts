@@ -1,6 +1,7 @@
 import type { HoverParent, HoverPopover, WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
 import { HISTORY_VIEW_CONFIG } from "src/constants";
+import { t } from "src/lang/helpers";
 import type ObsidianGit from "src/main";
 import HistoryViewComponent from "./historyView.svelte";
 import { mount, unmount } from "svelte";
@@ -21,7 +22,7 @@ export default class HistoryView extends ItemView implements HoverParent {
     }
 
     getDisplayText(): string {
-        return HISTORY_VIEW_CONFIG.name;
+        return t(HISTORY_VIEW_CONFIG.name);
     }
 
     getIcon(): string {
