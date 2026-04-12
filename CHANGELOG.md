@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.38.1](https://github.com/Vinzent03/obsidian-git/compare/2.38.0...2.38.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* disable obscure for username question ([12c5313](https://github.com/Vinzent03/obsidian-git/commit/12c531364127ab33c08754ad1f58eda46f7f48c9)), closes [#1000](https://github.com/Vinzent03/obsidian-git/issues/1000)
+* prevent  "detached HEAD" state after using "Switch to remote branch" command ([#1052](https://github.com/Vinzent03/obsidian-git/issues/1052)) ([b0dea07](https://github.com/Vinzent03/obsidian-git/commit/b0dea07db29cb569c0e40e6c300d3f7eddcdd95a))
+* properly set absolute repo path for custom GIT_DIR ([0651d0b](https://github.com/Vinzent03/obsidian-git/commit/0651d0b82f3c8e636c60bd22b1c850e8facc7512))
+* recognize click on correct tree component in source control view ([27d0e54](https://github.com/Vinzent03/obsidian-git/commit/27d0e54c92b2c2bbf8784ba3aea8b84363d2bc8a)), closes [#1066](https://github.com/Vinzent03/obsidian-git/issues/1066)
+* run sh scripts on Windows using Git sh ([78bf00e](https://github.com/Vinzent03/obsidian-git/commit/78bf00e80197c74ac73425a2da0094e5f958d76b)), closes [#1045](https://github.com/Vinzent03/obsidian-git/issues/1045)
+* set GIT_WORK_TREE when using custom git directory ([#1064](https://github.com/Vinzent03/obsidian-git/issues/1064)) ([aee3e4f](https://github.com/Vinzent03/obsidian-git/commit/aee3e4f2e5030ddce5f9d4a8d4c17c41d518bc40))
+
 ## [2.38.0](https://github.com/Vinzent03/obsidian-git/compare/2.37.1...2.38.0) (2026-03-04)
 
 
