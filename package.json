@@ -63,7 +63,7 @@
         "diff3": "^0.0.4",
         "isomorphic-git": "^1.36.3",
         "js-sha256": "^0.9.0",
-        "simple-git": "github:Vinzent03/git-js#release",
+        "simple-git": "^3.36.0",
         "supports-color": "^9.4.0",
         "svelte": "^5.50.0"
     },

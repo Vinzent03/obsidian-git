@@ -70,6 +70,16 @@ export class SimpleGit extends GitManager {
                 config: ["core.quotepath=off"],
                 unsafe: {
                     allowUnsafeCustomBinary: true,
+                    allowUnsafeEditor: true,
+                    allowUnsafeAskPass: true,
+                    allowUnsafeConfigEnvCount: true,
+                    allowUnsafeConfigPaths: true,
+                    allowUnsafeCredentialHelper: true,
+                    allowUnsafeGitProxy: true,
+                    allowUnsafeGpgProgram: true,
+                    allowUnsafeHooksPath: true,
+                    allowUnsafeMergeDriver: true,
+                    allowUnsafeSshCommand: true,
                 },
             });
             const pathPaths = this.plugin.localStorage.getPATHPaths();

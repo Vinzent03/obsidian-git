@@ -54,8 +54,8 @@ importers:
         specifier: ^0.9.0
         version: 0.9.0
       simple-git:
-        specifier: github:Vinzent03/git-js#release
-        version: https://codeload.github.com/Vinzent03/git-js/tar.gz/365b7d64b9b6dd3c38259535a819def2439f8b03(supports-color@9.4.0)
+        specifier: ^3.36.0
+        version: 3.36.0(supports-color@9.4.0)
       supports-color:
         specifier: ^9.4.0
         version: 9.4.0
@@ -421,6 +421,12 @@ packages:
   '@profoundlogic/hogan@3.0.4':
     resolution: {integrity: sha512-pmNVGuooS30Mm7YbZd5T7E5zYVO6D5Ct91sn4T39mUvMUc3sCGridcnhAufL1/Bz2QzAtzEn0agNrdk3+5yWzw==}
     hasBin: true
+
+  '@simple-git/args-pathspec@1.0.3':
+    resolution: {integrity: sha512-ngJMaHlsWDTfjyq9F3VIQ8b7NXbBLq5j9i5bJ6XLYtD6qlDXT7fdKY2KscWWUF8t18xx052Y/PUO1K1TRc9yKA==}
+
+  '@simple-git/argv-parser@1.1.0':
+    resolution: {integrity: sha512-sUKOu2lb5vGIWADNNLpscyj07DAeQZU3KLbnE2Tj53tW6BbDQKMly2CCfnR4oYzqtRELCPWfwaPg+Q0T8qfKBg==}
 
   '@sveltejs/acorn-typescript@1.0.8':
     resolution: {integrity: sha512-esgN+54+q0NjB0Y/4BomT9samII7jGwNy/2a3wNZbT2A2RpmXsXwUt24LvLhx6jUq2gVk4cWEvcRO6MFQbOfNA==}
@@ -1865,9 +1871,8 @@ packages:
   simple-get@4.0.1:
     resolution: {integrity: sha512-brv7p5WgH0jmQJr1ZDDfKDOSeWWg+OVypG99A/5vYGPqJ6pxiaHLy8nxtFjBA7oMa01ebA9gfh1uMCFqOuXxvA==}
 
-  simple-git@https://codeload.github.com/Vinzent03/git-js/tar.gz/365b7d64b9b6dd3c38259535a819def2439f8b03:
-    resolution: {tarball: https://codeload.github.com/Vinzent03/git-js/tar.gz/365b7d64b9b6dd3c38259535a819def2439f8b03}
-    version: 3.28.0
+  simple-git@3.36.0:
+    resolution: {integrity: sha512-cGQjLjK8bxJw4QuYT7gxHw3/IouVESbhahSsHrX97MzCL1gu2u7oy38W6L2ZIGECEfIBG4BabsWDPjBxJENv9Q==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -2417,6 +2422,12 @@ snapshots:
   '@profoundlogic/hogan@3.0.4':
     dependencies:
       nopt: 1.0.10
+
+  '@simple-git/args-pathspec@1.0.3': {}
+
+  '@simple-git/argv-parser@1.1.0':
+    dependencies:
+      '@simple-git/args-pathspec': 1.0.3
 
   '@sveltejs/acorn-typescript@1.0.8(acorn@8.15.0)':
     dependencies:
@@ -3986,10 +3997,12 @@ snapshots:
       once: 1.4.0
       simple-concat: 1.0.1
 
-  simple-git@https://codeload.github.com/Vinzent03/git-js/tar.gz/365b7d64b9b6dd3c38259535a819def2439f8b03(supports-color@9.4.0):
+  simple-git@3.36.0(supports-color@9.4.0):
     dependencies:
       '@kwsites/file-exists': 1.1.1(supports-color@9.4.0)
       '@kwsites/promise-deferred': 1.1.1
+      '@simple-git/args-pathspec': 1.0.3
+      '@simple-git/argv-parser': 1.1.0
       debug: 4.4.3(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
