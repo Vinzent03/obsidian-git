@@ -112,7 +112,7 @@ export class SimpleGit extends GitManager {
                 debug.enable(namespaces.join(NAMESPACE_SEPARATOR));
             }
 
-            if (await this.git.checkIsRepo()) {
+            if (await this.git.env(envs).checkIsRepo()) {
                 // Resolve the relative root reported by git into an absolute path
                 // in case git resides in a different filesystem (eg, WSL)
                 const relativeRoot = await this.git.revparse("--show-cdup");
