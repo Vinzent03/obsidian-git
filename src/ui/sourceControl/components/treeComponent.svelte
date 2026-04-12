@@ -94,7 +94,6 @@
             </div>
         {:else}
             <div
-                onclick={(event) => fold(event, entity)}
                 onauxclick={(event) =>
                     mayTriggerFileMenu(
                         view.app,
@@ -110,6 +109,7 @@
                     class="tree-item-self is-clickable nav-folder-title"
                     data-tooltip-position={side}
                     aria-label={entity.vaultPath}
+                    onclick={(event) => fold(event, entity)}
                 >
                     <div
                         data-icon="folder"
