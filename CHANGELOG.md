@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.38.2](https://github.com/Vinzent03/obsidian-git/compare/2.38.1...2.38.2) (2026-04-16)
+
+
+### Bug Fixes
+
+* add missing simple-git unsafe setting ([d5534da](https://github.com/Vinzent03/obsidian-git/commit/d5534dad695698b40fc4f03be13bb36094cc14c6)), closes [#1067](https://github.com/Vinzent03/obsidian-git/issues/1067)
+
 ### [2.38.1](https://github.com/Vinzent03/obsidian-git/compare/2.38.0...2.38.1) (2026-04-12)
 
 
