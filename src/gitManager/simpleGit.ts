@@ -80,6 +80,7 @@ export class SimpleGit extends GitManager {
                     allowUnsafeHooksPath: true,
                     allowUnsafeMergeDriver: true,
                     allowUnsafeSshCommand: true,
+                    allowUnsafePager: true,
                 },
             });
             const pathPaths = this.plugin.localStorage.getPATHPaths();
