@@ -30,7 +30,7 @@ jobs:
                   cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
                   zip -r ${{ env.PLUGIN_NAME }}-${{ github.ref_name }}.zip ${{ env.PLUGIN_NAME }}
             - name: Attest build provenance
-              uses: actions/attest@4
+              uses: actions/attest@v4
               with:
                   subject-path: |
                       main.js
