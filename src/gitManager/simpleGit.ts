@@ -837,9 +837,24 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status();
         const branches = await this.git.branch(["--no-color"]);
 
+        // simple-git's `status` parser occasionally fails to extract the
+        // branch line (`## <current>...<tracking>`) from `git status
+        // --porcelain -b -u --null` output, leaving `current`/`tracking` as
+        // `null`. When that happens, both fields end up as `undefined` here
+        // and downstream `git rev-parse <undefined>` calls explode with
+        // `fatal: ambiguous argument 'undefined'`. Fall back to information
+        // from `git branch --no-color` (for current) and
+        // `git rev-parse --abbrev-ref <current>@{upstream}` (for tracking),
+        // which always work when a branch and upstream are configured.
+        const current = status.current || branches.current || undefined;
+        let tracking = status.tracking || undefined;
+        if (!tracking && current) {
+            tracking = await this.getLocalBranchUpstream(current);
+        }
+
         return {
-            current: status.current || undefined,
-            tracking: status.tracking || undefined,
+            current,
+            tracking,
             branches: branches.all,
         };
     }
