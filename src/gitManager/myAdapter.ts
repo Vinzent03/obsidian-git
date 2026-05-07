@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/only-throw-error */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -39,30 +38,51 @@ export class MyAdapter {
         this.maybeLog("Read: " + path + JSON.stringify(opts));
         if (opts == "utf8" || opts.encoding == "utf8") {
             const file = this.vault.getAbstractFileByPath(path);
+            let data: string | undefined | null;
             if (file instanceof TFile) {
                 this.maybeLog("Reuse");
 
-                return this.vault.read(file);
+                data = await this.vault.read(file);
             } else {
-                return this.adapter.read(path);
+                data = await this.adapter.read(path);
             }
+            if (data == null) {
+                this.logMissingRead(path, "text");
+            }
+            return data;
         } else {
             if (path.endsWith(this.gitDir + "/index")) {
                 if (this.plugin.settings.basePath != this.lastBasePath) {
                     this.clearIndex();
                     this.lastBasePath = this.plugin.settings.basePath;
-                    return this.adapter.readBinary(path);
+                    const data = await this.adapter.readBinary(path);
+                    if (data == null) {
+                        this.logMissingRead(path, "binary");
+                    }
+                    return data;
                 }
-                return this.index ?? this.adapter.readBinary(path);
+                if (this.index != undefined) {
+                    return this.index;
+                }
+                const data = await this.adapter.readBinary(path);
+                if (data == null) {
+                    this.logMissingRead(path, "binary");
+                }
+                return data;
             }
             const file = this.vault.getAbstractFileByPath(path);
+            let data: ArrayBuffer | undefined | null;
             if (file instanceof TFile) {
                 this.maybeLog("Reuse");
 
-                return this.vault.readBinary(file);
+                data = await this.vault.readBinary(file);
             } else {
-                return this.adapter.readBinary(path);
+                data = await this.adapter.readBinary(path);
             }
+            if (data == null) {
+                this.logMissingRead(path, "binary");
+            }
+            return data;
         }
     }
     async writeFile(path: string, data: string | ArrayBuffer) {
@@ -130,7 +150,9 @@ export class MyAdapter {
             } else {
                 const stat = await this.adapter.stat(path);
                 if (stat == undefined) {
-                    throw { code: "ENOENT" };
+                    throw this.notFound(
+                        `ENOENT: no such file or directory, lstat '${path}'`
+                    );
                 }
                 this.indexctime = stat.ctime;
                 this.indexmtime = stat.mtime;
@@ -173,7 +195,9 @@ export class MyAdapter {
                 };
             } else {
                 // used to determine whether a file exists or not
-                throw { code: "ENOENT" };
+                throw this.notFound(
+                    `ENOENT: no such file or directory, lstat '${path}'`
+                );
             }
         }
     }
@@ -214,6 +238,20 @@ export class MyAdapter {
 
     private get gitDir(): string {
         return this.plugin.settings.gitDir || ".git";
+    }
+
+    private logMissingRead(path: string, mode: "text" | "binary"): never {
+        this.plugin.debugLog("isomorphic-git readFile:missing", {
+            path,
+            mode,
+        });
+        throw this.notFound(`Could not read ${path}`);
+    }
+
+    private notFound(message: string): Error {
+        const error = new Error(message);
+        Object.assign(error, { code: "ENOENT" });
+        return error;
     }
 
     private maybeLog(_: string) {
