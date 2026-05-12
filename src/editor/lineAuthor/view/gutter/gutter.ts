@@ -9,7 +9,6 @@ import type {
     LineAuthorTimezoneOption,
     LineAuthoring,
 } from "src/editor/lineAuthor/model";
-import { latestSettings } from "src/editor/lineAuthor/model";
 import {
     attachedGutterElements,
     conditionallyUpdateLongestRenderedGutter,
@@ -27,6 +26,7 @@ import {
     resizeToLength,
 } from "src/utils";
 import { isDeepStrictEqual } from "node:util";
+import { pluginRef } from "src/pluginGlobalRef";
 
 const VALUE_NOT_FOUND_FALLBACK = "-";
 
@@ -366,7 +366,7 @@ export class LineAuthoringGutter extends GutterMarker {
         // This ensures, that the frequent UI updates with differing line author lengths
         // don't frequently shift the gutter size - which would also cause distracting UI updates.
         const desiredTextLength =
-            latestSettings.get()?.gutterSpacingFallbackLength ??
+            pluginRef.plugin!.localStorage.getGutterSpacingFallbackLength() ??
             toBeRenderedText.length;
 
         toBeRenderedText = resizeToLength(

@@ -162,7 +162,6 @@ export type LineAuthorSettings = {
     colorNew: RGB;
     textColorCss: string;
     ignoreWhitespace: boolean;
-    gutterSpacingFallbackLength: number;
 };
 
 export type LineAuthorFollowMovement =

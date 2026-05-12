@@ -331,8 +331,6 @@ export class NoNetworkError extends Error {
 
 declare module "obsidian" {
     interface App {
-        loadLocalStorage(key: string): string | null;
-        saveLocalStorage(key: string, value: string | undefined): void;
         openWithDefaultApp(path: string): void;
         getTheme(): "obsidian" | "moonstone";
         viewRegistry: ViewRegistry;

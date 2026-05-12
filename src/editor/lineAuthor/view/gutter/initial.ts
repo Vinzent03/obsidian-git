@@ -1,18 +1,15 @@
 import { moment } from "obsidian";
-import { DEFAULT_SETTINGS } from "src/constants";
 import type {
     LineAuthoring,
     LineAuthorSettings,
 } from "src/editor/lineAuthor/model";
-import {
-    latestSettings,
-    maxAgeInDaysFromSettings,
-} from "src/editor/lineAuthor/model";
+import { maxAgeInDaysFromSettings } from "src/editor/lineAuthor/model";
 import { computeAdaptiveInitialColoringAgeInDays } from "src/editor/lineAuthor/view/cache";
 import {
     lineAuthoringGutterMarker,
     TextGutter,
 } from "src/editor/lineAuthor/view/gutter/gutter";
+import { pluginRef } from "src/pluginGlobalRef";
 import type { Blame, BlameCommit, GitTimestamp, UserEmail } from "src/types";
 import { momentToEpochSeconds } from "src/utils";
 
@@ -23,8 +20,8 @@ import { momentToEpochSeconds } from "src/utils";
  */
 export function initialSpacingGutter() {
     const length =
-        latestSettings.get()?.gutterSpacingFallbackLength ??
-        DEFAULT_SETTINGS.lineAuthor.gutterSpacingFallbackLength;
+        pluginRef.plugin!.localStorage.getGutterSpacingFallbackLength();
+
     return new TextGutter(Array(length).fill("-").join(""));
 }
 

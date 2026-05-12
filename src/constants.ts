@@ -65,7 +65,6 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
         colorOld: { r: 120, g: 160, b: 255 },
         textColorCss: "var(--text-muted)", //  more pronounced than line numbers, but less than the content text
         ignoreWhitespace: false,
-        gutterSpacingFallbackLength: 5,
     },
 };
 

@@ -154,4 +154,23 @@ export class LocalStorageSettings {
             `${value}`
         );
     }
+
+    /**
+     * The length of the fallback spacing for the line authoring gutter, which
+     * is used when the longest rendered gutter is not yet known.
+     */
+    getGutterSpacingFallbackLength(): number {
+        return (
+            (this.app.loadLocalStorage(
+                this.prefix + "gutterSpacingFallbackLength"
+            ) as number) ?? 5
+        );
+    }
+
+    setGutterSpacingFallbackLength(value: number): void {
+        return this.app.saveLocalStorage(
+            this.prefix + "gutterSpacingFallbackLength",
+            value
+        );
+    }
 }

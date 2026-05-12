@@ -1,7 +1,7 @@
 import type { RangeSet } from "@codemirror/state";
 import type { GutterMarker } from "@codemirror/view";
-import { latestSettings } from "src/editor/lineAuthor/model";
 import type { LineAuthoringGutter } from "src/editor/lineAuthor/view/gutter/gutter";
+import { pluginRef } from "src/pluginGlobalRef";
 import { median } from "src/utils";
 
 /*
@@ -60,10 +60,10 @@ export function conditionallyUpdateLongestRenderedGutter(
 
     longestRenderedGutter = { gutter, length, text };
 
-    const settings = latestSettings.get();
-    if (length !== settings.gutterSpacingFallbackLength) {
-        settings.gutterSpacingFallbackLength = length;
-        latestSettings.save(settings);
+    const gutterSpacingFallbackLength =
+        pluginRef.plugin!.localStorage.getGutterSpacingFallbackLength();
+    if (length !== gutterSpacingFallbackLength) {
+        pluginRef.plugin!.localStorage.setGutterSpacingFallbackLength(length);
     }
 }
 
