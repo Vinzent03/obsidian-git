@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.38.3](https://github.com/Vinzent03/obsidian-git/compare/2.38.2...2.38.3) (2026-05-14)
+
+
+### Bug Fixes
+
+* create div element different for sign markers ([3815bd2](https://github.com/Vinzent03/obsidian-git/commit/3815bd23b93905de27fe13cf5a59499d418ee3ed))
+* store unimportant line author data in localstorage ([9c3f710](https://github.com/Vinzent03/obsidian-git/commit/9c3f710aa864e396864ab1a8f147544d876921df)), closes [#1075](https://github.com/Vinzent03/obsidian-git/issues/1075)
+
 ### [2.38.2](https://github.com/Vinzent03/obsidian-git/compare/2.38.1...2.38.2) (2026-04-16)
 
 
