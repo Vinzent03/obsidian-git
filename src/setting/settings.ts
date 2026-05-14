@@ -1538,7 +1538,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
      * allows most of the toggle animation to run, instead of abruptly jumping between enabled/disabled states.
      */
     private refreshDisplayWithDelay(timeout = 80): void {
-        activeWindow.setTimeout(() => this.display(), timeout);
+        window.setTimeout(() => this.display(), timeout);
     }
 }
 

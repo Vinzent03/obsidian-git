@@ -235,7 +235,7 @@ export class SimpleGit extends GitManager {
                     relPluginConfigDir + ASK_PASS_INPUT_FILE;
 
                 // Wait a bit to ensure the file is fully removed
-                await new Promise((res) => activeWindow.setTimeout(res, 200));
+                await new Promise((res) => window.setTimeout(res, 200));
                 if (!(await adapter.exists(triggerFilePath))) continue;
 
                 const data = await adapter.read(triggerFilePath);
@@ -284,7 +284,7 @@ export class SimpleGit extends GitManager {
                 ),
                 { force: true }
             );
-            await new Promise((res) => activeWindow.setTimeout(res, 5000));
+            await new Promise((res) => window.setTimeout(res, 5000));
             this.plugin.log("Retry watch for ask pass");
             await this.askpass();
         }
