@@ -34,7 +34,9 @@ export class LocalStorageSettings {
     }
 
     getPassword(): string | null {
-        return this.app.loadLocalStorage(this.prefix + "password");
+        return this.app.loadLocalStorage(this.prefix + "password") as
+            | string
+            | null;
     }
 
     setPassword(value: string): void {
@@ -42,7 +44,9 @@ export class LocalStorageSettings {
     }
 
     getUsername(): string | null {
-        return this.app.loadLocalStorage(this.prefix + "username");
+        return this.app.loadLocalStorage(this.prefix + "username") as
+            | string
+            | null;
     }
 
     setUsername(value: string): void {
@@ -50,7 +54,9 @@ export class LocalStorageSettings {
     }
 
     getHostname(): string | null {
-        return this.app.loadLocalStorage(this.prefix + "hostname");
+        return this.app.loadLocalStorage(this.prefix + "hostname") as
+            | string
+            | null;
     }
 
     setHostname(value: string): void {
@@ -66,7 +72,9 @@ export class LocalStorageSettings {
     }
 
     getLastAutoPull(): string | null {
-        return this.app.loadLocalStorage(this.prefix + "lastAutoPull");
+        return this.app.loadLocalStorage(this.prefix + "lastAutoPull") as
+            | string
+            | null;
     }
 
     setLastAutoPull(value: string): void {
@@ -74,7 +82,9 @@ export class LocalStorageSettings {
     }
 
     getLastAutoBackup(): string | null {
-        return this.app.loadLocalStorage(this.prefix + "lastAutoBackup");
+        return this.app.loadLocalStorage(this.prefix + "lastAutoBackup") as
+            | string
+            | null;
     }
 
     setLastAutoBackup(value: string): void {
@@ -82,7 +92,9 @@ export class LocalStorageSettings {
     }
 
     getLastAutoPush(): string | null {
-        return this.app.loadLocalStorage(this.prefix + "lastAutoPush");
+        return this.app.loadLocalStorage(this.prefix + "lastAutoPush") as
+            | string
+            | null;
     }
 
     setLastAutoPush(value: string): void {
@@ -90,7 +102,9 @@ export class LocalStorageSettings {
     }
 
     getGitPath(): string | null {
-        return this.app.loadLocalStorage(this.prefix + "gitPath");
+        return this.app.loadLocalStorage(this.prefix + "gitPath") as
+            | string
+            | null;
     }
 
     setGitPath(value: string): void {
@@ -99,8 +113,11 @@ export class LocalStorageSettings {
 
     getPATHPaths(): string[] {
         return (
-            this.app.loadLocalStorage(this.prefix + "PATHPaths")?.split(":") ??
-            []
+            (
+                this.app.loadLocalStorage(this.prefix + "PATHPaths") as
+                    | string
+                    | null
+            )?.split(":") ?? []
         );
     }
 
@@ -113,7 +130,9 @@ export class LocalStorageSettings {
 
     getEnvVars(): string[] {
         return JSON.parse(
-            this.app.loadLocalStorage(this.prefix + "envVars") ?? "[]"
+            (this.app.loadLocalStorage(this.prefix + "envVars") as
+                | string
+                | undefined) ?? "[]"
         ) as string[];
     }
 
