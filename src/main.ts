@@ -249,30 +249,35 @@ export default class ObsidianGit extends Plugin {
                 this.onActiveLeafChange(leaf);
             })
         );
-        this.registerEvent(
-            this.app.vault.on("modify", () => {
-                this.debRefresh();
-                this.autoCommitDebouncer?.();
-            })
-        );
-        this.registerEvent(
-            this.app.vault.on("delete", () => {
-                this.debRefresh();
-                this.autoCommitDebouncer?.();
-            })
-        );
-        this.registerEvent(
-            this.app.vault.on("create", () => {
-                this.debRefresh();
-                this.autoCommitDebouncer?.();
-            })
-        );
-        this.registerEvent(
-            this.app.vault.on("rename", () => {
-                this.debRefresh();
-                this.autoCommitDebouncer?.();
-            })
-        );
+
+        if (!Platform.isDesktopApp) {
+            // On desktop, the file changes are watched by `SimpleGit` to
+            // account for all changes (including those outside of Obsidian).
+            this.registerEvent(
+                this.app.vault.on("modify", () => {
+                    this.debRefresh();
+                    this.autoCommitDebouncer?.();
+                })
+            );
+            this.registerEvent(
+                this.app.vault.on("delete", () => {
+                    this.debRefresh();
+                    this.autoCommitDebouncer?.();
+                })
+            );
+            this.registerEvent(
+                this.app.vault.on("create", () => {
+                    this.debRefresh();
+                    this.autoCommitDebouncer?.();
+                })
+            );
+            this.registerEvent(
+                this.app.vault.on("rename", () => {
+                    this.debRefresh();
+                    this.autoCommitDebouncer?.();
+                })
+            );
+        }
 
         this.registerView(SOURCE_CONTROL_VIEW_CONFIG.type, (leaf) => {
             return new GitView(leaf, this);
