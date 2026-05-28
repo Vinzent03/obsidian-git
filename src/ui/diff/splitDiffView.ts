@@ -276,7 +276,7 @@ export default class SplitDiffView extends ItemView {
     }
 
     renderButtons(): HTMLElement {
-        const contentEl = activeDocument.createDiv();
+        const contentEl = activeDocument.createElement("div");
 
         const stageButton = contentEl.createDiv();
         stageButton.addClass("clickable-icon");
