@@ -189,6 +189,7 @@ export class SimpleGit extends GitManager {
                     }
                 }
             } catch (err) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (err.name === "AbortError") return;
                 throw err;
             }
