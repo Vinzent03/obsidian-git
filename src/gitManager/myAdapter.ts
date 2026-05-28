@@ -7,6 +7,8 @@ import type { DataAdapter, Vault } from "obsidian";
 import { normalizePath, TFile } from "obsidian";
 import type ObsidianGit from "../main";
 
+type BinaryData = ArrayBuffer | ArrayBufferView;
+
 export class MyAdapter {
     promises: any = {};
     adapter: DataAdapter;
@@ -65,7 +67,7 @@ export class MyAdapter {
             }
         }
     }
-    async writeFile(path: string, data: string | ArrayBuffer) {
+    async writeFile(path: string, data: string | BinaryData) {
         this.maybeLog("Write: " + path);
 
         if (typeof data === "string") {
@@ -76,16 +78,17 @@ export class MyAdapter {
                 return this.adapter.write(path, data);
             }
         } else {
+            const binaryData = toArrayBuffer(data);
             if (path.endsWith(this.gitDir + "/index")) {
-                this.index = data;
+                this.index = binaryData;
                 this.indexmtime = Date.now();
                 // this.adapter.writeBinary(path, data);
             } else {
                 const file = this.vault.getAbstractFileByPath(path);
                 if (file instanceof TFile) {
-                    return this.vault.modifyBinary(file, data);
+                    return this.vault.modifyBinary(file, binaryData);
                 } else {
-                    return this.adapter.writeBinary(path, data);
+                    return this.adapter.writeBinary(path, binaryData);
                 }
             }
         }
@@ -219,4 +222,22 @@ export class MyAdapter {
     private maybeLog(_: string) {
         // console.log(text);
     }
+}
+
+function toArrayBuffer(data: BinaryData): ArrayBuffer {
+    if (data instanceof ArrayBuffer) {
+        return data;
+    }
+
+    // Obsidian's binary APIs expect an ArrayBuffer, while isomorphic-git may pass Buffer/Uint8Array views.
+    if (
+        data.buffer instanceof ArrayBuffer &&
+        data.byteOffset === 0 &&
+        data.byteLength === data.buffer.byteLength
+    ) {
+        return data.buffer;
+    }
+
+    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength).slice()
+        .buffer;
 }
