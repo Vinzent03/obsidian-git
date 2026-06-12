@@ -1,6 +1,6 @@
 import type { App } from "obsidian";
 import { Modal } from "obsidian";
-import { plural } from "src/utils";
+import { t } from "../../locale";
 
 export type DiscardResult = false | "delete" | "discard";
 
@@ -45,26 +45,30 @@ export class DiscardModal extends Modal {
         let titlePart = "";
         if (this.path != "") {
             if (sum > 1) {
-                titlePart = `files in "${this.path}"`;
+                titlePart = t("modal.files_in_path", { path: this.path });
             } else {
-                titlePart = `"${this.path}"`;
+                titlePart = t("modal.path", { path: this.path });
             }
         }
         titleEl.setText(
-            `${this.discardCount == 0 ? "Delete" : "Discard"} ${titlePart}`
+            `${this.discardCount == 0 ? t("modal.delete_title", { part: titlePart }) : t("modal.discard_title", { part: titlePart })}`
         );
         if (this.deleteCount > 0) {
             contentEl
                 .createEl("p")
                 .setText(
-                    `Are you sure you want to DELETE the ${plural(this.deleteCount, "untracked file")}? They are deleted according to your Obsidian trash settting.`
+                    this.deleteCount === 1
+                        ? t("modal.confirm_delete_untracked", { count: this.deleteCount })
+                        : t("modal.confirm_delete_untracked_plural", { count: this.deleteCount })
                 );
         }
         if (this.discardCount > 0) {
             contentEl
                 .createEl("p")
                 .setText(
-                    `Are you sure you want to discard ALL changes in ${plural(this.discardCount, "tracked file")}?`
+                    this.discardCount === 1
+                        ? t("modal.confirm_discard_tracked", { count: this.discardCount })
+                        : t("modal.confirm_discard_tracked_plural", { count: this.discardCount })
                 );
         }
         const div = contentEl.createDiv({ cls: "modal-button-container" });
@@ -72,7 +76,9 @@ export class DiscardModal extends Modal {
         if (this.deleteCount > 0) {
             const discardAndDelete = div.createEl("button", {
                 cls: "mod-warning",
-                text: `${this.discardCount > 0 ? "Discard" : "Delete"} all ${plural(sum, "file")}`,
+                text: sum === 1
+                    ? t("modal.discard_delete_all", { count: sum })
+                    : t("modal.discard_delete_all_plural", { count: sum }),
             });
             discardAndDelete.addEventListener("click", () => {
                 if (this.resolve) this.resolve("delete");
@@ -87,7 +93,9 @@ export class DiscardModal extends Modal {
         if (this.discardCount > 0) {
             const discard = div.createEl("button", {
                 cls: "mod-warning",
-                text: `Discard all ${plural(this.discardCount, "tracked file")}`,
+                text: this.discardCount === 1
+                    ? t("modal.discard_all_tracked", { count: this.discardCount })
+                    : t("modal.discard_all_tracked_plural", { count: this.discardCount }),
             });
             discard.addEventListener("click", () => {
                 if (this.resolve) this.resolve("discard");
@@ -100,7 +108,7 @@ export class DiscardModal extends Modal {
         }
 
         const close = div.createEl("button", {
-            text: "Cancel",
+            text: t("modal.cancel"),
         });
         close.addEventListener("click", () => {
             if (this.resolve) this.resolve(false);

@@ -6,6 +6,7 @@
     import { onMount } from "svelte";
     import LogComponent from "./components/logComponent.svelte";
     import type HistoryView from "./historyView";
+    import { t } from "../../locale";
 
     interface Props {
         plugin: ObsidianGit;
@@ -107,7 +108,7 @@
                 id="layoutChange"
                 class="clickable-icon nav-action-button"
                 data-icon={showTree ? "list" : "folder"}
-                aria-label="Change Layout"
+                aria-label={t("history.change_layout")}
                 bind:this={buttons[0]}
                 onclick={() => {
                     showTree = !showTree;
@@ -121,7 +122,7 @@
                 class="clickable-icon nav-action-button"
                 class:loading
                 data-icon="refresh-cw"
-                aria-label="Refresh"
+                aria-label={t("history.refresh")}
                 bind:this={buttons[1]}
                 onclick={triggerRefresh}
             ></div>

@@ -5,6 +5,7 @@ import { DIFF_VIEW_CONFIG } from "src/constants";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
 import type { DiffViewState } from "src/types";
+import { t } from "../../locale";
 
 export default class DiffView extends ItemView {
     parser: DOMParser;
@@ -38,7 +39,7 @@ export default class DiffView extends ItemView {
             let fileName = this.state.bFile.split("/").last();
             if (fileName?.endsWith(".md")) fileName = fileName.slice(0, -3);
 
-            return `Diff: ${fileName}`;
+            return t("diff.title", { file: fileName });
         }
         return DIFF_VIEW_CONFIG.name;
     }
@@ -129,7 +130,7 @@ export default class DiffView extends ItemView {
                     });
                     div.createEl("br");
                     div.createSpan({
-                        text: "File not found: " + this.state.bFile,
+                        text: t("diff.file_not_found", { file: this.state.bFile }),
                     });
                 }
             } finally {
