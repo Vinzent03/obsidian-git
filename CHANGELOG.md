@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.38.4](https://github.com/Vinzent03/obsidian-git/compare/2.38.3...2.38.4) (2026-06-14)
+
+
+### Bug Fixes
+
+* binary writes in mobile git adapter ([#1090](https://github.com/Vinzent03/obsidian-git/issues/1090)) ([fea3659](https://github.com/Vinzent03/obsidian-git/commit/fea3659ce1305641a1fabbbd5f24c10cffc42377))
+* properly create div ([6b6f29f](https://github.com/Vinzent03/obsidian-git/commit/6b6f29fb7136f1b68582fe8f7d71f85c90606e10))
+* watch for non Obsidian files on desktop as well ([3155bd0](https://github.com/Vinzent03/obsidian-git/commit/3155bd070f5f780065a55f7773ffb0fd9bc9e7a1)), closes [#1088](https://github.com/Vinzent03/obsidian-git/issues/1088)
+
 ### [2.38.3](https://github.com/Vinzent03/obsidian-git/compare/2.38.2...2.38.3) (2026-05-14)
 
 
