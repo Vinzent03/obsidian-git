@@ -275,8 +275,8 @@ export default class SplitDiffView extends ItemView {
         this.refreshing = false;
     }
 
-    renderButtons(): HTMLElement {
-        const contentEl = activeDocument.createElement("div");
+    renderButtons(container: Element): HTMLElement {
+        const contentEl = container.createDiv();
 
         const stageButton = contentEl.createDiv();
         stageButton.addClass("clickable-icon");
@@ -467,7 +467,7 @@ export default class SplitDiffView extends ItemView {
                     margin: 4,
                 },
                 renderRevertControl: showButtons
-                    ? () => this.renderButtons()
+                    ? () => this.renderButtons(container)
                     : undefined,
                 revertControls: showButtons ? "a-to-b" : undefined,
                 diffConfig: {

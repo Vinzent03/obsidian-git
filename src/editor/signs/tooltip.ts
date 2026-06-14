@@ -131,14 +131,12 @@ function createTooltip(
         .parseFromString(patchHtml, "text/html")
         .querySelector(".d2h-file-diff");
 
-    const contentEl = activeDocument.createElement("div");
-
     // toolbar
-    const toolbar = activeDocument.createElement("div");
+    const toolbar = createDiv();
     toolbar.addClass("tooltip-toolbar");
 
     const makeButton = (icon: string, label: string) => {
-        const btn = activeDocument.createElement("div");
+        const btn = createDiv();
         setIcon(btn, icon);
         btn.setAttr("aria-label", label);
         btn.addClass("clickable-icon");
@@ -154,6 +152,7 @@ function createTooltip(
     toolbar.appendChild(resetBtn);
 
     // append toolbar and diff
+    const contentEl = createDiv();
     contentEl.appendChild(toolbar);
     contentEl.appendChild(diffEl!);
     contentEl.addClass("git-diff-tooltip", "git-diff");
