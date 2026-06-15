@@ -16,6 +16,7 @@
     import TreeComponent from "./components/treeComponent.svelte";
     import type GitView from "./sourceControl";
     import TooManyFilesComponent from "./components/tooManyFilesComponent.svelte";
+    import { t } from "../../locale";
     import { onMount } from "svelte";
 
     interface Props {
@@ -227,7 +228,7 @@
                 id="backup-btn"
                 data-icon="arrow-up-circle"
                 class="clickable-icon nav-action-button"
-                aria-label="Commit-and-sync"
+                aria-label={t("sc.commit_and_sync")}
                 bind:this={buttons[0]}
                 onclick={commitAndSync}
             ></div>
@@ -235,7 +236,7 @@
                 id="commit-btn"
                 data-icon="check"
                 class="clickable-icon nav-action-button"
-                aria-label="Commit"
+                aria-label={t("sc.commit")}
                 bind:this={buttons[1]}
                 onclick={commit}
             ></div>
@@ -243,7 +244,7 @@
                 id="stage-all"
                 class="clickable-icon nav-action-button"
                 data-icon="plus-circle"
-                aria-label="Stage all"
+                aria-label={t("sc.stage_all")}
                 bind:this={buttons[2]}
                 onclick={stageAll}
             ></div>
@@ -251,7 +252,7 @@
                 id="unstage-all"
                 class="clickable-icon nav-action-button"
                 data-icon="minus-circle"
-                aria-label="Unstage all"
+                aria-label={t("sc.unstage_all")}
                 bind:this={buttons[3]}
                 onclick={unstageAll}
             ></div>
@@ -259,7 +260,7 @@
                 id="push"
                 class="clickable-icon nav-action-button"
                 data-icon="upload"
-                aria-label="Push"
+                aria-label={t("sc.push")}
                 bind:this={buttons[4]}
                 onclick={push}
             ></div>
@@ -267,14 +268,14 @@
                 id="pull"
                 class="clickable-icon nav-action-button"
                 data-icon="download"
-                aria-label="Pull"
+                aria-label={t("sc.pull")}
                 bind:this={buttons[5]}
                 onclick={pull}
             ></div>
             <div
                 id="layoutChange"
                 class="clickable-icon nav-action-button"
-                aria-label="Change Layout"
+                aria-label={t("sc.change_layout")}
                 data-icon={showTree ? "list" : "folder"}
                 bind:this={buttons[6]}
                 onclick={() => {
@@ -289,7 +290,7 @@
                 class="clickable-icon nav-action-button"
                 class:loading
                 data-icon="refresh-cw"
-                aria-label="Refresh"
+                aria-label={t("sc.refresh")}
                 bind:this={buttons[7]}
                 onclick={triggerRefresh}
             ></div>
@@ -300,14 +301,14 @@
             {rows}
             class="commit-msg-input"
             spellcheck="true"
-            placeholder="Commit Message"
+            placeholder={t("sc.commit_message_placeholder")}
             bind:value={commitMessage}
         ></textarea>
         {#if commitMessage}
             <div
                 class="git-commit-msg-clear-button"
                 onclick={() => (commitMessage = "")}
-                aria-label={"Clear"}
+                aria-label={t("sc.clear")}
             ></div>
         {/if}
     </div>
@@ -342,14 +343,14 @@
                             >
                         </div>
                         <div class="tree-item-inner nav-folder-title-content">
-                            Staged Changes
+                            {t("sc.staged_changes")}
                         </div>
 
                         <div class="git-tools">
                             <div class="buttons">
                                 <div
                                     data-icon="minus"
-                                    aria-label="Unstage"
+                                    aria-label={t("sc.unstage")}
                                     bind:this={buttons[8]}
                                     onclick={unstageAll}
                                     class="clickable-icon"
@@ -433,13 +434,13 @@
                         </div>
 
                         <div class="tree-item-inner nav-folder-title-content">
-                            Changes
+                            {t("sc.changes")}
                         </div>
                         <div class="git-tools">
                             <div class="buttons">
                                 <div
                                     data-icon="undo"
-                                    aria-label="Discard"
+                                    aria-label={t("sc.discard")}
                                     onclick={discard}
                                     class="clickable-icon"
                                 >
@@ -461,7 +462,7 @@
                                 </div>
                                 <div
                                     data-icon="plus"
-                                    aria-label="Stage"
+                                    aria-label={t("sc.stage")}
                                     bind:this={buttons[9]}
                                     onclick={stageAll}
                                     class="clickable-icon"
@@ -554,7 +555,7 @@
                             <div
                                 class="tree-item-inner nav-folder-title-content"
                             >
-                                Recently Pulled Files
+                                {t("sc.recently_pulled")}
                             </div>
 
                             <span class="tree-item-flair"

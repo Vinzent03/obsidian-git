@@ -1,5 +1,6 @@
 import { setIcon, moment } from "obsidian";
 import type ObsidianGit from "./main";
+import { t } from "./locale";
 import { CurrentGitAction } from "./types";
 
 interface StatusBarMessage {
@@ -86,7 +87,7 @@ export class StatusBar {
         if (this.plugin.localStorage.getConflict()) {
             setIcon(this.conflictEl, "alert-circle");
             this.conflictEl.ariaLabel =
-                "You have merge conflicts. Resolve them and commit afterwards.";
+                t("status.conflict");
             this.conflictEl.style.marginRight = "5px";
             this.conflictEl.addClass(this.base + "conflict");
         } else {
@@ -97,7 +98,7 @@ export class StatusBar {
         if (this.plugin.localStorage.getPausedAutomatics()) {
             setIcon(this.pausedEl, "pause-circle");
             this.pausedEl.ariaLabel =
-                "Automatic routines are currently paused.";
+                t("status.paused");
             this.pausedEl.style.marginRight = "5px";
             this.pausedEl.addClass(this.base + "paused");
         } else {
@@ -110,32 +111,32 @@ export class StatusBar {
                 this.displayFromNow();
                 break;
             case CurrentGitAction.status:
-                this.statusBarEl.ariaLabel = "Checking repository status...";
+                this.statusBarEl.ariaLabel = t("status.checking");
                 setIcon(this.iconEl, "refresh-cw");
                 this.statusBarEl.addClass(this.base + "status");
                 break;
             case CurrentGitAction.add:
-                this.statusBarEl.ariaLabel = "Adding files...";
+                this.statusBarEl.ariaLabel = t("status.adding");
                 setIcon(this.iconEl, "archive");
                 this.statusBarEl.addClass(this.base + "add");
                 break;
             case CurrentGitAction.commit:
-                this.statusBarEl.ariaLabel = "Committing changes...";
+                this.statusBarEl.ariaLabel = t("status.committing");
                 setIcon(this.iconEl, "git-commit");
                 this.statusBarEl.addClass(this.base + "commit");
                 break;
             case CurrentGitAction.push:
-                this.statusBarEl.ariaLabel = "Pushing changes...";
+                this.statusBarEl.ariaLabel = t("status.pushing");
                 setIcon(this.iconEl, "upload");
                 this.statusBarEl.addClass(this.base + "push");
                 break;
             case CurrentGitAction.pull:
-                this.statusBarEl.ariaLabel = "Pulling changes...";
+                this.statusBarEl.ariaLabel = t("status.pulling");
                 setIcon(this.iconEl, "download");
                 this.statusBarEl.addClass(this.base + "pull");
                 break;
             default:
-                this.statusBarEl.ariaLabel = "Failed on initialization!";
+                this.statusBarEl.ariaLabel = t("status.failed_init");
                 setIcon(this.iconEl, "alert-triangle");
                 this.statusBarEl.addClass(this.base + "failed-init");
                 break;
@@ -148,16 +149,16 @@ export class StatusBar {
         if (timestamp) {
             const fromNow = moment(timestamp).fromNow();
             this.statusBarEl.ariaLabel = `${
-                offlineMode ? "Offline: " : ""
-            }Last Commit: ${fromNow}`;
+                offlineMode ? t("status.offline_prefix") : ""
+            }${t("status.last_commit", { time: fromNow })}`;
 
             if ((this.unPushedCommits ?? 0) > 0) {
-                this.statusBarEl.ariaLabel += `\n(${this.unPushedCommits} unpushed commits)`;
+                this.statusBarEl.ariaLabel += `\n${t("status.unpushed_commits", { count: this.unPushedCommits })}`;
             }
         } else {
             this.statusBarEl.ariaLabel = offlineMode
-                ? "Git is offline"
-                : "Git is ready";
+                ? t("status.git_offline")
+                : t("status.git_ready");
         }
 
         if (offlineMode) {

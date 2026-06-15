@@ -9,6 +9,7 @@ import { SimpleGit } from "./gitManager/simpleGit";
 import { getNewLeaf, splitRemoteBranch } from "./utils";
 import { GeneralModal } from "./ui/modals/generalModal";
 import type { DiffViewState } from "./types";
+import { t } from "./locale";
 
 export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
@@ -63,11 +64,9 @@ export default class Tools {
 
             if (tooBigFiles.length > 0) {
                 this.plugin.displayError(
-                    `Aborted commit, because the following files are too big:\n- ${tooBigFiles
-                        .map((e) => e.vaultPath)
-                        .join(
-                            "\n- "
-                        )}\nPlease remove them or add to .gitignore.`
+                    t("msg.too_big_files", {
+                        files: tooBigFiles.map((e) => `- ${e.vaultPath}`).join("\n"),
+                    })
                 );
 
                 return true;
@@ -153,7 +152,7 @@ export default class Tools {
         if (command === undefined) return;
 
         this.plugin.promiseQueue.addTask(async () => {
-            const notice = new Notice(`Running '${command}'...`, 999_999);
+            const notice = new Notice(t("conflict.running_command", { command }), 999_999);
 
             try {
                 const res = await gitManager.rawCommand(command);

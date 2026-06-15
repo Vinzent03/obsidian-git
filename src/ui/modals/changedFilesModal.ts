@@ -1,6 +1,7 @@
 import { FuzzySuggestModal } from "obsidian";
 import type ObsidianGit from "src/main";
 import type { FileStatusResult } from "src/types";
+import { t } from "../../locale";
 
 export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
     plugin: ObsidianGit;
@@ -11,7 +12,7 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
         this.plugin = plugin;
         this.changedFiles = changedFiles;
         this.setPlaceholder(
-            "Not supported files will be opened by default app!"
+            t("modal.changed_files_placeholder")
         );
     }
 
@@ -21,15 +22,15 @@ export class ChangedFilesModal extends FuzzySuggestModal<FileStatusResult> {
 
     getItemText(item: FileStatusResult): string {
         if (item.index == "U" && item.workingDir == "U") {
-            return `Untracked | ${item.vaultPath}`;
+            return `${t("modal.untracked")} | ${item.vaultPath}`;
         }
 
         let workingDir = "";
         let index = "";
 
         if (item.workingDir != " ")
-            workingDir = `Working Dir: ${item.workingDir} `;
-        if (item.index != " ") index = `Index: ${item.index}`;
+            workingDir = `${t("modal.working_dir", { status: item.workingDir })} `;
+        if (item.index != " ") index = `${t("modal.index", { status: item.index })}`;
 
         return `${workingDir}${index} | ${item.vaultPath}`;
     }
