@@ -64,6 +64,9 @@ import { DiscardModal, type DiscardResult } from "./ui/modals/discardModal";
 import { HunkActions } from "./editor/signs/hunkActions";
 import { EditorIntegration } from "./editor/editorIntegration";
 
+const DEBUG_LOG_FILE = "plugin/log/git-log.md";
+const DEBUG_LOG_MAX_BYTES = 256 * 1024;
+
 export default class ObsidianGit extends Plugin {
     gitManager: GitManager;
     automaticsManager = new AutomaticsManager(this);
@@ -494,7 +497,7 @@ export default class ObsidianGit extends Plugin {
             await this.saveSettings();
         }
         if (this.settings.username != undefined) {
-            this.localStorage.setPassword(this.settings.username);
+            this.localStorage.setUsername(this.settings.username);
             this.settings.username = undefined;
             await this.saveSettings();
         }
@@ -1627,6 +1630,10 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
         }
 
         this.setPluginState({ gitAction: CurrentGitAction.idle });
+        this.debugLog("displayError", {
+            message: error.message,
+            stack: error.stack,
+        });
         if (this.settings.showErrorNotices) {
             new Notice(error.message, timeout);
         }
@@ -1636,5 +1643,76 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
 
     log(...data: unknown[]) {
         console.log(`${this.manifest.id}:`, ...data);
+    }
+
+    debugLog(...data: unknown[]) {
+        this.log(...data);
+        void this.appendDebugLog(data);
+    }
+
+    private async appendDebugLog(data: unknown[]): Promise<void> {
+        if (!this.settings?.debugLogging) {
+            return;
+        }
+        try {
+            const timestamp = new Date().toISOString();
+            const line = `${timestamp} ${data
+                .map((item) => this.formatDebugValue(item))
+                .join(" ")}\n`;
+            const adapter = this.app.vault.adapter;
+            const logDir = DEBUG_LOG_FILE.split("/").slice(0, -1).join("/");
+            if (logDir && !(await adapter.exists(logDir))) {
+                await adapter.mkdir(logDir);
+            }
+            if (await adapter.exists(DEBUG_LOG_FILE)) {
+                const stat = await adapter.stat(DEBUG_LOG_FILE);
+                if ((stat?.size ?? 0) > DEBUG_LOG_MAX_BYTES) {
+                    const currentLog = await adapter.read(DEBUG_LOG_FILE);
+                    await adapter.write(
+                        DEBUG_LOG_FILE,
+                        currentLog.slice(-DEBUG_LOG_MAX_BYTES / 2)
+                    );
+                }
+                await adapter.append(DEBUG_LOG_FILE, line);
+            } else {
+                await adapter.write(DEBUG_LOG_FILE, line);
+            }
+        } catch (error) {
+            console.error(
+                `${this.manifest.id}: failed to write debug log`,
+                error
+            );
+        }
+    }
+
+    private redactDebugValue(value: unknown): unknown {
+        if (Array.isArray(value)) {
+            return value.map((item) => this.redactDebugValue(item));
+        }
+        if (value == null || typeof value !== "object") {
+            return value;
+        }
+        return Object.fromEntries(
+            Object.entries(value).map(([key, item]) => [
+                key,
+                /password|token|secret|credential|authorization/i.test(key)
+                    ? "***"
+                    : this.redactDebugValue(item),
+            ])
+        );
+    }
+
+    private formatDebugValue(value: unknown): string {
+        if (typeof value === "string") {
+            return this.redactDebugString(value);
+        }
+        return JSON.stringify(this.redactDebugValue(value));
+    }
+
+    private redactDebugString(value: string): string {
+        return value.replace(
+            /((?:password|token|secret|credential|authorization)[^=:\s]*\s*[=:]\s*)[^\s&]+/gi,
+            "$1***"
+        );
     }
 }

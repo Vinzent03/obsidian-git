@@ -31,6 +31,7 @@ export interface ObsidianGitSettings {
      * Whether messages from {@link ObsidianGit.displayError} should be shown
      */
     showErrorNotices: boolean;
+    debugLogging: boolean;
     disablePopupsForNoChanges: boolean;
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
