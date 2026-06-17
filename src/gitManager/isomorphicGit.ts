@@ -119,16 +119,33 @@ export class IsomorphicGit extends GitManager {
                     const res = await requestUrl({
                         url,
                         method,
-                        headers,
+                        // Ask the server not to compress the response. The
+                        // packfile parser needs the exact raw bytes; if a
+                        // server or proxy gzips the response and the platform
+                        // does not transparently inflate it, the packfile is
+                        // persisted corrupted and only fails later with
+                        // "Packfile payload corrupted".
+                        headers: { "Accept-Encoding": "identity", ...headers },
                         body: collectedBody,
                         throw: false,
                     });
+
+                    // Defense in depth: if the response still arrived gzipped
+                    // (a server/proxy ignored the request and the platform did
+                    // not inflate it), inflate it ourselves. This is keyed on
+                    // the gzip magic bytes rather than the `Content-Encoding`
+                    // header on purpose: some platforms auto-inflate but leave
+                    // the header in place, and trusting it would double-inflate
+                    // and corrupt the body.
+                    const responseBuffer = await inflateIfGzipped(
+                        res.arrayBuffer
+                    );
 
                     return {
                         url,
                         method,
                         headers: res.headers,
-                        body: arrayBufferToAsyncIterator(res.arrayBuffer),
+                        body: arrayBufferToAsyncIterator(responseBuffer),
                         statusCode: res.status,
                         statusMessage: res.status.toString(),
                     };
@@ -1320,4 +1337,27 @@ async function asyncIteratorToArrayBuffer(
 
     const response = new Response(stream);
     return await response.arrayBuffer();
+}
+
+// If `buffer` starts with the gzip magic bytes (0x1f 0x8b), inflate it and
+// return the decompressed bytes; otherwise return it unchanged. A valid git
+// smart-HTTP response body never starts with those bytes (it begins with an
+// ASCII pkt-line length or "PACK"), so this check is unambiguous. Keyed on the
+// content rather than the `Content-Encoding` header because some platforms
+// transparently inflate the body while leaving the header in place.
+async function inflateIfGzipped(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+    const bytes = new Uint8Array(buffer);
+    if (bytes.length < 2 || bytes[0] !== 0x1f || bytes[1] !== 0x8b) {
+        return buffer;
+    }
+    try {
+        const stream = new Blob([buffer])
+            .stream()
+            .pipeThrough(new DecompressionStream("gzip"));
+        return await new Response(stream).arrayBuffer();
+    } catch {
+        // If decompression is unavailable or fails, fall back to the original
+        // bytes so behavior is no worse than before.
+        return buffer;
+    }
 }
