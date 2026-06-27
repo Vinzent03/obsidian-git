@@ -486,6 +486,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         })
                 );
 
+            new Setting(containerEl)
+                .setName("Commit-and-sync before quitting Obsidian")
+                .setDesc(
+                    "Run a commit-and-sync automatically when Obsidian is about to quit, so the last changes are pushed before closing. Best effort: it may not run on a crash or a forced quit."
+                )
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.commitAndSyncOnQuit)
+                        .onChange(async (value) => {
+                            plugin.settings.commitAndSyncOnQuit = value;
+                            await plugin.saveSettings();
+                        })
+                );
+
             if (plugin.gitManager instanceof SimpleGit) {
                 new Setting(containerEl)
                     .setName("Hunk management")

@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     autoCommitOnlyStaged: false,
     disablePush: false,
     pullBeforePush: true,
+    commitAndSyncOnQuit: false,
     disablePopups: false,
     showErrorNotices: true,
     disablePopupsForNoChanges: false,

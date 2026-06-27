@@ -24,6 +24,11 @@ export interface ObsidianGitSettings {
      */
     pullBeforePush: boolean;
     /**
+     * Whether to run a commit-and-sync automatically when Obsidian is about to
+     * quit. Best effort: the quit event is not guaranteed to run.
+     */
+    commitAndSyncOnQuit: boolean;
+    /**
      * Whether messages from {@link ObsidianGit.displayMessage} should be shown
      */
     disablePopups: boolean;

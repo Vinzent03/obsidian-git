@@ -233,6 +233,21 @@ export default class ObsidianGit extends Plugin {
         );
 
         this.registerEvent(
+            this.app.workspace.on("quit", (tasks) => {
+                if (!this.settings.commitAndSyncOnQuit) return;
+                tasks.add(async () => {
+                    // Best effort: don't block quitting if the network hangs.
+                    await Promise.race([
+                        this.commitAndSync({ fromAutoBackup: false }),
+                        new Promise<void>((resolve) =>
+                            window.setTimeout(resolve, 30 * 1000)
+                        ),
+                    ]).catch((e) => this.displayError(e));
+                });
+            })
+        );
+
+        this.registerEvent(
             this.app.workspace.on("file-menu", (menu, file, source) => {
                 this.handleFileMenu(menu, file, source, "file-manu");
             })
