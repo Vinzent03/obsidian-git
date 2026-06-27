@@ -488,6 +488,25 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
             if (plugin.gitManager instanceof SimpleGit) {
                 new Setting(containerEl)
+                    .setName("Squash commits before push")
+                    .setDesc(
+                        "On commit-and-sync, squash all local unpushed commits into a single commit right before pushing. Keeps the remote history clean when committing often. Only unpushed commits are rewritten, so no force-push is needed. Desktop only."
+                    )
+                    .addToggle((toggle) =>
+                        toggle
+                            .setValue(
+                                plugin.settings.squashCommitsBeforePush
+                            )
+                            .onChange(async (value) => {
+                                plugin.settings.squashCommitsBeforePush =
+                                    value;
+                                await plugin.saveSettings();
+                            })
+                    );
+            }
+
+            if (plugin.gitManager instanceof SimpleGit) {
+                new Setting(containerEl)
                     .setName("Hunk management")
                     .setDesc(
                         "Hunks are sections of grouped line changes right in your editor."
