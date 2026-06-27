@@ -1060,11 +1060,19 @@ export default class ObsidianGit extends Plugin {
                     committedFiles =
                         unstagedFiles.length + stagedFiles.length || 0;
                 }
-                this.displayMessage(
-                    `Committed${roughly ? " approx." : ""} ${committedFiles} ${
-                        committedFiles == 1 ? "file" : "files"
-                    }`
-                );
+                if (committedFiles === 0) {
+                    // simple-git resolves with { changes: 0 } instead of
+                    // throwing when there is nothing to commit (e.g. the
+                    // detected change was already committed by a previous run).
+                    // Report this honestly instead of "Committed 0 files".
+                    this.displayMessage("No changes to commit");
+                } else {
+                    this.displayMessage(
+                        `Committed${roughly ? " approx." : ""} ${committedFiles} ${
+                            committedFiles == 1 ? "file" : "files"
+                        }`
+                    );
+                }
             } else {
                 this.displayMessage("No changes to commit");
             }
