@@ -1110,6 +1110,17 @@ export default class ObsidianGit extends Plugin {
                 this.displayError(`Cannot push. You have conflicts`);
                 return false;
             }
+            // Squash local unpushed commits into one before pushing, so frequent
+            // local commits don't clutter the remote history. Only unpushed
+            // history is rewritten (no force-push). Conflicts are excluded above.
+            if (
+                this.settings.squashCommitsBeforePush &&
+                this.gitManager instanceof SimpleGit
+            ) {
+                await this.gitManager.squashAllUnpushedCommits({
+                    message: this.settings.autoCommitMessage,
+                });
+            }
             this.log("Pushing....");
             const pushedFiles = await this.gitManager.push();
 

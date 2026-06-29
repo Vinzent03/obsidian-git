@@ -818,6 +818,50 @@ export class SimpleGit extends GitManager {
         }
     }
 
+    /**
+     * Squashes all local commits that have not been pushed yet into a single
+     * commit. Only unpushed history is rewritten (HEAD is soft-reset onto the
+     * tracking branch), so this never requires a force-push and is safe across
+     * multiple devices. No-op if there is no tracking branch, fewer than two
+     * unpushed commits, or a merge commit is present in the unpushed range.
+     */
+    async squashAllUnpushedCommits({
+        message,
+    }: {
+        message: string;
+    }): Promise<void> {
+        const status = await this.git.status();
+        const trackingBranch = status.tracking;
+        if (!trackingBranch || !status.current) {
+            return;
+        }
+        const range = `${trackingBranch}..HEAD`;
+        const unpushed = parseInt(
+            (await this.git.raw(["rev-list", "--count", range])).trim(),
+            10
+        );
+        if (unpushed < 2) {
+            return;
+        }
+        // Flattening a merge commit would lose its structure, so skip those.
+        const merges = parseInt(
+            (
+                await this.git.raw(["rev-list", "--merges", "--count", range])
+            ).trim(),
+            10
+        );
+        if (merges > 0) {
+            return;
+        }
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
+        // Soft reset keeps the index and working tree, so all unpushed changes
+        // stay staged and are re-committed as a single commit.
+        await this.git.reset(["--soft", trackingBranch]);
+        await this.git.commit(await this.formatCommitMessage(message));
+        this.app.workspace.trigger("obsidian-git:head-change");
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+    }
+
     async getUnpushedCommits(): Promise<number> {
         const status = await this.git.status();
         const trackingBranch = status.tracking;
