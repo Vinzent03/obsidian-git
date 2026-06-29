@@ -494,12 +494,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     )
                     .addToggle((toggle) =>
                         toggle
-                            .setValue(
-                                plugin.settings.squashCommitsBeforePush
-                            )
+                            .setValue(plugin.settings.squashCommitsBeforePush)
                             .onChange(async (value) => {
-                                plugin.settings.squashCommitsBeforePush =
-                                    value;
+                                plugin.settings.squashCommitsBeforePush = value;
                                 await plugin.saveSettings();
                             })
                     );
