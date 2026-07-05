@@ -1,7 +1,7 @@
 import * as cssColorConverter from "css-color-converter";
 import { spawn, type SpawnOptionsWithoutStdio } from "child_process";
 import type { App, ItemView, RGB, WorkspaceLeaf } from "obsidian";
-import { Keymap, Menu, moment, TFile } from "obsidian";
+import { Keymap, Menu, moment, TFile, getLanguage } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
 
 export function assertNever(x: never): never {
@@ -167,6 +167,10 @@ export function getDisplayPath(path: string): string {
 }
 
 export function formatMinutes(minutes: number): string {
+    const lang = getLanguage().toLowerCase();
+    if (lang.startsWith("zh")) {
+        return `${minutes} 分钟`;
+    }
     if (minutes === 1) return "1 minute";
     return `${minutes} minutes`;
 }

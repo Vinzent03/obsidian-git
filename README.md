@@ -1,5 +1,7 @@
 # Obsidian Git Plugin
 
+English | [中文](README_zh.md)
+
 A powerful community plugin for [Obsidian.md](https://obsidian.md) that brings Git integration right into your vault. Automatically commit, pull, push, and see your changes — all within Obsidian.
 
 ## 📚 Documentation

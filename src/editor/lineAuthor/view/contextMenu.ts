@@ -5,6 +5,7 @@ import { findGutterElementUnderMouse } from "src/editor/lineAuthor/view/gutter/g
 import { pluginRef } from "src/pluginGlobalRef";
 import type { BlameCommit } from "src/types";
 import { impossibleBranch } from "src/utils";
+import { t } from "../../../locale";
 
 type ContextMenuConfigurableSettingsKeys =
     | "showCommitHash"
@@ -43,7 +44,7 @@ export function handleContextMenu(
 function addCopyHashMenuItem(commit: CtxMenuCommitInfo, menu: Menu) {
     menu.addItem((item) =>
         item
-            .setTitle("Copy commit hash")
+            .setTitle(t("editor.copy_commit_hash"))
             .setIcon("copy")
             .setSection("obs-git-line-author-copy")
             .onClick((_e) => navigator.clipboard.writeText(commit.hash))
@@ -67,17 +68,16 @@ function addConfigurableLineAuthorSettings(
     const defaultValue = DEFAULT_SETTINGS.lineAuthor[key];
 
     if (key === "showCommitHash") {
-        title = "Show commit hash";
+        title = t("editor.show_commit_hash");
         actionNewValue = currentValue;
     } else if (key === "authorDisplay") {
         const showOption = settings.lastShownAuthorDisplay ?? defaultValue;
-        title = "Show author " + (currentlyShown ? currentValue : showOption);
+        title = t("editor.show_author", { option: (currentlyShown ? currentValue : showOption) });
         actionNewValue = currentlyShown ? "hide" : showOption;
     } else if (key === "dateTimeFormatOptions") {
         const showOption =
             settings.lastShownDateTimeFormatOptions ?? defaultValue;
-        title = "Show " + (currentlyShown ? currentValue : showOption);
-        title += !title.contains("date") ? " date" : "";
+        title = t("editor.show_date", { option: (currentlyShown ? currentValue : showOption) });
         actionNewValue = currentlyShown ? "hide" : showOption;
     } else {
         impossibleBranch(key);
