@@ -823,7 +823,8 @@ export class SimpleGit extends GitManager {
      * commit. Only unpushed history is rewritten (HEAD is soft-reset onto the
      * tracking branch), so this never requires a force-push and is safe across
      * multiple devices. No-op if there is no tracking branch, fewer than two
-     * unpushed commits, or a merge commit is present in the unpushed range.
+     * unpushed commits, a merge commit is present in the unpushed range, or
+     * there are staged but uncommitted changes.
      */
     async squashAllUnpushedCommits({
         message,
@@ -833,6 +834,16 @@ export class SimpleGit extends GitManager {
         const status = await this.git.status();
         const trackingBranch = status.tracking;
         if (!trackingBranch || !status.current) {
+            return;
+        }
+        // A soft reset keeps the index, so any staged but uncommitted changes
+        // would be folded into the squash commit, silently committing work the
+        // user did not intend to. Abort the squash and let the push proceed
+        // with the existing history untouched.
+        const staged = (
+            await this.git.raw(["diff", "--cached", "--name-only"])
+        ).trim();
+        if (staged.length > 0) {
             return;
         }
         const range = `${trackingBranch}..HEAD`;
