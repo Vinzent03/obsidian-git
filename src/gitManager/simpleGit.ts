@@ -32,8 +32,7 @@ import { GitManager } from "./gitManager";
 export class SimpleGit extends GitManager {
     git: simple.SimpleGit;
     absoluteRepoPath: string;
-    askPassWatchAbortController: AbortController | undefined;
-    fileWatcherAbortController: AbortController | undefined;
+    watchAbortController: AbortController | undefined;
     useDefaultWindowsGitPath: boolean = false;
     constructor(plugin: ObsidianGit) {
         super(plugin);
@@ -156,44 +155,7 @@ export class SimpleGit extends GitManager {
             envs["OBSIDIAN_GIT"] = "1";
 
             this.git = this.git.env(envs);
-            this.watchFileChanges();
         }
-    }
-
-    /**
-     * Watches for file changes in the git repository and triggers a refresh of
-     * the plugin state when a change is detected.
-     *
-     * Uses the fs api rather than evens by the Obsidian vault to react to files
-     * that are not recognized by Obsidian.
-     */
-    watchFileChanges(): void {
-        this.fileWatcherAbortController?.abort();
-        this.fileWatcherAbortController = new AbortController();
-        const watcher = fsPromises.watch(this.absoluteRepoPath, {
-            recursive: true,
-            signal: this.fileWatcherAbortController.signal,
-            maxQueue: 1,
-        });
-        (async () => {
-            try {
-                for await (const event of watcher) {
-                    if (event.filename) {
-                        if (
-                            !event.filename.startsWith(".git/") &&
-                            !(await this.isIgnored(event.filename))
-                        ) {
-                            this.plugin.debRefresh();
-                            this.plugin.autoCommitDebouncer?.();
-                        }
-                    }
-                }
-            } catch (err) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (err.name === "AbortError") return;
-                throw err;
-            }
-        })().catch((e) => this.plugin.displayError(e));
     }
 
     // Constructs a path relative to the vault from a path relative to the git repository
@@ -260,8 +222,8 @@ export class SimpleGit extends GitManager {
             path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
             0o755
         );
-        this.askPassWatchAbortController = new AbortController();
-        const { signal } = this.askPassWatchAbortController;
+        this.watchAbortController = new AbortController();
+        const { signal } = this.watchAbortController;
         try {
             const watcher = fsPromises.watch(this.absPluginConfigPath, {
                 signal,
@@ -382,8 +344,7 @@ export class SimpleGit extends GitManager {
     }
 
     unload(): void {
-        this.askPassWatchAbortController?.abort();
-        this.fileWatcherAbortController?.abort();
+        this.watchAbortController?.abort();
     }
 
     async status(opts?: { path?: string }): Promise<Status> {
@@ -1197,10 +1158,6 @@ export class SimpleGit extends GitManager {
         const parts = command.split(" "); // Very simple parsing, may need string-argv
         const res = await this.git.raw(parts[0], ...parts.slice(1));
         return res;
-    }
-
-    async isIgnored(path: string) {
-        return (await this.git.checkIgnore(path)).length > 0;
     }
 
     async getSubmoduleOfFile(
