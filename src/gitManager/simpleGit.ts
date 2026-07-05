@@ -653,7 +653,13 @@ export class SimpleGit extends GitManager {
                 ]);
 
             const branchInfo = await this.branchInfo();
-            const localCommit = await this.git.revparse([branchInfo.current!]);
+            if (!branchInfo.current) {
+                this.plugin.displayError(
+                    "No current branch found. Cannot pull."
+                );
+                return undefined;
+            }
+            const localCommit = await this.git.revparse([branchInfo.current]);
 
             if (!branchInfo.tracking && this.plugin.settings.updateSubmodules) {
                 this.plugin.log(
@@ -713,7 +719,7 @@ export class SimpleGit extends GitManager {
                 this.app.workspace.trigger("obsidian-git:head-change");
 
                 const afterMergeCommit = await this.git.revparse([
-                    branchInfo.current!,
+                    branchInfo.current,
                 ]);
 
                 const filesChanged = await this.git.diff([
@@ -752,7 +758,14 @@ export class SimpleGit extends GitManager {
             }
             const status = await this.git.status();
             const trackingBranch = status.tracking;
-            const currentBranch = status.current!;
+            const currentBranch = status.current;
+
+            if (!currentBranch) {
+                this.plugin.displayError(
+                    "No current branch found. Cannot push."
+                );
+                return undefined;
+            }
 
             if (!trackingBranch && this.plugin.settings.updateSubmodules) {
                 this.plugin.log(
@@ -810,7 +823,12 @@ export class SimpleGit extends GitManager {
         }
         const status = await this.git.status();
         const trackingBranch = status.tracking;
-        const currentBranch = status.current!;
+        const currentBranch = status.current;
+        if (!currentBranch) {
+            this.plugin.log("During canPush check, no current branch found.");
+            return false;
+        }
+
         if (!trackingBranch) {
             return false;
         }
