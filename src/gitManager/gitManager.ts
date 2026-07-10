@@ -162,51 +162,6 @@ export abstract class GitManager {
 
     unload(): void {}
 
-    private _getTreeStructure<T = DiffFile | FileStatusResult>(
-        children: (T & { path: string })[],
-        beginLength = 0
-    ): TreeItem<T>[] {
-        const list: TreeItem<T>[] = [];
-        children = [...children];
-        while (children.length > 0) {
-            const first = children.first()!;
-            const restPath = first.path.substring(beginLength);
-            if (restPath.contains("/")) {
-                const title = restPath.substring(0, restPath.indexOf("/"));
-                const childrenWithSameTitle = children.filter((item) => {
-                    return item.path
-                        .substring(beginLength)
-                        .startsWith(title + "/");
-                });
-                childrenWithSameTitle.forEach((item) => children.remove(item));
-                const path = first.path.substring(
-                    0,
-                    restPath.indexOf("/") + beginLength
-                );
-                list.push({
-                    title: title,
-                    path: path,
-                    vaultPath: this.getRelativeVaultPath(path),
-                    children: this._getTreeStructure(
-                        childrenWithSameTitle,
-                        (beginLength > 0
-                            ? beginLength + title.length
-                            : title.length) + 1
-                    ),
-                });
-            } else {
-                list.push({
-                    title: restPath,
-                    data: first,
-                    path: first.path,
-                    vaultPath: this.getRelativeVaultPath(first.path),
-                });
-                children.remove(first);
-            }
-        }
-        return list;
-    }
-
     /*
      * Sorts the children and simplifies the title
      * If a node only contains another subdirectory, that subdirectory is moved up one level and integrated into the parent node
@@ -261,8 +216,65 @@ export abstract class GitManager {
     getTreeStructure<T = DiffFile | FileStatusResult>(
         children: (T & { path: string })[]
     ): TreeItem<T>[] {
-        const tree = this._getTreeStructure<T>(children);
+        interface TrieNode {
+            title: string;
+            path: string;
+            data?: T;
+            children: Map<string, TrieNode>;
+        }
 
+        const rootChildren = new Map<string, TrieNode>();
+
+        for (const item of children) {
+            const parts = item.path.split("/");
+            let currentChildren = rootChildren;
+            let currentPath = "";
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                currentPath = currentPath ? currentPath + "/" + part : part;
+                const isLast = i === parts.length - 1;
+
+                let node = currentChildren.get(part);
+                if (!node) {
+                    node = {
+                        title: part,
+                        path: currentPath,
+                        children: new Map<string, TrieNode>(),
+                    };
+                    currentChildren.set(part, node);
+                }
+
+                if (isLast) {
+                    node.data = item;
+                }
+                currentChildren = node.children;
+            }
+        }
+
+        const convert = (nodes: Map<string, TrieNode>): TreeItem<T>[] => {
+            const list: TreeItem<T>[] = [];
+            for (const node of nodes.values()) {
+                if (node.children.size > 0) {
+                    list.push({
+                        title: node.title,
+                        path: node.path,
+                        vaultPath: this.getRelativeVaultPath(node.path),
+                        children: convert(node.children),
+                    });
+                } else {
+                    list.push({
+                        title: node.title,
+                        data: node.data,
+                        path: node.path,
+                        vaultPath: this.getRelativeVaultPath(node.path),
+                    });
+                }
+            }
+            return list;
+        };
+
+        const tree = convert(rootChildren);
         const res = this.simplify<T>(tree);
         return res;
     }
