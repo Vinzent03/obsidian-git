@@ -1,6 +1,11 @@
 import type { Extension } from "@codemirror/state";
-import type { EventRef, TAbstractFile, WorkspaceLeaf } from "obsidian";
-import { MarkdownView, Platform, TFile } from "obsidian";
+import type {
+    Debouncer,
+    EventRef,
+    TAbstractFile,
+    WorkspaceLeaf,
+} from "obsidian";
+import { debounce, MarkdownView, Platform, TFile } from "obsidian";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import {
     LineAuthorProvider,
@@ -27,6 +32,7 @@ export class LineAuthoringFeature {
     private refreshOnCssChangeEvent?: EventRef;
     private fileRenameEvent?: EventRef;
     private gutterContextMenuEvent?: EventRef;
+    private debouncedTrackChanged?: Debouncer<[TFile], void>;
     private codeMirrorExtensions: Extension[] = [];
 
     constructor(private plg: ObsidianGit) {}
@@ -58,6 +64,16 @@ export class LineAuthoringFeature {
 
             this.lineAuthorInfoProvider = new LineAuthorProvider(this.plg);
 
+            this.debouncedTrackChanged = debounce(
+                (file: TFile) => {
+                    this.lineAuthorInfoProvider
+                        ?.trackChanged(file)
+                        .catch(console.error);
+                },
+                1000,
+                false
+            );
+
             this.createEventHandlers();
 
             this.activateCodeMirrorExtensions();
@@ -77,6 +93,9 @@ export class LineAuthoringFeature {
         this.destroyEventHandlers();
 
         this.deactivateCodeMirrorExtensions();
+
+        this.debouncedTrackChanged?.cancel();
+        this.debouncedTrackChanged = undefined;
 
         this.lineAuthorInfoProvider?.destroy();
         this.lineAuthorInfoProvider = undefined;
@@ -212,7 +231,7 @@ export class LineAuthoringFeature {
             "modify",
             (anyPath: TAbstractFile) =>
                 anyPath instanceof TFile &&
-                this.lineAuthorInfoProvider?.trackChanged(anyPath)
+                this.debouncedTrackChanged?.(anyPath)
         );
     }
 
