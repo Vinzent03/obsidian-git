@@ -1117,9 +1117,7 @@ export default class ObsidianGit extends Plugin {
                 this.settings.squashCommitsBeforePush &&
                 this.gitManager instanceof SimpleGit
             ) {
-                await this.gitManager.squashAllUnpushedCommits({
-                    message: this.settings.autoCommitMessage,
-                });
+                await this.gitManager.squashAllUnpushedCommits();
             }
             this.log("Pushing....");
             const pushedFiles = await this.gitManager.push();
