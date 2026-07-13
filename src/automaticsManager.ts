@@ -261,6 +261,9 @@ export default class AutomaticsManager {
      * This is done by the difference between the setting and the time since the last auto action, but at least 0.
      */
     private diff(setting: number, lastAuto: Date) {
+        if (isNaN(lastAuto.getTime())) {
+            return setting;
+        }
         const now = new Date();
         const diff =
             setting -
