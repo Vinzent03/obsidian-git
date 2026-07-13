@@ -111,8 +111,10 @@ export class MyAdapter {
         return this.adapter.mkdir(path);
     }
     async rmdir(path: string, opts: any) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        return this.adapter.rmdir(path, opts?.options?.recursive ?? false);
+        return this.adapter.rmdir(
+            path,
+            opts?.recursive === true || opts?.options?.recursive === true
+        );
     }
     async stat(path: string) {
         if (path.endsWith(this.gitDir + "/index")) {
