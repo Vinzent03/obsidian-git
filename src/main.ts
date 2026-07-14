@@ -16,6 +16,7 @@ import * as path from "path";
 import * as fsPromises from "fs/promises";
 import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
+import { RenameTracker, type RenameHint } from "src/renameTracker";
 import { ObsidianGitSettingsTab } from "src/setting/settings";
 import { StatusBar } from "src/statusBar";
 import { CustomMessageModal } from "src/ui/modals/customMessageModal";
@@ -69,6 +70,10 @@ export default class ObsidianGit extends Plugin {
     automaticsManager = new AutomaticsManager(this);
     tools = new Tools(this);
     localStorage = new LocalStorageSettings(this);
+    renameTracker = new RenameTracker(
+        this.localStorage.getRenameHints(),
+        (hints) => this.localStorage.setRenameHints(hints)
+    );
     settings: ObsidianGitSettings;
     settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
@@ -80,6 +85,7 @@ export default class ObsidianGit extends Plugin {
     lastPulledFiles: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue(this);
+    private renameQueue: Promise<void> = Promise.resolve();
 
     /**
      * Debouncer for the auto commit after file changes.
@@ -268,9 +274,15 @@ export default class ObsidianGit extends Plugin {
             })
         );
         this.registerEvent(
-            this.app.vault.on("rename", () => {
-                this.debRefresh();
-                this.autoCommitDebouncer?.();
+            this.app.vault.on("rename", (file, oldPath) => {
+                const candidates = this.getRenameCandidates(file, oldPath);
+                this.renameQueue = this.renameQueue
+                    .then(() => this.recordRenames(candidates))
+                    .catch((error) => this.displayError(error));
+                void this.renameQueue.then(() => {
+                    this.debRefresh();
+                    this.autoCommitDebouncer?.();
+                });
             })
         );
 
@@ -321,6 +333,94 @@ export default class ObsidianGit extends Plugin {
         this.setRefreshDebouncer();
 
         addCommmands(this);
+    }
+
+    private getRepoPathForRename(vaultPath: string): string | undefined {
+        if (!(this.gitManager instanceof SimpleGit)) {
+            const basePath = normalizePath(this.settings.basePath).replace(
+                /\/$/,
+                ""
+            );
+            const normalizedVaultPath = normalizePath(vaultPath);
+            if (
+                basePath.length > 0 &&
+                normalizedVaultPath !== basePath &&
+                !normalizedVaultPath.startsWith(`${basePath}/`)
+            ) {
+                return undefined;
+            }
+        }
+
+        const repoPath = normalizePath(
+            this.gitManager.getRelativeRepoPath(vaultPath, true)
+        );
+        if (
+            repoPath.length === 0 ||
+            repoPath === "." ||
+            repoPath === ".." ||
+            repoPath.startsWith("../") ||
+            path.isAbsolute(repoPath)
+        ) {
+            return undefined;
+        }
+        return repoPath;
+    }
+
+    private getRenameCandidates(
+        file: TAbstractFile,
+        oldPath: string
+    ): RenameHint[] {
+        if (!this.gitReady) return [];
+
+        const candidates: RenameHint[] = [];
+        const addCandidate = (newVaultPath: string, oldVaultPath: string) => {
+            const from = this.getRepoPathForRename(oldVaultPath);
+            const to = this.getRepoPathForRename(newVaultPath);
+            if (from != undefined && to != undefined && from !== to) {
+                candidates.push({ from, to });
+            }
+        };
+
+        if (file instanceof TFile) {
+            addCandidate(file.path, oldPath);
+        } else if (file instanceof TFolder) {
+            const visit = (folder: TFolder) => {
+                for (const child of folder.children) {
+                    if (child instanceof TFile) {
+                        addCandidate(
+                            child.path,
+                            oldPath + child.path.slice(file.path.length)
+                        );
+                    } else if (child instanceof TFolder) {
+                        visit(child);
+                    }
+                }
+            };
+            visit(file);
+        }
+
+        return candidates;
+    }
+
+    private async recordRenames(candidates: RenameHint[]): Promise<void> {
+        if (candidates.length === 0) return;
+        const indexPaths = await this.gitManager.getIndexPaths();
+        this.renameTracker.recordMany(
+            candidates.filter(({ from }) => {
+                const originalSource = this.renameTracker.getSource(from);
+                // Keep the existing staged rename intact. Its destination is
+                // now an index path, so folding another rename into it would
+                // conflate the index and working-tree destinations.
+                if (originalSource != undefined && indexPaths.has(from)) {
+                    return false;
+                }
+                return indexPaths.has(from) || originalSource != undefined;
+            })
+        );
+    }
+
+    waitForRenameTracking(): Promise<void> {
+        return this.renameQueue;
     }
 
     setRefreshDebouncer(): void {
@@ -905,6 +1005,13 @@ export default class ObsidianGit extends Plugin {
                     const gitManager = this.gitManager as IsomorphicGit;
                     if (onlyStaged) {
                         stagedFiles = await gitManager.getStagedFiles();
+                    } else if (this.renameTracker.hasHints) {
+                        status = await gitManager.status();
+                        stagedFiles = status.staged;
+                        unstagedFiles =
+                            status.changed as unknown as (UnstagedFile & {
+                                vaultPath: string;
+                            })[];
                     } else {
                         const res = await gitManager.getUnstagedFiles();
                         unstagedFiles = res.map(({ path, type }) => ({
@@ -1347,7 +1454,11 @@ export default class ObsidianGit extends Plugin {
     async discardAll(path?: string): Promise<DiscardResult> {
         if (!(await this.isAllInitialized())) return false;
 
-        const status = await this.gitManager.status({ path });
+        const repoPath =
+            path != undefined
+                ? this.gitManager.getRelativeRepoPath(path, true)
+                : undefined;
+        const status = await this.gitManager.status({ path: repoPath });
 
         let filesToDeleteCount = 0;
         let filesToDiscardCount = 0;
@@ -1374,18 +1485,18 @@ export default class ObsidianGit extends Plugin {
                 return result;
             case "discard":
                 await this.gitManager.discardAll({
-                    dir: path,
-                    status: this.cachedStatus,
+                    dir: repoPath,
+                    status,
                 });
                 break;
             case "delete": {
                 await this.gitManager.discardAll({
-                    dir: path,
-                    status: this.cachedStatus,
+                    dir: repoPath,
+                    status,
                 });
                 const untrackedPaths = await this.gitManager.getUntrackedPaths({
-                    path,
-                    status: this.cachedStatus,
+                    path: repoPath,
+                    status,
                 });
                 for (const file of untrackedPaths) {
                     const vaultPath =

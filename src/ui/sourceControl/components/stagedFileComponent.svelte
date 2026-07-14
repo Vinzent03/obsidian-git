@@ -20,6 +20,11 @@
 
     let { change, view, manager }: Props = $props();
     let buttons: HTMLElement[] = $state([]);
+    let displayPath = $derived(
+        change.from != undefined
+            ? `${manager.getRelativeVaultPath(change.from)} → ${change.vaultPath}`
+            : getDisplayPath(change.vaultPath)
+    );
     let side = $derived(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
@@ -70,7 +75,11 @@
         event.stopPropagation();
 
         manager
-            .unstage(change.path, false)
+            .unstage(
+                change.path,
+                false,
+                change.index === "R" ? change.from : undefined
+            )
             .catch((e) => view.plugin.displayError(e))
             .finally(() => {
                 view.app.workspace.trigger("obsidian-git:refresh");
@@ -103,10 +112,10 @@
         class="tree-item-self is-clickable nav-file-title"
         data-path={change.vaultPath}
         data-tooltip-position={side}
-        aria-label={change.vaultPath}
+        aria-label={displayPath}
     >
         <div class="tree-item-inner nav-file-title-content">
-            {getDisplayPath(change.vaultPath)}
+            {displayPath}
         </div>
         <div class="git-tools">
             <div class="buttons">

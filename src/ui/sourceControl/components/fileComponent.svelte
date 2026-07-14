@@ -21,6 +21,11 @@
 
     let { change, view, manager }: Props = $props();
     let buttons: HTMLElement[] = $state([]);
+    let displayPath = $derived(
+        change.from != undefined && change.workingDir === "R"
+            ? `${manager.getRelativeVaultPath(change.from)} → ${change.vaultPath}`
+            : getDisplayPath(change.vaultPath)
+    );
 
     let side = $derived(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
@@ -61,7 +66,11 @@
     function stage(event: MouseEvent) {
         event.stopPropagation();
         manager
-            .stage(change.path, false)
+            .stage(
+                change.path,
+                false,
+                change.workingDir === "R" ? change.from : undefined
+            )
             .catch((e) => view.plugin.displayError(e))
             .finally(() => {
                 view.app.workspace.trigger("obsidian-git:refresh");
@@ -70,11 +79,20 @@
 
     function showDiff(event: MouseEvent) {
         event.stopPropagation();
-        view.plugin.tools.openDiff({
-            aFile: change.path,
-            aRef: "",
-            event,
-        });
+        if (change.from != undefined && change.workingDir === "R") {
+            view.plugin.tools.openDiff({
+                aFile: change.from,
+                bFile: change.path,
+                aRef: "",
+                event,
+            });
+        } else {
+            view.plugin.tools.openDiff({
+                aFile: change.path,
+                aRef: "",
+                event,
+            });
+        }
     }
 
     function discard(event: MouseEvent) {
@@ -101,9 +119,18 @@
                             );
                         }
                     } else if (result == "discard") {
-                        await manager.discard(change.path).finally(() => {
-                            view.app.workspace.trigger("obsidian-git:refresh");
-                        });
+                        await manager
+                            .discard(
+                                change.path,
+                                change.workingDir === "R"
+                                    ? change.from
+                                    : undefined
+                            )
+                            .finally(() => {
+                                view.app.workspace.trigger(
+                                    "obsidian-git:refresh"
+                                );
+                            });
                     }
 
                     view.app.workspace.trigger("obsidian-git:refresh");
@@ -140,7 +167,7 @@
         class="tree-item-self is-clickable nav-file-title"
         data-path={change.vaultPath}
         data-tooltip-position={side}
-        aria-label={change.vaultPath}
+        aria-label={displayPath}
     >
         <!-- <div
 			data-icon="folder"
@@ -148,7 +175,7 @@
 			style="padding-right: 5px; display: flex;"
 		/> -->
         <div class="tree-item-inner nav-file-title-content">
-            {getDisplayPath(change.vaultPath)}
+            {displayPath}
         </div>
         <div class="git-tools">
             <div class="buttons">

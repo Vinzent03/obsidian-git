@@ -1,6 +1,11 @@
 import { hostname as osHostname } from "os";
-import { type App, moment, Platform } from "obsidian";
+import { type App, moment, Platform, TFile } from "obsidian";
 import type ObsidianGit from "../main";
+import {
+    pathMatchesDirectory,
+    statusMatchesDirectory,
+    type RenameHint,
+} from "../renameTracker";
 import type {
     BranchInfo,
     DiffFile,
@@ -21,6 +26,9 @@ export abstract class GitManager {
 
     abstract status(opts?: { path?: string }): Promise<Status>;
 
+    /** Returns the index paths exactly as Git stores them. */
+    abstract getIndexPaths(): Promise<ReadonlySet<string>>;
+
     abstract commitAll(_: {
         message: string;
         status?: Status;
@@ -37,11 +45,19 @@ export abstract class GitManager {
 
     abstract unstageAll(_: { dir?: string; status?: Status }): Promise<void>;
 
-    abstract stage(filepath: string, relativeToVault: boolean): Promise<void>;
+    abstract stage(
+        filepath: string,
+        relativeToVault: boolean,
+        from?: string
+    ): Promise<void>;
 
-    abstract unstage(filepath: string, relativeToVault: boolean): Promise<void>;
+    abstract unstage(
+        filepath: string,
+        relativeToVault: boolean,
+        from?: string
+    ): Promise<void>;
 
-    abstract discard(filepath: string): Promise<void>;
+    abstract discard(filepath: string, from?: string): Promise<void>;
 
     abstract discardAll(_: { dir?: string; status?: Status }): Promise<void>;
 
@@ -158,6 +174,80 @@ export abstract class GitManager {
             }
         }
         return filePath;
+    }
+
+    protected async reconcileStatus(
+        status: Status,
+        directory?: string
+    ): Promise<Status> {
+        await this.plugin.waitForRenameTracking();
+        const reconciled = await this.plugin.renameTracker.reconcile(status, {
+            pathExists: (path) =>
+                this.app.vault.adapter.exists(
+                    this.getRelativeVaultPath(path),
+                    true
+                ),
+            getIndexPaths: () => this.getIndexPaths(),
+            getVaultPath: (path) => this.getRelativeVaultPath(path),
+        });
+
+        if (directory == undefined) return reconciled;
+        return {
+            all: reconciled.all.filter((file) =>
+                statusMatchesDirectory(file, directory)
+            ),
+            changed: reconciled.changed.filter((file) =>
+                statusMatchesDirectory(file, directory)
+            ),
+            staged: reconciled.staged.filter((file) =>
+                statusMatchesDirectory(file, directory)
+            ),
+            conflicted: reconciled.conflicted.filter((path) =>
+                pathMatchesDirectory(path, directory)
+            ),
+        };
+    }
+
+    protected getRenamePaths(
+        filepath: string,
+        relativeToVault: boolean,
+        from?: string
+    ): RenameHint | undefined {
+        if (from != undefined) {
+            return {
+                from: this.getRelativeRepoPath(from, relativeToVault),
+                to: filepath,
+            };
+        }
+
+        const source = this.plugin.renameTracker.getSource(filepath);
+        if (source != undefined) return { from: source, to: filepath };
+
+        const destination = this.plugin.renameTracker.getDestination(filepath);
+        if (destination != undefined) {
+            return { from: filepath, to: destination };
+        }
+        return undefined;
+    }
+
+    protected renameMatchesDirectory(
+        rename: RenameHint,
+        directory?: string
+    ): boolean {
+        return (
+            pathMatchesDirectory(rename.from, directory) ||
+            pathMatchesDirectory(rename.to, directory)
+        );
+    }
+
+    protected async trashRepoFile(filepath: string): Promise<void> {
+        const vaultPath = this.getRelativeVaultPath(filepath);
+        const file = this.app.vault.getAbstractFileByPath(vaultPath);
+        if (file instanceof TFile) {
+            await this.app.fileManager.trashFile(file);
+        } else if (await this.app.vault.adapter.exists(vaultPath)) {
+            await this.app.vault.adapter.remove(vaultPath);
+        }
     }
 
     unload(): void {}
@@ -281,6 +371,8 @@ export abstract class GitManager {
 
     async formatCommitMessage(template: string): Promise<string> {
         let status: Status | undefined;
+        const formatPath = (file: FileStatusResult) =>
+            file.from != undefined ? `${file.from} -> ${file.path}` : file.path;
         if (template.includes("{{numFiles}}")) {
             status = await this.status();
             const numFiles = status.staged.length;
@@ -303,9 +395,9 @@ export abstract class GitManager {
             if (status.staged.length < 100) {
                 status.staged.forEach((value: FileStatusResult) => {
                     if (value.index in changeset) {
-                        changeset[value.index].push(value.path);
+                        changeset[value.index].push(formatPath(value));
                     } else {
-                        changeset[value.index] = [value.path];
+                        changeset[value.index] = [formatPath(value)];
                     }
                 });
 
@@ -331,7 +423,7 @@ export abstract class GitManager {
             let files = "";
             // If there are more than 100 files, we don't list them all
             if (status2.staged.length < 100) {
-                files = status2.staged.map((e) => e.path).join("\n");
+                files = status2.staged.map(formatPath).join("\n");
             } else {
                 files = "Too many files to list";
             }

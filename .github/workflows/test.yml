@@ -3,6 +3,17 @@ on:
     push:
     pull_request:
 jobs:
+    unit-tests:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - uses: pnpm/action-setup@v6
+              with:
+                  version: latest
+            - name: Install modules
+              run: pnpm install
+            - name: Run unit tests
+              run: pnpm run test
     svelte-check:
         runs-on: ubuntu-latest
         steps:

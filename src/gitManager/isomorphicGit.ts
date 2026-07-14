@@ -22,6 +22,7 @@ import type {
 } from "../types";
 import { CurrentGitAction, type DiffFile } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
+import { pathMatchesDirectory, statusMatchesDirectory } from "../renameTracker";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
 import { MyAdapter } from "./myAdapter";
@@ -161,7 +162,10 @@ export class IsomorphicGit extends GitManager {
             const statusOpts = { ...this.getRepo() } as Parameters<
                 typeof git.statusMatrix
             >[0];
-            if (opts?.path != undefined) {
+            if (
+                opts?.path != undefined &&
+                !this.plugin.renameTracker.hasHints
+            ) {
                 statusOpts.filepaths = [`${opts.path}/`];
             }
             const status = (
@@ -183,15 +187,22 @@ export class IsomorphicGit extends GitManager {
                 }
             }
             const conflicted: string[] = [];
-            window.clearTimeout(timeout);
-            notice?.hide();
-            return { all, changed, staged, conflicted };
+            return await this.reconcileStatus(
+                { all, changed, staged, conflicted },
+                opts?.path
+            );
         } catch (error) {
-            window.clearTimeout(timeout);
-            notice?.hide();
             this.plugin.displayError(error);
             throw error;
+        } finally {
+            window.clearTimeout(timeout);
+            notice?.hide();
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         }
+    }
+
+    async getIndexPaths(): Promise<ReadonlySet<string>> {
+        return new Set(await this.wrapFS(git.listFiles({ ...this.getRepo() })));
     }
 
     async commitAll({
@@ -247,28 +258,78 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
-    async stage(filepath: string, relativeToVault: boolean): Promise<void> {
-        const gitPath = this.getRelativeRepoPath(filepath, relativeToVault);
-        let vaultPath: string;
-        if (relativeToVault) {
-            vaultPath = filepath;
-        } else {
-            vaultPath = this.getRelativeVaultPath(filepath);
-        }
+    private async stagePath(
+        gitPath: string,
+        from?: string,
+        indexPaths?: Set<string>
+    ): Promise<void> {
+        indexPaths ??= new Set(await this.getIndexPaths());
         try {
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-            if (await this.app.vault.adapter.exists(vaultPath)) {
-                await this.wrapFS(
-                    git.add({ ...this.getRepo(), filepath: gitPath })
+            if (from != undefined) {
+                const sourceExists = await this.app.vault.adapter.exists(
+                    this.getRelativeVaultPath(from),
+                    true
                 );
-            } else {
+                if (sourceExists) {
+                    await this.wrapFS(
+                        git.add({
+                            ...this.getRepo(),
+                            filepath: from,
+                            force: true,
+                        })
+                    );
+                    indexPaths.add(from);
+                } else if (indexPaths.has(from)) {
+                    await this.wrapFS(
+                        git.remove({ ...this.getRepo(), filepath: from })
+                    );
+                    indexPaths.delete(from);
+                }
+            }
+
+            const vaultPath = this.getRelativeVaultPath(gitPath);
+            if (await this.app.vault.adapter.exists(vaultPath, true)) {
+                await this.wrapFS(
+                    git.add({
+                        ...this.getRepo(),
+                        filepath: gitPath,
+                        force: from != undefined,
+                    })
+                );
+                indexPaths.add(gitPath);
+            } else if (indexPaths.has(gitPath)) {
                 await this.wrapFS(
                     git.remove({ ...this.getRepo(), filepath: gitPath })
                 );
+                indexPaths.delete(gitPath);
             }
+        } catch (error) {
+            for (const path of [from, gitPath]) {
+                if (path == undefined) continue;
+                await this.wrapFS(
+                    git.resetIndex({ ...this.getRepo(), filepath: path })
+                ).catch(() => {});
+            }
+            throw error;
+        }
+    }
+
+    async stage(
+        filepath: string,
+        relativeToVault: boolean,
+        from?: string
+    ): Promise<void> {
+        await this.plugin.waitForRenameTracking();
+        const gitPath = this.getRelativeRepoPath(filepath, relativeToVault);
+        const rename = this.getRenamePaths(gitPath, relativeToVault, from);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+        try {
+            await this.stagePath(rename?.to ?? gitPath, rename?.from);
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         }
     }
 
@@ -281,52 +342,93 @@ export class IsomorphicGit extends GitManager {
         status?: Status;
         unstagedFiles?: UnstagedFile[];
     }): Promise<void> {
+        await this.plugin.waitForRenameTracking();
         try {
-            if (status) {
-                await Promise.all(
-                    status.changed.map((file) =>
-                        file.workingDir !== "D"
-                            ? this.wrapFS(
-                                  git.add({
-                                      ...this.getRepo(),
-                                      filepath: file.path,
-                                  })
-                              )
-                            : git.remove({
-                                  ...this.getRepo(),
-                                  filepath: file.path,
-                              })
-                    )
-                );
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+            if (status != undefined || this.plugin.renameTracker.hasHints) {
+                const currentStatus =
+                    status ??
+                    (await this.status(
+                        dir != undefined ? { path: dir } : undefined
+                    ));
+                this.plugin.setPluginState({
+                    gitAction: CurrentGitAction.add,
+                });
+                const handledPaths = new Set<string>();
+                const handledRenames = new Set<string>();
+                const indexPaths = new Set(await this.getIndexPaths());
+                const stageRename = async (rename: {
+                    from: string;
+                    to: string;
+                }): Promise<boolean> => {
+                    if (!this.renameMatchesDirectory(rename, dir)) return false;
+                    const key = `${rename.from}\0${rename.to}`;
+                    if (handledRenames.has(key)) return true;
+                    await this.stagePath(rename.to, rename.from, indexPaths);
+                    handledRenames.add(key);
+                    handledPaths.add(rename.from);
+                    handledPaths.add(rename.to);
+                    return true;
+                };
+
+                for (const rename of this.plugin.renameTracker.getHints()) {
+                    await stageRename(rename);
+                }
+                for (const file of currentStatus.changed) {
+                    if (handledPaths.has(file.path)) continue;
+                    const rename = this.getRenamePaths(
+                        file.path,
+                        false,
+                        file.workingDir === "R" ? file.from : undefined
+                    );
+                    if (
+                        (rename == undefined || !(await stageRename(rename))) &&
+                        statusMatchesDirectory(file, dir)
+                    ) {
+                        await this.stagePath(file.path, file.from, indexPaths);
+                    }
+                }
             } else {
                 const filesToStage =
                     unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
-                await Promise.all(
-                    filesToStage.map(({ path, type }) =>
-                        type == "D"
-                            ? git.remove({ ...this.getRepo(), filepath: path })
-                            : this.wrapFS(
-                                  git.add({ ...this.getRepo(), filepath: path })
-                              )
-                    )
-                );
+                const indexPaths = new Set(await this.getIndexPaths());
+                for (const file of filesToStage) {
+                    await this.stagePath(file.path, undefined, indexPaths);
+                }
             }
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         }
     }
 
-    async unstage(filepath: string, relativeToVault: boolean): Promise<void> {
+    private async resetPath(filepath: string, from?: string): Promise<void> {
+        for (const path of [from, filepath]) {
+            if (path == undefined) continue;
+            await this.wrapFS(
+                git.resetIndex({ ...this.getRepo(), filepath: path })
+            );
+        }
+    }
+
+    async unstage(
+        filepath: string,
+        relativeToVault: boolean,
+        from?: string
+    ): Promise<void> {
+        await this.plugin.waitForRenameTracking();
         try {
             this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-            filepath = this.getRelativeRepoPath(filepath, relativeToVault);
-            await this.wrapFS(
-                git.resetIndex({ ...this.getRepo(), filepath: filepath })
-            );
+            const gitPath = this.getRelativeRepoPath(filepath, relativeToVault);
+            const rename = this.getRenamePaths(gitPath, relativeToVault, from);
+            await this.resetPath(rename?.to ?? gitPath, rename?.from);
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         }
     }
 
@@ -337,30 +439,68 @@ export class IsomorphicGit extends GitManager {
         dir?: string;
         status?: Status;
     }): Promise<void> {
+        await this.plugin.waitForRenameTracking();
         try {
-            let staged: string[];
-            if (status) {
-                staged = status.staged.map((file) => file.path);
-            } else {
-                const res = await this.getStagedFiles(dir ?? ".");
-                staged = res.map(({ path }) => path);
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+            const staged =
+                status?.staged ?? (await this.getStagedFiles(dir ?? "."));
+            const handledPaths = new Set<string>();
+            const renames = new Map<string, { from: string; to: string }>();
+            for (const file of staged) {
+                const statusFile =
+                    "index" in file ? (file as FileStatusResult) : undefined;
+                const from =
+                    statusFile?.index === "R" ? statusFile.from : undefined;
+                const rename = this.getRenamePaths(file.path, false, from);
+                if (
+                    rename != undefined &&
+                    this.renameMatchesDirectory(rename, dir)
+                ) {
+                    renames.set(`${rename.from}\0${rename.to}`, rename);
+                    handledPaths.add(rename.from);
+                    handledPaths.add(rename.to);
+                }
             }
-            await this.wrapFS(
-                Promise.all(
-                    staged.map((file) =>
-                        git.resetIndex({ ...this.getRepo(), filepath: file })
-                    )
-                )
-            );
+
+            for (const rename of renames.values()) {
+                await this.resetPath(rename.to, rename.from);
+            }
+            for (const file of staged) {
+                if (
+                    !handledPaths.has(file.path) &&
+                    pathMatchesDirectory(file.path, dir)
+                ) {
+                    await this.resetPath(file.path);
+                }
+            }
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         }
     }
 
-    async discard(filepath: string): Promise<void> {
+    async discard(filepath: string, from?: string): Promise<void> {
+        await this.plugin.waitForRenameTracking();
         try {
             this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+            if (from != undefined) {
+                const isCaseOnlyRename =
+                    from !== filepath &&
+                    from.toLowerCase() === filepath.toLowerCase();
+                if (isCaseOnlyRename) await this.trashRepoFile(filepath);
+                await this.wrapFS(
+                    git.checkout({
+                        ...this.getRepo(),
+                        filepaths: [from],
+                        force: true,
+                    })
+                );
+                if (!isCaseOnlyRename) await this.trashRepoFile(filepath);
+                this.plugin.renameTracker.forgetPath(filepath);
+                return;
+            }
             await this.wrapFS(
                 git.checkout({
                     ...this.getRepo(),
@@ -371,6 +511,8 @@ export class IsomorphicGit extends GitManager {
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         }
     }
 
@@ -381,34 +523,35 @@ export class IsomorphicGit extends GitManager {
         dir?: string;
         status?: Status;
     }): Promise<void> {
-        let files: string[] = [];
-        if (status) {
-            if (dir != undefined) {
-                files = status.changed
-                    .filter(
-                        (file) =>
-                            file.workingDir != "U" && file.path.startsWith(dir)
-                    )
-                    .map((file) => file.path);
-            } else {
-                files = status.changed
-                    .filter((file) => file.workingDir != "U")
-                    .map((file) => file.path);
-            }
-        } else {
-            files = (await this.getUnstagedFiles(dir))
-                .filter((file) => file.type != "A")
-                .map(({ path }) => path);
-        }
+        await this.plugin.waitForRenameTracking();
+        const currentStatus =
+            status ??
+            (await this.status(dir != undefined ? { path: dir } : undefined));
+        const changed = currentStatus.changed.filter((file) =>
+            statusMatchesDirectory(file, dir)
+        );
 
         try {
-            await this.wrapFS(
-                git.checkout({
-                    ...this.getRepo(),
-                    filepaths: files,
-                    force: true,
-                })
-            );
+            for (const file of changed) {
+                if (file.from != undefined && file.workingDir === "R") {
+                    await this.discard(file.path, file.from);
+                }
+            }
+
+            const files = changed
+                .filter(
+                    (file) => file.workingDir !== "U" && file.workingDir !== "R"
+                )
+                .map((file) => file.path);
+            if (files.length > 0) {
+                await this.wrapFS(
+                    git.checkout({
+                        ...this.getRepo(),
+                        filepaths: files,
+                        force: true,
+                    })
+                );
+            }
         } catch (error) {
             this.plugin.displayError(error);
             throw error;

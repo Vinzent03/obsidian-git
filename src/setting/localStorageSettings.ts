@@ -1,5 +1,6 @@
 import type { App } from "obsidian";
 import type ObsidianGit from "../main";
+import type { RenameHint } from "../renameTracker";
 export class LocalStorageSettings {
     private prefix: string;
     private app: App;
@@ -171,6 +172,35 @@ export class LocalStorageSettings {
         return this.app.saveLocalStorage(
             this.prefix + "pausedAutomatics",
             `${value}`
+        );
+    }
+
+    getRenameHints(): RenameHint[] {
+        try {
+            const value = this.app.loadLocalStorage(
+                this.prefix + "renameHints"
+            ) as string | null;
+            if (value == null) return [];
+
+            const hints = JSON.parse(value) as unknown;
+            if (!Array.isArray(hints)) return [];
+            return hints.filter((hint): hint is RenameHint => {
+                if (typeof hint !== "object" || hint == null) return false;
+                const candidate = hint as Record<string, unknown>;
+                return (
+                    typeof candidate.from === "string" &&
+                    typeof candidate.to === "string"
+                );
+            });
+        } catch {
+            return [];
+        }
+    }
+
+    setRenameHints(value: RenameHint[]): void {
+        return this.app.saveLocalStorage(
+            this.prefix + "renameHints",
+            JSON.stringify(value)
         );
     }
 

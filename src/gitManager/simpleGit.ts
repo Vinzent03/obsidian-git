@@ -26,6 +26,7 @@ import type {
     Status,
 } from "../types";
 import { CurrentGitAction, NoNetworkError } from "../types";
+import { statusMatchesDirectory } from "../renameTracker";
 import { impossibleBranch, spawnAsync, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 
@@ -350,10 +351,20 @@ export class SimpleGit extends GitManager {
     async status(opts?: { path?: string }): Promise<Status> {
         const dir = opts?.path;
         this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
-        const status = await this.git.status(
-            dir != undefined ? ["--", dir] : []
-        );
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        const args = ["--renames"];
+        if (this.plugin.renameTracker.hasHints) {
+            args.push("--untracked-files=all");
+        }
+        if (dir != undefined && !this.plugin.renameTracker.hasHints) {
+            args.push("--", dir);
+        }
+
+        let status: simple.StatusResult;
+        try {
+            status = await this.git.status(args);
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        }
 
         const allFilesFormatted = status.files.map<FileStatusResult>((e) => {
             const res = this.formatPath(e);
@@ -365,16 +376,24 @@ export class SimpleGit extends GitManager {
                 vaultPath: this.getRelativeVaultPath(res.path),
             };
         });
-        return {
-            all: allFilesFormatted,
-            changed: allFilesFormatted.filter((e) => e.workingDir !== " "),
-            staged: allFilesFormatted.filter(
-                (e) => e.index !== " " && e.index != "U"
-            ),
-            conflicted: status.conflicted.map(
-                (path) => this.formatPath({ path }).path
-            ),
-        };
+        return this.reconcileStatus(
+            {
+                all: allFilesFormatted,
+                changed: allFilesFormatted.filter((e) => e.workingDir !== " "),
+                staged: allFilesFormatted.filter(
+                    (e) => e.index !== " " && e.index != "U"
+                ),
+                conflicted: status.conflicted.map(
+                    (path) => this.formatPath({ path }).path
+                ),
+            },
+            dir
+        );
+    }
+
+    async getIndexPaths(): Promise<ReadonlySet<string>> {
+        const output = await this.git.raw(["ls-files", "-z"]);
+        return new Set(output.split("\0").filter((path) => path.length > 0));
     }
 
     async submoduleAwareHeadRevisonInContainingDirectory(
@@ -510,7 +529,15 @@ export class SimpleGit extends GitManager {
         return this.git.raw(args).then((x) => x.trim() !== "");
     }
 
-    async commitAll({ message }: { message: string }): Promise<number> {
+    async commitAll({
+        message,
+        status,
+        amend,
+    }: {
+        message: string;
+        status?: Status;
+        amend?: boolean;
+    }): Promise<number> {
         if (this.plugin.settings.updateSubmodules) {
             this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
             const submodulePaths = await this.getSubmodulePaths();
@@ -521,18 +548,8 @@ export class SimpleGit extends GitManager {
                     .commit(await this.formatCommitMessage(message));
             }
         }
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-
-        await this.git.add("-A");
-
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
-
-        const res = await this.git.commit(
-            await this.formatCommitMessage(message)
-        );
-        this.app.workspace.trigger("obsidian-git:head-change");
-
-        return res.summary.changes;
+        await this.stageAll({ status });
+        return this.commit({ message, amend });
     }
 
     async commit({
@@ -556,42 +573,203 @@ export class SimpleGit extends GitManager {
         return res;
     }
 
-    async stage(path: string, relativeToVault: boolean): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-
-        path = this.getRelativeRepoPath(path, relativeToVault);
-        await this.git.add(["--", path]);
-
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
-    }
-
-    async stageAll({ dir }: { dir?: string }): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-        await this.git.add(dir ?? "-A");
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
-    }
-
-    async unstageAll({ dir }: { dir?: string }): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-        await this.git.reset(dir != undefined ? ["--", dir] : []);
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
-    }
-
-    async unstage(path: string, relativeToVault: boolean): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-
-        path = this.getRelativeRepoPath(path, relativeToVault);
-        await this.git.reset(["--", path]);
-
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
-    }
-
-    async discard(filepath: string): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-        if (await this.isTracked(filepath)) {
-            await this.git.checkout(["--", filepath]);
+    private async stagePath(
+        path: string,
+        from?: string,
+        indexPaths?: Set<string>,
+        ignoreCase?: boolean
+    ): Promise<void> {
+        if (from == undefined) {
+            await this.git.add(["--", path]);
+            return;
         }
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+
+        const isCaseOnlyRename =
+            from !== path && from.toLowerCase() === path.toLowerCase();
+        const sourceStillExists =
+            isCaseOnlyRename &&
+            (await this.app.vault.adapter.exists(
+                this.getRelativeVaultPath(from),
+                true
+            ));
+        const requiresCaseSensitiveIndexUpdate =
+            isCaseOnlyRename &&
+            !sourceStillExists &&
+            (ignoreCase ??
+                (await this.getConfig("core.ignorecase", "all")) === "true");
+        if (!requiresCaseSensitiveIndexUpdate) {
+            await this.git.raw(["add", "-A", "-f", "--", from, path]);
+            return;
+        }
+
+        let removedSource = false;
+        try {
+            indexPaths ??= new Set(await this.getIndexPaths());
+            if (indexPaths.has(from)) {
+                await this.git.raw(["rm", "--cached", "-f", "--", from]);
+                indexPaths.delete(from);
+                removedSource = true;
+            }
+            await this.git.raw(["add", "-A", "-f", "--", path]);
+            indexPaths.add(path);
+        } catch (error) {
+            if (removedSource) {
+                await this.git.reset(["--", from, path]).catch(() => {});
+            }
+            throw error;
+        }
+    }
+
+    async stage(
+        path: string,
+        relativeToVault: boolean,
+        from?: string
+    ): Promise<void> {
+        await this.plugin.waitForRenameTracking();
+        const gitPath = this.getRelativeRepoPath(path, relativeToVault);
+        const rename = this.getRenamePaths(gitPath, relativeToVault, from);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+        try {
+            await this.stagePath(rename?.to ?? gitPath, rename?.from);
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        }
+    }
+
+    async stageAll({
+        dir,
+        status,
+    }: {
+        dir?: string;
+        status?: Status;
+    }): Promise<void> {
+        await this.plugin.waitForRenameTracking();
+        const currentStatus =
+            status ??
+            (this.plugin.renameTracker.hasHints
+                ? await this.status(
+                      dir != undefined ? { path: dir } : undefined
+                  )
+                : undefined);
+        const renames = new Map<string, { from: string; to: string }>();
+        const conflicted = new Set(currentStatus?.conflicted ?? []);
+        const addRename = (rename: { from: string; to: string }) => {
+            if (
+                !conflicted.has(rename.from) &&
+                !conflicted.has(rename.to) &&
+                this.renameMatchesDirectory(rename, dir)
+            ) {
+                renames.set(`${rename.from}\0${rename.to}`, rename);
+            }
+        };
+        this.plugin.renameTracker.getHints().forEach(addRename);
+        for (const file of currentStatus?.all ?? []) {
+            if (
+                file.from != undefined &&
+                (file.index === "R" || file.workingDir === "R")
+            ) {
+                addRename({ from: file.from, to: file.path });
+            }
+        }
+
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+        try {
+            await this.git.add(dir != undefined ? ["-A", "--", dir] : "-A");
+            const hasCaseOnlyRename = [...renames.values()].some(
+                ({ from, to }) =>
+                    from !== to && from.toLowerCase() === to.toLowerCase()
+            );
+            const ignoreCase = hasCaseOnlyRename
+                ? (await this.getConfig("core.ignorecase", "all")) === "true"
+                : undefined;
+            const indexPaths = ignoreCase
+                ? new Set(await this.getIndexPaths())
+                : undefined;
+            for (const rename of renames.values()) {
+                await this.stagePath(
+                    rename.to,
+                    rename.from,
+                    indexPaths,
+                    ignoreCase
+                );
+            }
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        }
+    }
+
+    async unstageAll({
+        dir,
+        status,
+    }: {
+        dir?: string;
+        status?: Status;
+    }): Promise<void> {
+        await this.plugin.waitForRenameTracking();
+        const currentStatus =
+            dir != undefined ? status ?? (await this.status()) : undefined;
+        const renames = new Map<string, { from: string; to: string }>();
+        for (const file of currentStatus?.staged ?? []) {
+            const rename = this.getRenamePaths(
+                file.path,
+                false,
+                file.index === "R" ? file.from : undefined
+            );
+            if (
+                rename != undefined &&
+                this.renameMatchesDirectory(rename, dir)
+            ) {
+                renames.set(`${rename.from}\0${rename.to}`, rename);
+            }
+        }
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+        try {
+            await this.git.reset(dir != undefined ? ["--", dir] : []);
+            for (const rename of renames.values()) {
+                await this.git.reset(["--", rename.from, rename.to]);
+            }
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        }
+    }
+
+    async unstage(
+        path: string,
+        relativeToVault: boolean,
+        from?: string
+    ): Promise<void> {
+        await this.plugin.waitForRenameTracking();
+        const gitPath = this.getRelativeRepoPath(path, relativeToVault);
+        const rename = this.getRenamePaths(gitPath, relativeToVault, from);
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+        try {
+            await this.git.reset([
+                "--",
+                ...(rename != undefined ? [rename.from, rename.to] : [gitPath]),
+            ]);
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        }
+    }
+
+    async discard(filepath: string, from?: string): Promise<void> {
+        await this.plugin.waitForRenameTracking();
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+        try {
+            if (from != undefined) {
+                const isCaseOnlyRename =
+                    from !== filepath &&
+                    from.toLowerCase() === filepath.toLowerCase();
+                if (isCaseOnlyRename) await this.trashRepoFile(filepath);
+                await this.git.checkout(["--", from]);
+                if (!isCaseOnlyRename) await this.trashRepoFile(filepath);
+                this.plugin.renameTracker.forgetPath(filepath);
+            } else if (await this.isTracked(filepath)) {
+                await this.git.checkout(["--", filepath]);
+            }
+        } finally {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        }
     }
 
     async applyPatch(patch: string): Promise<void> {
@@ -637,8 +815,41 @@ export class SimpleGit extends GitManager {
         return revision;
     }
 
-    async discardAll({ dir }: { dir?: string }): Promise<void> {
-        return this.discard(dir ?? ".");
+    async discardAll({
+        dir,
+        status,
+    }: {
+        dir?: string;
+        status?: Status;
+    }): Promise<void> {
+        await this.plugin.waitForRenameTracking();
+        const currentStatus =
+            status ??
+            (await this.status(dir != undefined ? { path: dir } : undefined));
+        const changed = currentStatus.changed.filter((file) =>
+            statusMatchesDirectory(file, dir)
+        );
+        for (const file of changed) {
+            if (file.from != undefined && file.workingDir === "R") {
+                await this.discard(file.path, file.from);
+            }
+        }
+
+        const paths = changed
+            .filter(
+                (file) => file.workingDir !== "U" && file.workingDir !== "R"
+            )
+            .map((file) => file.path);
+        if (paths.length > 0) {
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+            try {
+                await this.git.checkout(["--", ...paths]);
+            } finally {
+                this.plugin.setPluginState({
+                    gitAction: CurrentGitAction.idle,
+                });
+            }
+        }
     }
 
     async pull(): Promise<FileStatusResult[] | undefined> {
@@ -882,9 +1093,13 @@ export class SimpleGit extends GitManager {
         limit?: number,
         ref?: string
     ): Promise<(LogEntry & { fileName?: string })[]> {
+        await this.plugin.waitForRenameTracking();
         let path: string | undefined;
         if (file) {
             path = this.getRelativeRepoPath(file, relativeToVault);
+            if (ref == undefined) {
+                path = this.plugin.renameTracker.getSource(path) ?? path;
+            }
         }
         const opts: Record<string, unknown> = {
             file: path,
@@ -892,8 +1107,12 @@ export class SimpleGit extends GitManager {
             // Ensures that the changed files are listed for merge commits as well and the commit is not repeated for each parent.
             // This only lists the changed files for the first parent.
             "--diff-merges": "first-parent",
+            "--find-renames": null,
             "--name-status": null,
         };
+        if (path != undefined) {
+            opts["--follow"] = null;
+        }
         if (ref) {
             opts[ref] = null;
         }

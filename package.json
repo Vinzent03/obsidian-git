@@ -7,11 +7,12 @@
         "dev": "node esbuild.config.mjs dev",
         "build": "node esbuild.config.mjs production",
         "release": "standard-version",
+        "test": "node --test tests/renameTracker.test.mjs",
         "lint": "eslint src",
-        "format": "prettier --check src",
+        "format": "prettier --check src tests",
         "tsc": "tsc --noEmit",
         "svelte": "svelte-check",
-        "all": "pnpm run tsc && pnpm run svelte && pnpm run format && pnpm run lint"
+        "all": "pnpm run test && pnpm run tsc && pnpm run svelte && pnpm run format && pnpm run lint"
     },
     "keywords": [],
     "author": "Vinzent03",
