@@ -154,7 +154,6 @@ export class LineAuthoringFeature {
         this.plg.app.workspace.offref(this.refreshOnCssChangeEvent!);
         this.plg.app.workspace.offref(this.fileOpenEvent!);
         this.plg.app.workspace.offref(this.workspaceLeafChangeEvent!);
-        this.plg.app.workspace.offref(this.refreshOnCssChangeEvent!);
         this.plg.app.vault.offref(this.fileModificationEvent!);
         this.plg.app.workspace.offref(this.headChangeEvent!);
         this.plg.app.vault.offref(this.fileRenameEvent!);
