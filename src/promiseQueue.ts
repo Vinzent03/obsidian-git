@@ -29,13 +29,21 @@ export class PromiseQueue {
             const item = this.tasks[0];
             item.task().then(
                 (res) => {
-                    item.onFinished(res);
+                    try {
+                        item.onFinished(res);
+                    } catch (e) {
+                        console.error(e);
+                    }
                     this.tasks.shift();
                     this.handleTask();
                 },
                 (e) => {
                     this.plugin.displayError(e);
-                    item.onFinished(undefined);
+                    try {
+                        item.onFinished(undefined);
+                    } catch (err) {
+                        console.error(err);
+                    }
                     this.tasks.shift();
                     this.handleTask();
                 }
