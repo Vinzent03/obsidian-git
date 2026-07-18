@@ -24,6 +24,12 @@ export interface ObsidianGitSettings {
      */
     pullBeforePush: boolean;
     /**
+     * Whether to squash all local unpushed commits into a single commit right
+     * before pushing on commit-and-sync. Only rewrites unpushed history, so no
+     * force-push is required. Desktop (SimpleGit) only.
+     */
+    squashCommitsBeforePush: boolean;
+    /**
      * Whether messages from {@link ObsidianGit.displayMessage} should be shown
      */
     disablePopups: boolean;

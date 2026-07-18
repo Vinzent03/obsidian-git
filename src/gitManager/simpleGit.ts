@@ -792,6 +792,78 @@ export class SimpleGit extends GitManager {
         }
     }
 
+    /**
+     * Squashes all local commits that have not been pushed yet into a single
+     * commit. Only unpushed history is rewritten (HEAD is soft-reset onto the
+     * tracking branch), so this never requires a force-push and is safe across
+     * multiple devices. The squash commit reuses the message of the most recent
+     * unpushed commit, so a custom, modal or script-derived commit message is
+     * preserved instead of being overwritten by the auto-commit template.
+     * No-op if there is no tracking branch, the tracking branch no longer
+     * exists on the remote, there are fewer than two unpushed commits, a merge
+     * commit is present in the unpushed range, or there are staged but
+     * uncommitted changes.
+     */
+    async squashAllUnpushedCommits(): Promise<void> {
+        const status = await this.git.status();
+        const trackingBranch = status.tracking;
+        if (!trackingBranch || !status.current) {
+            return;
+        }
+        // The tracking config can outlive the remote-tracking ref (e.g. the
+        // branch was deleted on the remote). Resetting onto a ref that no
+        // longer exists locally would fail, so bail out the same way
+        // getUnpushedCommits() does.
+        const [remote] = splitRemoteBranch(trackingBranch);
+        const remoteBranches = await this.getRemoteBranches(remote);
+        if (!remoteBranches.includes(trackingBranch)) {
+            return;
+        }
+        // A soft reset keeps the index, so any staged but uncommitted changes
+        // would be folded into the squash commit, silently committing work the
+        // user did not intend to. Abort the squash and let the push proceed
+        // with the existing history untouched.
+        const staged = (
+            await this.git.raw(["diff", "--cached", "--name-only"])
+        ).trim();
+        if (staged.length > 0) {
+            return;
+        }
+        const range = `${trackingBranch}..HEAD`;
+        const unpushed = parseInt(
+            (await this.git.raw(["rev-list", "--count", range])).trim(),
+            10
+        );
+        if (unpushed < 2) {
+            return;
+        }
+        // Flattening a merge commit would lose its structure, so skip those.
+        const merges = parseInt(
+            (
+                await this.git.raw(["rev-list", "--merges", "--count", range])
+            ).trim(),
+            10
+        );
+        if (merges > 0) {
+            return;
+        }
+        // Capture the current tip before rewriting so the squash commit can
+        // reuse its message (commit -C) rather than the auto-commit template.
+        const oldHead = (await this.git.raw(["rev-parse", "HEAD"])).trim();
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
+        try {
+            // Soft reset keeps the index and working tree, so all unpushed
+            // changes stay staged and are re-committed as a single commit.
+            await this.git.reset(["--soft", trackingBranch]);
+            await this.git.raw(["commit", "-C", oldHead]);
+            this.app.workspace.trigger("obsidian-git:head-change");
+        } finally {
+            // Always restore the idle state, even if the reset or commit throws,
+            // so a failed squash never leaves the plugin stuck on "commit".
+            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
+        }
+    }
+
     async getUnpushedCommits(): Promise<number> {
         const status = await this.git.status();
         const trackingBranch = status.tracking;
