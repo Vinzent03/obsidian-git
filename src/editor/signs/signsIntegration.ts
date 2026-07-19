@@ -22,7 +22,6 @@ export class SignsFeature {
     private fileRenameEvent?: EventRef;
     private intervalRefreshEvent?: number;
     private pluginRefreshedEvent?: EventRef;
-    private gutterContextMenuEvent?: EventRef;
     private codeMirrorExtensions: Extension[] = [];
     public changeStatusBar?: ChangesStatusBar;
 
@@ -143,11 +142,22 @@ export class SignsFeature {
     }
 
     private destroyEventHandlers() {
-        this.plg.app.workspace.offref(this.workspaceLeafChangeEvent!);
-        this.plg.app.vault.offref(this.fileRenameEvent!);
-        this.plg.app.workspace.offref(this.pluginRefreshedEvent!);
-        this.plg.app.workspace.offref(this.gutterContextMenuEvent!);
-        window.clearInterval(this.intervalRefreshEvent);
+        if (this.workspaceLeafChangeEvent) {
+            this.plg.app.workspace.offref(this.workspaceLeafChangeEvent);
+            this.workspaceLeafChangeEvent = undefined;
+        }
+        if (this.fileRenameEvent) {
+            this.plg.app.vault.offref(this.fileRenameEvent);
+            this.fileRenameEvent = undefined;
+        }
+        if (this.pluginRefreshedEvent) {
+            this.plg.app.workspace.offref(this.pluginRefreshedEvent);
+            this.pluginRefreshedEvent = undefined;
+        }
+        if (this.intervalRefreshEvent !== undefined) {
+            window.clearInterval(this.intervalRefreshEvent);
+            this.intervalRefreshEvent = undefined;
+        }
     }
 
     private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {

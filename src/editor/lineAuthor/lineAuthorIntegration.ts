@@ -150,13 +150,34 @@ export class LineAuthoringFeature {
     }
 
     private destroyEventHandlers() {
-        this.plg.app.workspace.offref(this.gutterContextMenuEvent!);
-        this.plg.app.workspace.offref(this.refreshOnCssChangeEvent!);
-        this.plg.app.workspace.offref(this.fileOpenEvent!);
-        this.plg.app.workspace.offref(this.workspaceLeafChangeEvent!);
-        this.plg.app.vault.offref(this.fileModificationEvent!);
-        this.plg.app.workspace.offref(this.headChangeEvent!);
-        this.plg.app.vault.offref(this.fileRenameEvent!);
+        if (this.gutterContextMenuEvent) {
+            this.plg.app.workspace.offref(this.gutterContextMenuEvent);
+            this.gutterContextMenuEvent = undefined;
+        }
+        if (this.refreshOnCssChangeEvent) {
+            this.plg.app.workspace.offref(this.refreshOnCssChangeEvent);
+            this.refreshOnCssChangeEvent = undefined;
+        }
+        if (this.fileOpenEvent) {
+            this.plg.app.workspace.offref(this.fileOpenEvent);
+            this.fileOpenEvent = undefined;
+        }
+        if (this.workspaceLeafChangeEvent) {
+            this.plg.app.workspace.offref(this.workspaceLeafChangeEvent);
+            this.workspaceLeafChangeEvent = undefined;
+        }
+        if (this.fileModificationEvent) {
+            this.plg.app.vault.offref(this.fileModificationEvent);
+            this.fileModificationEvent = undefined;
+        }
+        if (this.headChangeEvent) {
+            this.plg.app.workspace.offref(this.headChangeEvent);
+            this.headChangeEvent = undefined;
+        }
+        if (this.fileRenameEvent) {
+            this.plg.app.vault.offref(this.fileRenameEvent);
+            this.fileRenameEvent = undefined;
+        }
     }
 
     private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
