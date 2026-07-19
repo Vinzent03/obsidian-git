@@ -1164,17 +1164,22 @@ export class IsomorphicGit extends GitManager {
                 oid: hash,
             });
 
-            const previousContent = await readBlob({
-                ...this.getRepo(),
-                filepath: filePath,
-                oid: commit.commit.parent.first()!,
-            })
-                .then((headBlob) => new TextDecoder().decode(headBlob.blob))
-                .catch((err) => {
-                    if (err instanceof git.Errors.NotFoundError)
-                        return undefined;
-                    throw err;
-                });
+            const parentOid = commit.commit.parent.first();
+            const previousContent = parentOid
+                ? await readBlob({
+                      ...this.getRepo(),
+                      filepath: filePath,
+                      oid: parentOid,
+                  })
+                      .then((headBlob) =>
+                          new TextDecoder().decode(headBlob.blob)
+                      )
+                      .catch((err) => {
+                          if (err instanceof git.Errors.NotFoundError)
+                              return undefined;
+                          throw err;
+                      })
+                : undefined;
 
             const diff = createPatch(
                 vaultPath,
