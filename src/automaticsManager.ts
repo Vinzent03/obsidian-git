@@ -121,6 +121,12 @@ export default class AutomaticsManager {
     }
 
     private startAutoCommitAndSync(minutes?: number) {
+        if (
+            !this.plugin.gitReady ||
+            this.plugin.localStorage.getPausedAutomatics()
+        ) {
+            return;
+        }
         let time = (minutes ?? this.plugin.settings.autoSaveInterval) * 60000;
         if (this.plugin.settings.autoBackupAfterFileChange) {
             if (minutes === 0) {
@@ -187,6 +193,12 @@ export default class AutomaticsManager {
     }
 
     private startAutoPull(minutes?: number) {
+        if (
+            !this.plugin.gitReady ||
+            this.plugin.localStorage.getPausedAutomatics()
+        ) {
+            return;
+        }
         let time = (minutes ?? this.plugin.settings.autoPullInterval) * 60000;
         // max timeout in js
         if (time > 2147483647) time = 2147483647;
@@ -205,6 +217,12 @@ export default class AutomaticsManager {
     }
 
     private startAutoPush(minutes?: number) {
+        if (
+            !this.plugin.gitReady ||
+            this.plugin.localStorage.getPausedAutomatics()
+        ) {
+            return;
+        }
         let time = (minutes ?? this.plugin.settings.autoPushInterval) * 60000;
         // max timeout in js
         if (time > 2147483647) time = 2147483647;
