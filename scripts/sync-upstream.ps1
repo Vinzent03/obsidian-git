@@ -41,8 +41,8 @@ try {
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($startingBranch)) {
         throw "当前不在本地分支上。"
     }
-    if ($startingBranch -ne $LocalizationBranch) {
-        throw "请先切换到汉化分支 '$LocalizationBranch'，再运行此脚本。"
+    if ($startingBranch -notin @($LocalizationBranch, $upstreamBranch)) {
+        throw "请先切换到汉化分支 '$LocalizationBranch' 或默认分支 '$upstreamBranch'，再运行此脚本。"
     }
 
     $remoteNames = @(& git remote)
@@ -55,24 +55,31 @@ try {
         }
     }
 
+    Invoke-Git fetch origin --prune
     Invoke-Git fetch upstream --prune
-    Invoke-Git switch $upstreamBranch
-    Invoke-Git merge --ff-only "upstream/$upstreamBranch"
+
+    if ($startingBranch -eq $LocalizationBranch) {
+        Invoke-Git switch $upstreamBranch
+    }
+
+    Invoke-Git merge --ff-only "origin/$upstreamBranch"
+    Invoke-Git merge --no-edit "upstream/$upstreamBranch"
     if ($Push) {
         Invoke-Git push origin $upstreamBranch
     }
 
-    Invoke-Git switch $LocalizationBranch
-    Invoke-Git merge --no-edit $upstreamBranch
-    if ($Push) {
-        Invoke-Git push --set-upstream origin $LocalizationBranch
+    if ($startingBranch -eq $LocalizationBranch) {
+        Invoke-Git switch $LocalizationBranch
+        Invoke-Git merge --no-edit $upstreamBranch
+        if ($Push) {
+            Invoke-Git push --set-upstream origin $LocalizationBranch
+        }
     }
 
-    Write-Host "上游同步完成。当前分支：$LocalizationBranch"
+    Write-Host "上游同步完成。当前分支：$startingBranch"
     if (-not $Push) {
         Write-Host "本次只更新了本地分支；确认无误后可重新运行并加 -Push 推送到 fork。"
-    }
-} catch {
+    }} catch {
     $currentChanges = @(& git status --porcelain 2>$null)
     $currentBranch = (& git branch --show-current 2>$null).Trim()
     if ($startingBranch -and $currentChanges.Count -eq 0 -and $currentBranch -and $currentBranch -ne $startingBranch) {
