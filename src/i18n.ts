@@ -304,6 +304,23 @@ const zhCNTranslations: Record<string, string> = {
         "支持 rgb(r,g,b)、hsl(h,s,l)、十六进制（#）和颜色名称（如 black、purple）。颜色预览：",
     "invalid color": "无效颜色",
     "to display the authoring date.": "用于显示创作日期。",
+    "Select or create a new remote by typing its name and selecting it":
+        "输入远程仓库名称，然后选择已有项或创建新项",
+    "Enter remote URL": "输入远程仓库 URL",
+    "Select or create a new remote branch by typing its name and selecting it":
+        "输入远程分支名称，然后选择已有项或创建新项",
+    "Select a remote": "选择远程仓库",
+    "This branch isn't merged into HEAD. Force delete?":
+        "此分支尚未合并到 HEAD，是否强制删除？",
+    "Enter directory for clone. It needs to be empty or not existent.":
+        "输入克隆目录；该目录必须为空或尚不存在。",
+    "Specify depth of clone. Leave empty for full clone.":
+        "指定克隆深度；留空表示完整克隆。",
+    "Vault Root": "Vault 根目录",
+    YES: "是",
+    NO: "否",
+    "Abort clone": "取消克隆",
+    "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS": "删除全部本地配置和插件",
     "No repository found": "未找到 Git 仓库",
     "Too many changes to display": "更改过多，无法显示",
     "Paused automatic routines.": "已暂停自动任务。",
@@ -414,13 +431,13 @@ const zhCNPatterns: DynamicTranslation[] = [
     },
     {
         pattern:
-            /^Sets the relative path to the vault from which the Git binary should be executed\.\s+Mostly used to set the path to the Git repository, which is only required if the Git repository is below the vault root directory\. Use "\\\\" instead of "\/" on Windows\.$/,
+            /^Sets the relative path to the vault from which the Git binary should be executed\.\s+Mostly used to set the path to the Git repository, which is only required if the Git repository is below the vault root directory\. Use "\\+" instead of "\/" on Windows\.$/,
         translate: () =>
             "设置 Git 命令相对于 Vault 的执行路径。仅当 Git 仓库位于 Vault 根目录下的子目录时通常才需要设置；Windows 上请使用“\\”而不是“/”。",
     },
     {
         pattern:
-            /^Corresponds to the GIT_DIR environment variable\. Requires restart of Obsidian to take effect\. Use "\\\\" instead of "\/" on Windows\.$/,
+            /^Corresponds to the GIT_DIR environment variable\. Requires restart of Obsidian to take effect\. Use "\\+" instead of "\/" on Windows\.$/,
         translate: () =>
             "对应 GIT_DIR 环境变量。重启 Obsidian 后生效；Windows 上请使用“\\”而不是“/”。",
     },
@@ -431,6 +448,17 @@ const zhCNPatterns: DynamicTranslation[] = [
             "；对于同一次（或全部）提交中至少 " +
             match[1] +
             " 个字符的匹配，显示",
+    },
+    {
+        pattern:
+            /^Does your remote repo contain a (.+) directory at the root\?$/,
+        translate: (match) => "远程仓库根目录是否包含 " + match[1] + " 目录？",
+    },
+    {
+        pattern:
+            /^To avoid conflicts, the local (.+) directory needs to be deleted\.$/,
+        translate: (match) =>
+            "为避免冲突，需要删除本地 " + match[1] + " 目录。",
     },
     {
         pattern: /^Color for newest commits$/,
