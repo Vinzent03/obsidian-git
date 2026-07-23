@@ -304,7 +304,7 @@ export function spawnAsync(
             resolve({
                 error: new Error(err.message),
                 stdout: stdoutBuffer,
-                stderr: stdoutBuffer,
+                stderr: stderrBuffer,
                 code: 1,
             });
         });
