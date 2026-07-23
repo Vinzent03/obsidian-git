@@ -136,6 +136,9 @@ export abstract class GitManager {
     // Constructs a path relative to the vault from a path relative to the git repository
     getRelativeVaultPath(path: string): string {
         if (this.plugin.settings.basePath) {
+            if (path === "" || path === ".") {
+                return this.plugin.settings.basePath;
+            }
             return this.plugin.settings.basePath + "/" + path;
         } else {
             return path;
@@ -150,11 +153,13 @@ export abstract class GitManager {
         doConversion: boolean = true
     ): string {
         if (doConversion) {
-            if (this.plugin.settings.basePath.length > 0) {
-                //Expect the case that the git repository is located inside the vault on mobile platform currently.
-                return filePath.substring(
-                    this.plugin.settings.basePath.length + 1
-                );
+            const basePath = this.plugin.settings.basePath;
+            if (basePath && basePath.length > 0) {
+                if (filePath.startsWith(basePath + "/")) {
+                    return filePath.substring(basePath.length + 1);
+                } else if (filePath === basePath) {
+                    return "";
+                }
             }
         }
         return filePath;
