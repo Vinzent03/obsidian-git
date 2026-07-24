@@ -22,7 +22,6 @@ export class SignsFeature {
     private fileRenameEvent?: EventRef;
     private intervalRefreshEvent?: number;
     private pluginRefreshedEvent?: EventRef;
-    private gutterContextMenuEvent?: EventRef;
     private codeMirrorExtensions: Extension[] = [];
     public changeStatusBar?: ChangesStatusBar;
 
@@ -146,7 +145,6 @@ export class SignsFeature {
         this.plg.app.workspace.offref(this.workspaceLeafChangeEvent!);
         this.plg.app.vault.offref(this.fileRenameEvent!);
         this.plg.app.workspace.offref(this.pluginRefreshedEvent!);
-        this.plg.app.workspace.offref(this.gutterContextMenuEvent!);
         window.clearInterval(this.intervalRefreshEvent);
     }
 
