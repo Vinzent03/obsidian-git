@@ -31,12 +31,80 @@
         closed = $bindable(),
     }: Props = $props();
 
+    let mainEl: HTMLElement | undefined = $state();
+    let scrollTop = $state(0);
+    let viewportHeight = $state(600);
+
+    const ITEM_HEIGHT = 26;
+    const BUFFER_ITEMS = 8;
+    const VIRTUAL_THRESHOLD = 35;
+
+    let isVirtualized = $derived(hierarchy.children.length > VIRTUAL_THRESHOLD);
+    let totalItems = $derived(Math.min(hierarchy.children.length, 500));
+
+    let startIndex = $derived.by(() => {
+        if (!isVirtualized || !mainEl) return 0;
+        const offsetTop = mainEl.offsetTop || 0;
+        const relativeScroll = Math.max(0, scrollTop - offsetTop);
+        return Math.max(
+            0,
+            Math.floor(relativeScroll / ITEM_HEIGHT) - BUFFER_ITEMS
+        );
+    });
+
+    let endIndex = $derived.by(() => {
+        if (!isVirtualized || !mainEl) return totalItems;
+        const offsetTop = mainEl.offsetTop || 0;
+        const relativeScroll = Math.max(0, scrollTop - offsetTop);
+        const visibleCount = Math.ceil(viewportHeight / ITEM_HEIGHT);
+        return Math.min(
+            totalItems,
+            Math.floor(relativeScroll / ITEM_HEIGHT) +
+                visibleCount +
+                BUFFER_ITEMS
+        );
+    });
+
+    let paddingTop = $derived(isVirtualized ? startIndex * ITEM_HEIGHT : 0);
+    let paddingBottom = $derived(
+        isVirtualized ? (totalItems - endIndex) * ITEM_HEIGHT : 0
+    );
+
+    let visibleChildren = $derived.by(() => {
+        if (!isVirtualized) {
+            return arrayProxyWithNewLength(hierarchy.children, 500);
+        }
+        const sliced = hierarchy.children.slice(startIndex, endIndex);
+        return arrayProxyWithNewLength(sliced, 500);
+    });
+
     onMount(() => {
         for (const entity of hierarchy.children) {
             if ((entity.children?.length ?? 0) > 100)
-                closed[entity.title] = true;
+                closed[entity.path] = true;
+        }
+
+        if (mainEl) {
+            const scrollParent =
+                mainEl.closest(".view-content") ||
+                mainEl.closest(".workspace-leaf-content") ||
+                mainEl.parentElement;
+            if (scrollParent) {
+                const handleScroll = () => {
+                    scrollTop = scrollParent.scrollTop;
+                    viewportHeight = scrollParent.clientHeight;
+                };
+                handleScroll();
+                scrollParent.addEventListener("scroll", handleScroll, {
+                    passive: true,
+                });
+                return () => {
+                    scrollParent.removeEventListener("scroll", handleScroll);
+                };
+            }
         }
     });
+
     /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
     let side = $derived(
         (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
@@ -72,8 +140,12 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<main class:topLevel>
-    {#each arrayProxyWithNewLength(hierarchy.children, 500) as entity}
+<main bind:this={mainEl} class:topLevel>
+    {#if paddingTop > 0}
+        <div style="height: {paddingTop}px;" aria-hidden="true"></div>
+    {/if}
+
+    {#each visibleChildren as entity (entity.path)}
         {#if entity.data}
             <div>
                 {#if fileType == FileType.staged}
@@ -240,6 +312,10 @@
             </div>
         {/if}
     {/each}
+
+    {#if paddingBottom > 0}
+        <div style="height: {paddingBottom}px;" aria-hidden="true"></div>
+    {/if}
 
     <TooManyFilesComponent files={hierarchy.children} />
 </main>
