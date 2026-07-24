@@ -541,6 +541,11 @@ export default class ObsidianGit extends Plugin {
     }
 
     async init({ fromReload = false }): Promise<void> {
+        if (this.localStorage.getPluginDisabled()) {
+            // This is already guarded in `onload`, but we also guard here to
+            // avoid any issues if `init` is called directly.
+            return;
+        }
         if (this.settings.showStatusBar && !this.statusBar) {
             const statusBarEl = this.addStatusBarItem();
             this.statusBar = new StatusBar(statusBarEl, this);
