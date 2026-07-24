@@ -88,8 +88,11 @@ export class SimpleGit extends GitManager {
             const gitDir = this.plugin.settings.gitDir;
             const envs = { ...process.env };
             if (pathPaths.length > 0) {
-                const path = pathPaths.join(":") + ":" + envs["PATH"];
-                envs["PATH"] = path;
+                const joinedPath =
+                    pathPaths.join(path.delimiter) +
+                    path.delimiter +
+                    envs["PATH"];
+                envs["PATH"] = joinedPath;
             }
             if (gitDir) {
                 envs["GIT_DIR"] = gitDir;
