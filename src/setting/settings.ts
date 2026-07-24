@@ -709,6 +709,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     })
             );
 
+        new Setting(containerEl)
+            .setName("Debug logging")
+            .setDesc("Write debug logs to plugin/log/git-log.md.")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.debugLogging)
+                    .onChange(async (value) => {
+                        plugin.settings.debugLogging = value;
+                        await plugin.saveSettings();
+                    })
+            );
+
         if (!plugin.settings.disablePopups)
             new Setting(containerEl)
                 .setName("Hide notifications for no changes")
@@ -804,9 +816,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     "Type in your password. You won't be able to see it again."
                 )
                 .addText((cb) => {
+                    cb.inputEl.type = "password";
                     cb.inputEl.autocapitalize = "off";
                     cb.inputEl.autocomplete = "off";
                     cb.inputEl.spellcheck = false;
+                    cb.setValue(plugin.localStorage.getPassword() ?? "");
                     cb.onChange((value) => {
                         plugin.localStorage.setPassword(value);
                     });
