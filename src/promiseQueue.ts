@@ -5,6 +5,7 @@ export class PromiseQueue {
         task: () => Promise<unknown>;
         onFinished: (res: unknown) => void;
     }[] = [];
+    private currentTask: Promise<unknown> | null = null;
 
     constructor(private readonly plugin: ObsidianGit) {}
 
@@ -18,24 +19,34 @@ export class PromiseQueue {
         task: () => Promise<T>,
         onFinished?: (res: T | undefined) => void
     ): void {
-        this.tasks.push({ task, onFinished: onFinished ?? (() => {}) });
-        if (this.tasks.length === 1) {
-            this.handleTask();
-        }
+        this.tasks.push({
+            task,
+            onFinished: (res: unknown) => {
+                if (onFinished) {
+                    onFinished(res as T | undefined);
+                }
+            },
+        });
+        this.kickstart();
     }
 
-    private handleTask(): void {
-        if (this.tasks.length > 0) {
-            const item = this.tasks[0];
-            item.task().then(
+    private kickstart(): void {
+        if (this.currentTask !== null) {
+            return;
+        }
+        if (this.tasks.length === 0) {
+            return;
+        }
+        const item = this.tasks.shift()!;
+        this.currentTask = Promise.resolve()
+            .then(() => item.task())
+            .then(
                 (res) => {
                     try {
                         item.onFinished(res);
                     } catch (e) {
                         console.error(e);
                     }
-                    this.tasks.shift();
-                    this.handleTask();
                 },
                 (e) => {
                     this.plugin.displayError(e);
@@ -44,11 +55,12 @@ export class PromiseQueue {
                     } catch (err) {
                         console.error(err);
                     }
-                    this.tasks.shift();
-                    this.handleTask();
                 }
-            );
-        }
+            )
+            .finally(() => {
+                this.currentTask = null;
+                this.kickstart();
+            });
     }
 
     clear(): void {
