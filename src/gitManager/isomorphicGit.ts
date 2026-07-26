@@ -472,60 +472,83 @@ export class IsomorphicGit extends GitManager {
 
             await this.checkAuthorInfo();
 
-            const mergeRes = await this.wrapFS(
-                git.merge({
-                    ...this.getRepo(),
-                    ours: branchInfo.current,
-                    theirs: branchInfo.tracking!,
-                    abortOnConflict: false,
-                    mergeDriver:
-                        this.plugin.settings.mergeStrategy !== "none"
-                            ? ({ contents }) => {
-                                  const baseContent = contents[0];
-                                  const ourContent = contents[1];
-                                  const theirContent = contents[2];
-
-                                  const LINEBREAKS = /^.*(\r?\n|$)/gm;
-                                  const ours =
-                                      ourContent.match(LINEBREAKS) ?? [];
-                                  const base =
-                                      baseContent.match(LINEBREAKS) ?? [];
-                                  const theirs =
-                                      theirContent.match(LINEBREAKS) ?? [];
-                                  const result = diff3Merge(ours, base, theirs);
-                                  let mergedText = "";
-                                  for (const item of result) {
-                                      if (item.ok) {
-                                          mergedText += item.ok.join("");
-                                      }
-                                      if (item.conflict) {
-                                          mergedText +=
-                                              this.plugin.settings
-                                                  .mergeStrategy === "ours"
-                                                  ? item.conflict.a.join("")
-                                                  : item.conflict.b.join("");
-                                      }
-                                  }
-                                  return { cleanMerge: true, mergedText };
-                              }
-                            : undefined,
-                })
-            );
-            if (!mergeRes.alreadyMerged) {
-                await this.wrapFS(
-                    git.checkout({
+            try {
+                const mergeRes = await this.wrapFS(
+                    git.merge({
                         ...this.getRepo(),
-                        ref: branchInfo.current,
-                        onProgress: (progress) => {
-                            if (progressNotice !== undefined) {
-                                progressNotice.setMessage(
-                                    this.getProgressText("Checkout", progress)
-                                );
-                            }
-                        },
-                        remote: branchInfo.remote,
+                        ours: branchInfo.current,
+                        theirs: branchInfo.tracking!,
+                        abortOnConflict: false,
+                        mergeDriver:
+                            this.plugin.settings.mergeStrategy !== "none"
+                                ? ({ contents }) => {
+                                      const baseContent = contents[0];
+                                      const ourContent = contents[1];
+                                      const theirContent = contents[2];
+
+                                      const LINEBREAKS = /^.*(\r?\n|$)/gm;
+                                      const ours =
+                                          ourContent.match(LINEBREAKS) ?? [];
+                                      const base =
+                                          baseContent.match(LINEBREAKS) ?? [];
+                                      const theirs =
+                                          theirContent.match(LINEBREAKS) ?? [];
+                                      const result = diff3Merge(
+                                          ours,
+                                          base,
+                                          theirs
+                                      );
+                                      let mergedText = "";
+                                      for (const item of result) {
+                                          if (item.ok) {
+                                              mergedText += item.ok.join("");
+                                          }
+                                          if (item.conflict) {
+                                              mergedText +=
+                                                  this.plugin.settings
+                                                      .mergeStrategy === "ours"
+                                                      ? item.conflict.a.join("")
+                                                      : item.conflict.b.join(
+                                                            ""
+                                                        );
+                                          }
+                                      }
+                                      return { cleanMerge: true, mergedText };
+                                  }
+                                : undefined,
                     })
                 );
+                if (!mergeRes.alreadyMerged) {
+                    await this.wrapFS(
+                        git.checkout({
+                            ...this.getRepo(),
+                            ref: branchInfo.current,
+                            onProgress: (progress) => {
+                                if (progressNotice !== undefined) {
+                                    progressNotice.setMessage(
+                                        this.getProgressText(
+                                            "Checkout",
+                                            progress
+                                        )
+                                    );
+                                }
+                            },
+                            remote: branchInfo.remote,
+                        })
+                    );
+                }
+            } catch (mergeError) {
+                // isomorphic-git throws `MergeNotSupportedError` for merges it
+                // cannot compute on its own, most commonly when there are
+                // multiple merge bases (criss-cross history). This happens
+                // routinely when the same vault is committed on two devices
+                // that then pull from each other. Fall back to a manual
+                // three-way merge instead of failing the pull outright.
+                if (mergeError instanceof Errors.MergeNotSupportedError) {
+                    await this.manualMerge(branchInfo);
+                } else {
+                    throw mergeError;
+                }
             }
             progressNotice?.hide();
 
@@ -556,6 +579,213 @@ export class IsomorphicGit extends GitManager {
             this.plugin.displayError(error);
             throw error;
         }
+    }
+
+    // Fallback three-way merge for cases isomorphic-git's `merge` refuses to
+    // handle on its own (it throws `MergeNotSupportedError`), most importantly
+    // when there are multiple merge bases (criss-cross history).
+    //
+    // This resolves the merge at the working-tree level: for every path that
+    // differs between the two sides it picks the changed side, or runs a diff3
+    // merge when both sides changed. The result is written to the working tree
+    // and the existing commit flow (with two parents) finalizes it, mirroring
+    // how the plugin already finalizes resolved conflicts.
+    //
+    // Limitations: this only merges regular files. Tree/file type conflicts and
+    // other non-blob conflicts are reported as conflicts for manual resolution
+    // rather than guessed at. A single merge base is used (git's "recursive"
+    // strategy instead synthesizes a virtual base from multiple bases); for the
+    // overwhelmingly common vault-sync case the bases are equivalent.
+    private async manualMerge(
+        branchInfo: BranchInfo & { remote: string }
+    ): Promise<void> {
+        const ourOid = await this.resolveRef(branchInfo.current!);
+        const theirOid = await this.resolveRef(branchInfo.tracking!);
+
+        const bases = (await git.findMergeBase({
+            ...this.getRepo(),
+            oids: [ourOid, theirOid],
+        })) as string[];
+        // If there is no common ancestor we cannot do a three-way merge.
+        if (bases.length === 0) {
+            throw new Errors.MergeNotSupportedError();
+        }
+        const baseOid = bases[0];
+
+        const LINEBREAKS = /^.*(\r?\n|$)/gm;
+        const decoder = new TextDecoder();
+        const conflictedFiles: string[] = [];
+        const writes: { path: string; content: Uint8Array }[] = [];
+        const deletions: string[] = [];
+
+        await this.wrapFS(
+            git.walk({
+                ...this.getRepo(),
+                trees: [
+                    git.TREE({ ref: baseOid }),
+                    git.TREE({ ref: ourOid }),
+                    git.TREE({ ref: theirOid }),
+                ],
+                map: async (filepath, [base, ours, theirs]) => {
+                    if (filepath === ".") return;
+
+                    const baseType = await base?.type();
+                    const ourType = await ours?.type();
+                    const theirType = await theirs?.type();
+
+                    // Recurse into directories.
+                    if (
+                        ourType === "tree" ||
+                        theirType === "tree" ||
+                        baseType === "tree"
+                    ) {
+                        // A path that is a tree on one side and a blob on
+                        // another is a type conflict we don't auto-resolve.
+                        const types = [ourType, theirType].filter(
+                            (t) => t !== undefined
+                        );
+                        if (types.some((t) => t !== "tree")) {
+                            conflictedFiles.push(filepath);
+                            return;
+                        }
+                        return true;
+                    }
+
+                    const ourOidEntry = await ours?.oid();
+                    const theirOidEntry = await theirs?.oid();
+                    const baseOidEntry = await base?.oid();
+
+                    // Unchanged between the two sides: nothing to do.
+                    if (ourOidEntry === theirOidEntry) {
+                        return;
+                    }
+                    // Only their side changed relative to base: take theirs.
+                    if (ourOidEntry === baseOidEntry) {
+                        if (theirOidEntry === undefined) {
+                            deletions.push(filepath);
+                        } else {
+                            const content = await theirs!.content();
+                            if (content)
+                                writes.push({ path: filepath, content });
+                        }
+                        return;
+                    }
+                    // Only our side changed relative to base: keep ours.
+                    if (theirOidEntry === baseOidEntry) {
+                        return;
+                    }
+
+                    // Both sides changed. If either side deleted the file while
+                    // the other modified it, that's a modify/delete conflict.
+                    if (
+                        ourOidEntry === undefined ||
+                        theirOidEntry === undefined
+                    ) {
+                        conflictedFiles.push(filepath);
+                        return;
+                    }
+
+                    // Both modified: run a diff3 merge.
+                    const ourContent = decoder.decode(
+                        (await ours!.content()) ?? new Uint8Array()
+                    );
+                    const theirContent = decoder.decode(
+                        (await theirs!.content()) ?? new Uint8Array()
+                    );
+                    const baseContent = decoder.decode(
+                        (await base?.content()) ?? new Uint8Array()
+                    );
+
+                    const result = diff3Merge(
+                        ourContent.match(LINEBREAKS) ?? [],
+                        baseContent.match(LINEBREAKS) ?? [],
+                        theirContent.match(LINEBREAKS) ?? []
+                    );
+
+                    let mergedText = "";
+                    let hadConflict = false;
+                    const markerSize = 7;
+                    for (const item of result) {
+                        if (item.ok) {
+                            mergedText += item.ok.join("");
+                        }
+                        if (item.conflict) {
+                            if (this.plugin.settings.mergeStrategy === "ours") {
+                                mergedText += item.conflict.a.join("");
+                            } else if (
+                                this.plugin.settings.mergeStrategy === "theirs"
+                            ) {
+                                mergedText += item.conflict.b.join("");
+                            } else {
+                                hadConflict = true;
+                                mergedText += `${"<".repeat(markerSize)} ${
+                                    branchInfo.current
+                                }\n`;
+                                mergedText += item.conflict.a.join("");
+                                mergedText += `${"=".repeat(markerSize)}\n`;
+                                mergedText += item.conflict.b.join("");
+                                mergedText += `${">".repeat(markerSize)} ${
+                                    branchInfo.tracking
+                                }\n`;
+                            }
+                        }
+                    }
+
+                    if (hadConflict) {
+                        conflictedFiles.push(filepath);
+                    }
+                    writes.push({
+                        path: filepath,
+                        content: new TextEncoder().encode(mergedText),
+                    });
+                    return;
+                },
+            })
+        );
+
+        // Apply the merged result to the working tree and stage it.
+        for (const { path, content } of writes) {
+            const vaultPath = this.getRelativeVaultPath(path);
+            await this.app.vault.adapter.writeBinary(
+                vaultPath,
+                content.buffer.slice(
+                    content.byteOffset,
+                    content.byteOffset + content.byteLength
+                )
+            );
+            await this.wrapFS(git.add({ ...this.getRepo(), filepath: path }));
+        }
+        for (const path of deletions) {
+            const vaultPath = this.getRelativeVaultPath(path);
+            if (await this.app.vault.adapter.exists(vaultPath)) {
+                await this.app.vault.adapter.remove(vaultPath);
+            }
+            await this.wrapFS(
+                git.remove({ ...this.getRepo(), filepath: path })
+            );
+        }
+
+        if (conflictedFiles.length > 0) {
+            // Leave the merge for the user to finish. Throwing
+            // `MergeConflictError` routes through `pull`'s catch block, which
+            // calls `handleConflict` (this also sets the conflict flag, so the
+            // next commit becomes a proper merge commit with two parents).
+            throw new Errors.MergeConflictError(
+                conflictedFiles,
+                conflictedFiles,
+                [],
+                []
+            );
+        }
+
+        // Clean merge: create the merge commit ourselves.
+        await this.wrapFS(
+            git.commit({
+                ...this.getRepo(),
+                message: `Merge ${branchInfo.tracking} into ${branchInfo.current}`,
+                parent: [ourOid, theirOid],
+            })
+        );
     }
 
     async push(): Promise<number> {
