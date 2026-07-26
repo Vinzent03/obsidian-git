@@ -30,6 +30,7 @@ import type {
     SyncMethod,
 } from "src/types";
 import { convertToRgb, formatMinutes, rgbToString } from "src/utils";
+import { localizeElement, t } from "src/i18n";
 
 const FORMAT_STRING_REFERENCE_URL =
     "https://momentjs.com/docs/#/parsing/string-format/";
@@ -988,7 +989,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 .catch((e) => plugin.displayError(e));
                         }
                         new Notice(
-                            "Obsidian must be restarted for the changes to take affect."
+                            t(
+                                "Obsidian must be restarted for the changes to take affect."
+                            )
                         );
                     })
             );
@@ -1038,7 +1041,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 )
             );
             new Notice(
-                "Debug information copied to clipboard. May contain sensitive information!"
+                t(
+                    "Debug information copied to clipboard. May contain sensitive information!"
+                )
             );
         };
 
@@ -1057,6 +1062,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 keys.createEl("kbd", { text: "CTRL + SHIFT + I" });
             }
         }
+
+        localizeElement(containerEl);
     }
 
     mayDisableSetting(setting: Setting, disable: boolean) {
