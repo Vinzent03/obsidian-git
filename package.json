@@ -40,7 +40,7 @@
         "scss": "^0.2.4",
         "standard-version": "^9.5.0",
         "svelte-check": "^4.6.0",
-        "svelte-eslint-parser": "^0.43.0",
+        "svelte-eslint-parser": "^1.8.0",
         "svelte-preprocess": "^6.0.5",
         "tslib": "^2.8.1",
         "typescript": "5.8.3",
