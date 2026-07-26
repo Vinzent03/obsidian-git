@@ -7,11 +7,14 @@
         "dev": "node esbuild.config.mjs dev",
         "build": "node esbuild.config.mjs production",
         "release": "standard-version",
-        "lint": "eslint src",
-        "format": "prettier --check src",
+        "lint": "eslint src tests vitest.config.ts",
+        "format": "prettier --check src tests vitest.config.ts",
         "tsc": "tsc --noEmit",
         "svelte": "svelte-check",
-        "all": "pnpm run tsc && pnpm run svelte && pnpm run format && pnpm run lint"
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "all": "pnpm run tsc && pnpm run svelte && pnpm run format && pnpm run lint && pnpm run test"
     },
     "keywords": [],
     "author": "Vinzent03",
@@ -21,8 +24,8 @@
         "t": ""
     },
     "engines": {
-        "node": ">=18",
-        "pnpm": ">=9"
+        "node": ">=24",
+        "pnpm": ">=11"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.5",
@@ -30,6 +33,7 @@
         "@types/diff3": "^0.0.2",
         "@types/node": "^26.1.1",
         "@typescript-eslint/parser": "8.65.0",
+        "@vitest/coverage-v8": "^4.1.10",
         "esbuild": "^0.28.1",
         "esbuild-svelte": "^0.9.5",
         "eslint": "^9.39.4",
@@ -44,7 +48,8 @@
         "svelte-preprocess": "^6.0.5",
         "tslib": "^2.8.1",
         "typescript": "5.8.3",
-        "typescript-eslint": "^8.61.0"
+        "typescript-eslint": "^8.61.0",
+        "vitest": "^4.1.10"
     },
     "dependencies": {
         "@codemirror/commands": "^6.10.3",

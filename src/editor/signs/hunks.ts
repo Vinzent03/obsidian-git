@@ -113,7 +113,7 @@ export abstract class Hunks {
         return this.createHunk(pretop, precount, top, bot - top + 1);
     }
 
-    patchLines(hunk: Hunk, stripCr: boolean = false): string[] {
+    static patchLines(hunk: Hunk, stripCr: boolean = false): string[] {
         const lines: string[] = [];
 
         for (const l of hunk.removed.lines) {
@@ -319,7 +319,7 @@ export abstract class Hunks {
         return results;
     }
 
-    getSummary(hunks: Hunk[]): StatusObj {
+    static getSummary(hunks: Hunk[]): StatusObj {
         const status: StatusObj = { added: 0, changed: 0, removed: 0 };
 
         for (const hunk of hunks) {
@@ -407,7 +407,7 @@ export abstract class Hunks {
         return undefined;
     }
 
-    compareHeads(a?: Hunk[], b?: Hunk[]): boolean {
+    static compareHeads(a?: Hunk[], b?: Hunk[]): boolean {
         if ((a === undefined) !== (b === undefined)) {
             return true;
         } else if (a && b && a.length !== b.length) {
