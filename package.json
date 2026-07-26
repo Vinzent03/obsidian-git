@@ -25,7 +25,7 @@
         "pnpm": ">=9"
     },
     "devDependencies": {
-        "@eslint/js": "^9.39.4",
+        "@eslint/js": "^9.39.5",
         "@types/debug": "^4.1.13",
         "@types/diff3": "^0.0.2",
         "@types/node": "^26.1.1",
