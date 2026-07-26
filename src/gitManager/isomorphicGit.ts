@@ -498,9 +498,9 @@ export class IsomorphicGit extends GitManager {
                     mergeDriver:
                         this.plugin.settings.mergeStrategy !== "none"
                             ? ({ contents }) => {
-                                  const baseContent = contents[0];
-                                  const ourContent = contents[1];
-                                  const theirContent = contents[2];
+                                  const baseContent = contents[0]!;
+                                  const ourContent = contents[1]!;
+                                  const theirContent = contents[2]!;
 
                                   const LINEBREAKS = /^.*(\r?\n|$)/gm;
                                   const ours =
@@ -888,7 +888,7 @@ export class IsomorphicGit extends GitManager {
                 const completeMessage = log.commit.message.split("\n\n");
 
                 return {
-                    message: completeMessage[0],
+                    message: completeMessage[0] ?? "",
                     author: {
                         name: log.commit.author.name,
                         email: log.commit.author.email,
@@ -1163,6 +1163,7 @@ export class IsomorphicGit extends GitManager {
                 });
                 return contents.blob;
             }
+            return undefined;
         };
         if (hash) {
             const commitContent = await readBlob({
@@ -1267,8 +1268,8 @@ export class IsomorphicGit extends GitManager {
         ] as string;
         // status will always be two characters
         return {
-            index: status[0] == "?" ? "U" : status[0],
-            workingDir: status[1] == "?" ? "U" : status[1],
+            index: status[0] == "?" ? "U" : status[0] ?? " ",
+            workingDir: status[1] == "?" ? "U" : status[1] ?? " ",
             path: row[this.FILE],
             vaultPath: this.getRelativeVaultPath(row[this.FILE]),
         };
@@ -1291,6 +1292,7 @@ export class IsomorphicGit extends GitManager {
                 infinity ? this.noticeLength : undefined
             );
         }
+        return undefined;
     }
 }
 
@@ -1314,7 +1316,6 @@ function fromValue(value: unknown) {
             return {};
         },
         [Symbol.asyncIterator]() {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
             return this;
         },
     };

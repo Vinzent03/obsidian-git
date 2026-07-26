@@ -30,8 +30,8 @@ import { impossibleBranch, spawnAsync, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 
 export class SimpleGit extends GitManager {
-    git: simple.SimpleGit;
-    absoluteRepoPath: string;
+    git!: simple.SimpleGit;
+    absoluteRepoPath!: string;
     watchAbortController: AbortController | undefined;
     useDefaultWindowsGitPath: boolean = false;
     constructor(plugin: ObsidianGit) {
@@ -100,6 +100,7 @@ export class SimpleGit extends GitManager {
             }
             for (const envVar of envVars) {
                 const [key, value] = envVar.split("=");
+                if (key === undefined) continue;
                 envs[key] = value;
             }
 
@@ -422,8 +423,9 @@ export class SimpleGit extends GitManager {
                         .map((i) => {
                             const submod = i.match(/'([^']*)'/);
                             if (submod != undefined) {
-                                return root + "/" + submod[1] + sep;
+                                return root + "/" + submod[1]! + sep;
                             }
+                            return undefined;
                         })
                         .filter((i): i is string => !!i);
 
@@ -699,8 +701,7 @@ export class SimpleGit extends GitManager {
                         }
                     } catch (err) {
                         this.plugin.displayError(
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                            `Pull failed (${this.plugin.settings.syncMethod}): ${"message" in err ? err.message : err}`
+                            `Pull failed (${this.plugin.settings.syncMethod}): ${errorToString(err)}`
                         );
                         return;
                     }
@@ -714,8 +715,7 @@ export class SimpleGit extends GitManager {
                         await this.unstageAll({});
                     } catch (err) {
                         this.plugin.displayError(
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                            `Sync failed (${this.plugin.settings.syncMethod}): ${"message" in err ? err.message : err}`
+                            `Sync failed (${this.plugin.settings.syncMethod}): ${errorToString(err)}`
                         );
                     }
                 }
@@ -984,21 +984,22 @@ export class SimpleGit extends GitManager {
             diff: {
                 ...e.diff!,
                 files:
-                    e.diff?.files.map<DiffFile>(
-                        (f: simple.DiffResultNameStatusFile) => ({
+                    e.diff?.files.map<DiffFile>((f) => {
+                        const from = "from" in f ? f.from : undefined;
+                        return {
                             ...f,
-                            status: f.status!,
+                            status: "status" in f ? f.status! : "M",
                             path: f.file,
                             hash: e.hash,
                             vaultPath: this.getRelativeVaultPath(f.file),
-                            fromPath: f.from,
+                            fromPath: from,
                             fromVaultPath:
-                                f.from != undefined
-                                    ? this.getRelativeVaultPath(f.from)
+                                from != undefined
+                                    ? this.getRelativeVaultPath(from)
                                     : undefined,
                             binary: f.binary,
-                        })
-                    ) ?? [],
+                        };
+                    }) ?? [],
             },
             fileName: e.diff?.files.first()?.file,
         }));
@@ -1177,7 +1178,7 @@ export class SimpleGit extends GitManager {
 
         const list = [];
         for (const item in res.branches) {
-            list.push(res.branches[item].name);
+            list.push(res.branches[item]!.name);
         }
         return list;
     }
@@ -1249,7 +1250,9 @@ export class SimpleGit extends GitManager {
 
     async rawCommand(command: string): Promise<string> {
         const parts = command.split(" "); // Very simple parsing, may need string-argv
-        const res = await this.git.raw(parts[0], ...parts.slice(1));
+        const firstPart = parts[0];
+        if (firstPart === undefined) return "";
+        const res = await this.git.raw(firstPart, ...parts.slice(1));
         return res;
     }
 
@@ -1319,6 +1322,7 @@ export class SimpleGit extends GitManager {
                 throw error;
             }
         }
+        return undefined;
     }
 
     private async isGitInstalled(): Promise<boolean> {
@@ -1415,26 +1419,27 @@ function parseBlame(blameOutputUnnormalized: string): Blame {
 
     let line = 1;
     for (let bi = 0; bi < blameLines.length; ) {
-        if (startsWithNonWhitespace(blameLines[bi])) {
-            const lineInfo = blameLines[bi].split(" ");
+        const blameLine = blameLines[bi];
+        if (startsWithNonWhitespace(blameLine)) {
+            const lineInfo = blameLine.split(" ");
 
             const commitHash = parseLineInfoInto(lineInfo, line, result);
             bi++;
 
             // parse header values until a tab is encountered
             for (; startsWithNonWhitespace(blameLines[bi]); bi++) {
-                const spaceSeparatedHeaderValues = blameLines[bi].split(" ");
+                const spaceSeparatedHeaderValues = blameLines[bi]!.split(" ");
                 parseHeaderInto(spaceSeparatedHeaderValues, result, line);
             }
             finalizeBlameCommitInfo(result.commits.get(commitHash)!);
 
             // skip tab prefixed line
             line += 1;
-        } else if (blameLines[bi] === "" && bi === blameLines.length - 1) {
+        } else if (blameLine === "" && bi === blameLines.length - 1) {
             // EOF
         } else {
             throw Error(
-                `Expected non-whitespace line or EOF, but found: ${blameLines[bi]}`
+                `Expected non-whitespace line or EOF, but found: ${blameLine}`
             );
         }
         bi++;
@@ -1444,15 +1449,24 @@ function parseBlame(blameOutputUnnormalized: string): Blame {
 
 function parseLineInfoInto(lineInfo: string[], line: number, result: Blame) {
     const hash = lineInfo[0];
+    const originalLine = lineInfo[1];
+    const finalLine = lineInfo[2];
+    if (
+        hash === undefined ||
+        originalLine === undefined ||
+        finalLine === undefined
+    ) {
+        throw Error(`Invalid git-blame line info: ${lineInfo.join(" ")}`);
+    }
     result.hashPerLine.push(hash);
-    result.originalFileLineNrPerLine.push(parseInt(lineInfo[1]));
-    result.finalFileLineNrPerLine.push(parseInt(lineInfo[2]));
+    result.originalFileLineNrPerLine.push(parseInt(originalLine));
+    result.finalFileLineNrPerLine.push(parseInt(finalLine));
     if (lineInfo.length >= 4)
-        result.groupSizePerStartingLine.set(line, parseInt(lineInfo[3]));
+        result.groupSizePerStartingLine.set(line, parseInt(lineInfo[3]!));
 
-    if (parseInt(lineInfo[2]) !== line) {
+    if (parseInt(finalLine) !== line) {
         throw Error(
-            `git-blame output is out of order: ${line} vs ${lineInfo[2]}`
+            `git-blame output is out of order: ${line} vs ${finalLine}`
         );
     }
 
@@ -1463,6 +1477,9 @@ function parseHeaderInto(header: string[], out: Blame, line: number) {
     const key = header[0];
     const value = header.slice(1).join(" ");
     const commitHash = out.hashPerLine[line];
+    if (commitHash === undefined) {
+        throw Error(`No commit hash found for git-blame line ${line}`);
+    }
     const commit =
         out.commits.get(commitHash) ||
         <BlameCommit>{
@@ -1535,8 +1552,9 @@ function isUndefinedOrEmptyObject(obj: object | undefined | null): boolean {
     return !obj || Object.keys(obj).length === 0;
 }
 
-function startsWithNonWhitespace(str: string): boolean {
-    return str.length > 0 && str[0].trim() === str[0];
+function startsWithNonWhitespace(str: string | undefined): str is string {
+    if (str === undefined) return false;
+    return str.length > 0 && str[0]!.trim() === str[0];
 }
 
 function removeEmailBrackets(gitEmail: string) {
@@ -1546,4 +1564,8 @@ function removeEmailBrackets(gitEmail: string) {
     return prefixCleaned.endsWith(">")
         ? prefixCleaned.substring(0, prefixCleaned.length - 1)
         : prefixCleaned;
+}
+
+function errorToString(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }

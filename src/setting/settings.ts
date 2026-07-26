@@ -411,8 +411,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         dropdown.addOptions(options);
                         dropdown.setValue(plugin.settings.syncMethod);
 
-                        dropdown.onChange(async (option: SyncMethod) => {
-                            plugin.settings.syncMethod = option;
+                        dropdown.onChange(async (option) => {
+                            plugin.settings.syncMethod = option as SyncMethod;
                             await plugin.saveSettings();
                         });
                     });
@@ -431,8 +431,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     dropdown.addOptions(options);
                     dropdown.setValue(plugin.settings.mergeStrategy);
 
-                    dropdown.onChange(async (option: MergeStrategy) => {
-                        plugin.settings.mergeStrategy = option;
+                    dropdown.onChange(async (option) => {
+                        plugin.settings.mergeStrategy = option as MergeStrategy;
                         await plugin.saveSettings();
                     });
                 });
@@ -551,15 +551,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 monochrome: "Monochrome",
                             })
                             .setValue(plugin.settings.hunks.statusBar)
-                            .onChange(
-                                async (
-                                    option: ObsidianGitSettings["hunks"]["statusBar"]
-                                ) => {
-                                    plugin.settings.hunks.statusBar = option;
-                                    await plugin.saveSettings();
-                                    plugin.editorIntegration.refreshSignsSettings();
-                                }
-                            )
+                            .onChange(async (option) => {
+                                plugin.settings.hunks.statusBar =
+                                    option as ObsidianGitSettings["hunks"]["statusBar"];
+                                await plugin.saveSettings();
+                                plugin.editorIntegration.refreshSignsSettings();
+                            })
                     );
 
                 new Setting(containerEl)
@@ -583,8 +580,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 };
                 dropdown.addOptions(options);
                 dropdown.setValue(plugin.settings.authorInHistoryView);
-                dropdown.onChange(async (option: ShowAuthorInHistoryView) => {
-                    plugin.settings.authorInHistoryView = option;
+                dropdown.onChange(async (option) => {
+                    plugin.settings.authorInHistoryView =
+                        option as ShowAuthorInHistoryView;
                     await plugin.saveSettings();
                     await plugin.refresh();
                 });
@@ -671,12 +669,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     };
                     dropdown.addOptions(options);
                     dropdown.setValue(plugin.settings.diffStyle);
-                    dropdown.onChange(
-                        async (option: ObsidianGitSettings["diffStyle"]) => {
-                            plugin.settings.diffStyle = option;
-                            await plugin.saveSettings();
-                        }
-                    );
+                    dropdown.onChange(async (option) => {
+                        plugin.settings.diffStyle =
+                            option as ObsidianGitSettings["diffStyle"];
+                        await plugin.saveSettings();
+                    });
                 });
         }
 
@@ -1148,8 +1145,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         "all-commits": "Follow within all commits (maybe slow)",
                     });
                     dropdown.setValue(this.settings.lineAuthor.followMovement);
-                    dropdown.onChange((value: LineAuthorFollowMovement) =>
-                        this.lineAuthorSettingHandler("followMovement", value)
+                    dropdown.onChange((value) =>
+                        this.lineAuthorSettingHandler(
+                            "followMovement",
+                            value as LineAuthorFollowMovement
+                        )
                     );
                 });
 
@@ -1208,8 +1208,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     dropdown.addOptions(options);
                     dropdown.setValue(this.settings.lineAuthor.authorDisplay);
 
-                    dropdown.onChange(async (value: LineAuthorDisplay) =>
-                        this.lineAuthorSettingHandler("authorDisplay", value)
+                    dropdown.onChange(async (value) =>
+                        this.lineAuthorSettingHandler(
+                            "authorDisplay",
+                            value as LineAuthorDisplay
+                        )
                     );
                 });
 
@@ -1234,15 +1237,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         this.settings.lineAuthor.dateTimeFormatOptions
                     );
 
-                    dropdown.onChange(
-                        async (value: LineAuthorDateTimeFormatOptions) => {
-                            await this.lineAuthorSettingHandler(
-                                "dateTimeFormatOptions",
-                                value
-                            );
-                            this.refreshDisplayWithDelay();
-                        }
-                    );
+                    dropdown.onChange(async (value) => {
+                        await this.lineAuthorSettingHandler(
+                            "dateTimeFormatOptions",
+                            value as LineAuthorDateTimeFormatOptions
+                        );
+                        this.refreshDisplayWithDelay();
+                    });
                 });
 
             if (this.settings.lineAuthor.dateTimeFormatOptions === "custom") {
@@ -1289,8 +1290,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         this.settings.lineAuthor.dateTimeTimezone
                     );
 
-                    dropdown.onChange(async (value: LineAuthorTimezoneOption) =>
-                        this.lineAuthorSettingHandler("dateTimeTimezone", value)
+                    dropdown.onChange(async (value) =>
+                        this.lineAuthorSettingHandler(
+                            "dateTimeTimezone",
+                            value as LineAuthorTimezoneOption
+                        )
                     );
                 });
             timezoneSetting.descEl.empty();

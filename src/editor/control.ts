@@ -22,7 +22,7 @@ given the changes in the Obsidian UI.
  * It knows its corresponding editor and initiates editor view changes.
  */
 export class FileSubscriber {
-    private lastSeenPath: string; // remember path to detect and adapt to renames
+    private lastSeenPath!: string; // remember path to detect and adapt to renames
 
     constructor(private state: EditorState) {
         this.subscribeMe();

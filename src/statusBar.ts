@@ -9,15 +9,15 @@ interface StatusBarMessage {
 
 export class StatusBar {
     private messages: StatusBarMessage[] = [];
-    private currentMessage: StatusBarMessage | null;
+    private currentMessage: StatusBarMessage | null = null;
     private lastCommitTimestamp?: Date;
     private unPushedCommits?: number;
-    public lastMessageTimestamp: number | null;
+    public lastMessageTimestamp: number | null = null;
     private base = "obsidian-git-statusbar-";
-    private iconEl: HTMLElement;
-    private conflictEl: HTMLElement;
-    private pausedEl: HTMLElement;
-    private textEl: HTMLElement;
+    private iconEl!: HTMLElement;
+    private conflictEl!: HTMLElement;
+    private pausedEl!: HTMLElement;
+    private textEl!: HTMLElement;
 
     constructor(
         private statusBarEl: HTMLElement,

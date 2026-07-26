@@ -41,7 +41,7 @@
 
     onMount(() => {
         const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !loading) {
+            if (entries[0]?.isIntersecting && !loading) {
                 appendLogs().catch(console.error);
             }
         });
@@ -111,7 +111,7 @@
                 bind:this={buttons[0]}
                 onclick={() => {
                     showTree = !showTree;
-                    setIcon(buttons[0], showTree ? "list" : "folder");
+                    setIcon(buttons[0]!, showTree ? "list" : "folder");
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}

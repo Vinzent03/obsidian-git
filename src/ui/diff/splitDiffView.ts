@@ -23,11 +23,11 @@ import { rawHunkFromChunk, rawHunksToHunks } from "src/editor/signs/diff";
 // This class is not extending `FileView', because it needs a `TFile`, which is not possible for dot files like `.gitignore`, which this editor should support as well.`
 export default class SplitDiffView extends ItemView {
     refreshing = false;
-    state: DiffViewState;
+    state!: DiffViewState;
     intervalRef: number;
     mergeView: MergeView | undefined;
-    fileSaveDebouncer: Debouncer<[string], void>;
-    bIsEditable: boolean;
+    fileSaveDebouncer!: Debouncer<[string], void>;
+    bIsEditable!: boolean;
 
     /**
      * Prevent to load text from file if the modification event was caused by this instance
@@ -292,7 +292,7 @@ export default class SplitDiffView extends ItemView {
             const chunks = getChunks(bEditor.state)!;
             const index = contentEl.parentElement?.indexOf(contentEl);
 
-            const chunk = chunks.chunks[index!];
+            const chunk = chunks.chunks[index!]!;
 
             const rawHunk = rawHunkFromChunk(
                 chunk,
@@ -303,7 +303,7 @@ export default class SplitDiffView extends ItemView {
                 this.mergeView!.a.state.doc.toString(),
                 this.mergeView!.b.state.doc.toString(),
                 [rawHunk]
-            )[0];
+            )[0]!;
 
             const patch =
                 Hunks.createPatch(
@@ -372,7 +372,7 @@ export default class SplitDiffView extends ItemView {
 
             // cleanup
             this.mergeView?.destroy();
-            const container = this.containerEl.children[1];
+            const container = this.containerEl.children[1]!;
             container.empty();
 
             // new

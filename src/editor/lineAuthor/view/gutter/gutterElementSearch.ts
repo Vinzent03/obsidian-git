@@ -25,6 +25,7 @@ export function findGutterElementUnderMouse(): HTMLElement | undefined {
     for (const elt of attachedGutterElements) {
         if (contains(elt, mouseXY)) return elt;
     }
+    return undefined;
 }
 
 function contains(elt: HTMLElement, pt: { x: number; y: number }): boolean {

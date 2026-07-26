@@ -1,4 +1,12 @@
 import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
+import type {
+    Editor,
+    EventRef,
+    MarkdownView,
+    Menu,
+    TFile,
+    WorkspaceLeaf,
+} from "obsidian";
 
 export interface ObsidianGitSettings {
     commitMessage: string;
@@ -354,6 +362,25 @@ declare module "obsidian" {
         getTypeByExtension(extension: string): string;
     }
     interface Workspace {
+        on(
+            name: "file-open",
+            callback: (file: TFile | null) => unknown,
+            ctx?: unknown
+        ): EventRef;
+        on(
+            name: "active-leaf-change",
+            callback: (leaf: WorkspaceLeaf | null) => unknown,
+            ctx?: unknown
+        ): EventRef;
+        on(
+            name: "editor-menu",
+            callback: (
+                menu: Menu,
+                editor: Editor,
+                view: MarkdownView
+            ) => unknown,
+            ctx?: unknown
+        ): EventRef;
         /**
          * Emitted when some git action has been completed and plugin has been refreshed
          */

@@ -236,7 +236,7 @@ export abstract class GitManager {
             let currentPath = "";
 
             for (let i = 0; i < parts.length; i++) {
-                const part = parts[i];
+                const part = parts[i]!;
                 currentPath = currentPath ? currentPath + "/" + part : part;
                 const isLast = i === parts.length - 1;
 
@@ -308,7 +308,7 @@ export abstract class GitManager {
             if (status.staged.length < 100) {
                 status.staged.forEach((value: FileStatusResult) => {
                     if (value.index in changeset) {
-                        changeset[value.index].push(value.path);
+                        changeset[value.index]!.push(value.path);
                     } else {
                         changeset[value.index] = [value.path];
                     }

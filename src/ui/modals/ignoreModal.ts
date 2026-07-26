@@ -12,7 +12,7 @@ export class IgnoreModal extends Modal {
         super(app);
     }
 
-    openAndGetReslt(): Promise<string> {
+    openAndGetReslt(): Promise<string | undefined> {
         return new Promise((resolve) => {
             this.resolve = resolve;
             this.open();

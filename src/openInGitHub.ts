@@ -149,8 +149,8 @@ async function getData(
         return {
             result: "success",
             isGitHub: !!isGitHub,
-            repo: httpsRepo || sshRepo,
-            user: httpsUser || sshUser,
+            repo: httpsRepo ?? sshRepo ?? "",
+            user: httpsUser ?? sshUser ?? "",
             branch: branch,
             filePath: filePath,
         };

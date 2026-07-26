@@ -65,11 +65,11 @@ import { HunkActions } from "./editor/signs/hunkActions";
 import { EditorIntegration } from "./editor/editorIntegration";
 
 export default class ObsidianGit extends Plugin {
-    gitManager: GitManager;
+    gitManager!: GitManager;
     automaticsManager = new AutomaticsManager(this);
     tools = new Tools(this);
     localStorage = new LocalStorageSettings(this);
-    settings: ObsidianGitSettings;
+    settings!: ObsidianGitSettings;
     settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
     branchBar?: BranchStatusBar;
@@ -77,7 +77,7 @@ export default class ObsidianGit extends Plugin {
         gitAction: CurrentGitAction.idle,
         offlineMode: false,
     };
-    lastPulledFiles: FileStatusResult[];
+    lastPulledFiles!: FileStatusResult[];
     gitReady = false;
     promiseQueue: PromiseQueue = new PromiseQueue(this);
 
@@ -95,7 +95,7 @@ export default class ObsidianGit extends Plugin {
     /**
      * Debouncer for the refresh of the git status for the source control view after file changes.
      */
-    debRefresh: Debouncer<[], void>;
+    debRefresh!: Debouncer<[], void>;
 
     setPluginState(state: Partial<PluginState>): void {
         this.state = Object.assign(this.state, state);
@@ -1239,7 +1239,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async switchBranch(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return;
+        if (!(await this.isAllInitialized())) return undefined;
 
         const branchInfo = await this.gitManager.branchInfo();
         const selectedBranch = await new BranchModal(
@@ -1254,10 +1254,11 @@ export default class ObsidianGit extends Plugin {
             await this.branchBar?.display();
             return selectedBranch;
         }
+        return undefined;
     }
 
     async switchRemoteBranch(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return;
+        if (!(await this.isAllInitialized())) return undefined;
 
         const selectedBranch = (await this.selectRemoteBranch()) || "";
 
@@ -1269,10 +1270,11 @@ export default class ObsidianGit extends Plugin {
             await this.branchBar?.display();
             return selectedBranch;
         }
+        return undefined;
     }
 
     async createBranch(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return;
+        if (!(await this.isAllInitialized())) return undefined;
 
         const newBranch = await new GeneralModal(this, {
             placeholder: "Create new branch",
@@ -1283,10 +1285,11 @@ export default class ObsidianGit extends Plugin {
             await this.branchBar?.display();
             return newBranch;
         }
+        return undefined;
     }
 
     async deleteBranch(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return;
+        if (!(await this.isAllInitialized())) return undefined;
 
         const branchInfo = await this.gitManager.branchInfo();
         if (branchInfo.current) branchInfo.branches.remove(branchInfo.current);
@@ -1307,7 +1310,7 @@ export default class ObsidianGit extends Plugin {
                     onlySelection: true,
                 }).openAndGetResult();
                 if (forceAnswer !== "YES") {
-                    return;
+                    return undefined;
                 }
                 force = forceAnswer === "YES";
             }
@@ -1316,6 +1319,7 @@ export default class ObsidianGit extends Plugin {
             await this.branchBar?.display();
             return branch;
         }
+        return undefined;
     }
 
     /** Ensures that the upstream branch is set.
@@ -1465,7 +1469,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
     }
 
     async editRemotes(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return;
+        if (!(await this.isAllInitialized())) return undefined;
 
         const remotes = await this.gitManager.getRemotes();
 
@@ -1493,6 +1497,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
                 return remoteName;
             }
         }
+        return undefined;
     }
 
     async selectRemoteBranch(): Promise<string | undefined> {
@@ -1524,13 +1529,14 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
                     "Select or create a new remote branch by typing its name and selecting it",
             });
             const branch = await branchModal.openAndGetResult();
-            if (branch == undefined) return;
+            if (branch == undefined) return undefined;
             if (!branch.startsWith(remoteName + "/")) {
                 // If the branch does not start with the remote name, prepend it
                 return `${remoteName}/${branch}`;
             }
             return branch; // Already in the correct format
         }
+        return undefined;
     }
 
     async removeRemote() {

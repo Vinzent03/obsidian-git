@@ -159,7 +159,7 @@ export class LineAuthoringFeature {
         this.plg.app.vault.offref(this.fileRenameEvent!);
     }
 
-    private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
+    private handleWorkspaceLeaf = (leaf: WorkspaceLeaf | null) => {
         if (!this.lineAuthorInfoProvider) {
             console.warn(
                 "Git: undefined lineAuthorInfoProvider. Unexpected situation."
@@ -181,13 +181,13 @@ export class LineAuthoringFeature {
     };
 
     private createFileOpenEvent(): EventRef {
-        return this.plg.app.workspace.on(
-            "file-open",
-            (file: TFile) =>
+        return this.plg.app.workspace.on("file-open", (file) => {
+            if (file) {
                 void this.lineAuthorInfoProvider
                     ?.trackChanged(file)
-                    .catch(console.error)
-        );
+                    .catch(console.error);
+            }
+        });
     }
 
     private createWorkspaceLeafChangeEvent(): EventRef {

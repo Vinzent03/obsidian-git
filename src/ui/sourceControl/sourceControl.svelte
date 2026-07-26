@@ -279,7 +279,7 @@
                 bind:this={buttons[6]}
                 onclick={() => {
                     showTree = !showTree;
-                    setIcon(buttons[6], showTree ? "list" : "folder");
+                    setIcon(buttons[6]!, showTree ? "list" : "folder");
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}

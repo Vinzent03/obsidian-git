@@ -96,6 +96,7 @@ export function addCommmands(plugin: ObsidianGit) {
                     aFile: filePath,
                     aRef: "",
                 });
+                return true;
             }
         },
     });
@@ -105,6 +106,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Open file on GitHub",
         editorCallback: (editor, { file }) => {
             if (file) return openLineInGitHub(editor, file, plugin.gitManager);
+            return undefined;
         },
     });
 
@@ -113,6 +115,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Open file history on GitHub",
         editorCallback: (_, { file }) => {
             if (file) return openHistoryInGitHub(file, plugin.gitManager);
+            return undefined;
         },
     });
 
@@ -147,6 +150,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 plugin
                     .addFileToGitignore(file!.path, file instanceof TFolder)
                     .catch((e) => plugin.displayError(e));
+                return true;
             }
         },
     });
@@ -233,6 +237,7 @@ export function addCommmands(plugin: ObsidianGit) {
                     requestCustomMessage: false,
                 });
             });
+            return true;
         },
     });
 
@@ -298,6 +303,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 return file !== null;
             } else {
                 plugin.promiseQueue.addTask(() => plugin.stageFile(file!));
+                return true;
             }
         },
     });
@@ -311,6 +317,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 return file !== null;
             } else {
                 plugin.promiseQueue.addTask(() => plugin.unstageFile(file!));
+                return true;
             }
         },
     });
@@ -474,6 +481,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 plugin.tools
                     .runRawCommand()
                     .catch((e) => plugin.displayError(e));
+                return true;
             }
         },
     });
@@ -499,6 +507,7 @@ export function addCommmands(plugin: ObsidianGit) {
             }
 
             plugin.hunkActions.resetHunk();
+            return true;
         },
     });
 
@@ -513,6 +522,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 );
             }
             plugin.promiseQueue.addTask(() => plugin.hunkActions.stageHunk());
+            return true;
         },
     });
 
@@ -528,6 +538,7 @@ export function addCommmands(plugin: ObsidianGit) {
             }
             const editor = plugin.hunkActions.editor!.editor;
             togglePreviewHunk(editor);
+            return true;
         },
     });
 
@@ -542,6 +553,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 );
             }
             plugin.hunkActions.goToHunk("next");
+            return true;
         },
     });
 
@@ -556,6 +568,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 );
             }
             plugin.hunkActions.goToHunk("prev");
+            return true;
         },
     });
 }

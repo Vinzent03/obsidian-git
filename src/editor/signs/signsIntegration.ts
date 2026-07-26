@@ -148,7 +148,7 @@ export class SignsFeature {
         window.clearInterval(this.intervalRefreshEvent);
     }
 
-    private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
+    private handleWorkspaceLeaf = (leaf: WorkspaceLeaf | null) => {
         if (!this.signsProvider) {
             console.warn("Git: undefined signsProvider. Unexpected situation.");
             return;

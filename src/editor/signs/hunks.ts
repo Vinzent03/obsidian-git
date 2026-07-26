@@ -131,12 +131,18 @@ export abstract class Hunks {
 
     static parseDiffLine(line: string): Hunk {
         const parts = line.split("@@");
-        const diffkey = parts[1].trim();
+        const diffkey = parts[1]?.trim();
+        if (!diffkey) {
+            throw Error(`Invalid diff line: ${line}`);
+        }
 
         // diffkey: "-xx,n +yy,m"
         const tokens = diffkey.split(" ");
-        const pre = tokens[0].substring(1).split(",");
-        const now = tokens[1].substring(1).split(",");
+        const pre = tokens[0]?.substring(1).split(",");
+        const now = tokens[1]?.substring(1).split(",");
+        if (!pre || !now || pre[0] === undefined || now[0] === undefined) {
+            throw Error(`Invalid diff hunk range: ${line}`);
+        }
 
         const hunk = this.createHunk(
             parseInt(pre[0]),
@@ -341,7 +347,7 @@ export abstract class Hunks {
         if (!hunks) return [undefined, undefined];
 
         for (let i = 0; i < hunks.length; i++) {
-            const hunk = hunks[i];
+            const hunk = hunks[i]!;
             if (lnum === 1 && hunk.added.start === 0 && hunk.vend === 0) {
                 return [hunk, i];
             }
@@ -367,14 +373,15 @@ export abstract class Hunks {
         } else if (direction === "last") {
             return hunks.length - 1;
         } else if (direction === "next") {
-            if (hunks[0].added.start > lnum) {
+            if (hunks[0]!.added.start > lnum) {
                 return 0;
             }
             for (let i = hunks.length - 1; i >= 0; i--) {
-                if (hunks[i].added.start <= lnum) {
+                const hunk = hunks[i]!;
+                if (hunk.added.start <= lnum) {
                     if (
                         i + 1 < hunks.length &&
-                        hunks[i + 1].added.start > lnum
+                        hunks[i + 1]!.added.start > lnum
                     ) {
                         return i + 1;
                     } else if (wrap) {
@@ -383,12 +390,13 @@ export abstract class Hunks {
                 }
             }
         } else if (direction === "prev") {
-            if (Math.max(hunks[hunks.length - 1].vend) < lnum) {
+            if (Math.max(hunks[hunks.length - 1]!.vend) < lnum) {
                 return hunks.length - 1;
             }
             for (let i = 0; i < hunks.length; i++) {
-                if (lnum <= Math.max(hunks[i].vend, 1)) {
-                    if (i > 0 && Math.max(hunks[i - 1].vend, 1) < lnum) {
+                const hunk = hunks[i]!;
+                if (lnum <= Math.max(hunk.vend, 1)) {
+                    if (i > 0 && Math.max(hunks[i - 1]!.vend, 1) < lnum) {
                         return i - 1;
                     } else if (wrap) {
                         return hunks.length - 1;
@@ -406,7 +414,7 @@ export abstract class Hunks {
             return true;
         }
         for (let i = 0; i < (a || []).length; i++) {
-            if (b![i].head !== a![i].head) {
+            if (b![i]!.head !== a![i]!.head) {
                 return true;
             }
         }
@@ -456,7 +464,7 @@ export abstract class Hunks {
             // End of b and add remaining a
             if (!bH) {
                 for (let i = aI; i < a.length; i++) {
-                    ret.push(a[i]);
+                    ret.push(a[i]!);
                 }
                 break;
             }

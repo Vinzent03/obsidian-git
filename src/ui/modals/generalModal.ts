@@ -28,7 +28,7 @@ const generalModalConfigDefaults: GeneralModalConfig = {
 };
 
 export class GeneralModal extends SuggestModal<string> {
-    resolve: (
+    resolve!: (
         value: string | undefined | PromiseLike<string | undefined>
     ) => void;
     config: GeneralModalConfig;

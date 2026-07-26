@@ -9,9 +9,9 @@ import type { DiffViewState } from "src/types";
 export default class DiffView extends ItemView {
     parser: DOMParser;
     gettingDiff = false;
-    state: DiffViewState;
-    gitRefreshRef: EventRef;
-    gitViewRefreshRef: EventRef;
+    state!: DiffViewState;
+    gitRefreshRef!: EventRef;
+    gitViewRefreshRef!: EventRef;
 
     constructor(
         leaf: WorkspaceLeaf,

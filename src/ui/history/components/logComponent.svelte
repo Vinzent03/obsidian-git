@@ -36,8 +36,9 @@
         } else if (plugin.settings.authorInHistoryView == "initials") {
             const words = name.split(" ").filter((word) => word.length > 0);
 
-            return words.map((word) => word[0].toUpperCase()).join("");
+            return words.map((word) => word[0]!.toUpperCase()).join("");
         }
+        return "";
     }
 </script>
 

@@ -387,6 +387,7 @@ function scheduleHunkComputation(
             changeDesc,
             revision: debouncerField.revision,
         });
+        return undefined;
     } else {
         return computeHunksTimed(
             state,
