@@ -39,7 +39,7 @@
         "prettier-plugin-svelte": "^4.1.1",
         "scss": "^0.2.4",
         "standard-version": "^9.5.0",
-        "svelte-check": "^4.6.0",
+        "svelte-check": "^4.7.3",
         "svelte-eslint-parser": "^1.8.0",
         "svelte-preprocess": "^6.0.5",
         "tslib": "^2.8.1",
