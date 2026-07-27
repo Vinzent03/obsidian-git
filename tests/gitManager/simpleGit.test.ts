@@ -1,9 +1,12 @@
 import { writeFileSync } from "fs";
 import path from "path";
-import simpleGit, { type SimpleGit as SimpleGitClient } from "simple-git";
+import simpleGit, {
+    type SimpleGit as SimpleGitClient,
+    type SimpleGitProgressEvent,
+} from "simple-git";
 import { describe, expect, it, vi } from "vitest";
 import { SimpleGit } from "../../src/gitManager/simpleGit";
-import { GitOperation } from "../../src/types";
+import { GitOperation, type GitProgress } from "../../src/types";
 import { withCleanup } from "../helpers/cleanup";
 import { createFakePlugin, type FakePlugin } from "../helpers/createFakePlugin";
 import { createRepoWithOrigin } from "../helpers/gitRepo";
@@ -27,6 +30,21 @@ function createManager(
     manager.absoluteRepoPath = repoPath;
     return manager;
 }
+
+function addStatusBar(plugin: FakePlugin) {
+    const displayProgress = vi.fn<(progress: GitProgress) => void>();
+    const clearProgress = vi.fn<(display?: boolean) => void>();
+    const statusBar = {
+        displayProgress,
+        clearProgress,
+    };
+    plugin.statusBar = statusBar as unknown as FakePlugin["statusBar"];
+    return statusBar;
+}
+
+type ProgressMapper = {
+    toGitProgress(progress: SimpleGitProgressEvent): GitProgress;
+};
 
 async function createRemoteCommit(repo: {
     dir: string;
@@ -177,6 +195,20 @@ describe("SimpleGit.pull", () => {
         ]);
     });
 
+    it("clears progress when done without manually setting pull progress", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const plugin = createFakePlugin();
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.mergeStrategy = "none";
+        const statusBar = addStatusBar(plugin);
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        await manager.pull();
+
+        expect(statusBar.displayProgress).not.toHaveBeenCalled();
+        expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
+    });
+
     it("resets the current branch to upstream when sync method is reset", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
         await createRemoteCommit(repo);
@@ -284,6 +316,18 @@ describe("SimpleGit.push", () => {
         ]);
     });
 
+    it("clears progress when done without manually setting push progress", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const plugin = createFakePlugin();
+        const statusBar = addStatusBar(plugin);
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        await manager.push();
+
+        expect(statusBar.displayProgress).not.toHaveBeenCalled();
+        expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
+    });
+
     it("reports an error when no current branch is checked out", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
         const push = vi.fn().mockResolvedValue(undefined);
@@ -327,6 +371,103 @@ describe("SimpleGit.push", () => {
         expect(plugin.log).toHaveBeenCalledWith(
             "No tracking branch found. Ignoring push of main repo and updating submodules only."
         );
+    });
+});
+
+describe("SimpleGit.fetch", () => {
+    it("sets the fetch operation and clears progress when done", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const plugin = createFakePlugin();
+        const statusBar = addStatusBar(plugin);
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        await manager.fetch();
+
+        expect(statusBar.displayProgress).not.toHaveBeenCalled();
+        expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.fetch }],
+            [{ operation: GitOperation.idle }],
+        ]);
+    });
+});
+
+describe("SimpleGit.checkout", () => {
+    it("sets the checkout operation and clears progress when done", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkout(["--quiet", "-b", "feature"]);
+        await repo.git.checkout(["--quiet", "main"]);
+        const plugin = createFakePlugin();
+        const statusBar = addStatusBar(plugin);
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        await manager.checkout("feature");
+
+        expect(await repo.git.revparse(["--abbrev-ref", "HEAD"])).toBe(
+            "feature"
+        );
+        expect(statusBar.displayProgress).not.toHaveBeenCalled();
+        expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.checkout }],
+            [{ operation: GitOperation.idle }],
+        ]);
+    });
+});
+
+describe("SimpleGit progress", () => {
+    it("maps simple-git progress events to status bar progress", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const manager = createManager(repo.repoPath, repo.git);
+        const mapper = manager as unknown as ProgressMapper;
+
+        expect(
+            mapper.toGitProgress({
+                method: "fetch",
+                stage: "receiving",
+                progress: 42,
+                processed: 12,
+                total: 28,
+            })
+        ).toEqual({
+            action: "Fetching",
+            stage: "receiving",
+            progress: 42,
+            processed: 12,
+            total: 28,
+        });
+
+        expect(
+            mapper.toGitProgress({
+                method: "push",
+                stage: "writing",
+                progress: 75,
+                processed: 3,
+                total: 4,
+            })
+        ).toEqual({
+            action: "Pushing",
+            stage: "writing",
+            progress: 75,
+            processed: 3,
+            total: 4,
+        });
+
+        expect(
+            mapper.toGitProgress({
+                method: "checkout",
+                stage: "updating",
+                progress: 25,
+                processed: 1,
+                total: 4,
+            })
+        ).toEqual({
+            action: "Checking out",
+            stage: "updating",
+            progress: 25,
+            processed: 1,
+            total: 4,
+        });
     });
 });
 

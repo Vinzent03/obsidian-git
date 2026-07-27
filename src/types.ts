@@ -241,11 +241,40 @@ export interface PluginState {
     operation: GitOperation;
 }
 
+export interface GitProgress {
+    /**
+     * User-facing operation or phase label, e.g. "Fetching", "Pushing", or
+     * "Updating submodules".
+     */
+    action: string;
+    /**
+     * Git progress stage or manual phase detail, e.g. "receiving",
+     * "checking remote", or "merging". Git may emit multiple stages during one
+     * operation, and stages are not guaranteed to emit a final 100% event.
+     */
+    stage: string;
+    /**
+     * Stage-specific percentage reported by Git. Undefined for indeterminate
+     * phases where the plugin only knows that work is in progress.
+     */
+    progress?: number;
+    /**
+     * Number of stage items processed so far when reported by Git.
+     */
+    processed?: number;
+    /**
+     * Total number of stage items when reported by Git.
+     */
+    total?: number;
+}
+
 export enum GitOperation {
     idle,
     pull,
     commit,
     push,
+    fetch,
+    checkout,
 }
 
 export interface LogEntry {

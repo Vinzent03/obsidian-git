@@ -28,6 +28,7 @@ export abstract class GitManager {
         try {
             return await fn();
         } finally {
+            this.plugin.statusBar?.clearProgress(false);
             this.plugin.setPluginState({ operation: GitOperation.idle });
         }
     }

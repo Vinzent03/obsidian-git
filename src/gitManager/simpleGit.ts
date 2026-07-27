@@ -22,6 +22,7 @@ import type {
     BranchInfo,
     DiffFile,
     FileStatusResult,
+    GitProgress,
     LogEntry,
     Status,
 } from "../types";
@@ -68,6 +69,11 @@ export class SimpleGit extends GitManager {
                         ? DEFAULT_WIN_GIT_PATH
                         : undefined),
                 config: ["core.quotepath=off"],
+                progress: (progress) => {
+                    this.plugin.statusBar?.displayProgress(
+                        this.toGitProgress(progress)
+                    );
+                },
                 unsafe: {
                     allowUnsafeCustomBinary: true,
                     allowUnsafeEditor: true,
@@ -159,6 +165,35 @@ export class SimpleGit extends GitManager {
             envs["OBSIDIAN_GIT"] = "1";
 
             this.git = this.git.env(envs);
+        }
+    }
+
+    private toGitProgress(
+        progress: simple.SimpleGitProgressEvent
+    ): GitProgress {
+        return {
+            action: this.getProgressAction(progress.method),
+            stage: progress.stage,
+            progress: progress.progress,
+            processed: progress.processed,
+            total: progress.total,
+        };
+    }
+
+    private getProgressAction(method: string): string {
+        switch (method) {
+            case "fetch":
+                return "Fetching";
+            case "push":
+                return "Pushing";
+            case "pull":
+                return "Pulling";
+            case "checkout":
+                return "Checking out";
+            default:
+                return method
+                    ? method.charAt(0).toUpperCase() + method.slice(1)
+                    : "Working";
         }
     }
 
@@ -1041,52 +1076,59 @@ export class SimpleGit extends GitManager {
     }
 
     async checkout(branch: string, remote?: string): Promise<void> {
-        if (remote) {
-            // If we're trying to checkout a remote branch we'll either switch to an existing local branch that
-            // already tracks it, or create a new local branch from the remote tip (name may be disambiguated).
-            const remoteBranch = `${remote}/${branch}`;
-            const branchInfo = await this.branchInfo();
-            const localBranchExists = branchInfo.branches.includes(branch);
+        return this.withGitOperation(GitOperation.checkout, async () => {
+            if (remote) {
+                // If we're trying to checkout a remote branch we'll either switch to an existing local branch that
+                // already tracks it, or create a new local branch from the remote tip (name may be disambiguated).
+                const remoteBranch = `${remote}/${branch}`;
+                const branchInfo = await this.branchInfo();
+                const localBranchExists = branchInfo.branches.includes(branch);
 
-            // We found a local branch with the "correct" name, but it might track
-            // a different remote, so we'll double check before proceeding.
-            const existingBranchTracksRemote =
-                localBranchExists &&
-                (await this.getLocalBranchUpstream(branch)) === remoteBranch;
+                // We found a local branch with the "correct" name, but it might track
+                // a different remote, so we'll double check before proceeding.
+                const existingBranchTracksRemote =
+                    localBranchExists &&
+                    (await this.getLocalBranchUpstream(branch)) ===
+                        remoteBranch;
 
-            if (existingBranchTracksRemote) {
-                // The local branch already exists AND it tracked the correct remote, so we can simply switch to it.
-                await this.git.checkout(branch);
+                if (existingBranchTracksRemote) {
+                    // The local branch already exists AND it tracked the correct remote, so we can simply switch to it.
+                    await this.git.checkout(branch);
+                } else {
+                    // The local branch doesn't exist or it tracks a different remote, so we'll need to create a new local branch.
+                    // First we need to find a suitable name for the new local branch.
+                    const localBranchName = this.getAvailableLocalBranchName(
+                        branch,
+                        remote,
+                        branchInfo.branches
+                    );
+
+                    // Finally, we can use `git checkout -b` to create the new local branch and set it to track the remote branch.
+                    await this.git.checkout([
+                        "-b",
+                        localBranchName,
+                        remoteBranch,
+                    ]);
+                }
             } else {
-                // The local branch doesn't exist or it tracks a different remote, so we'll need to create a new local branch.
-                // First we need to find a suitable name for the new local branch.
-                const localBranchName = this.getAvailableLocalBranchName(
-                    branch,
-                    remote,
-                    branchInfo.branches
-                );
-
-                // Finally, we can use `git checkout -b` to create the new local branch and set it to track the remote branch.
-                await this.git.checkout(["-b", localBranchName, remoteBranch]);
+                // Checkout an existing local branch (no remote specified).
+                await this.git.checkout(branch);
             }
-        } else {
-            // Checkout an existing local branch (no remote specified).
-            await this.git.checkout(branch);
-        }
 
-        if (this.plugin.settings.submoduleRecurseCheckout) {
-            const submodulePaths = await this.getSubmodulePaths();
-            for (const submodulePath of submodulePaths) {
-                const branchSummary = await this.git
-                    .cwd({ path: submodulePath, root: false })
-                    .branch();
-                if (Object.keys(branchSummary.branches).includes(branch)) {
-                    await this.git
+            if (this.plugin.settings.submoduleRecurseCheckout) {
+                const submodulePaths = await this.getSubmodulePaths();
+                for (const submodulePath of submodulePaths) {
+                    const branchSummary = await this.git
                         .cwd({ path: submodulePath, root: false })
-                        .checkout(branch);
+                        .branch();
+                    if (Object.keys(branchSummary.branches).includes(branch)) {
+                        await this.git
+                            .cwd({ path: submodulePath, root: false })
+                            .checkout(branch);
+                    }
                 }
             }
-        }
+        });
     }
 
     async createBranch(branch: string): Promise<void> {
@@ -1140,7 +1182,9 @@ export class SimpleGit extends GitManager {
     }
 
     async fetch(remote?: string): Promise<void> {
-        await this.git.fetch(remote != undefined ? [remote] : []);
+        return this.withGitOperation(GitOperation.fetch, async () => {
+            await this.git.fetch(remote != undefined ? [remote] : []);
+        });
     }
 
     async setRemote(name: string, url: string): Promise<void> {
