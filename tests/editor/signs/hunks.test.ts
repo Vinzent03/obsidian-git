@@ -17,55 +17,62 @@ function hunk(
 
 describe("Hunks.createHunk", () => {
     it("creates add, delete, and change hunks", () => {
-        expect(Hunks.createHunk(1, 0, 1, 2)).toMatchObject({
+        const addHunk = Hunks.createHunk(1, 0, 1, 2);
+        expect(addHunk).toMatchObject({
             type: "add",
-            head: "@@ -1 +1,2 @@",
             vend: 2,
             removed: { start: 1, count: 0 },
             added: { start: 1, count: 2 },
         });
+        expect(Hunks.getHunkHeader(addHunk)).toBe("@@ -1 +1,2 @@");
 
-        expect(Hunks.createHunk(3, 2, 2, 0)).toMatchObject({
+        const deleteHunk = Hunks.createHunk(3, 2, 2, 0);
+        expect(deleteHunk).toMatchObject({
             type: "delete",
-            head: "@@ -3,2 +2 @@",
             vend: 2,
             removed: { start: 3, count: 2 },
             added: { start: 2, count: 0 },
         });
+        expect(Hunks.getHunkHeader(deleteHunk)).toBe("@@ -3,2 +2 @@");
 
-        expect(Hunks.createHunk(4, 1, 4, 1)).toMatchObject({
+        const changeHunk = Hunks.createHunk(4, 1, 4, 1);
+        expect(changeHunk).toMatchObject({
             type: "change",
-            head: "@@ -4,1 +4,1 @@",
             vend: 4,
         });
+        expect(Hunks.getHunkHeader(changeHunk)).toBe("@@ -4,1 +4,1 @@");
     });
 });
 
 describe("Hunks.parseDiffLine", () => {
     it("parses explicit and implicit counts", () => {
-        expect(Hunks.parseDiffLine("@@ -2,3 +5,4 @@")).toMatchObject({
-            head: "@@ -2,3 +5,4 @@",
+        const explicit = Hunks.parseDiffLine("@@ -2,3 +5,4 @@");
+        expect(explicit).toMatchObject({
             removed: { start: 2, count: 3 },
             added: { start: 5, count: 4 },
         });
+        expect(Hunks.getHunkHeader(explicit)).toBe("@@ -2,3 +5,4 @@");
 
-        expect(Hunks.parseDiffLine("@@ -2 +5 @@")).toMatchObject({
-            head: "@@ -2 +5 @@",
+        const implicitBoth = Hunks.parseDiffLine("@@ -2 +5 @@");
+        expect(implicitBoth).toMatchObject({
             removed: { start: 2, count: 1 },
             added: { start: 5, count: 1 },
         });
+        expect(Hunks.getHunkHeader(implicitBoth)).toBe("@@ -2,1 +5,1 @@");
 
-        expect(Hunks.parseDiffLine("@@ -2 +5,4 @@")).toMatchObject({
-            head: "@@ -2 +5,4 @@",
+        const implicitRemoved = Hunks.parseDiffLine("@@ -2 +5,4 @@");
+        expect(implicitRemoved).toMatchObject({
             removed: { start: 2, count: 1 },
             added: { start: 5, count: 4 },
         });
+        expect(Hunks.getHunkHeader(implicitRemoved)).toBe("@@ -2,1 +5,4 @@");
 
-        expect(Hunks.parseDiffLine("@@ -2,3 +5 @@")).toMatchObject({
-            head: "@@ -2,3 +5 @@",
+        const implicitAdded = Hunks.parseDiffLine("@@ -2,3 +5 @@");
+        expect(implicitAdded).toMatchObject({
             removed: { start: 2, count: 3 },
             added: { start: 5, count: 1 },
         });
+        expect(Hunks.getHunkHeader(implicitAdded)).toBe("@@ -2,3 +5,1 @@");
     });
 });
 
@@ -295,16 +302,5 @@ describe("Hunks static utility methods", () => {
                 hunk(9, 2, 8, 0),
             ])
         ).toEqual({ added: 2, changed: 1, removed: 4 });
-    });
-
-    it("compares hunk heads", () => {
-        expect(Hunks.compareHeads(undefined, undefined)).toBe(false);
-        expect(Hunks.compareHeads(undefined, [])).toBe(true);
-        expect(Hunks.compareHeads([hunk(1, 0, 1, 1)], [hunk(1, 0, 1, 1)])).toBe(
-            false
-        );
-        expect(Hunks.compareHeads([hunk(1, 0, 1, 1)], [hunk(2, 0, 2, 1)])).toBe(
-            true
-        );
     });
 });

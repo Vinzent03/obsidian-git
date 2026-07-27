@@ -18,7 +18,6 @@ export interface HunkNode {
 
 export interface Hunk {
     type: HunkType;
-    head: string;
     added: HunkNode;
     removed: HunkNode;
     vend: number;
@@ -49,12 +48,17 @@ export abstract class Hunks {
         return {
             removed: { start: oldStart, count: oldCount, lines: [] },
             added: { start: newStart, count: newCount, lines: [] },
-            head:
-                `@@ -${oldStart}${oldCount > 0 ? `,${oldCount}` : ""} ` +
-                `+${newStart}${newCount > 0 ? `,${newCount}` : ""} @@`,
             vend: newStart + Math.max(newCount - 1, 0),
             type: newCount === 0 ? "delete" : oldCount === 0 ? "add" : "change",
         };
+    }
+
+    static getHunkHeader(hunk: Hunk): string {
+        return `@@ -${hunk.removed.start}${
+            hunk.removed.count > 0 ? `,${hunk.removed.count}` : ""
+        } +${hunk.added.start}${
+            hunk.added.count > 0 ? `,${hunk.added.count}` : ""
+        } @@`;
     }
 
     static createPartialHunk(
@@ -151,7 +155,6 @@ export abstract class Hunks {
             parseInt(now[1] || "1")
         );
 
-        hunk.head = line;
         return hunk;
     }
 
@@ -179,7 +182,7 @@ export abstract class Hunks {
     ): Sign[] {
         if (untracked && hunk.type !== "add") {
             console.error(
-                `Invalid hunk with untracked=${untracked} hunk="${hunk.head}"`
+                `Invalid hunk with untracked=${untracked} hunk="${Hunks.getHunkHeader(hunk)}"`
             );
             return [];
         }
@@ -405,20 +408,6 @@ export abstract class Hunks {
             }
         }
         return undefined;
-    }
-
-    static compareHeads(a?: Hunk[], b?: Hunk[]): boolean {
-        if ((a === undefined) !== (b === undefined)) {
-            return true;
-        } else if (a && b && a.length !== b.length) {
-            return true;
-        }
-        for (let i = 0; i < (a || []).length; i++) {
-            if (b![i]!.head !== a![i]!.head) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static compare(a: Hunk, b: Hunk): boolean {

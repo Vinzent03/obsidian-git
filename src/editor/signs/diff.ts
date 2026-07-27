@@ -1,7 +1,19 @@
 import { Hunks, type Hunk } from "../signs/hunks";
 import { Chunk } from "@codemirror/merge";
 import { ChangeDesc, Text } from "@codemirror/state";
-import { lineFromPos } from "./hunkState";
+
+/**
+ * Given a document and a position, return the corresponding line number in the
+ * file.
+ */
+export function lineFromPos(doc: Text, pos: number): number {
+    const lineData = doc.lineAt(pos);
+    const no_nl_at_eof = !(
+        lineData.text.length == 0 && lineData.number == doc.lines
+    );
+    const fileLine = no_nl_at_eof ? lineData.number : lineData.number - 1;
+    return fileLine;
+}
 
 // function diffMatchPatch(
 //     text1: string,

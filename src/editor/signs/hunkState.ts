@@ -3,11 +3,10 @@ import {
     EditorState,
     StateEffect,
     StateField,
-    Text,
     Transaction,
 } from "@codemirror/state";
 import { Hunks, type Hunk } from "./hunks";
-import { computeHunks } from "./diff";
+import { computeHunks, lineFromPos } from "./diff";
 import type { Chunk } from "@codemirror/merge";
 import { pluginRef } from "src/pluginGlobalRef";
 import {
@@ -16,19 +15,6 @@ import {
     editorInfoField,
     type Debouncer,
 } from "obsidian";
-
-/**
- * Given a document and a position, return the corresponding line number in the
- * file.
- */
-export function lineFromPos(doc: Text, pos: number): number {
-    const lineData = doc.lineAt(pos);
-    const no_nl_at_eof = !(
-        lineData.text.length == 0 && lineData.number == doc.lines
-    );
-    const fileLine = no_nl_at_eof ? lineData.number : lineData.number - 1;
-    return fileLine;
-}
 
 export abstract class HunksStateHelper {
     static hasHunksData(state: EditorState): boolean {
