@@ -8,6 +8,7 @@ export default defineConfig({
     resolve: {
         alias: {
             obsidian: path.resolve(dirname, "tests/stubs/obsidian.ts"),
+            src: path.resolve(dirname, "src"),
         },
     },
     test: {

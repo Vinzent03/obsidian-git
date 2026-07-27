@@ -536,6 +536,7 @@ export class SimpleGit extends GitManager {
             await this.formatCommitMessage(message)
         );
         this.app.workspace.trigger("obsidian-git:head-change");
+        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
 
         return res.summary.changes;
     }
