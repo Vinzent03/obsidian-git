@@ -1,5 +1,7 @@
-import type { SimpleGit as SimpleGitClient } from "simple-git";
-import { describe, expect, it } from "vitest";
+import { writeFileSync } from "fs";
+import path from "path";
+import simpleGit, { type SimpleGit as SimpleGitClient } from "simple-git";
+import { describe, expect, it, vi } from "vitest";
 import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { GitOperation } from "../../src/types";
 import { withCleanup } from "../helpers/cleanup";
@@ -11,10 +13,42 @@ function createManager(
     gitClient: SimpleGitClient,
     plugin: FakePlugin = createFakePlugin()
 ): SimpleGit {
+    (
+        plugin.app as unknown as {
+            vault: { adapter: { getBasePath(): string } };
+        }
+    ).vault = {
+        adapter: {
+            getBasePath: () => repoPath,
+        },
+    };
     const manager = new SimpleGit(plugin);
     manager.git = gitClient;
     manager.absoluteRepoPath = repoPath;
     return manager;
+}
+
+async function createRemoteCommit(repo: {
+    dir: string;
+    remotePath: string;
+}): Promise<void> {
+    const remoteWorktreePath = path.join(repo.dir, "remote-worktree");
+    await simpleGit(repo.dir).raw([
+        "clone",
+        repo.remotePath,
+        remoteWorktreePath,
+    ]);
+
+    const remoteGit = simpleGit({
+        baseDir: remoteWorktreePath,
+        config: ["core.quotepath=off"],
+    });
+    await remoteGit.addConfig("user.email", "test@example.com");
+    await remoteGit.addConfig("user.name", "Test User");
+    writeFileSync(path.join(remoteWorktreePath, "remote.md"), "remote\n");
+    await remoteGit.add("remote.md");
+    await remoteGit.commit("remote commit");
+    await remoteGit.push(["--quiet"]);
 }
 
 describe("SimpleGit.commit", () => {
@@ -92,6 +126,206 @@ describe("SimpleGit.commitAll", () => {
         ]);
         expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
             "obsidian-git:head-change"
+        );
+    });
+});
+
+describe("SimpleGit.pull", () => {
+    it("pulls remote changes and returns changed files", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await createRemoteCommit(repo);
+        const plugin = createFakePlugin();
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.mergeStrategy = "none";
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toEqual([
+            {
+                path: "remote.md",
+                workingDir: "P",
+                vaultPath: "remote.md",
+            },
+        ]);
+        expect(await repo.headMessage()).toBe("remote commit");
+        expect(await repo.show("HEAD:remote.md")).toBe("remote");
+        expect(await repo.statusPorcelain()).toBe("");
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.pull }],
+            [{ operation: GitOperation.idle }],
+        ]);
+        expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
+            "obsidian-git:head-change"
+        );
+    });
+
+    it("returns an empty change list when the branch is already up to date", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const plugin = createFakePlugin();
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.mergeStrategy = "none";
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toEqual([]);
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.pull }],
+            [{ operation: GitOperation.idle }],
+        ]);
+    });
+
+    it("resets the current branch to upstream when sync method is reset", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await createRemoteCommit(repo);
+        const plugin = createFakePlugin();
+        plugin.settings.syncMethod = "reset";
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toEqual([
+            {
+                path: "remote.md",
+                workingDir: "P",
+                vaultPath: "remote.md",
+            },
+        ]);
+        expect(await repo.headMessage()).toBe("remote commit");
+        expect(await repo.show("HEAD:remote.md")).toBe("remote");
+        expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
+            "obsidian-git:head-change"
+        );
+    });
+
+    it("reports an error when no current branch is checked out", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const fetch = vi.fn().mockResolvedValue(undefined);
+        const git = {
+            status: vi.fn().mockResolvedValue({
+                current: undefined,
+                tracking: "origin/main",
+            }),
+            branch: vi.fn().mockResolvedValue({ all: ["main", "origin/main"] }),
+            fetch,
+        } as unknown as SimpleGitClient;
+        const plugin = createFakePlugin();
+        const manager = createManager(repo.repoPath, git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toBeUndefined();
+        expect(plugin.displayError).toHaveBeenCalledWith(
+            "No current branch found. Cannot pull."
+        );
+        expect(fetch).not.toHaveBeenCalled();
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.pull }],
+            [{ operation: GitOperation.idle }],
+        ]);
+    });
+
+    it("updates submodules only when no tracking branch exists", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkoutLocalBranch("local-only");
+        const headBefore = await repo.head();
+        const plugin = createFakePlugin();
+        plugin.settings.updateSubmodules = true;
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toBeUndefined();
+        expect(await repo.head()).toBe(headBefore);
+        expect(plugin.log).toHaveBeenCalledWith(
+            "No tracking branch found. Ignoring pull of main repo and updating submodules only."
+        );
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
+    });
+});
+
+describe("SimpleGit.push", () => {
+    it("pushes local commits and returns the changed file count", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.appendAndCommit("note.md", "local\n", "local commit");
+        const plugin = createFakePlugin();
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changedFiles = await manager.push();
+
+        expect(changedFiles).toBe(1);
+        expect(await repo.unpushedCount()).toBe(0);
+        expect(await repo.show("origin/main:note.md")).toBe("base\nlocal");
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.push }],
+            [{ operation: GitOperation.idle }],
+        ]);
+    });
+
+    it("returns null when pushing without a tracking branch", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkoutLocalBranch("local-only");
+        await repo.git.addConfig("push.default", "current");
+        await repo.writeAndCommit("local-only.md", "local\n", "local only");
+        const plugin = createFakePlugin();
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changedFiles = await manager.push();
+
+        expect(changedFiles).toBeNull();
+        expect(
+            await repo.raw(["ls-remote", "--heads", "origin", "local-only"])
+        ).toContain(await repo.head());
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.push }],
+            [{ operation: GitOperation.idle }],
+        ]);
+    });
+
+    it("reports an error when no current branch is checked out", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const push = vi.fn().mockResolvedValue(undefined);
+        const git = {
+            status: vi.fn().mockResolvedValue({
+                current: undefined,
+                tracking: "origin/main",
+            }),
+            push,
+        } as unknown as SimpleGitClient;
+        const plugin = createFakePlugin();
+        const manager = createManager(repo.repoPath, git, plugin);
+
+        const changedFiles = await manager.push();
+
+        expect(changedFiles).toBeUndefined();
+        expect(plugin.displayError).toHaveBeenCalledWith(
+            "No current branch found. Cannot push."
+        );
+        expect(push).not.toHaveBeenCalled();
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.push }],
+            [{ operation: GitOperation.idle }],
+        ]);
+    });
+
+    it("updates submodules only when no tracking branch exists", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkoutLocalBranch("local-only");
+        await repo.writeAndCommit("local-only.md", "local\n", "local only");
+        const plugin = createFakePlugin();
+        plugin.settings.updateSubmodules = true;
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changedFiles = await manager.push();
+
+        expect(changedFiles).toBeUndefined();
+        expect(
+            await repo.raw(["ls-remote", "--heads", "origin", "local-only"])
+        ).toBe("");
+        expect(plugin.log).toHaveBeenCalledWith(
+            "No tracking branch found. Ignoring push of main repo and updating submodules only."
         );
     });
 });
