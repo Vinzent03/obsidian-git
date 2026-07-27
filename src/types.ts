@@ -238,14 +238,12 @@ export interface FileStatusResult {
 
 export interface PluginState {
     offlineMode: boolean;
-    gitAction: CurrentGitAction;
+    operation: GitOperation;
 }
 
-export enum CurrentGitAction {
+export enum GitOperation {
     idle,
-    status,
     pull,
-    add,
     commit,
     push,
 }

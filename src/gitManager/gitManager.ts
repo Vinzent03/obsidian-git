@@ -1,6 +1,7 @@
 import { hostname as osHostname } from "os";
 import { type App, moment, Platform } from "obsidian";
 import type ObsidianGit from "../main";
+import { GitOperation } from "../types";
 import type {
     BranchInfo,
     DiffFile,
@@ -17,6 +18,18 @@ export abstract class GitManager {
     constructor(plugin: ObsidianGit) {
         this.plugin = plugin;
         this.app = plugin.app;
+    }
+
+    protected async withGitOperation<T>(
+        operation: GitOperation,
+        fn: () => Promise<T>
+    ): Promise<T> {
+        this.plugin.setPluginState({ operation });
+        try {
+            return await fn();
+        } finally {
+            this.plugin.setPluginState({ operation: GitOperation.idle });
+        }
     }
 
     abstract status(opts?: { path?: string }): Promise<Status>;

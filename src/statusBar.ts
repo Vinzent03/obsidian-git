@@ -1,6 +1,6 @@
 import { setIcon, moment } from "obsidian";
 import type ObsidianGit from "./main";
-import { CurrentGitAction } from "./types";
+import { GitOperation } from "./types";
 
 interface StatusBarMessage {
     message: string;
@@ -105,31 +105,21 @@ export class StatusBar {
             this.pausedEl.style.marginRight = "";
         }
 
-        switch (this.plugin.state.gitAction) {
-            case CurrentGitAction.idle:
+        switch (this.plugin.state.operation) {
+            case GitOperation.idle:
                 this.displayFromNow();
                 break;
-            case CurrentGitAction.status:
-                this.statusBarEl.ariaLabel = "Checking repository status...";
-                setIcon(this.iconEl, "refresh-cw");
-                this.statusBarEl.addClass(this.base + "status");
-                break;
-            case CurrentGitAction.add:
-                this.statusBarEl.ariaLabel = "Adding files...";
-                setIcon(this.iconEl, "archive");
-                this.statusBarEl.addClass(this.base + "add");
-                break;
-            case CurrentGitAction.commit:
+            case GitOperation.commit:
                 this.statusBarEl.ariaLabel = "Committing changes...";
                 setIcon(this.iconEl, "git-commit");
                 this.statusBarEl.addClass(this.base + "commit");
                 break;
-            case CurrentGitAction.push:
+            case GitOperation.push:
                 this.statusBarEl.ariaLabel = "Pushing changes...";
                 setIcon(this.iconEl, "upload");
                 this.statusBarEl.addClass(this.base + "push");
                 break;
-            case CurrentGitAction.pull:
+            case GitOperation.pull:
                 this.statusBarEl.ariaLabel = "Pulling changes...";
                 setIcon(this.iconEl, "download");
                 this.statusBarEl.addClass(this.base + "pull");

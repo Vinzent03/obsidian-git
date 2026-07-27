@@ -41,11 +41,7 @@ import type {
     Status,
     UnstagedFile,
 } from "./types";
-import {
-    CurrentGitAction,
-    mergeSettingsByPriority,
-    NoNetworkError,
-} from "./types";
+import { GitOperation, mergeSettingsByPriority, NoNetworkError } from "./types";
 import DiffView from "./ui/diff/diffView";
 import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
@@ -74,7 +70,7 @@ export default class ObsidianGit extends Plugin {
     statusBar?: StatusBar;
     branchBar?: BranchStatusBar;
     state: PluginState = {
-        gitAction: CurrentGitAction.idle,
+        operation: GitOperation.idle,
         offlineMode: false,
     };
     lastPulledFiles!: FileStatusResult[];
@@ -578,7 +574,6 @@ export default class ObsidianGit extends Plugin {
                     break;
                 case "valid":
                     this.gitReady = true;
-                    this.setPluginState({ gitAction: CurrentGitAction.idle });
 
                     if (
                         Platform.isDesktop &&
@@ -788,7 +783,6 @@ export default class ObsidianGit extends Plugin {
         }
 
         this.app.workspace.trigger("obsidian-git:refresh");
-        this.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async commitAndSync({
@@ -839,7 +833,6 @@ export default class ObsidianGit extends Plugin {
                 this.displayMessage("No commits to push");
             }
         }
-        this.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     // Returns true if commit was successfully
@@ -929,7 +922,6 @@ export default class ObsidianGit extends Plugin {
                         : [...stagedFiles, ...unstagedFiles]
                 )
             ) {
-                this.setPluginState({ gitAction: CurrentGitAction.idle });
                 return false;
             }
 
@@ -964,9 +956,6 @@ export default class ObsidianGit extends Plugin {
                     ) {
                         cmtMessage = modalMessage;
                     } else {
-                        this.setPluginState({
-                            gitAction: CurrentGitAction.idle,
-                        });
                         return false;
                     }
 
@@ -1028,9 +1017,6 @@ export default class ObsidianGit extends Plugin {
                 // Check if commit message is empty after all processing
                 if (!cmtMessage || cmtMessage.trim() === "") {
                     new Notice("Commit aborted: No commit message provided");
-                    this.setPluginState({
-                        gitAction: CurrentGitAction.idle,
-                    });
                     return false;
                 }
 
@@ -1223,7 +1209,6 @@ export default class ObsidianGit extends Plugin {
 
         this.app.workspace.trigger("obsidian-git:refresh");
 
-        this.setPluginState({ gitAction: CurrentGitAction.idle });
         return true;
     }
 
@@ -1234,7 +1219,6 @@ export default class ObsidianGit extends Plugin {
 
         this.app.workspace.trigger("obsidian-git:refresh");
 
-        this.setPluginState({ gitAction: CurrentGitAction.idle });
         return true;
     }
 
@@ -1352,12 +1336,10 @@ export default class ObsidianGit extends Plugin {
 
         if (remoteBranch == undefined) {
             this.displayError("Aborted. No upstream-branch is set!", 10000);
-            this.setPluginState({ gitAction: CurrentGitAction.idle });
             return false;
         } else {
             await this.gitManager.updateUpstreamBranch(remoteBranch);
             this.displayMessage(`Set upstream branch to ${remoteBranch}`);
-            this.setPluginState({ gitAction: CurrentGitAction.idle });
             return true;
         }
     }
@@ -1616,7 +1598,6 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             this.log("Encountered network error, but already in offline mode");
         }
         this.setPluginState({
-            gitAction: CurrentGitAction.idle,
             offlineMode: true,
         });
     }
@@ -1649,7 +1630,6 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
             error = new Error(String(data));
         }
 
-        this.setPluginState({ gitAction: CurrentGitAction.idle });
         if (this.settings.showErrorNotices) {
             new Notice(error.message, timeout);
         }

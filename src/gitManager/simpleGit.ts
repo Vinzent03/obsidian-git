@@ -25,7 +25,7 @@ import type {
     LogEntry,
     Status,
 } from "../types";
-import { CurrentGitAction, NoNetworkError } from "../types";
+import { GitOperation, NoNetworkError } from "../types";
 import { impossibleBranch, spawnAsync, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 
@@ -353,11 +353,9 @@ export class SimpleGit extends GitManager {
 
     async status(opts?: { path?: string }): Promise<Status> {
         const dir = opts?.path;
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
         const status = await this.git.status(
             dir != undefined ? ["--", dir] : []
         );
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
 
         const allFilesFormatted = status.files.map<FileStatusResult>((e) => {
             const res = this.formatPath(e);
@@ -516,29 +514,24 @@ export class SimpleGit extends GitManager {
     }
 
     async commitAll({ message }: { message: string }): Promise<number> {
-        if (this.plugin.settings.updateSubmodules) {
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
-            const submodulePaths = await this.getSubmodulePaths();
-            for (const item of submodulePaths) {
-                await this.git.cwd({ path: item, root: false }).add("-A");
-                await this.git
-                    .cwd({ path: item, root: false })
-                    .commit(await this.formatCommitMessage(message));
+        return this.withGitOperation(GitOperation.commit, async () => {
+            if (this.plugin.settings.updateSubmodules) {
+                const submodulePaths = await this.getSubmodulePaths();
+                for (const item of submodulePaths) {
+                    await this.git.cwd({ path: item, root: false }).add("-A");
+                    await this.git
+                        .cwd({ path: item, root: false })
+                        .commit(await this.formatCommitMessage(message));
+                }
             }
-        }
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
+            await this.git.add("-A");
 
-        await this.git.add("-A");
-
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
-
-        const res = await this.git.commit(
-            await this.formatCommitMessage(message)
-        );
-        this.app.workspace.trigger("obsidian-git:head-change");
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
-
-        return res.summary.changes;
+            const res = await this.git.commit(
+                await this.formatCommitMessage(message)
+            );
+            this.app.workspace.trigger("obsidian-git:head-change");
+            return res.summary.changes;
+        });
     }
 
     async commit({
@@ -548,56 +541,40 @@ export class SimpleGit extends GitManager {
         message: string;
         amend?: boolean;
     }): Promise<number> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
-
-        const res = (
-            await this.git.commit(
-                await this.formatCommitMessage(message),
-                amend ? ["--amend"] : []
-            )
-        ).summary.changes;
-        this.app.workspace.trigger("obsidian-git:head-change");
-
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
-        return res;
+        return this.withGitOperation(GitOperation.commit, async () => {
+            const res = (
+                await this.git.commit(
+                    await this.formatCommitMessage(message),
+                    amend ? ["--amend"] : []
+                )
+            ).summary.changes;
+            this.app.workspace.trigger("obsidian-git:head-change");
+            return res;
+        });
     }
 
     async stage(path: string, relativeToVault: boolean): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-
         path = this.getRelativeRepoPath(path, relativeToVault);
         await this.git.add(["--", path]);
-
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async stageAll({ dir }: { dir?: string }): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
         await this.git.add(dir ?? "-A");
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async unstageAll({ dir }: { dir?: string }): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
         await this.git.reset(dir != undefined ? ["--", dir] : []);
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async unstage(path: string, relativeToVault: boolean): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
-
         path = this.getRelativeRepoPath(path, relativeToVault);
         await this.git.reset(["--", path]);
-
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async discard(filepath: string): Promise<void> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
         if (await this.isTracked(filepath)) {
             await this.git.checkout(["--", filepath]);
         }
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
     async applyPatch(patch: string): Promise<void> {
@@ -613,7 +590,6 @@ export class SimpleGit extends GitManager {
 
     async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {
         const dir = opts?.path;
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
         const args = [];
         if (dir != undefined) {
             args.push("--", dir);
@@ -623,7 +599,6 @@ export class SimpleGit extends GitManager {
             args
         );
 
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         return untrackedFiles.paths;
     }
 
@@ -648,152 +623,159 @@ export class SimpleGit extends GitManager {
     }
 
     async pull(): Promise<FileStatusResult[] | undefined> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
-        try {
-            if (this.plugin.settings.updateSubmodules)
-                await this.git.subModule([
-                    "update",
-                    "--remote",
-                    "--merge",
-                    "--recursive",
-                ]);
+        return this.withGitOperation(GitOperation.pull, async () => {
+            try {
+                if (this.plugin.settings.updateSubmodules)
+                    await this.git.subModule([
+                        "update",
+                        "--remote",
+                        "--merge",
+                        "--recursive",
+                    ]);
 
-            const branchInfo = await this.branchInfo();
-            if (!branchInfo.current) {
-                this.plugin.displayError(
-                    "No current branch found. Cannot pull."
-                );
-                return undefined;
-            }
-            const localCommit = await this.git.revparse([branchInfo.current]);
-
-            if (!branchInfo.tracking && this.plugin.settings.updateSubmodules) {
-                this.plugin.log(
-                    "No tracking branch found. Ignoring pull of main repo and updating submodules only."
-                );
-                return;
-            }
-
-            await this.git.fetch();
-            const upstreamCommit = await this.git.revparse([
-                branchInfo.tracking!,
-            ]);
-
-            if (localCommit !== upstreamCommit) {
-                if (
-                    this.plugin.settings.syncMethod === "merge" ||
-                    this.plugin.settings.syncMethod === "rebase"
-                ) {
-                    try {
-                        const args = [branchInfo.tracking!];
-
-                        if (this.plugin.settings.mergeStrategy !== "none") {
-                            args.push(
-                                `--strategy-option=${this.plugin.settings.mergeStrategy}`
-                            );
-                        }
-
-                        switch (this.plugin.settings.syncMethod) {
-                            case "merge":
-                                await this.git.merge(args);
-                                break;
-                            case "rebase":
-                                await this.git.rebase(args);
-                        }
-                    } catch (err) {
-                        this.plugin.displayError(
-                            `Pull failed (${this.plugin.settings.syncMethod}): ${errorToString(err)}`
-                        );
-                        return;
-                    }
-                } else if (this.plugin.settings.syncMethod === "reset") {
-                    try {
-                        await this.git.raw([
-                            "update-ref",
-                            `refs/heads/${branchInfo.current}`,
-                            upstreamCommit,
-                        ]);
-                        await this.unstageAll({});
-                    } catch (err) {
-                        this.plugin.displayError(
-                            `Sync failed (${this.plugin.settings.syncMethod}): ${errorToString(err)}`
-                        );
-                    }
+                const branchInfo = await this.branchInfo();
+                if (!branchInfo.current) {
+                    this.plugin.displayError(
+                        "No current branch found. Cannot pull."
+                    );
+                    return undefined;
                 }
-                this.app.workspace.trigger("obsidian-git:head-change");
-
-                const afterMergeCommit = await this.git.revparse([
+                const localCommit = await this.git.revparse([
                     branchInfo.current,
                 ]);
 
-                const filesChanged = await this.git.diff([
-                    `${localCommit}..${afterMergeCommit}`,
-                    "--name-only",
+                if (
+                    !branchInfo.tracking &&
+                    this.plugin.settings.updateSubmodules
+                ) {
+                    this.plugin.log(
+                        "No tracking branch found. Ignoring pull of main repo and updating submodules only."
+                    );
+                    return;
+                }
+
+                await this.git.fetch();
+                const upstreamCommit = await this.git.revparse([
+                    branchInfo.tracking!,
                 ]);
 
-                return filesChanged
-                    .split(/\r\n|\r|\n/)
-                    .filter((value) => value.length > 0)
-                    .map((e) => {
-                        return <FileStatusResult>{
-                            path: e,
-                            workingDir: "P",
-                            vaultPath: this.getRelativeVaultPath(e),
-                        };
-                    });
-            } else {
-                return [];
+                if (localCommit !== upstreamCommit) {
+                    if (
+                        this.plugin.settings.syncMethod === "merge" ||
+                        this.plugin.settings.syncMethod === "rebase"
+                    ) {
+                        try {
+                            const args = [branchInfo.tracking!];
+
+                            if (this.plugin.settings.mergeStrategy !== "none") {
+                                args.push(
+                                    `--strategy-option=${this.plugin.settings.mergeStrategy}`
+                                );
+                            }
+
+                            switch (this.plugin.settings.syncMethod) {
+                                case "merge":
+                                    await this.git.merge(args);
+                                    break;
+                                case "rebase":
+                                    await this.git.rebase(args);
+                            }
+                        } catch (err) {
+                            this.plugin.displayError(
+                                `Pull failed (${this.plugin.settings.syncMethod}): ${errorToString(err)}`
+                            );
+                            return;
+                        }
+                    } else if (this.plugin.settings.syncMethod === "reset") {
+                        try {
+                            await this.git.raw([
+                                "update-ref",
+                                `refs/heads/${branchInfo.current}`,
+                                upstreamCommit,
+                            ]);
+                            await this.git.reset([]);
+                        } catch (err) {
+                            this.plugin.displayError(
+                                `Sync failed (${this.plugin.settings.syncMethod}): ${errorToString(err)}`
+                            );
+                        }
+                    }
+                    this.app.workspace.trigger("obsidian-git:head-change");
+
+                    const afterMergeCommit = await this.git.revparse([
+                        branchInfo.current,
+                    ]);
+
+                    const filesChanged = await this.git.diff([
+                        `${localCommit}..${afterMergeCommit}`,
+                        "--name-only",
+                    ]);
+
+                    return filesChanged
+                        .split(/\r\n|\r|\n/)
+                        .filter((value) => value.length > 0)
+                        .map((e) => {
+                            return <FileStatusResult>{
+                                path: e,
+                                workingDir: "P",
+                                vaultPath: this.getRelativeVaultPath(e),
+                            };
+                        });
+                } else {
+                    return [];
+                }
+            } catch (e) {
+                this.convertErrors(e);
             }
-        } catch (e) {
-            this.convertErrors(e);
-        }
+        });
     }
 
     async push(): Promise<number | undefined | null> {
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.push });
-        try {
-            if (this.plugin.settings.updateSubmodules) {
-                const res = await this.git.subModule([
-                    "foreach",
-                    "--recursive",
-                    `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`,
-                ]);
-                console.log(res);
-            }
-            const status = await this.git.status();
-            const trackingBranch = status.tracking;
-            const currentBranch = status.current;
+        return this.withGitOperation(GitOperation.push, async () => {
+            try {
+                if (this.plugin.settings.updateSubmodules) {
+                    const res = await this.git.subModule([
+                        "foreach",
+                        "--recursive",
+                        `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`,
+                    ]);
+                    console.log(res);
+                }
+                const status = await this.git.status();
+                const trackingBranch = status.tracking;
+                const currentBranch = status.current;
 
-            if (!currentBranch) {
-                this.plugin.displayError(
-                    "No current branch found. Cannot push."
-                );
-                return undefined;
-            }
+                if (!currentBranch) {
+                    this.plugin.displayError(
+                        "No current branch found. Cannot push."
+                    );
+                    return undefined;
+                }
 
-            if (!trackingBranch && this.plugin.settings.updateSubmodules) {
-                this.plugin.log(
-                    "No tracking branch found. Ignoring push of main repo and updating submodules only."
-                );
-                return undefined;
-            }
-            let remoteChangedFiles: number | null = null;
-            if (trackingBranch) {
-                remoteChangedFiles = (
-                    await this.git.diffSummary([
-                        currentBranch,
-                        trackingBranch,
-                        "--",
-                    ])
-                ).changed;
-            }
+                if (!trackingBranch && this.plugin.settings.updateSubmodules) {
+                    this.plugin.log(
+                        "No tracking branch found. Ignoring push of main repo and updating submodules only."
+                    );
+                    return undefined;
+                }
+                let remoteChangedFiles: number | null = null;
+                if (trackingBranch) {
+                    remoteChangedFiles = (
+                        await this.git.diffSummary([
+                            currentBranch,
+                            trackingBranch,
+                            "--",
+                        ])
+                    ).changed;
+                }
 
-            await this.git.push();
+                await this.git.push();
 
-            return remoteChangedFiles;
-        } catch (e) {
-            this.convertErrors(e);
-        }
+                return remoteChangedFiles;
+            } catch (e) {
+                this.convertErrors(e);
+            }
+        });
     }
 
     /**
@@ -854,18 +836,13 @@ export class SimpleGit extends GitManager {
         // Capture the current tip before rewriting so the squash commit can
         // reuse its message (commit -C) rather than the auto-commit template.
         const oldHead = (await this.git.raw(["rev-parse", "HEAD"])).trim();
-        this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
-        try {
+        await this.withGitOperation(GitOperation.commit, async () => {
             // Soft reset keeps the index and working tree, so all unpushed
             // changes stay staged and are re-committed as a single commit.
             await this.git.reset(["--soft", trackingBranch]);
             await this.git.raw(["commit", "-C", oldHead]);
             this.app.workspace.trigger("obsidian-git:head-change");
-        } finally {
-            // Always restore the idle state, even if the reset or commit throws,
-            // so a failed squash never leaves the plugin stuck on "commit".
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
-        }
+        });
     }
 
     async getUnpushedCommits(): Promise<number> {

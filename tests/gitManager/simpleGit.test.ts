@@ -1,7 +1,7 @@
 import type { SimpleGit as SimpleGitClient } from "simple-git";
 import { describe, expect, it } from "vitest";
 import { SimpleGit } from "../../src/gitManager/simpleGit";
-import { CurrentGitAction } from "../../src/types";
+import { GitOperation } from "../../src/types";
 import { withCleanup } from "../helpers/cleanup";
 import { createFakePlugin, type FakePlugin } from "../helpers/createFakePlugin";
 import { createRepoWithOrigin } from "../helpers/gitRepo";
@@ -33,8 +33,8 @@ describe("SimpleGit.commit", () => {
         expect(await repo.show("HEAD:staged.md")).toBe("staged");
         expect(await repo.statusPorcelain()).toBe("?? unstaged.md");
         expect(plugin.setPluginState.mock.calls).toEqual([
-            [{ gitAction: CurrentGitAction.commit }],
-            [{ gitAction: CurrentGitAction.idle }],
+            [{ operation: GitOperation.commit }],
+            [{ operation: GitOperation.idle }],
         ]);
         expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
             "obsidian-git:head-change"
@@ -87,9 +87,8 @@ describe("SimpleGit.commitAll", () => {
         expect(await repo.statusPorcelain()).toBe("");
         await expect(repo.show("HEAD:delete-me.md")).rejects.toThrow();
         expect(plugin.setPluginState.mock.calls).toEqual([
-            [{ gitAction: CurrentGitAction.add }],
-            [{ gitAction: CurrentGitAction.commit }],
-            [{ gitAction: CurrentGitAction.idle }],
+            [{ operation: GitOperation.commit }],
+            [{ operation: GitOperation.idle }],
         ]);
         expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
             "obsidian-git:head-change"
@@ -112,8 +111,8 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
         expect(await repo.statusPorcelain()).toBe("");
         expect(await repo.show("HEAD:note.md")).toBe("base\none\ntwo");
         expect(plugin.setPluginState.mock.calls).toEqual([
-            [{ gitAction: CurrentGitAction.commit }],
-            [{ gitAction: CurrentGitAction.idle }],
+            [{ operation: GitOperation.commit }],
+            [{ operation: GitOperation.idle }],
         ]);
         expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
             "obsidian-git:head-change"

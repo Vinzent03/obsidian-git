@@ -20,7 +20,7 @@ import type {
     UnstagedFile,
     WalkDifference,
 } from "../types";
-import { CurrentGitAction, type DiffFile } from "../types";
+import { GitOperation, type DiffFile } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
@@ -174,7 +174,6 @@ export class IsomorphicGit extends GitManager {
             );
         }, 20000);
         try {
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
             const statusOpts = { ...this.getRepo() } as Parameters<
                 typeof git.statusMatrix
             >[0];
@@ -237,31 +236,32 @@ export class IsomorphicGit extends GitManager {
         message: string;
         amend?: boolean;
     }): Promise<undefined> {
-        try {
-            await this.checkAuthorInfo();
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.commit });
-            const formatMessage = await this.formatCommitMessage(message);
-            const hadConflict = this.plugin.localStorage.getConflict();
-            let parent: string[] | undefined = undefined;
+        return this.withGitOperation(GitOperation.commit, async () => {
+            try {
+                await this.checkAuthorInfo();
+                const formatMessage = await this.formatCommitMessage(message);
+                const hadConflict = this.plugin.localStorage.getConflict();
+                let parent: string[] | undefined = undefined;
 
-            if (hadConflict) {
-                const branchInfo = await this.branchInfo();
-                parent = [branchInfo.current!, branchInfo.tracking!];
+                if (hadConflict) {
+                    const branchInfo = await this.branchInfo();
+                    parent = [branchInfo.current!, branchInfo.tracking!];
+                }
+
+                await this.wrapFS(
+                    git.commit({
+                        ...this.getRepo(),
+                        message: formatMessage,
+                        parent: parent,
+                    })
+                );
+                this.plugin.localStorage.setConflict(false);
+                return undefined;
+            } catch (error) {
+                this.plugin.displayError(error);
+                throw error;
             }
-
-            await this.wrapFS(
-                git.commit({
-                    ...this.getRepo(),
-                    message: formatMessage,
-                    parent: parent,
-                })
-            );
-            this.plugin.localStorage.setConflict(false);
-            return;
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        });
     }
 
     async stage(filepath: string, relativeToVault: boolean): Promise<void> {
@@ -273,7 +273,6 @@ export class IsomorphicGit extends GitManager {
             vaultPath = this.getRelativeVaultPath(filepath);
         }
         try {
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
             if (await this.app.vault.adapter.exists(vaultPath)) {
                 await this.wrapFS(
                     git.add({ ...this.getRepo(), filepath: gitPath })
@@ -321,9 +320,15 @@ export class IsomorphicGit extends GitManager {
                 await Promise.all(
                     filesToStage.map(({ path, type }) =>
                         type == "D"
-                            ? git.remove({ ...this.getRepo(), filepath: path })
+                            ? git.remove({
+                                  ...this.getRepo(),
+                                  filepath: path,
+                              })
                             : this.wrapFS(
-                                  git.add({ ...this.getRepo(), filepath: path })
+                                  git.add({
+                                      ...this.getRepo(),
+                                      filepath: path,
+                                  })
                               )
                     )
                 );
@@ -336,7 +341,6 @@ export class IsomorphicGit extends GitManager {
 
     async unstage(filepath: string, relativeToVault: boolean): Promise<void> {
         try {
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
             filepath = this.getRelativeRepoPath(filepath, relativeToVault);
             await this.wrapFS(
                 git.resetIndex({ ...this.getRepo(), filepath: filepath })
@@ -377,7 +381,6 @@ export class IsomorphicGit extends GitManager {
 
     async discard(filepath: string): Promise<void> {
         try {
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.add });
             await this.wrapFS(
                 git.checkout({
                     ...this.getRepo(),
@@ -480,99 +483,108 @@ export class IsomorphicGit extends GitManager {
 
     async pull(): Promise<FileStatusResult[]> {
         const progressNotice = this.showNotice("Initializing pull");
-        try {
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.pull });
+        return this.withGitOperation(GitOperation.pull, async () => {
+            try {
+                const localCommit = await this.resolveRef("HEAD");
+                await this.fetch();
+                const branchInfo = await this.branchInfo();
 
-            const localCommit = await this.resolveRef("HEAD");
-            await this.fetch();
-            const branchInfo = await this.branchInfo();
+                await this.checkAuthorInfo();
 
-            await this.checkAuthorInfo();
-
-            const mergeRes = await this.wrapFS(
-                git.merge({
-                    ...this.getRepo(),
-                    ours: branchInfo.current,
-                    theirs: branchInfo.tracking!,
-                    abortOnConflict: false,
-                    mergeDriver:
-                        this.plugin.settings.mergeStrategy !== "none"
-                            ? ({ contents }) => {
-                                  const baseContent = contents[0]!;
-                                  const ourContent = contents[1]!;
-                                  const theirContent = contents[2]!;
-
-                                  const LINEBREAKS = /^.*(\r?\n|$)/gm;
-                                  const ours =
-                                      ourContent.match(LINEBREAKS) ?? [];
-                                  const base =
-                                      baseContent.match(LINEBREAKS) ?? [];
-                                  const theirs =
-                                      theirContent.match(LINEBREAKS) ?? [];
-                                  const result = diff3Merge(ours, base, theirs);
-                                  let mergedText = "";
-                                  for (const item of result) {
-                                      if (item.ok) {
-                                          mergedText += item.ok.join("");
-                                      }
-                                      if (item.conflict) {
-                                          mergedText +=
-                                              this.plugin.settings
-                                                  .mergeStrategy === "ours"
-                                                  ? item.conflict.a.join("")
-                                                  : item.conflict.b.join("");
-                                      }
-                                  }
-                                  return { cleanMerge: true, mergedText };
-                              }
-                            : undefined,
-                })
-            );
-            if (!mergeRes.alreadyMerged) {
-                await this.wrapFS(
-                    git.checkout({
+                const mergeRes = await this.wrapFS(
+                    git.merge({
                         ...this.getRepo(),
-                        ref: branchInfo.current,
-                        onProgress: (progress) => {
-                            if (progressNotice !== undefined) {
-                                progressNotice.setMessage(
-                                    this.getProgressText("Checkout", progress)
-                                );
-                            }
-                        },
-                        remote: branchInfo.remote,
+                        ours: branchInfo.current,
+                        theirs: branchInfo.tracking!,
+                        abortOnConflict: false,
+                        mergeDriver:
+                            this.plugin.settings.mergeStrategy !== "none"
+                                ? ({ contents }) => {
+                                      const baseContent = contents[0]!;
+                                      const ourContent = contents[1]!;
+                                      const theirContent = contents[2]!;
+
+                                      const LINEBREAKS = /^.*(\r?\n|$)/gm;
+                                      const ours =
+                                          ourContent.match(LINEBREAKS) ?? [];
+                                      const base =
+                                          baseContent.match(LINEBREAKS) ?? [];
+                                      const theirs =
+                                          theirContent.match(LINEBREAKS) ?? [];
+                                      const result = diff3Merge(
+                                          ours,
+                                          base,
+                                          theirs
+                                      );
+                                      let mergedText = "";
+                                      for (const item of result) {
+                                          if (item.ok) {
+                                              mergedText += item.ok.join("");
+                                          }
+                                          if (item.conflict) {
+                                              mergedText +=
+                                                  this.plugin.settings
+                                                      .mergeStrategy === "ours"
+                                                      ? item.conflict.a.join("")
+                                                      : item.conflict.b.join(
+                                                            ""
+                                                        );
+                                          }
+                                      }
+                                      return { cleanMerge: true, mergedText };
+                                  }
+                                : undefined,
                     })
                 );
-            }
-            progressNotice?.hide();
+                if (!mergeRes.alreadyMerged) {
+                    await this.wrapFS(
+                        git.checkout({
+                            ...this.getRepo(),
+                            ref: branchInfo.current,
+                            onProgress: (progress) => {
+                                if (progressNotice !== undefined) {
+                                    progressNotice.setMessage(
+                                        this.getProgressText(
+                                            "Checkout",
+                                            progress
+                                        )
+                                    );
+                                }
+                            },
+                            remote: branchInfo.remote,
+                        })
+                    );
+                }
+                progressNotice?.hide();
 
-            const upstreamCommit = await this.resolveRef("HEAD");
-            const changedFiles = await this.getFileChangesCount(
-                localCommit,
-                upstreamCommit
-            );
-
-            this.showNotice("Finished pull", false);
-
-            return changedFiles.map<FileStatusResult>((file) => ({
-                path: file.path,
-                workingDir: "P",
-                index: "P",
-                vaultPath: this.getRelativeVaultPath(file.path),
-            }));
-        } catch (error) {
-            progressNotice?.hide();
-            if (error instanceof Errors.MergeConflictError) {
-                await this.plugin.handleConflict(
-                    error.data.filepaths.map((file) =>
-                        this.getRelativeVaultPath(file)
-                    )
+                const upstreamCommit = await this.resolveRef("HEAD");
+                const changedFiles = await this.getFileChangesCount(
+                    localCommit,
+                    upstreamCommit
                 );
-            }
 
-            this.plugin.displayError(error);
-            throw error;
-        }
+                this.showNotice("Finished pull", false);
+
+                return changedFiles.map<FileStatusResult>((file) => ({
+                    path: file.path,
+                    workingDir: "P",
+                    index: "P",
+                    vaultPath: this.getRelativeVaultPath(file.path),
+                }));
+            } catch (error) {
+                progressNotice?.hide();
+                if (error instanceof Errors.MergeConflictError) {
+                    await this.plugin.handleConflict(
+                        error.data.filepaths.map((file) =>
+                            this.getRelativeVaultPath(file)
+                        )
+                    );
+                }
+
+                this.plugin.displayError(error);
+                throw error;
+            }
+        });
     }
 
     async push(): Promise<number> {
@@ -580,38 +592,41 @@ export class IsomorphicGit extends GitManager {
             return 0;
         }
         const progressNotice = this.showNotice("Initializing push");
-        try {
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.status });
-            const status = await this.branchInfo();
-            const trackingBranch = status.tracking;
-            const currentBranch = status.current;
-            const numChangedFiles = (
-                await this.getFileChangesCount(currentBranch!, trackingBranch!)
-            ).length;
+        return this.withGitOperation(GitOperation.push, async () => {
+            try {
+                const status = await this.branchInfo();
+                const trackingBranch = status.tracking;
+                const currentBranch = status.current;
+                const numChangedFiles = (
+                    await this.getFileChangesCount(
+                        currentBranch!,
+                        trackingBranch!
+                    )
+                ).length;
 
-            this.plugin.setPluginState({ gitAction: CurrentGitAction.push });
-            const remote = await this.getCurrentRemote();
+                const remote = await this.getCurrentRemote();
 
-            await this.wrapFS(
-                git.push({
-                    ...this.getRepo(),
-                    remote,
-                    onProgress: (progress) => {
-                        if (progressNotice !== undefined) {
-                            progressNotice.setMessage(
-                                this.getProgressText("Pushing", progress)
-                            );
-                        }
-                    },
-                })
-            );
-            progressNotice?.hide();
-            return numChangedFiles;
-        } catch (error) {
-            progressNotice?.hide();
-            this.plugin.displayError(error);
-            throw error;
-        }
+                await this.wrapFS(
+                    git.push({
+                        ...this.getRepo(),
+                        remote,
+                        onProgress: (progress) => {
+                            if (progressNotice !== undefined) {
+                                progressNotice.setMessage(
+                                    this.getProgressText("Pushing", progress)
+                                );
+                            }
+                        },
+                    })
+                );
+                progressNotice?.hide();
+                return numChangedFiles;
+            } catch (error) {
+                progressNotice?.hide();
+                this.plugin.displayError(error);
+                throw error;
+            }
+        });
     }
 
     async getUnpushedCommits(): Promise<number> {
