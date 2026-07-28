@@ -215,6 +215,11 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
             hunksData.hunks = [];
             hunksData.stagedHunks = [];
             hunksData.isDirty = false;
+            const file = transaction.state.field(editorInfoField).file;
+            pluginRef.plugin?.editorIntegration.signsFeature.changeStatusBar?.display(
+                hunksData.hunks,
+                file
+            );
         }
         return hunksData;
     },

@@ -97,7 +97,7 @@ export class SignsFeature {
     // ========================= REFRESH ==========================
 
     public refresh() {
-        if (this.plg.settings.hunks.showSigns) {
+        if (this.signsProvider) {
             this.plg.app.workspace.iterateAllLeaves(this.handleWorkspaceLeaf);
         }
     }
@@ -190,7 +190,7 @@ export class SignsFeature {
     }
 
     private createPluginRefreshedEvent(): EventRef {
-        return this.plg.app.workspace.on("obsidian-git:refresh", () => {
+        return this.plg.app.workspace.on("obsidian-git:refreshed", () => {
             this.refresh();
         });
     }

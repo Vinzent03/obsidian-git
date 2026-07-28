@@ -3,6 +3,12 @@ import type { Hunk } from "./hunks";
 import { MarkdownView, TFile } from "obsidian";
 
 export class ChangesStatusBar {
+    /**
+     * Store the current view instead of always obtaining it from the workspace
+     * to support focusing sidebar views like the source control view and still
+     * showing the correct status bar for the active editor.
+     */
+    view?: MarkdownView;
     constructor(
         private statusBarEl: HTMLElement,
         private readonly plugin: ObsidianGit
@@ -14,6 +20,8 @@ export class ChangesStatusBar {
 
         statusBarEl.setAttr("aria-label", "Git diff of the current editor");
         this.statusBarEl.setAttribute("data-tooltip-position", "top");
+        this.view =
+            plugin.app.workspace.getActiveViewOfType(MarkdownView) ?? undefined;
         plugin.app.workspace.on("active-leaf-change", (leaf) => {
             if (
                 !leaf ||
@@ -21,14 +29,17 @@ export class ChangesStatusBar {
                     !(leaf.view instanceof MarkdownView))
             ) {
                 this.statusBarEl.empty();
+            } else {
+                if (leaf.view instanceof MarkdownView) {
+                    this.view = leaf.view;
+                }
             }
         });
     }
 
     display(hunks: Hunk[], file: TFile | null): void {
-        const mdView =
-            this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!mdView || mdView.file?.path !== file?.path) {
+        console.log({ mdView: this.view?.file, file });
+        if (!this.view || this.view.file?.path !== file?.path) {
             return;
         }
 
