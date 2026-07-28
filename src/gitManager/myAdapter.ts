@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { DataAdapter, Vault } from "obsidian";
-import { normalizePath, TFile } from "obsidian";
+import { normalizePath, TFile, TFolder } from "obsidian";
 import type ObsidianGit from "../main";
 
 type BinaryData = ArrayBuffer | ArrayBufferView;
@@ -73,6 +73,8 @@ export class MyAdapter {
             const file = this.vault.getAbstractFileByPath(path);
             if (file instanceof TFile) {
                 return this.vault.modify(file, data);
+            } else if (!this.isHiddenPath(path)) {
+                await this.vault.create(path, data);
             } else {
                 return this.adapter.write(path, data);
             }
@@ -80,12 +82,16 @@ export class MyAdapter {
             const binaryData = toArrayBuffer(data);
             if (path.endsWith(this.gitDir + "/index")) {
                 this.index = binaryData;
-                this.indexmtime = Date.now();
+                const now = Date.now();
+                this.indexctime ??= now;
+                this.indexmtime = now;
                 // this.adapter.writeBinary(path, data);
             } else {
                 const file = this.vault.getAbstractFileByPath(path);
                 if (file instanceof TFile) {
                     return this.vault.modifyBinary(file, binaryData);
+                } else if (!this.isHiddenPath(path)) {
+                    await this.vault.createBinary(path, binaryData);
                 } else {
                     return this.adapter.writeBinary(path, binaryData);
                 }
@@ -107,9 +113,31 @@ export class MyAdapter {
         return formattedAll;
     }
     async mkdir(path: string) {
+        if (path === "." || path === "/") return;
+
+        if (!this.isHiddenPath(path)) {
+            const file = this.vault.getFolderByPath(path);
+            if (file) return;
+
+            await this.vault.createFolder(path);
+            return;
+        }
+
         return this.adapter.mkdir(path);
     }
     async rmdir(path: string, opts: any) {
+        if (!this.isHiddenPath(path)) {
+            const file = this.vault.getAbstractFileByPath(path);
+            if (file instanceof TFolder) {
+                await this.vault.delete(
+                    file,
+                    opts?.recursive === true ||
+                        opts?.options?.recursive === true
+                );
+                return;
+            }
+        }
+
         return this.adapter.rmdir(
             path,
             opts?.recursive === true || opts?.options?.recursive === true
@@ -182,6 +210,13 @@ export class MyAdapter {
         }
     }
     async unlink(path: string) {
+        if (!this.isHiddenPath(path)) {
+            const file = this.vault.getAbstractFileByPath(path);
+            if (file instanceof TFile) {
+                return this.vault.delete(file);
+            }
+        }
+
         return this.adapter.remove(path);
     }
     async lstat(path: string) {
@@ -218,6 +253,18 @@ export class MyAdapter {
 
     private get gitDir(): string {
         return this.plugin.settings.gitDir || ".git";
+    }
+
+    private isHiddenPath(path: string): boolean {
+        // Faster check for the common case of the .git directory itself
+        if (path.startsWith(this.gitDir)) {
+            return true;
+        }
+        return normalizePath(path)
+            .split("/")
+            .some(
+                (component) => component.startsWith(".") && component !== "."
+            );
     }
 
     private maybeLog(_: string) {
