@@ -608,7 +608,7 @@ export class SimpleGit extends GitManager {
 
     async discard(filepath: string): Promise<void> {
         if (await this.isTracked(filepath)) {
-            await this.git.checkout(["--", filepath]);
+            await this.git.checkout(["--progress", "--", filepath]);
         }
     }
 

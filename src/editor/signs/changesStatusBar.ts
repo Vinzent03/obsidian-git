@@ -38,7 +38,6 @@ export class ChangesStatusBar {
     }
 
     display(hunks: Hunk[], file: TFile | null): void {
-        console.log({ mdView: this.view?.file, file });
         if (!this.view || this.view.file?.path !== file?.path) {
             return;
         }
