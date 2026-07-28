@@ -36,9 +36,13 @@ export class MyAdapter {
         this.promises.readlink = this.readlink.bind(this);
         this.promises.symlink = this.symlink.bind(this);
     }
-    async readFile(path: string, opts: any) {
+    async readFile(
+        path: string,
+        opts?: string | { encoding?: string; [key: string]: unknown }
+    ) {
         this.maybeLog("Read: " + path + JSON.stringify(opts));
-        if (opts == "utf8" || opts.encoding == "utf8") {
+        const encoding = typeof opts === "string" ? opts : opts?.encoding;
+        if (encoding === "utf8") {
             const file = this.vault.getAbstractFileByPath(path);
             if (file instanceof TFile) {
                 this.maybeLog("Reuse");
@@ -48,7 +52,7 @@ export class MyAdapter {
                 return this.adapter.read(path);
             }
         } else {
-            if (path.endsWith(this.gitDir + "/index")) {
+            if (this.isIndexPath(path)) {
                 if (this.plugin.settings.basePath != this.lastBasePath) {
                     this.clearIndex();
                     this.lastBasePath = this.plugin.settings.basePath;
@@ -80,7 +84,7 @@ export class MyAdapter {
             }
         } else {
             const binaryData = toArrayBuffer(data);
-            if (path.endsWith(this.gitDir + "/index")) {
+            if (this.isIndexPath(path)) {
                 this.index = binaryData;
                 const now = Date.now();
                 this.indexctime ??= now;
@@ -144,7 +148,7 @@ export class MyAdapter {
         );
     }
     async stat(path: string) {
-        if (path.endsWith(this.gitDir + "/index")) {
+        if (this.isIndexPath(path)) {
             if (
                 this.index !== undefined &&
                 this.indexctime != undefined &&
@@ -231,16 +235,10 @@ export class MyAdapter {
 
     async saveAndClear(): Promise<void> {
         if (this.index !== undefined) {
-            await this.adapter.writeBinary(
-                this.plugin.gitManager.getRelativeVaultPath(
-                    this.gitDir + "/index"
-                ),
-                this.index,
-                {
-                    ctime: this.indexctime,
-                    mtime: this.indexmtime,
-                }
-            );
+            await this.adapter.writeBinary(this.getIndexPath(), this.index, {
+                ctime: this.indexctime,
+                mtime: this.indexmtime,
+            });
         }
         this.clearIndex();
     }
@@ -253,6 +251,16 @@ export class MyAdapter {
 
     private get gitDir(): string {
         return this.plugin.settings.gitDir || ".git";
+    }
+
+    private getIndexPath(): string {
+        return this.plugin.gitManager.getRelativeVaultPath(
+            this.gitDir + "/index"
+        );
+    }
+
+    private isIndexPath(path: string): boolean {
+        return path === this.getIndexPath();
     }
 
     private isHiddenPath(path: string): boolean {
