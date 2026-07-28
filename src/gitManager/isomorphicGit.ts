@@ -10,7 +10,7 @@ import type {
     WalkerMap,
 } from "isomorphic-git";
 import git, { Errors, readBlob } from "isomorphic-git";
-import { Notice, requestUrl } from "obsidian";
+import { normalizePath, Notice, requestUrl } from "obsidian";
 import type ObsidianGit from "../main";
 import type {
     BranchInfo,
@@ -69,7 +69,9 @@ export class IsomorphicGit extends GitManager {
         return {
             fs: this.fs,
             dir: this.plugin.settings.basePath,
-            gitdir: this.plugin.settings.gitDir || undefined,
+            gitdir: this.plugin.settings.gitDir
+                ? this.getGitDirPath()
+                : undefined,
             onAuth: () => {
                 return {
                     username:
@@ -662,7 +664,7 @@ export class IsomorphicGit extends GitManager {
 
     async checkRequirements(): Promise<"valid" | "missing-repo"> {
         const headExists = await this.plugin.app.vault.adapter.exists(
-            `${this.getRepo().dir}/.git/HEAD`
+            normalizePath(`${this.getGitDirPath()}/HEAD`)
         );
 
         return headExists ? "valid" : "missing-repo";
@@ -938,6 +940,12 @@ export class IsomorphicGit extends GitManager {
     updateBasePath(basePath: string): Promise<void> {
         this.getRepo().dir = basePath;
         return Promise.resolve();
+    }
+
+    private getGitDirPath(): string {
+        return normalizePath(
+            this.getRelativeVaultPath(this.plugin.settings.gitDir || ".git")
+        );
     }
 
     async updateUpstreamBranch(remoteBranch: string): Promise<void> {

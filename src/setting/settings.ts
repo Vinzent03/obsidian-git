@@ -956,7 +956,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Custom Git directory path (Instead of '.git')")
             .setDesc(
-                `Corresponds to the GIT_DIR environment variable. Requires restart of Obsidian to take effect. Use "\\" instead of "/" on Windows.`
+                `Corresponds to the GIT_DIR environment variable. Relative paths are resolved from the custom base path, or the vault root when no base path is configured. Requires restart of Obsidian to take effect. Use "\\" instead of "/" on Windows.`
             )
             .addText((cb) => {
                 cb.setValue(plugin.settings.gitDir);
