@@ -209,6 +209,15 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
+    handleOnlineStatusChange() {
+        if (!this.state.offlineMode) return;
+
+        if (navigator.onLine) {
+            this.setPluginState({ offlineMode: false });
+            this.promiseQueue.addTask(() => this.pullChangesFromRemote());
+        }
+    }
+
     /** This method only registers events, views, commands and more.
      *
      * This only needs to be called once since the registered events are
@@ -222,6 +231,7 @@ export default class ObsidianGit extends Plugin {
                 this.refresh().catch((e) => this.displayError(e));
             })
         );
+
         this.registerEvent(
             this.app.workspace.on("obsidian-git:head-change", () => {
                 this.refreshUpdatedHead();
@@ -245,6 +255,12 @@ export default class ObsidianGit extends Plugin {
                 this.onActiveLeafChange(leaf);
             })
         );
+
+        this.registerDomEvent(window, "online", () => {
+                this.handleOnlineStatusChange();
+            }
+        );
+
         this.registerEvent(
             this.app.vault.on("modify", () => {
                 this.debRefresh();
@@ -536,6 +552,12 @@ export default class ObsidianGit extends Plugin {
         return Platform.isDesktopApp;
     }
 
+    hasConnectivity() {
+        if (navigator.onLine) return true;
+        this.setPluginState({ offlineMode: true });
+        return (new Notice('No Connectivity'), false)
+    }
+
     async init({ fromReload = false }): Promise<void> {
         if (this.localStorage.getPluginDisabled()) {
             // This is already guarded in `onload`, but we also guard here to
@@ -761,6 +783,7 @@ export default class ObsidianGit extends Plugin {
     ///Used for command
     async pullChangesFromRemote(): Promise<void> {
         if (!(await this.isAllInitialized())) return;
+        if (!(this.hasConnectivity())) return;
 
         const filesUpdated = await this.pull();
         if (filesUpdated === false) {
@@ -797,11 +820,13 @@ export default class ObsidianGit extends Plugin {
         onlyStaged?: boolean;
     }): Promise<void> {
         if (!(await this.isAllInitialized())) return;
+        const isConnected = this.hasConnectivity();
 
         if (
             this.settings.syncMethod == "reset" &&
             this.settings.pullBeforePush
         ) {
+            if (!isConnected) return;
             await this.pull();
         }
 
@@ -819,11 +844,13 @@ export default class ObsidianGit extends Plugin {
             this.settings.syncMethod != "reset" &&
             this.settings.pullBeforePush
         ) {
+            if (!isConnected) return;
             await this.pull();
         }
 
         if (!this.settings.disablePush) {
             // Prevent trying to push every time. Only if unpushed commits are present
+            if (!isConnected) return;
             if (
                 (await this.remotesAreSet()) &&
                 (await this.gitManager.canPush())
@@ -1076,9 +1103,9 @@ export default class ObsidianGit extends Plugin {
      */
     async push(): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
-        if (!(await this.remotesAreSet())) {
-            return false;
-        }
+        if (!(await this.remotesAreSet())) return false;
+        if (!(this.hasConnectivity())) return false;
+
         const hadConflict = this.localStorage.getConflict();
         try {
             if (this.gitManager instanceof SimpleGit)
