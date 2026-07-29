@@ -301,44 +301,49 @@ export class IsomorphicGit extends GitManager {
     }): Promise<void> {
         try {
             if (status) {
-                await Promise.all(
-                    status.changed.map((file) =>
-                        file.workingDir !== "D"
-                            ? this.wrapFS(
-                                  git.add({
-                                      ...this.getRepo(),
-                                      filepath: file.path,
-                                  })
-                              )
-                            : git.remove({
-                                  ...this.getRepo(),
-                                  filepath: file.path,
-                              })
-                    )
+                await this.stageFiles(
+                    status.changed.map((file) => ({
+                        path: file.path,
+                        deleted: file.workingDir === "D",
+                    }))
                 );
             } else {
                 const filesToStage =
                     unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
-                await Promise.all(
-                    filesToStage.map(({ path, type }) =>
-                        type == "D"
-                            ? git.remove({
-                                  ...this.getRepo(),
-                                  filepath: path,
-                              })
-                            : this.wrapFS(
-                                  git.add({
-                                      ...this.getRepo(),
-                                      filepath: path,
-                                  })
-                              )
-                    )
+                await this.stageFiles(
+                    filesToStage.map(({ path, type }) => ({
+                        path,
+                        deleted: type === "D",
+                    }))
                 );
             }
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
         }
+    }
+
+    private async stageFiles(
+        files: { path: string; deleted: boolean }[]
+    ): Promise<void> {
+        const results = await this.wrapFS(
+            Promise.allSettled(
+                files.map((file) =>
+                    file.deleted
+                        ? git.remove({
+                              ...this.getRepo(),
+                              filepath: file.path,
+                          })
+                        : git.add({
+                              ...this.getRepo(),
+                              filepath: file.path,
+                          })
+                )
+            )
+        );
+
+        const failure = results.find((result) => result.status === "rejected");
+        if (failure?.status === "rejected") throw failure.reason;
     }
 
     async unstage(filepath: string, relativeToVault: boolean): Promise<void> {
