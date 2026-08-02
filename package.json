@@ -64,7 +64,7 @@
         "diff": "^9.0.0",
         "diff2html": "^3.4.56",
         "diff3": "^0.0.4",
-        "isomorphic-git": "1.37.4",
+        "isomorphic-git": "1.40.0",
         "js-sha256": "^0.12.0",
         "simple-git": "^3.36.0",
         "svelte": "^5.56.8"
