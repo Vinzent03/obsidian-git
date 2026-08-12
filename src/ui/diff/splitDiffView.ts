@@ -19,6 +19,14 @@ import {
 import { GitError } from "simple-git";
 import { Hunks } from "src/editor/signs/hunks";
 import { rawHunkFromChunk, rawHunksToHunks } from "src/editor/signs/diff";
+import { diffContextMenu } from "src/ui/diff/contextMenu";
+
+const readOnlyEditorTheme = EditorView.theme({
+    "& .cm-content": { caretColor: "transparent !important" },
+    "&.cm-focused .cm-cursor, & .cm-dropCursor": {
+        display: "none !important",
+    },
+});
 
 // This class is not extending `FileView', because it needs a `TFile`, which is not possible for dot files like `.gitignore`, which this editor should support as well.`
 export default class SplitDiffView extends ItemView {
@@ -404,6 +412,7 @@ export default class SplitDiffView extends ItemView {
                 history(),
                 search(),
                 EditorView.lineWrapping,
+                diffContextMenu,
             ];
 
             // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -426,8 +435,8 @@ export default class SplitDiffView extends ItemView {
                 doc: aText,
                 extensions: [
                     ...basicExtensions,
-                    EditorView.editable.of(false),
                     EditorState.readOnly.of(true),
+                    readOnlyEditorTheme,
                 ],
             };
 
@@ -436,8 +445,8 @@ export default class SplitDiffView extends ItemView {
             // Only make the editor modifiable when viewing the working tree version
             if (!this.bIsEditable) {
                 bExtensions.push(
-                    EditorView.editable.of(false),
-                    EditorState.readOnly.of(true)
+                    EditorState.readOnly.of(true),
+                    readOnlyEditorTheme
                 );
             } else {
                 bExtensions.push(autoSavePlugin);
