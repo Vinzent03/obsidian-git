@@ -6,6 +6,7 @@ import type {
     GitHttpResponse,
     GitProgressEvent,
     HttpClient,
+    StatusRow,
     Walker,
     WalkerMap,
 } from "isomorphic-git";
@@ -34,7 +35,7 @@ export class IsomorphicGit extends GitManager {
     private readonly STAGE = 3;
     // Mapping from statusMatrix to git status codes based off git status --short
     // See: https://isomorphic-git.org/docs/en/statusMatrix
-    private readonly status_mapping = {
+    private readonly status_mapping: Readonly<Record<string, string>> = {
         "000": "  ",
         "003": "AD",
         "020": "??",
@@ -1286,14 +1287,12 @@ export class IsomorphicGit extends GitManager {
         return new Date(date * 1000);
     }
 
-    private getFileStatusResult(
-        row: [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3]
-    ): FileStatusResult {
-        // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-        const status = (this.status_mapping as any)[
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            `${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`
-        ] as string;
+    private getFileStatusResult(row: StatusRow): FileStatusResult {
+        const statusKey = `${row[this.HEAD]}${row[this.WORKDIR]}${row[this.STAGE]}`;
+        const status = this.status_mapping[statusKey];
+        if (status === undefined) {
+            throw new Error(`Unsupported status matrix row: ${statusKey}`);
+        }
         // status will always be two characters
         return {
             index: status[0] == "?" ? "U" : status[0] ?? " ",

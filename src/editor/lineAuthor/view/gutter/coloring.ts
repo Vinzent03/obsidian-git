@@ -1,6 +1,6 @@
-import type { App } from "obsidian";
 import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
 import { maxAgeInDaysFromSettings } from "src/editor/lineAuthor/model";
+import { pluginRef } from "src/pluginGlobalRef";
 import type { GitTimestamp } from "src/types";
 
 /**
@@ -73,8 +73,7 @@ function lin(z0: number, z1: number, x: number): number {
 }
 
 function isDarkMode() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    return ((window as any).app as App)?.getTheme() === "obsidian"; // light mode is "moonstone"
+    return pluginRef.plugin?.app?.isDarkMode() ?? false;
 }
 
 /**

@@ -1,15 +1,39 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/only-throw-error */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { DataAdapter, Vault } from "obsidian";
 import { normalizePath, TFile, TFolder } from "obsidian";
 import type ObsidianGit from "../main";
 
 type BinaryData = ArrayBuffer | ArrayBufferView;
+type MyAdapterPromises = Pick<
+    MyAdapter,
+    | "readFile"
+    | "writeFile"
+    | "readdir"
+    | "mkdir"
+    | "rmdir"
+    | "stat"
+    | "unlink"
+    | "lstat"
+    | "readlink"
+    | "symlink"
+>;
+type RmdirOptions = {
+    recursive?: boolean;
+    options?: {
+        recursive?: boolean;
+    };
+};
+
+class FileNotFoundError extends Error {
+    readonly code = "ENOENT";
+
+    constructor(path: string) {
+        super(`File not found: ${path}`);
+        this.name = "FileNotFoundError";
+    }
+}
 
 export class MyAdapter {
-    promises: any = {};
+    promises: MyAdapterPromises;
     adapter: DataAdapter;
     vault: Vault;
     index: ArrayBuffer | undefined;
@@ -25,16 +49,18 @@ export class MyAdapter {
         this.vault = vault;
         this.lastBasePath = this.plugin.settings.basePath;
 
-        this.promises.readFile = this.readFile.bind(this);
-        this.promises.writeFile = this.writeFile.bind(this);
-        this.promises.readdir = this.readdir.bind(this);
-        this.promises.mkdir = this.mkdir.bind(this);
-        this.promises.rmdir = this.rmdir.bind(this);
-        this.promises.stat = this.stat.bind(this);
-        this.promises.unlink = this.unlink.bind(this);
-        this.promises.lstat = this.lstat.bind(this);
-        this.promises.readlink = this.readlink.bind(this);
-        this.promises.symlink = this.symlink.bind(this);
+        this.promises = {
+            readFile: this.readFile.bind(this),
+            writeFile: this.writeFile.bind(this),
+            readdir: this.readdir.bind(this),
+            mkdir: this.mkdir.bind(this),
+            rmdir: this.rmdir.bind(this),
+            stat: this.stat.bind(this),
+            unlink: this.unlink.bind(this),
+            lstat: this.lstat.bind(this),
+            readlink: this.readlink.bind(this),
+            symlink: this.symlink.bind(this),
+        };
     }
     async readFile(
         path: string,
@@ -129,7 +155,7 @@ export class MyAdapter {
 
         return this.adapter.mkdir(path);
     }
-    async rmdir(path: string, opts: any) {
+    async rmdir(path: string, opts?: RmdirOptions) {
         if (!this.isHiddenPath(path)) {
             const file = this.vault.getAbstractFileByPath(path);
             if (file instanceof TFolder) {
@@ -166,7 +192,7 @@ export class MyAdapter {
             } else {
                 const stat = await this.adapter.stat(path);
                 if (stat == undefined) {
-                    throw { code: "ENOENT" };
+                    throw new FileNotFoundError(path);
                 }
                 this.indexctime = stat.ctime;
                 this.indexmtime = stat.mtime;
@@ -209,7 +235,7 @@ export class MyAdapter {
                 };
             } else {
                 // used to determine whether a file exists or not
-                throw { code: "ENOENT" };
+                throw new FileNotFoundError(path);
             }
         }
     }
@@ -226,11 +252,15 @@ export class MyAdapter {
     async lstat(path: string) {
         return this.stat(path);
     }
-    async readlink(path: string) {
-        throw new Error(`readlink of (${path}) is not implemented.`);
+    readlink(path: string): Promise<never> {
+        return Promise.reject(
+            new Error(`readlink of (${path}) is not implemented.`)
+        );
     }
-    async symlink(path: string) {
-        throw new Error(`symlink of (${path}) is not implemented.`);
+    symlink(path: string): Promise<never> {
+        return Promise.reject(
+            new Error(`symlink of (${path}) is not implemented.`)
+        );
     }
 
     async saveAndClear(): Promise<void> {

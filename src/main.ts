@@ -35,6 +35,7 @@ import { SimpleGit } from "./gitManager/simpleGit";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
 import Tools from "./tools";
 import type {
+    ElectronWindow,
     FileStatusResult,
     ObsidianGitSettings,
     PluginState,
@@ -457,8 +458,9 @@ export default class ObsidianGit extends Plugin {
                         .setIcon("arrow-up-right")
                         .setSection("action")
                         .onClick((_) => {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                            (window as any).electron.shell.showItemInFolder(
+                            (
+                                window as unknown as ElectronWindow
+                            ).electron.shell.showItemInFolder(
                                 path.join(gitManager.getBasePath(), filePath)
                             );
                         });

@@ -370,6 +370,14 @@ export class NoNetworkError extends Error {
     }
 }
 
+export type ElectronWindow = Window & {
+    electron: {
+        shell: {
+            showItemInFolder(fullPath: string): void;
+        };
+    };
+};
+
 declare module "obsidian" {
     interface App {
         openWithDefaultApp(path: string): void;
