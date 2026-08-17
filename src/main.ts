@@ -194,19 +194,21 @@ export default class ObsidianGit extends Plugin {
 
             await this.init({ fromReload: true });
 
-            this.app.workspace
-                .getLeavesOfType(SOURCE_CONTROL_VIEW_CONFIG.type)
-                .forEach((leaf) => {
-                    if (!(leaf.isDeferred ?? false))
-                        return (leaf.view as GitView).reload();
-                });
+            for (const leaf of this.app.workspace.getLeavesOfType(
+                SOURCE_CONTROL_VIEW_CONFIG.type
+            )) {
+                if (!(leaf.isDeferred ?? false)) {
+                    await (leaf.view as GitView).reload();
+                }
+            }
 
-            this.app.workspace
-                .getLeavesOfType(HISTORY_VIEW_CONFIG.type)
-                .forEach((leaf) => {
-                    if (!(leaf.isDeferred ?? false))
-                        return (leaf.view as HistoryView).reload();
-                });
+            for (const leaf of this.app.workspace.getLeavesOfType(
+                HISTORY_VIEW_CONFIG.type
+            )) {
+                if (!(leaf.isDeferred ?? false)) {
+                    await (leaf.view as HistoryView).reload();
+                }
+            }
         }
     }
 
@@ -627,8 +629,7 @@ export default class ObsidianGit extends Plugin {
                 default:
                     this.log(
                         "Something weird happened. The 'checkRequirements' result is " +
-                            /* eslint-disable-next-line @typescript-eslint/restrict-plus-operands */
-                            result
+                            String(result)
                     );
             }
         } catch (error) {

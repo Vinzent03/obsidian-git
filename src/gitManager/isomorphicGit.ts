@@ -8,7 +8,7 @@ import type {
     HttpClient,
     StatusRow,
     Walker,
-    WalkerMap,
+    WalkerEntry,
 } from "isomorphic-git";
 import git, { Errors, readBlob } from "isomorphic-git";
 import { normalizePath, Notice, requestUrl } from "obsidian";
@@ -996,12 +996,14 @@ export class IsomorphicGit extends GitManager {
         walkers: Walker[];
         dir?: string;
     }): Promise<WalkDifference[]> {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const res = await this.wrapFS(
-            git.walk({
+        return this.wrapFS(
+            typedWalk<WalkDifference>({
                 ...this.getRepo(),
                 trees: walkers,
-                map: async function (filepath, [A, B]) {
+                map: async function (
+                    filepath,
+                    [A, B]
+                ): Promise<WalkDifference | null | undefined> {
                     if (!worthWalking(filepath, base)) {
                         return null;
                     }
@@ -1018,7 +1020,7 @@ export class IsomorphicGit extends GitManager {
                     const Boid = await B?.oid();
 
                     // determine modification type
-                    let type = "equal";
+                    let type: WalkDifference["type"] | "equal" = "equal";
                     if (Aoid !== Boid) {
                         type = "M";
                     }
@@ -1045,7 +1047,6 @@ export class IsomorphicGit extends GitManager {
                 },
             })
         );
-        return res as WalkDifference[];
     }
 
     async getStagedFiles(
@@ -1073,10 +1074,9 @@ export class IsomorphicGit extends GitManager {
         }, 20000);
         try {
             const repo = this.getRepo();
-            const res = await this.wrapFS<Promise<UnstagedFile[]>>(
+            const res = await this.wrapFS(
                 //Modified from `git.statusMatrix`
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                git.walk({
+                typedWalk<UnstagedFile>({
                     ...repo,
                     trees: [git.WORKDIR(), git.STAGE()],
                     map: async function (
@@ -1183,7 +1183,7 @@ export class IsomorphicGit extends GitManager {
     ): Promise<string> {
         const vaultPath = this.getRelativeVaultPath(filePath);
 
-        const map: WalkerMap = async (file, [A]) => {
+        const map: TypedWalkerMap<Uint8Array> = async (file, [A]) => {
             if (filePath == file) {
                 const oid = await A!.oid();
                 const contents = await git.readBlob({
@@ -1236,11 +1236,11 @@ export class IsomorphicGit extends GitManager {
         }
 
         const stagedBlob = (
-            (await git.walk({
+            await typedWalk<Uint8Array>({
                 ...this.getRepo(),
                 trees: [git.STAGE()],
                 map,
-            })) as Uint8Array[]
+            })
         ).first();
         const stagedContent = new TextDecoder().decode(stagedBlob);
 
@@ -1323,36 +1323,33 @@ export class IsomorphicGit extends GitManager {
     }
 }
 
-// All because we can't use (for await)...
+type TypedWalkerMap<T> = (
+    filename: string,
+    entries: Array<WalkerEntry | null>
+) => Promise<T | null | undefined>;
 
-// Convert a value to an Async Iterator
-// This will be easier with async generator functions.
+type TypedWalkOptions<T> = Omit<Parameters<typeof git.walk>[0], "map"> & {
+    map: TypedWalkerMap<T>;
+};
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function fromValue(value: unknown) {
-    let queue = [value];
+async function typedWalk<T>(options: TypedWalkOptions<T>): Promise<T[]> {
+    const result: unknown = await git.walk(options);
+    if (!Array.isArray(result)) {
+        throw new TypeError("isomorphic-git walk returned a non-array result");
+    }
+    return result as T[];
+}
+
+function arrayBufferToAsyncIterator(
+    buffer: ArrayBuffer
+): AsyncIterableIterator<Uint8Array> {
+    const iterator = [new Uint8Array(buffer)].values();
     return {
-        next() {
-            return Promise.resolve({
-                done: queue.length === 0,
-                value: queue.pop(),
-            });
-        },
-        return() {
-            queue = [];
-            return {};
-        },
+        next: () => Promise.resolve(iterator.next()),
         [Symbol.asyncIterator]() {
             return this;
         },
     };
-}
-
-// eslint-disable-next-line @typescript-eslint/require-await
-async function* arrayBufferToAsyncIterator(
-    buffer: ArrayBuffer
-): AsyncIterableIterator<Uint8Array> {
-    yield new Uint8Array(buffer);
 }
 
 async function asyncIteratorToArrayBuffer(

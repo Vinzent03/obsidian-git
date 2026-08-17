@@ -2,6 +2,7 @@
     import { moment } from "obsidian";
     import type ObsidianGit from "src/main";
     import type { LogEntry } from "src/types";
+    import { getTooltipSide } from "src/utils";
     import { slide } from "svelte/transition";
     import type HistoryView from "../historyView";
     import LogFileComponent from "./logFileComponent.svelte";
@@ -22,10 +23,7 @@
         children: plugin.gitManager.getTreeStructure(log.diff.files),
     });
 
-    let side = $derived(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
-    );
+    let side = $derived(getTooltipSide(view.leaf));
     let isCollapsed = $state(true);
     let closed = $state<Record<string, boolean>>({});
 

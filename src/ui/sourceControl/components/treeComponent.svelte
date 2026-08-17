@@ -10,7 +10,11 @@
     import FileComponent from "./fileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";
-    import { arrayProxyWithNewLength, mayTriggerFileMenu } from "src/utils";
+    import {
+        arrayProxyWithNewLength,
+        getTooltipSide,
+        mayTriggerFileMenu,
+    } from "src/utils";
     import TooManyFilesComponent from "./tooManyFilesComponent.svelte";
     import { onMount } from "svelte";
     interface Props {
@@ -37,10 +41,7 @@
                 closed[entity.title] = true;
         }
     });
-    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-    let side = $derived(
-        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
-    );
+    let side = $derived(getTooltipSide(view.leaf));
 
     function stage(event: MouseEvent, path: string) {
         event.stopPropagation();

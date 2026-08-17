@@ -4,9 +4,12 @@ import type { App, ItemView, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
 
+type WorkspaceRootWithSide = {
+    readonly side?: "left" | "right";
+};
+
 export function assertNever(x: never): never {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    throw new Error(`Unexpected object: ${x}`);
+    throw new Error(`Unexpected object: ${String(x)}`);
 }
 
 export function plural(
@@ -48,6 +51,11 @@ export function getNewLeaf(
     return leaf;
 }
 
+export function getTooltipSide(leaf: WorkspaceLeaf): "left" | "right" {
+    const root = leaf.getRoot() as unknown as WorkspaceRootWithSide;
+    return root.side === "left" ? "right" : "left";
+}
+
 export function mayTriggerFileMenu(
     app: App,
     event: MouseEvent,
@@ -83,8 +91,7 @@ export function mayTriggerFileMenu(
  * During runtime, an error will be thrown, if executed.
  */
 export function impossibleBranch(x: never): never {
-    /* eslint-disable-next-line @typescript-eslint/restrict-plus-operands */
-    throw new Error("Impossible branch: " + x);
+    throw new Error(`Impossible branch: ${String(x)}`);
 }
 
 export function rgbToString(rgb: RGB): string {
