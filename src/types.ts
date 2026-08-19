@@ -34,7 +34,7 @@ export interface ObsidianGitSettings {
     /**
      * Whether to squash all local unpushed commits into a single commit right
      * before pushing on commit-and-sync. Only rewrites unpushed history, so no
-     * force-push is required. Desktop (SimpleGit) only.
+     * force-push is required.
      */
     squashCommitsBeforePush: boolean;
     /**
@@ -114,9 +114,6 @@ export interface Status {
     changed: FileStatusResult[];
     staged: FileStatusResult[];
 
-    /*
-     * Only available for `SimpleGit` gitManager
-     */
     conflicted: string[];
 }
 
@@ -146,6 +143,12 @@ export interface BlameCommit {
     summary: string;
     isZeroCommit: boolean; // true, if hash is 000...000
 }
+
+export const zeroCommit: BlameCommit = {
+    hash: "000000",
+    isZeroCommit: true,
+    summary: "",
+};
 
 /**
  * See https://git-scm.com/docs/git-blame#_the_porcelain_format
@@ -367,6 +370,12 @@ export enum FileType {
 export class NoNetworkError extends Error {
     constructor(public readonly originalError: string) {
         super("No network connection available");
+    }
+}
+
+export class UserCanceledError extends Error {
+    constructor() {
+        super("The user canceled the operation");
     }
 }
 

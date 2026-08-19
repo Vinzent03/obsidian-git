@@ -1,4 +1,3 @@
-import { Errors } from "isomorphic-git";
 import type { Debouncer, Menu, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import {
     debounce,
@@ -30,8 +29,7 @@ import {
     SPLIT_DIFF_VIEW_CONFIG,
 } from "./constants";
 import type { GitManager } from "./gitManager/gitManager";
-import { IsomorphicGit } from "./gitManager/isomorphicGit";
-import { SimpleGit } from "./gitManager/simpleGit";
+import { WasmGit } from "./gitManager/wasmGit/wasmGit";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
 import Tools from "./tools";
 import type {
@@ -41,7 +39,12 @@ import type {
     Status,
     UnstagedFile,
 } from "./types";
-import { GitOperation, mergeSettingsByPriority, NoNetworkError } from "./types";
+import {
+    GitOperation,
+    mergeSettingsByPriority,
+    NoNetworkError,
+    UserCanceledError,
+} from "./types";
 import DiffView from "./ui/diff/diffView";
 import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
@@ -532,10 +535,6 @@ export default class ObsidianGit extends Plugin {
         await this.saveData(this.settings);
     }
 
-    get useSimpleGit(): boolean {
-        return Platform.isDesktopApp;
-    }
-
     async init({ fromReload = false }): Promise<void> {
         if (this.localStorage.getPluginDisabled()) {
             // This is already guarded in `onload`, but we also guard here to
@@ -551,12 +550,7 @@ export default class ObsidianGit extends Plugin {
         }
 
         try {
-            if (this.useSimpleGit) {
-                this.gitManager = new SimpleGit(this);
-                await (this.gitManager as SimpleGit).setGitInstance();
-            } else {
-                this.gitManager = new IsomorphicGit(this);
-            }
+            this.gitManager = new WasmGit(this);
 
             const result = await this.gitManager.checkRequirements();
             const pausedAutomatics = this.localStorage.getPausedAutomatics();
@@ -653,13 +647,10 @@ export default class ObsidianGit extends Plugin {
         if (url) {
             const confirmOption = "Vault Root";
             let dir = await new GeneralModal(this, {
-                options:
-                    this.gitManager instanceof IsomorphicGit
-                        ? [confirmOption]
-                        : [],
+                options: [confirmOption],
                 placeholder:
                     "Enter directory for clone. It needs to be empty or not existent.",
-                allowEmpty: this.gitManager instanceof IsomorphicGit,
+                allowEmpty: true,
             }).openAndGetResult();
             if (dir == undefined) return;
             if (dir === confirmOption) {
@@ -723,7 +714,7 @@ export default class ObsidianGit extends Plugin {
             new Notice(`Cloning new repo into "${dir}"`);
             const oldBase = this.settings.basePath;
             const customDir = dir && dir !== ".";
-            //Set new base path before clone to ensure proper .git/index file location in isomorphic-git
+            //Set new base path before clone so the wasm-git engine mirrors the correct target directory
             if (customDir) {
                 this.settings.basePath = dir;
             }
@@ -770,16 +761,14 @@ export default class ObsidianGit extends Plugin {
             this.displayMessage("Pull: Everything is up-to-date");
         }
 
-        if (this.gitManager instanceof SimpleGit) {
-            const status = await this.updateCachedStatus();
-            if (status.conflicted.length > 0) {
-                this.displayError(
-                    `You have conflicts in ${status.conflicted.length} ${
-                        status.conflicted.length == 1 ? "file" : "files"
-                    }`
-                );
-                await this.handleConflict(status.conflicted);
-            }
+        const status = await this.updateCachedStatus();
+        if (status.conflicted.length > 0) {
+            this.displayError(
+                `You have conflicts in ${status.conflicted.length} ${
+                    status.conflicted.length == 1 ? "file" : "files"
+                }`
+            );
+            await this.handleConflict(status.conflicted);
         }
 
         this.app.workspace.trigger("obsidian-git:refresh");
@@ -853,67 +842,36 @@ export default class ObsidianGit extends Plugin {
         try {
             let hadConflict = this.localStorage.getConflict();
 
-            let status: Status | undefined;
             let stagedFiles: { vaultPath: string; path: string }[] = [];
             let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
 
-            if (this.gitManager instanceof SimpleGit) {
-                await this.mayDeleteConflictFile();
-                status = await this.updateCachedStatus();
+            await this.mayDeleteConflictFile();
+            const status = await this.updateCachedStatus();
 
-                //Should not be necessary, but just in case
-                if (status.conflicted.length == 0) {
-                    hadConflict = false;
-                }
-
-                // check for conflict files on auto backup
-                if (fromAuto && status.conflicted.length > 0) {
-                    this.displayError(
-                        `Did not commit, because you have conflicts in ${
-                            status.conflicted.length
-                        } ${
-                            status.conflicted.length == 1 ? "file" : "files"
-                        }. Please resolve them and commit per command.`
-                    );
-                    await this.handleConflict(status.conflicted);
-                    return false;
-                }
-                stagedFiles = status.staged;
-
-                // This typecast is only needed to hide the fact that `type` is missing, but that is only needed for isomorphic-git
-                unstagedFiles = status.changed as unknown as (UnstagedFile & {
-                    vaultPath: string;
-                })[];
-            } else {
-                // isomorphic-git section
-
-                if (fromAuto && hadConflict) {
-                    // isomorphic-git doesn't have a way to detect current
-                    // conflicts, they are only detected on commit
-                    //
-                    // Conflicts should only be resolved by manually committing.
-                    this.displayError(
-                        `Did not commit, because you have conflicts. Please resolve them and commit per command.`
-                    );
-                    return false;
-                } else {
-                    if (hadConflict) {
-                        await this.mayDeleteConflictFile();
-                    }
-                    const gitManager = this.gitManager as IsomorphicGit;
-                    if (onlyStaged) {
-                        stagedFiles = await gitManager.getStagedFiles();
-                    } else {
-                        const res = await gitManager.getUnstagedFiles();
-                        unstagedFiles = res.map(({ path, type }) => ({
-                            vaultPath:
-                                this.gitManager.getRelativeVaultPath(path),
-                            path,
-                            type,
-                        }));
-                    }
-                }
+            //Should not be necessary, but just in case
+            if (status.conflicted.length == 0) {
+                hadConflict = false;
             }
+
+            // check for conflict files on auto backup
+            if (fromAuto && status.conflicted.length > 0) {
+                this.displayError(
+                    `Did not commit, because you have conflicts in ${
+                        status.conflicted.length
+                    } ${
+                        status.conflicted.length == 1 ? "file" : "files"
+                    }. Please resolve them and commit per command.`
+                );
+                await this.handleConflict(status.conflicted);
+                return false;
+            }
+            stagedFiles = status.staged;
+
+            // This typecast is only needed to hide the fact that `type` is
+            // missing. It is only accessed on managers that provide it.
+            unstagedFiles = status.changed as unknown as (UnstagedFile & {
+                vaultPath: string;
+            })[];
 
             if (
                 await this.tools.hasTooBigFiles(
@@ -961,7 +919,7 @@ export default class ObsidianGit extends Plugin {
 
                     // On desktop may run a script to get the commit message
                 } else if (
-                    this.gitManager instanceof SimpleGit &&
+                    Platform.isDesktopApp &&
                     this.settings.commitMessageScript
                 ) {
                     const templateScript = this.settings.commitMessageScript;
@@ -998,10 +956,15 @@ export default class ObsidianGit extends Plugin {
                         }
                     }
 
+                    const adapter = this.app.vault.adapter as FileSystemAdapter;
+                    const vaultRoot = adapter.getBasePath();
+                    const cwd = this.settings.basePath
+                        ? path.join(vaultRoot, this.settings.basePath)
+                        : vaultRoot;
                     const res = await spawnAsync(
                         shPath,
                         ["-c", formattedScript],
-                        { cwd: this.gitManager.absoluteRepoPath }
+                        { cwd }
                     );
                     if (res.code != 0) {
                         this.displayError(res.stderr);
@@ -1036,9 +999,7 @@ export default class ObsidianGit extends Plugin {
                 }
 
                 // Handle eventually resolved conflicts
-                if (this.gitManager instanceof SimpleGit) {
-                    await this.updateCachedStatus();
-                }
+                await this.updateCachedStatus();
 
                 let roughly = false;
                 if (committedFiles === undefined) {
@@ -1047,7 +1008,7 @@ export default class ObsidianGit extends Plugin {
                         unstagedFiles.length + stagedFiles.length || 0;
                 }
                 if (committedFiles === 0) {
-                    // simple-git resolves with { changes: 0 } instead of
+                    // The git manager may report 0 changes instead of
                     // throwing when there is nothing to commit (e.g. the
                     // detected change was already committed by a previous run).
                     // Report this honestly instead of "Committed 0 files".
@@ -1079,15 +1040,12 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.remotesAreSet())) {
             return false;
         }
-        const hadConflict = this.localStorage.getConflict();
         try {
-            if (this.gitManager instanceof SimpleGit)
-                await this.mayDeleteConflictFile();
+            await this.mayDeleteConflictFile();
 
             // Refresh because of pull
             let status: Status;
             if (
-                this.gitManager instanceof SimpleGit &&
                 (status = await this.updateCachedStatus()).conflicted.length > 0
             ) {
                 this.displayError(
@@ -1097,20 +1055,11 @@ export default class ObsidianGit extends Plugin {
                 );
                 await this.handleConflict(status.conflicted);
                 return false;
-            } else if (
-                this.gitManager instanceof IsomorphicGit &&
-                hadConflict
-            ) {
-                this.displayError(`Cannot push. You have conflicts`);
-                return false;
             }
             // Squash local unpushed commits into one before pushing, so frequent
             // local commits don't clutter the remote history. Only unpushed
             // history is rewritten (no force-push). Conflicts are excluded above.
-            if (
-                this.settings.squashCommitsBeforePush &&
-                this.gitManager instanceof SimpleGit
-            ) {
+            if (this.settings.squashCommitsBeforePush) {
                 await this.gitManager.squashAllUnpushedCommits();
             }
             this.log("Pushing....");
@@ -1318,9 +1267,8 @@ export default class ObsidianGit extends Plugin {
             return true;
         }
         if (
-            this.gitManager instanceof SimpleGit &&
             (await this.gitManager.getConfig("push.autoSetupRemote", "all")) ==
-                "true"
+            "true"
         ) {
             return true;
         }
@@ -1619,7 +1567,7 @@ I strongly recommend to use "Source mode" for viewing the conflicted files. For 
     }
 
     displayError(data: unknown, timeout: number = 10 * 1000): void {
-        if (data instanceof Errors.UserCanceledError) {
+        if (data instanceof UserCanceledError) {
             new Notice("Aborted");
             return;
         }

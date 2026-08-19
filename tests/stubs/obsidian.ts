@@ -175,10 +175,58 @@ export function debounce<T extends unknown[], V>(
     return debouncer;
 }
 
-export function requestUrl(): Promise<{
+export type RequestUrlParam = {
+    url: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string | ArrayBuffer;
+    throw?: boolean;
+};
+
+export type RequestUrlResponse = {
     status: number;
     headers: Record<string, string>;
-    arrayBuffer?: ArrayBuffer;
-}> {
-    return Promise.resolve({ status: 404, headers: {} });
+    arrayBuffer: ArrayBuffer;
+    text: string;
+};
+
+/**
+ * Performs a real HTTP request via fetch, mirroring Obsidian's `requestUrl`
+ * semantics closely enough for the wasm-git HTTP bridge: no redirects hidden,
+ * `throw: false` reports HTTP errors through `status`, and the body is
+ * available as an `arrayBuffer` property.
+ */
+export async function requestUrl(
+    request: RequestUrlParam | string
+): Promise<RequestUrlResponse> {
+    const param = typeof request === "string" ? { url: request } : request;
+    let response: Response;
+    try {
+        response = await fetch(param.url, {
+            method: param.method ?? "GET",
+            headers: param.headers,
+            body:
+                param.body instanceof ArrayBuffer
+                    ? new Uint8Array(param.body)
+                    : param.body,
+        });
+    } catch (error) {
+        throw new Error(
+            `net::ERR_CONNECTION_REFUSED ${error instanceof Error ? error.message : String(error)}`
+        );
+    }
+    if ((param.throw ?? true) && response.status >= 400) {
+        throw new Error(`Request failed, status ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const headers: Record<string, string> = {};
+    response.headers.forEach((value, name) => {
+        headers[name] = value;
+    });
+    return {
+        status: response.status,
+        headers,
+        arrayBuffer,
+        text: new TextDecoder().decode(arrayBuffer),
+    };
 }

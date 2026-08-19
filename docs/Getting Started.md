@@ -40,10 +40,10 @@ Another alternative for iOS is [Working Copy](https://workingcopy.app/).
 
 ## Restrictions
 
-I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implementation of Git in JavaScript, because you cannot use native Git on Android or iOS.
+Desktop and mobile both use [wasm-git](https://github.com/petersalomonsen/wasm-git), a WebAssembly build of [libgit2](https://libgit2.org/). A native Git installation is not required.
 
--   SSH authentication is not supported ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
--   Repo size is limited, because of memory restrictions
+-   SSH authentication is not supported; only HTTP/HTTPS remotes with token or password authentication work
+-   Repo size is limited, because the repository is mirrored into memory for Git operations
 -   Rebase merge strategy is not supported
 -   Submodules are not supported
 

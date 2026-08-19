@@ -42,8 +42,8 @@ We achieve the goal via the following steps:
    file is opened, [lineAuthorProvider](/src/lineAuthor/lineAuthoProvider.ts)
    initiates the asynchronous computation of the
    [LineAuthoring](/src/lineAuthor/model.ts)
-   via [simpleGit.ts](/src/simpleGit.ts) -
-   which parses the output of `git-blame`.
+   via [wasmGit.ts](/src/gitManager/wasmGit/wasmGit.ts) -
+   which parses the output of `lg2 blame`.
 3. Once the `LineAuthoring` is computed, the publish-subscriber-model is notified
    of the new value for the corresponding filepath.
 4. The notified `LineAuthoringSubcriber` creates a new transaction

@@ -2,7 +2,6 @@ import { html } from "diff2html";
 import type { EventRef, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { ItemView, Platform } from "obsidian";
 import { DIFF_VIEW_CONFIG } from "src/constants";
-import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
 import type { DiffViewState } from "src/types";
 
@@ -89,10 +88,7 @@ export default class DiffView extends ItemView {
                 );
                 if (!diff) {
                     if (
-                        this.plugin.gitManager instanceof SimpleGit &&
-                        (await this.plugin.gitManager.isTracked(
-                            this.state.bFile
-                        ))
+                        await this.plugin.gitManager.isTracked(this.state.bFile)
                     ) {
                         // File is tracked but no changes
                         diff = [

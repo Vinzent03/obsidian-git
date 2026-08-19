@@ -5,7 +5,6 @@ import {
     SPLIT_DIFF_VIEW_CONFIG,
 } from "./constants";
 import type ObsidianGit from "./main";
-import { SimpleGit } from "./gitManager/simpleGit";
 import { getNewLeaf, splitRemoteBranch } from "./utils";
 import { GeneralModal } from "./ui/modals/generalModal";
 import type { DiffViewState } from "./types";
@@ -50,11 +49,8 @@ export default class Tools {
                     }
                 }
                 if (over100mb) {
-                    let isFileTrackedByLfs = false;
-                    if (gitManager instanceof SimpleGit) {
-                        isFileTrackedByLfs =
-                            await gitManager.isFileTrackedByLFS(f.path);
-                    }
+                    const isFileTrackedByLfs =
+                        await gitManager.isFileTrackedByLFS(f.path);
                     if (!isFileTrackedByLfs) {
                         tooBigFiles.push(f);
                     }
@@ -142,7 +138,7 @@ export default class Tools {
 
     async runRawCommand() {
         const gitManager = this.plugin.gitManager;
-        if (!(gitManager instanceof SimpleGit)) {
+        if (!gitManager) {
             return;
         }
         const modal = new GeneralModal(this.plugin, {

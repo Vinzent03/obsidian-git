@@ -1,7 +1,7 @@
 import type { Extension } from "@codemirror/state";
 import type { EventRef, TAbstractFile, WorkspaceLeaf } from "obsidian";
-import { MarkdownView, Platform, TFile } from "obsidian";
-import { SimpleGit } from "src/gitManager/simpleGit";
+import { MarkdownView, TFile } from "obsidian";
+import type { GitManager } from "src/gitManager/gitManager";
 import {
     LineAuthorProvider,
     enabledLineAuthorInfoExtensions,
@@ -86,14 +86,11 @@ export class LineAuthoringFeature {
 
     public isAvailableOnCurrentPlatform(): {
         available: boolean;
-        gitManager: SimpleGit;
+        gitManager: GitManager;
     } {
         return {
-            available: this.plg.useSimpleGit && Platform.isDesktopApp,
-            gitManager:
-                this.plg.gitManager instanceof SimpleGit
-                    ? this.plg.gitManager
-                    : undefined!,
+            available: this.plg.gitManager != undefined,
+            gitManager: this.plg.gitManager,
         };
     }
 
