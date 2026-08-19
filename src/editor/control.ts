@@ -88,8 +88,7 @@ export class FileSubscriber {
         // This happens when in the same leaf and `EditorView` a new file is opened
         if (
             this.view?.state.field(subscribeNewEditor, false) != this ||
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-            (this.view as any).destroyed
+            (this.view as unknown as { readonly destroyed: boolean }).destroyed
         ) {
             this.unsubscribeMe(this.lastSeenPath);
             return true;

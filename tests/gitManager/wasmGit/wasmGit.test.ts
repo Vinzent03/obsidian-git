@@ -1,6 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
-import simpleGit, { type SimpleGit } from "simple-git";
 import { describe, expect, it, vi } from "vitest";
 import { WasmGit } from "../../../src/gitManager/wasmGit/wasmGit";
 import {
@@ -13,6 +12,15 @@ import {
     createWasmGitPlugin,
     type WasmGitFakePlugin,
 } from "../../helpers/createWasmGitPlugin";
+import {
+    git,
+    gitCommitCount,
+    gitIsClean,
+    gitIsRepo,
+    gitStaged,
+    gitTags,
+    gitUntracked,
+} from "../../helpers/gitCli";
 import { FsVaultAdapter } from "../../helpers/fsVaultAdapter";
 import { startGitHttpServer } from "../../helpers/gitHttpServer";
 import {
@@ -38,8 +46,6 @@ type VaultFixture = {
     adapter: FsVaultAdapter;
     plugin: WasmGitFakePlugin;
     manager: WasmGit;
-    /** Native git client operating on the vault, for setup and verification. */
-    git: SimpleGit;
 };
 
 function createVault(args?: {
@@ -51,24 +57,23 @@ function createVault(args?: {
     const adapter = new FsVaultAdapter(dir);
     const plugin = createWasmGitPlugin({ adapter, ...args });
     const manager = new WasmGit(plugin);
-    const git = simpleGit({ baseDir: dir, config: ["core.quotepath=off"] });
     withCleanup({
         cleanup: () => {
             manager.unload();
             cleanupTempDirectory(dir);
         },
     });
-    return { dir, adapter, plugin, manager, git };
+    return { dir, adapter, plugin, manager };
 }
 
 /** Initializes a repo with one pushed base commit using native git. */
 async function seedRepo(vault: VaultFixture): Promise<void> {
-    await vault.git.raw(["init", "--initial-branch=main", "."]);
-    await vault.git.addConfig("user.name", "Test User");
-    await vault.git.addConfig("user.email", "test@example.com");
+    await git(vault.dir, ["init", "--initial-branch=main", "."]);
+    await git(vault.dir, ["config", "user.name", "Test User"]);
+    await git(vault.dir, ["config", "user.email", "test@example.com"]);
     writeFileSync(path.join(vault.dir, "note.md"), "base\n");
-    await vault.git.add("note.md");
-    await vault.git.commit("base");
+    await git(vault.dir, ["add", "note.md"]);
+    await git(vault.dir, ["commit", "-m", "base"]);
 }
 
 type RemoteFixture = {
@@ -85,13 +90,8 @@ async function createHttpRemote(credentials?: {
 }): Promise<RemoteFixture> {
     const rootDir = createTempDirectory("obsidian-git-wasm-remote-");
     const remotePath = path.join(rootDir, "remote.git");
-    await simpleGit(rootDir).raw([
-        "init",
-        "--bare",
-        "--initial-branch=main",
-        remotePath,
-    ]);
-    await simpleGit(remotePath).raw(["config", "http.receivepack", "true"]);
+    await git(rootDir, ["init", "--bare", "--initial-branch=main", remotePath]);
+    await git(remotePath, ["config", "http.receivepack", "true"]);
     const server = await startGitHttpServer(rootDir, credentials);
     withCleanup({
         cleanup: () => {
@@ -101,33 +101,32 @@ async function createHttpRemote(credentials?: {
     });
 
     const sideCloneDir = path.join(rootDir, "side-clone");
-    let sideClone: SimpleGit | undefined;
+    let cloned = false;
     return {
         url: `${server.url}/remote.git`,
         remotePath,
         commitToRemote: async (filePath, content) => {
-            if (!sideClone) {
-                await simpleGit(rootDir).raw([
-                    "clone",
-                    remotePath,
-                    sideCloneDir,
+            if (!cloned) {
+                await git(rootDir, ["clone", remotePath, sideCloneDir]);
+                await git(sideCloneDir, ["config", "user.name", "Remote User"]);
+                await git(sideCloneDir, [
+                    "config",
+                    "user.email",
+                    "remote@example.com",
                 ]);
-                sideClone = simpleGit(sideCloneDir);
-                await sideClone.addConfig("user.name", "Remote User");
-                await sideClone.addConfig("user.email", "remote@example.com");
+                cloned = true;
             } else {
-                await sideClone.pull();
+                await git(sideCloneDir, ["pull"]);
             }
             mkdirSync(path.dirname(path.join(sideCloneDir, filePath)), {
                 recursive: true,
             });
             writeFileSync(path.join(sideCloneDir, filePath), content);
-            await sideClone.add(filePath);
-            await sideClone.commit(`remote: ${filePath}`);
-            await sideClone.push(["--quiet"]);
+            await git(sideCloneDir, ["add", filePath]);
+            await git(sideCloneDir, ["commit", "-m", `remote: ${filePath}`]);
+            await git(sideCloneDir, ["push", "--quiet"]);
         },
-        readFromRemote: async (ref) =>
-            (await simpleGit(remotePath).raw(["show", ref])).trim(),
+        readFromRemote: async (ref) => git(remotePath, ["show", ref]),
     };
 }
 
@@ -137,8 +136,8 @@ async function seedRepoWithRemote(
     remote: RemoteFixture
 ): Promise<void> {
     await seedRepo(vault);
-    await vault.git.addRemote("origin", remote.url);
-    await vault.git.raw(["push", "--quiet", "-u", "origin", "main"]);
+    await git(vault.dir, ["remote", "add", "origin", remote.url]);
+    await git(vault.dir, ["push", "--quiet", "-u", "origin", "main"]);
 }
 
 describe("WasmGit.checkRequirements and init", () => {
@@ -151,8 +150,8 @@ describe("WasmGit.checkRequirements and init", () => {
         expect(await vault.manager.checkRequirements()).toBe("valid");
         expect(await vault.adapter.exists(".git/HEAD")).toBe(true);
         // The repository layout is valid for native git too.
-        expect(await vault.git.checkIsRepo()).toBe(true);
-        expect((await vault.git.status()).isClean()).toBe(true);
+        expect(await gitIsRepo(vault.dir)).toBe(true);
+        expect(await gitIsClean(vault.dir)).toBe(true);
     });
 });
 
@@ -163,7 +162,7 @@ describe("WasmGit.status", () => {
         writeFileSync(path.join(vault.dir, "note.md"), "changed\n");
         writeFileSync(path.join(vault.dir, "untracked.md"), "new\n");
         writeFileSync(path.join(vault.dir, "staged.md"), "staged\n");
-        await vault.git.add("staged.md");
+        await git(vault.dir, ["add", "staged.md"]);
 
         const status = await vault.manager.status();
 
@@ -210,15 +209,11 @@ describe("WasmGit staging", () => {
         writeFileSync(path.join(vault.dir, "new.md"), "new\n");
 
         await vault.manager.stage("new.md", true);
-        expect(
-            (await vault.git.raw(["diff", "--cached", "--name-only"])).trim()
-        ).toBe("new.md");
+        expect((await gitStaged(vault.dir)).join("\n")).toBe("new.md");
 
         await vault.manager.unstage("new.md", true);
-        expect(
-            (await vault.git.raw(["diff", "--cached", "--name-only"])).trim()
-        ).toBe("");
-        expect((await vault.git.status()).not_added).toContain("new.md");
+        expect((await gitStaged(vault.dir)).join("\n")).toBe("");
+        expect(await gitUntracked(vault.dir)).toContain("new.md");
     });
 
     it("stages deletions", async () => {
@@ -228,11 +223,7 @@ describe("WasmGit staging", () => {
 
         await vault.manager.stage("note.md", true);
 
-        const status = await vault.git.status();
-        expect(status.deleted.length + status.staged.length).toBeGreaterThan(0);
-        expect(
-            (await vault.git.raw(["diff", "--cached", "--name-only"])).trim()
-        ).toBe("note.md");
+        expect(await gitStaged(vault.dir)).toEqual(["note.md"]);
     });
 
     it("stageAll stages everything including deletions", async () => {
@@ -244,7 +235,7 @@ describe("WasmGit staging", () => {
         await vault.manager.stageAll({});
 
         const staged = (
-            await vault.git.raw(["diff", "--cached", "--name-only"])
+            await git(vault.dir, ["diff", "--cached", "--name-only"])
         )
             .trim()
             .split("\n")
@@ -261,9 +252,7 @@ describe("WasmGit staging", () => {
 
         await vault.manager.unstageAll({});
 
-        expect(
-            (await vault.git.raw(["diff", "--cached", "--name-only"])).trim()
-        ).toBe("");
+        expect((await gitStaged(vault.dir)).join("\n")).toBe("");
     });
 
     it("keeps other files staged when unstaging one", async () => {
@@ -275,9 +264,7 @@ describe("WasmGit staging", () => {
 
         await vault.manager.unstage("one.md", true);
 
-        expect(
-            (await vault.git.raw(["diff", "--cached", "--name-only"])).trim()
-        ).toBe("two.md");
+        expect((await gitStaged(vault.dir)).join("\n")).toBe("two.md");
     });
 
     it("discards working tree changes of a tracked file", async () => {
@@ -314,10 +301,10 @@ describe("WasmGit.commit", () => {
         const changed = await vault.manager.commit({ message: "staged only" });
 
         expect(changed).toBe(1);
-        expect((await vault.git.raw(["log", "-1", "--pretty=%s"])).trim()).toBe(
-            "staged only"
-        );
-        expect((await vault.git.status()).not_added).toContain("unstaged.md");
+        expect(
+            (await git(vault.dir, ["log", "-1", "--pretty=%s"])).trim()
+        ).toBe("staged only");
+        expect(await gitUntracked(vault.dir)).toContain("unstaged.md");
     });
 
     it("commitAll stages and commits everything", async () => {
@@ -331,8 +318,8 @@ describe("WasmGit.commit", () => {
         });
 
         expect(changed).toBe(2);
-        expect((await vault.git.status()).isClean()).toBe(true);
-        expect((await vault.git.raw(["show", "HEAD:note.md"])).trim()).toBe(
+        expect(await gitIsClean(vault.dir)).toBe(true);
+        expect((await git(vault.dir, ["show", "HEAD:note.md"])).trim()).toBe(
             "changed"
         );
     });
@@ -340,12 +327,12 @@ describe("WasmGit.commit", () => {
     it("returns 0 and creates no commit when nothing is staged", async () => {
         const vault = createVault();
         await seedRepo(vault);
-        const headBefore = (await vault.git.raw(["rev-parse", "HEAD"])).trim();
+        const headBefore = (await git(vault.dir, ["rev-parse", "HEAD"])).trim();
 
         const changed = await vault.manager.commit({ message: "empty" });
 
         expect(changed).toBe(0);
-        expect((await vault.git.raw(["rev-parse", "HEAD"])).trim()).toBe(
+        expect((await git(vault.dir, ["rev-parse", "HEAD"])).trim()).toBe(
             headBefore
         );
     });
@@ -360,20 +347,20 @@ describe("WasmGit.commit", () => {
 
         await vault.manager.commit({ message: "second, amended", amend: true });
 
-        expect((await vault.git.raw(["log", "-1", "--pretty=%s"])).trim()).toBe(
-            "second, amended"
-        );
         expect(
-            (await vault.git.raw(["rev-list", "--count", "HEAD"])).trim()
+            (await git(vault.dir, ["log", "-1", "--pretty=%s"])).trim()
+        ).toBe("second, amended");
+        expect(
+            (await git(vault.dir, ["rev-list", "--count", "HEAD"])).trim()
         ).toBe("2");
-        expect((await vault.git.raw(["show", "HEAD:second.md"])).trim()).toBe(
+        expect((await git(vault.dir, ["show", "HEAD:second.md"])).trim()).toBe(
             "second amended"
         );
     });
 
     it("fails with a clear error when the author is not configured", async () => {
         const vault = createVault();
-        await vault.git.raw(["init", "--initial-branch=main", "."]);
+        await git(vault.dir, ["init", "--initial-branch=main", "."]);
         writeFileSync(path.join(vault.dir, "a.md"), "a\n");
 
         await expect(
@@ -514,9 +501,7 @@ describe("WasmGit history", () => {
         ].join("\n");
         await vault.manager.applyPatch(patch);
 
-        expect(await vault.git.status()).toMatchObject({
-            staged: ["note.md"],
-        });
+        expect(await gitStaged(vault.dir)).toEqual(["note.md"]);
         expect(readFileSync(path.join(vault.dir, "note.md"), "utf8")).toBe(
             "base\nworking\n"
         );
@@ -532,7 +517,7 @@ describe("WasmGit history", () => {
 
         // No tracking branch yet — squash is a no-op.
         await vault.manager.squashAllUnpushedCommits();
-        expect((await vault.git.log()).total).toBeGreaterThanOrEqual(3);
+        expect(await gitCommitCount(vault.dir)).toBeGreaterThanOrEqual(3);
     });
 
     it("lsFiles lists tracked paths", async () => {
@@ -588,9 +573,9 @@ describe("WasmGit config and remotes", () => {
 
         await vault.manager.setConfig("core.testvalue", "hello");
         expect(await vault.manager.getConfig("core.testvalue")).toBe("hello");
-        expect((await vault.git.raw(["config", "core.testvalue"])).trim()).toBe(
-            "hello"
-        );
+        expect(
+            (await git(vault.dir, ["config", "core.testvalue"])).trim()
+        ).toBe("hello");
 
         await vault.manager.setConfig("core.testvalue", undefined);
         expect(await vault.manager.getConfig("core.testvalue")).toBeUndefined();
@@ -631,7 +616,7 @@ describe("WasmGit networking", () => {
         const info = await vault.manager.branchInfo();
         expect(info.current).toBe("main");
         // The clone is a fully valid repository for native git too.
-        expect((await vault.git.status()).isClean()).toBe(true);
+        expect(await gitIsClean(vault.dir)).toBe(true);
     });
 
     it("fetches and reports unpushed commits and pushability", async () => {
@@ -672,7 +657,7 @@ describe("WasmGit networking", () => {
 
         expect(pulled!.map((file) => file.path)).toEqual(["from-remote.md"]);
         expect(await vault.adapter.read("from-remote.md")).toBe("incoming\n");
-        expect((await vault.git.status()).isClean()).toBe(true);
+        expect(await gitIsClean(vault.dir)).toBe(true);
     });
 
     it("merges diverged histories on pull", async () => {
@@ -690,7 +675,12 @@ describe("WasmGit networking", () => {
         // A merge commit joins both sides.
         expect(
             (
-                await vault.git.raw(["rev-list", "--merges", "--count", "HEAD"])
+                await git(vault.dir, [
+                    "rev-list",
+                    "--merges",
+                    "--count",
+                    "HEAD",
+                ])
             ).trim()
         ).toBe("1");
     });
@@ -706,7 +696,7 @@ describe("WasmGit networking", () => {
         await vault.manager.pull();
 
         expect(await vault.adapter.read("note.md")).toBe("remote version\n");
-        expect((await vault.git.status()).isClean()).toBe(true);
+        expect(await gitIsClean(vault.dir)).toBe(true);
     });
 
     it("reports conflicts and leaves markers with the none strategy", async () => {
@@ -730,9 +720,18 @@ describe("WasmGit networking", () => {
     it("throws NoNetworkError when the remote is unreachable", async () => {
         const vault = createVault();
         await seedRepo(vault);
-        await vault.git.addRemote("origin", "http://127.0.0.1:9/dead.git");
-        await vault.git.raw(["config", "branch.main.remote", "origin"]);
-        await vault.git.raw(["config", "branch.main.merge", "refs/heads/main"]);
+        await git(vault.dir, [
+            "remote",
+            "add",
+            "origin",
+            "http://127.0.0.1:9/dead.git",
+        ]);
+        await git(vault.dir, ["config", "branch.main.remote", "origin"]);
+        await git(vault.dir, [
+            "config",
+            "branch.main.merge",
+            "refs/heads/main",
+        ]);
         writeFileSync(path.join(vault.dir, "x.md"), "x\n");
         await vault.manager.commitAll({ message: "x" });
 
@@ -835,7 +834,7 @@ describe("WasmGit extended features", () => {
         await vault.manager.tagCreate("v1.0.0");
         expect(await vault.manager.tagList()).toEqual(["v1.0.0"]);
         expect(await vault.manager.describe()).toBe("v1.0.0");
-        expect((await vault.git.tags()).all).toEqual(["v1.0.0"]);
+        expect(await gitTags(vault.dir)).toEqual(["v1.0.0"]);
 
         await vault.manager.tagDelete("v1.0.0");
         expect(await vault.manager.tagList()).toEqual([]);
@@ -851,12 +850,10 @@ describe("WasmGit extended features", () => {
         await vault.manager.revert(hash!);
 
         expect(await vault.adapter.exists("revert-me.md")).toBe(false);
-        expect(
-            (await vault.git.raw(["diff", "--cached", "--name-only"])).trim()
-        ).toBe("revert-me.md");
+        expect((await gitStaged(vault.dir)).join("\n")).toBe("revert-me.md");
         // A follow-up commit works (no sequencer state left behind).
         await vault.manager.commit({ message: "revert commit" });
-        expect((await vault.git.status()).isClean()).toBe(true);
+        expect(await gitIsClean(vault.dir)).toBe(true);
     });
 
     it("runs raw commands and returns their output", async () => {

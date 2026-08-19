@@ -411,10 +411,8 @@ export default class SplitDiffView extends ItemView {
                 diffContextMenu,
             ];
 
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
-            const myView = this;
             const autoSavePlugin = ViewPlugin.define((view) => ({
-                update(update) {
+                update: (update) => {
                     if (
                         update.docChanged &&
                         !update.transactions.some((tr) =>
@@ -422,7 +420,7 @@ export default class SplitDiffView extends ItemView {
                         )
                     ) {
                         const lhsContent = view.state.doc.toString();
-                        myView.fileSaveDebouncer(lhsContent);
+                        this.fileSaveDebouncer(lhsContent);
                     }
                 },
             }));

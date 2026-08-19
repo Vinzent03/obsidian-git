@@ -5,8 +5,6 @@
  * License: MIT
  * Original Copyright (c) 2020 Lewis Russell
  */
-import type { GitCompareResult } from "./hunkState";
-
 export type HunkType = "add" | "change" | "delete";
 
 export interface HunkNode {
@@ -511,44 +509,44 @@ export abstract class Hunks {
         return ret;
     }
 
-    static computeStagedHunks(
-        headHunks: Hunk[],
-        hunks: Hunk[],
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        compare: GitCompareResult
-    ): Hunk[] {
-        const filteredHunks = Hunks.filterCommon(headHunks, hunks)!;
-        //
-        // // Update staged hunk added lines to match compareText and not
-        // // include unstaged changes
-        // const compareTextLines = compare.compareText!.split("\n");
-        // for (const hunk of filteredHunks) {
-        //     for (let i = 0; i < hunk.added.lines.length; i++) {
-        //         hunk.added.lines[i] =
-        //             compareTextLines[Math.max(0, hunk.removed.start - 1) + i];
-        //     }
-        //     let offset = 0;
-        //     for (
-        //         let i = 0;
-        //         i <
-        //         Math.min(hunk.added.lines.length, hunk.removed.lines.length);
-        //         i++
-        //     ) {
-        //         if (hunk.added.lines[i] != hunk.removed.lines[i]) {
-        //             break;
-        //         } else {
-        //             offset++;
-        //         }
-        //     }
-        //     if (offset > 0) {
-        //         hunk.added.lines = hunk.added.lines.slice(offset);
-        //         hunk.removed.lines = hunk.removed.lines.slice(offset);
-        //         hunk.added.start += offset;
-        //         hunk.removed.start += offset;
-        //         hunk.added.count -= offset;
-        //         hunk.removed.count -= offset;
-        //     }
-        // }
-        return filteredHunks;
-    }
+    // static computeStagedHunks(
+    //     headHunks: Hunk[],
+    //     hunks: Hunk[],
+    //     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Keep the comparison context in the staged-hunk API.
+    //     compare: GitCompareResult
+    // ): Hunk[] {
+    //     const filteredHunks = Hunks.filterCommon(headHunks, hunks)!;
+    //
+    // // Update staged hunk added lines to match compareText and not
+    // // include unstaged changes
+    // const compareTextLines = compare.compareText!.split("\n");
+    // for (const hunk of filteredHunks) {
+    //     for (let i = 0; i < hunk.added.lines.length; i++) {
+    //         hunk.added.lines[i] =
+    //             compareTextLines[Math.max(0, hunk.removed.start - 1) + i];
+    //     }
+    //     let offset = 0;
+    //     for (
+    //         let i = 0;
+    //         i <
+    //         Math.min(hunk.added.lines.length, hunk.removed.lines.length);
+    //         i++
+    //     ) {
+    //         if (hunk.added.lines[i] != hunk.removed.lines[i]) {
+    //             break;
+    //         } else {
+    //             offset++;
+    //         }
+    //     }
+    //     if (offset > 0) {
+    //         hunk.added.lines = hunk.added.lines.slice(offset);
+    //         hunk.removed.lines = hunk.removed.lines.slice(offset);
+    //         hunk.added.start += offset;
+    //         hunk.removed.start += offset;
+    //         hunk.added.count -= offset;
+    //         hunk.removed.count -= offset;
+    //     }
+    // }
+    //     return filteredHunks;
+    // }
 }

@@ -28,18 +28,16 @@ export default class HistoryView extends ItemView implements HoverParent {
         return HISTORY_VIEW_CONFIG.icon;
     }
 
-    onClose(): Promise<void> {
+    async onClose(): Promise<void> {
         if (this._view) {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-            unmount(this._view);
+            await unmount(this._view);
         }
         return super.onClose();
     }
 
-    reload(): void {
+    async reload(): Promise<void> {
         if (this._view) {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-            unmount(this._view);
+            await unmount(this._view);
         }
         this._view = mount(HistoryViewComponent, {
             target: this.contentEl,
@@ -50,8 +48,8 @@ export default class HistoryView extends ItemView implements HoverParent {
         });
     }
 
-    onOpen(): Promise<void> {
-        this.reload();
+    async onOpen(): Promise<void> {
+        await this.reload();
         return super.onOpen();
     }
 }
