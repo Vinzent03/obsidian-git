@@ -1,7 +1,6 @@
 import type { Debouncer, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { debounce, ItemView, Platform, setIcon } from "obsidian";
 import { SPLIT_DIFF_VIEW_CONFIG } from "src/constants";
-import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
 import type { DiffViewState } from "src/types";
 
@@ -16,7 +15,6 @@ import {
     lineNumbers,
     ViewPlugin,
 } from "@codemirror/view";
-import { GitError } from "simple-git";
 import { Hunks } from "src/editor/signs/hunks";
 import { rawHunkFromChunk, rawHunksToHunks } from "src/editor/signs/diff";
 import { diffContextMenu } from "src/ui/diff/contextMenu";
@@ -184,18 +182,16 @@ export default class SplitDiffView extends ItemView {
 
     async gitShow(commitHash: string, file: string): Promise<string> {
         try {
-            return await (this.plugin.gitManager as SimpleGit).show(
-                commitHash,
-                file,
-                false
-            );
+            return await this.plugin.gitManager.show(commitHash, file, false);
         } catch (error) {
-            if (error instanceof GitError) {
+            if (error instanceof Error) {
                 if (
                     error.message.includes("does not exist") ||
                     error.message.includes("unknown revision or path") ||
                     error.message.includes("exists on disk, but not in") ||
-                    error.message.includes("fatal: bad object")
+                    error.message.includes("fatal: bad object") ||
+                    error.message.includes("failed to") ||
+                    error.message.includes("Unable to")
                 ) {
                     // Occurs when trying to run diff with an object that's actually a nested respository
                     if (error.message.includes("fatal: bad object")) {
@@ -320,7 +316,7 @@ export default class SplitDiffView extends ItemView {
                     "100644",
                     this.state.bRef != undefined
                 ).join("\n") + "\n";
-            await (this.plugin.gitManager as SimpleGit).applyPatch(patch);
+            await this.plugin.gitManager.applyPatch(patch);
 
             this.plugin.app.workspace.trigger("obsidian-git:refresh");
         };
@@ -463,8 +459,7 @@ export default class SplitDiffView extends ItemView {
             ]);
 
             const showButtons =
-                this.plugin.gitManager instanceof SimpleGit &&
-                (this.state.bRef === undefined || this.state.bRef === "");
+                this.state.bRef === undefined || this.state.bRef === "";
 
             this.mergeView = new MergeView({
                 b: bState,

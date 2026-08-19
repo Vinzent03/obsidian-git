@@ -12,11 +12,11 @@ All setup instructions (including mobile), common issues, tips, and advanced con
 
 - 🔁 **Automatic commit-and-sync** (commit, pull, and push) on a schedule.
 - 📥 **Auto-pull on Obsidian startup**
-- 📂 **Submodule support** for managing multiple repositories (desktop only and opt-in)
+- 📂 **Stash, tags, and revert** via the wasm-git (libgit2) engine
 - 🔧 **Source Control View** to stage/unstage, commit and diff files - Open it with the `Open source control view` command.
 - 📜 **History View** for browsing commit logs and changed files - Open it with the `Open history view` command.
 - 🔍 **Diff View** for viewing changes in a file - Open it with the `Open diff view` command.
-- 📝 **Signs in the editor** to indicate added, modified, and deleted lines/hunks (desktop only).
+- 📝 **Signs in the editor** to indicate added, modified, and deleted lines/hunks.
 - GitHub integration to open files and history in your browser
 
 > For detailed file history, consider pairing this plugin with the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin.
@@ -84,32 +84,33 @@ View line-by-line changes directly in the editor with added, modified, and delet
   - `Edit .gitignore`
   - `Add file to .gitignore`: Add current file to `.gitignore`
 
-## 💻 Desktop Notes
+## 💻 Engine notes
+
+Desktop and mobile both use [wasm-git](https://github.com/petersalomonsen/wasm-git), a WebAssembly build of [libgit2](https://libgit2.org/). A native Git installation is no longer required.
 
 ### 🔐 Authentication
 
-Some Git services may require further setup for HTTPS/SSH authentication. Refer to the [Authentication Guide](https://publish.obsidian.md/git-doc/Authentication)
+Only HTTP/HTTPS remotes with a username and password or personal access token are supported. SSH remotes are not supported. Refer to the [Authentication Guide](https://publish.obsidian.md/git-doc/Authentication) for token setup.
 
-### Obsidian on Linux
+### Limitations
 
-- ⚠️  Snap is not supported due to its sandboxing restrictions.
-- ⚠️  Flatpak is not recommended, because it doesn't have access to all system files. They are actively fixing many issues, but there are still issues. Especially with more advanced setups.
-- ✅ Please use AppImage or a full access installation of your system's package manager instead ([Linux installation guide](https://publish.obsidian.md/git-doc/Installation#Linux))
+- No **SSH authentication**
+- Limited repo size, because the repository is mirrored into memory for Git operations
+- No rebase merge strategy
+- No submodules or Git LFS
+
+### Extra commands
+
+- Stash (`Stash changes`, `Pop latest stash`, `Apply stash`, `Drop stash`)
+- Tags (`Create tag`, `Delete tag`)
+- Revert commits (`Revert commit`)
+- Raw libgit2 (`lg2`) commands via the `Raw command` palette entry
 
 ## 📱 Mobile Support (⚠️  Experimental)
 
 The Git implementation on mobile is **very unstable**! I would not recommend using this plugin on mobile, but try other syncing services.
 
 One such alternative is [GitSync](https://github.com/ViscousPot/GitSync), which is available on both Android and iOS. It is not associated with this plugin, but it may be a better option for mobile users. A tutorial for setting it up can be found [here](https://viscouspotenti.al/posts/gitsync-all-devices-tutorial).
-
-> 🧪 The Git plugin works on mobile thanks to [isomorphic-git](https://isomorphic-git.org/), a JavaScript-based re-implementation of Git - but it comes with serious limitations and issues. It is not possible for an Obsidian plugin to use a native Git installation on Android or iOS.
-
-### ❌ Mobile Feature Limitations
-
-- No **SSH authentication** ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
-- Limited repo size, because of memory restrictions
-- No rebase merge strategy
-- No submodules support
 
 ### ⚠️ Performance Caveats
 

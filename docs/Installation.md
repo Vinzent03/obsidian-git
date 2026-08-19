@@ -4,7 +4,7 @@ aliases:
 ---
 
 > [!important]
-> Although the plugin itself is desktop platform independent, an incorrect installation of Obsidian or Git may break the plugin.
+> The plugin embeds its own Git engine ([wasm-git](https://github.com/petersalomonsen/wasm-git)). A native Git installation is not required to use the plugin. The OS-specific Git install notes below are only relevant if you also want the `git` CLI on your system.
 
 ## Plugin installation
 

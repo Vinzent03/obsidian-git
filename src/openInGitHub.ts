@@ -1,7 +1,6 @@
 import type { Editor, TFile } from "obsidian";
 import { Notice } from "obsidian";
 import type { GitManager } from "./gitManager/gitManager";
-import { SimpleGit } from "./gitManager/simpleGit";
 
 export async function openLineInGitHub(
     editor: Editor,
@@ -67,50 +66,10 @@ async function getData(
     | { result: "failure"; reason: string }
 > {
     const branchInfo = await manager.branchInfo();
-    let remoteBranch = branchInfo.tracking;
-    let branch = branchInfo.current;
+    const remoteBranch = branchInfo.tracking;
+    const branch = branchInfo.current;
     let remoteUrl: string | undefined = undefined;
-    let filePath = manager.getRelativeRepoPath(file.path);
-
-    if (manager instanceof SimpleGit) {
-        const submodule = await manager.getSubmoduleOfFile(
-            manager.getRelativeRepoPath(file.path)
-        );
-        if (submodule) {
-            filePath = submodule.relativeFilepath;
-            const status = await manager.git
-                .cwd({
-                    path: submodule.submodule,
-                    root: false,
-                })
-                .status();
-
-            remoteBranch = status.tracking || undefined;
-            branch = status.current || undefined;
-            if (remoteBranch) {
-                const remote = remoteBranch.substring(
-                    0,
-                    remoteBranch.indexOf("/")
-                );
-
-                const config = await manager.git
-                    .cwd({
-                        path: submodule.submodule,
-                        root: false,
-                    })
-                    .getConfig(`remote.${remote}.url`, "local");
-
-                if (config.value != null) {
-                    remoteUrl = config.value;
-                } else {
-                    return {
-                        result: "failure",
-                        reason: "Failed to get remote url of submodule",
-                    };
-                }
-            }
-        }
-    }
+    const filePath = manager.getRelativeRepoPath(file.path);
 
     if (remoteBranch == null) {
         return {

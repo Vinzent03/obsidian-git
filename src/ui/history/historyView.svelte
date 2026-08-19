@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { setIcon } from "obsidian";
-    import { SimpleGit } from "src/gitManager/simpleGit";
+    import { Platform, setIcon } from "obsidian";
     import type ObsidianGit from "src/main";
     import type { LogEntry } from "src/types";
     import { onMount } from "svelte";
@@ -67,10 +66,10 @@
             return;
         }
         loading = true;
-        const isSimpleGit = plugin.gitManager instanceof SimpleGit;
+        const pageSize = Platform.isMobileApp ? 10 : 50;
         let limit;
         if ((logs?.length ?? 0) == 0) {
-            limit = isSimpleGit ? 50 : 10;
+            limit = pageSize;
         } else {
             limit = logs!.length;
         }
@@ -83,8 +82,7 @@
             return;
         }
         loading = true;
-        const isSimpleGit = plugin.gitManager instanceof SimpleGit;
-        const limit = isSimpleGit ? 50 : 10;
+        const limit = Platform.isMobileApp ? 10 : 50;
         const newLogs = await plugin.gitManager.log(
             undefined,
             false,

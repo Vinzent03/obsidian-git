@@ -1,6 +1,6 @@
-import { Notice, Platform, TFolder, WorkspaceLeaf } from "obsidian";
+import { Notice, TFolder, WorkspaceLeaf } from "obsidian";
 import { HISTORY_VIEW_CONFIG, SOURCE_CONTROL_VIEW_CONFIG } from "./constants";
-import { SimpleGit } from "./gitManager/simpleGit";
+import { WasmGit } from "./gitManager/wasmGit/wasmGit";
 import ObsidianGit from "./main";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
@@ -241,21 +241,19 @@ export function addCommmands(plugin: ObsidianGit) {
         },
     });
 
-    if (Platform.isDesktopApp) {
-        plugin.addCommand({
-            id: "commit-amend-staged-specified-message",
-            name: "Amend staged",
-            callback: () =>
-                plugin.promiseQueue.addTask(() =>
-                    plugin.commit({
-                        fromAuto: false,
-                        requestCustomMessage: true,
-                        onlyStaged: true,
-                        amend: true,
-                    })
-                ),
-        });
-    }
+    plugin.addCommand({
+        id: "commit-amend-staged-specified-message",
+        name: "Amend staged",
+        callback: () =>
+            plugin.promiseQueue.addTask(() =>
+                plugin.commit({
+                    fromAuto: false,
+                    requestCustomMessage: true,
+                    onlyStaged: true,
+                    amend: true,
+                })
+            ),
+    });
 
     plugin.addCommand({
         id: "commit-smart-specified-message",
@@ -475,8 +473,7 @@ export function addCommmands(plugin: ObsidianGit) {
         checkCallback: (checking) => {
             const gitManager = plugin.gitManager;
             if (checking) {
-                // only available on desktop
-                return gitManager instanceof SimpleGit;
+                return gitManager != undefined;
             } else {
                 plugin.tools
                     .runRawCommand()
@@ -485,6 +482,8 @@ export function addCommmands(plugin: ObsidianGit) {
             }
         },
     });
+
+    addWasmGitCommands(plugin);
 
     plugin.addCommand({
         id: "toggle-line-author-info",
@@ -570,5 +569,134 @@ export function addCommmands(plugin: ObsidianGit) {
             plugin.hunkActions.goToHunk("prev");
             return true;
         },
+    });
+}
+
+/**
+ * Commands for git features that the wasm-git engine offers beyond the shared
+ * GitManager contract. On desktop the same operations are available through
+ * the "Raw command" palette entry backed by native git.
+ */
+function addWasmGitCommands(plugin: ObsidianGit) {
+    const app = plugin.app;
+
+    const wasmGitCommand = (
+        id: string,
+        name: string,
+        action: (gitManager: WasmGit) => Promise<void>
+    ) => {
+        plugin.addCommand({
+            id,
+            name,
+            checkCallback: (checking) => {
+                const gitManager = plugin.gitManager;
+                if (checking) {
+                    return gitManager instanceof WasmGit;
+                }
+                if (!(gitManager instanceof WasmGit)) return false;
+                plugin.promiseQueue.addTask(async () => {
+                    if (!(await plugin.isAllInitialized())) return;
+                    try {
+                        await action(gitManager);
+                        app.workspace.trigger("obsidian-git:refresh");
+                    } catch (e) {
+                        plugin.displayError(e);
+                    }
+                });
+                return true;
+            },
+        });
+    };
+
+    wasmGitCommand("stash-push", "Stash changes", async (gitManager) => {
+        await gitManager.stashPush();
+        plugin.displayMessage("Stashed changes");
+    });
+
+    wasmGitCommand("stash-pop", "Pop latest stash", async (gitManager) => {
+        await gitManager.stashPop();
+        plugin.displayMessage("Applied and dropped latest stash");
+    });
+
+    wasmGitCommand("stash-apply", "Apply stash", async (gitManager) => {
+        const stashes = await gitManager.stashList();
+        if (stashes.length === 0) {
+            new Notice("No stashes found");
+            return;
+        }
+        const pick = await new GeneralModal(plugin, {
+            options: stashes,
+            placeholder: "Select the stash to apply",
+            onlySelection: true,
+        }).openAndGetResult();
+        if (pick === undefined) return;
+        await gitManager.stashApply(stashes.indexOf(pick));
+        plugin.displayMessage("Applied stash");
+    });
+
+    wasmGitCommand("stash-drop", "Drop stash", async (gitManager) => {
+        const stashes = await gitManager.stashList();
+        if (stashes.length === 0) {
+            new Notice("No stashes found");
+            return;
+        }
+        const pick = await new GeneralModal(plugin, {
+            options: stashes,
+            placeholder: "Select the stash to drop",
+            onlySelection: true,
+        }).openAndGetResult();
+        if (pick === undefined) return;
+        await gitManager.stashDrop(stashes.indexOf(pick));
+        plugin.displayMessage("Dropped stash");
+    });
+
+    wasmGitCommand("create-tag", "Create tag", async (gitManager) => {
+        const name = await new GeneralModal(plugin, {
+            placeholder: "Enter tag name",
+        }).openAndGetResult();
+        if (!name) return;
+        const message = await new GeneralModal(plugin, {
+            placeholder:
+                "Enter tag message. Leave empty for a lightweight tag.",
+            allowEmpty: true,
+        }).openAndGetResult();
+        if (message === undefined) return;
+        await gitManager.tagCreate(name, message === "" ? undefined : message);
+        plugin.displayMessage(`Created tag '${name}'`);
+    });
+
+    wasmGitCommand("delete-tag", "Delete tag", async (gitManager) => {
+        const tags = await gitManager.tagList();
+        if (tags.length === 0) {
+            new Notice("No tags found");
+            return;
+        }
+        const pick = await new GeneralModal(plugin, {
+            options: tags,
+            placeholder: "Select the tag to delete",
+            onlySelection: true,
+        }).openAndGetResult();
+        if (pick === undefined) return;
+        await gitManager.tagDelete(pick);
+        plugin.displayMessage(`Deleted tag '${pick}'`);
+    });
+
+    wasmGitCommand("revert-commit", "Revert commit", async (gitManager) => {
+        const commits = await gitManager.log(undefined, false, 20);
+        const options = commits.map(
+            (commit) =>
+                `${commit.hash.substring(0, 8)} ${commit.message.split("\n")[0]}`
+        );
+        const pick = await new GeneralModal(plugin, {
+            options,
+            placeholder: "Select the commit to revert",
+            onlySelection: true,
+        }).openAndGetResult();
+        if (pick === undefined) return;
+        const commit = commits[options.indexOf(pick)]!;
+        await gitManager.revert(commit.hash);
+        plugin.displayMessage(
+            "Reverted commit. The revert is staged and ready to commit."
+        );
     });
 }

@@ -3,6 +3,7 @@ import { type App, moment, Platform } from "obsidian";
 import type ObsidianGit from "../main";
 import { GitOperation } from "../types";
 import type {
+    Blame,
     BranchInfo,
     DiffFile,
     FileStatusResult,
@@ -146,6 +147,38 @@ export abstract class GitManager {
     ): Promise<string>;
 
     abstract getLastCommitTime(): Promise<Date | undefined>;
+
+    abstract blame(
+        path: string,
+        trackMovement?: "inactive" | "same-commit" | "all-commits",
+        ignoreWhitespace?: boolean
+    ): Promise<Blame | "untracked">;
+
+    abstract isTracked(path: string): Promise<boolean>;
+
+    abstract hashObject(filepath: string): Promise<string>;
+
+    abstract submoduleAwareHeadRevisonInContainingDirectory(
+        filepath: string
+    ): Promise<string>;
+
+    abstract show(
+        commitHash: string,
+        file: string,
+        relativeToVault?: boolean
+    ): Promise<string>;
+
+    abstract applyPatch(patch: string): Promise<void>;
+
+    abstract squashAllUnpushedCommits(): Promise<void>;
+
+    abstract rawCommand(command: string): Promise<string>;
+
+    abstract getSubmoduleOfFile(
+        repositoryRelativeFile: string
+    ): Promise<{ submodule: string; relativeFilepath: string } | undefined>;
+
+    abstract isFileTrackedByLFS(filePath: string): Promise<boolean>;
 
     // Constructs a path relative to the vault from a path relative to the git repository
     getRelativeVaultPath(path: string): string {

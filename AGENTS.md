@@ -12,9 +12,12 @@ The main runtime boundary is:
 -   `src/main.ts` owns plugin lifecycle, settings, commands/views registration,
     refresh/reload orchestration, user-facing notices, and cleanup.
 -   `src/gitManager/gitManager.ts` defines the Git capability interface.
--   `src/gitManager/simpleGit.ts` is the desktop/native Git implementation.
--   `src/gitManager/isomorphicGit.ts` is the mobile/browser-compatible
-    implementation.
+-   `src/gitManager/wasmGit/` is the sole Git implementation, built on
+    `wasm-git` (libgit2 compiled to WebAssembly) for both desktop and mobile.
+    It contains the Emscripten module wrapper (`lg2.ts`), the vault-to-MEMFS
+    mirror (`vaultMirror.ts`), the `requestUrl` HTTP transport bridge
+    (`httpBridge.ts`), CLI output parsers (`parsers.ts`), and the `WasmGit`
+    manager (`wasmGit.ts`).
 -   `src/commands.ts` registers stable user-facing command IDs.
 -   `src/ui/` contains source-control, history, diff, modal, and status-bar UI.
 -   `src/editor/` contains CodeMirror integrations for diff signs, hunk actions,
@@ -68,9 +71,9 @@ to bundling, dependencies, manifest/release behavior, or runtime imports.
 -   Keep `src/main.ts` focused on lifecycle and coordination. Put Git behavior in
     the manager abstraction/backend, reusable logic in focused modules, and UI
     behavior in the relevant view/modal/component.
--   When adding a Git operation, update the abstract contract and both
-    implementations. Preserve the shared operation-state handling in
-    `GitManager.withGitOperation` and make failure paths restore state.
+-   When adding a Git operation, update the abstract `GitManager` contract and
+    the `WasmGit` implementation. Preserve the shared operation-state handling
+    in `GitManager.withGitOperation` and make failure paths restore state.
 -   Prefer `async`/`await`; surface failures through the plugin's existing
     `displayError`/`displayMessage` mechanisms. Do not silently swallow Git
     errors, authentication failures, conflicts, cancellation, or offline-mode
@@ -88,12 +91,11 @@ to bundling, dependencies, manifest/release behavior, or runtime imports.
     within the git manager and vault relative paths should be used as in/output
     to the git manager. Avoid absolute paths, and do not reach outside the vault or
     repository for any reason.
--   Preserve the desktop/mobile split. Desktop uses Node/Electron, whereas
-    mobile uses Capcitor. Therefore on desktop a native Git installation is used
-    via `simple-git` and on mobile a javascript implementation of git:
-    `isomorphic-git` that uses the Obsidian adapter and `requestUrl`. Note that
-    some features are desktop only. Test or reason about both implementations
-    when changing shared Git semantics.
+-   Both desktop and mobile use `WasmGit`. The vault is mirrored into an
+    in-memory filesystem and network traffic goes through Obsidian's
+    `requestUrl`. Desktop-only leftovers (commit-message shell scripts, OS
+    hostname) must stay behind `Platform.isDesktopApp`. Do not reintroduce a
+    native Git binary dependency.
 -   Svelte components are compiled by `esbuild-svelte` with injected CSS. Keep
     component state and event handlers local where possible, and coordinate with
     their owning TypeScript view through the established props/events rather than

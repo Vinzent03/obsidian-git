@@ -3,7 +3,7 @@ import { HunksStateHelper } from "./hunkState";
 import type { EditorView } from "codemirror";
 import type ObsidianGit from "src/main";
 import { Hunks } from "./hunks";
-import type { SimpleGit } from "src/gitManager/simpleGit";
+import type { GitManager } from "src/gitManager/gitManager";
 
 export class HunkActions {
     constructor(private readonly plugin: ObsidianGit) {}
@@ -19,8 +19,8 @@ export class HunkActions {
         return { editor, obEditor };
     }
 
-    private get gitManager(): SimpleGit {
-        return this.plugin.gitManager as SimpleGit;
+    private get gitManager(): GitManager {
+        return this.plugin.gitManager;
     }
 
     resetHunk(pos?: number): void {

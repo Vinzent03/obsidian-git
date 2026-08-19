@@ -28,6 +28,14 @@ const context = await esbuild.context({
         "node:events",
         "node:path",
         "node:util",
+        // Referenced by wasm-git's Emscripten glue behind Node-environment
+        // guards that never trigger inside Obsidian.
+        "node:crypto",
+        "node:fs",
+        "node:module",
+        "node:url",
+        "ws",
+        "worker_threads",
         "@codemirror/autocomplete",
         "@codemirror/collab",
         "@codemirror/commands",
@@ -41,6 +49,11 @@ const context = await esbuild.context({
         "@lezer/lr",
     ],
     format: "cjs",
+    // The wasm-git engine (libgit2 compiled to WebAssembly) is embedded into
+    // main.js as raw bytes and instantiated manually at runtime.
+    loader: {
+        ".wasm": "binary",
+    },
     target: "es2018",
     logLevel: "info",
     sourcemap: prod ? false : "inline",
@@ -61,7 +74,6 @@ const context = await esbuild.context({
             preprocess: sveltePreprocess(),
         }),
     ],
-    inject: ["polyfill_buffer.js"],
     outfile: "main.js",
 });
 

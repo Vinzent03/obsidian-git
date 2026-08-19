@@ -79,7 +79,6 @@ The fake currently provides typed spies for:
 -   `dir`
 -   `remotePath`
 -   `repoPath`
--   `git`
 -   `raw(args)`
 -   `write(filePath, content)`
 -   `writeAndCommit(filePath, content, message)`
@@ -102,11 +101,35 @@ This registers the repo for automatic cleanup after the current test.
 Call `repo.cleanup()` directly only when a test needs to remove the repository
 before the test finishes.
 
+### wasm-git Helpers
+
+The `WasmGit` backend is tested against a real filesystem and a real
+local Git HTTP server:
+
+-   `tests/helpers/fsVaultAdapter.ts` implements the vault adapter surface used
+    by the vault-to-MEMFS mirror on top of a temporary directory, so wasm-git
+    tests exercise real file I/O.
+-   `tests/helpers/gitHttpServer.ts` starts a local `git http-backend` server
+    (optionally with Basic auth) so clone, fetch, pull, and push run over real
+    HTTP through the plugin's `requestUrl` bridge.
+-   `tests/helpers/createWasmGitPlugin.ts` builds a fake plugin wired with an
+    `FsVaultAdapter`, an in-memory `localStorage`, and a `modalQueue` for
+    scripting interactive prompts (credentials, selections).
+
+`tests/helpers/gitCli.ts` runs the native `git` binary for fixture setup and
+oracle assertions. The plugin itself does not use that binary.
+
+The `obsidian` stub's `requestUrl` performs real HTTP requests via Node's
+`fetch` so the wasm-git network stack is tested end to end. `vitest.config.ts`
+loads `.wasm` imports as binaries and inlines the `wasm-git` package so the
+loader applies.
+
 ## Design Principles
 
 -   Prefer pure unit tests for pure logic.
 -   Prefer real temporary Git repositories for Git workflow behavior.
--   Avoid mocking `simple-git` for methods whose value is in the Git workflow.
+-   Use the native `git` CLI only as a test fixture and oracle, not as the
+    plugin backend.
 -   Avoid launching Obsidian for the default test suite.
 -   Keep the Obsidian stub minimal and test-only.
 -   Keep helpers small and behavior-focused.
