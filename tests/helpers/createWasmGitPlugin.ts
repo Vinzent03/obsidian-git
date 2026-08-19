@@ -47,6 +47,7 @@ export function createWasmGitPlugin(args: {
             disablePopups: true,
             disablePopupsForNoChanges: true,
             mergeStrategy: "none",
+            syncMethod: "merge",
             commitDateFormat: "YYYY-MM-DD HH:mm:ss",
             listChangedFilesInMessageBody: false,
             ...args.settings,

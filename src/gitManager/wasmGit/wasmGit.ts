@@ -616,7 +616,7 @@ export class WasmGit extends GitManager {
                 const trackingCommit = await this.revParse(branchInfo.tracking);
                 if (localCommit !== trackingCommit) {
                     await this.integrateFetched(
-                        this.plugin.settings.syncMethod,
+                        this.plugin.settings.syncMethod ?? "merge",
                         branchInfo
                     );
                 }

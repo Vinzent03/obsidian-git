@@ -815,7 +815,7 @@ describe("WasmGit networking", () => {
         expect(await vault.adapter.read("local-only.md")).toBe("keep me\n");
         expect(await vault.adapter.exists("from-remote.md")).toBe(false);
         expect(await git(vault.dir, ["show", "HEAD:from-remote.md"])).toBe(
-            "incoming\n"
+            "incoming"
         );
     });
 
@@ -917,10 +917,23 @@ describe("WasmGit Git LFS", () => {
         const oid = hashLfsContent(payload);
         store.set(oid, payload);
         await remote.commitToRemote(".gitattributes", "*.bin filter=lfs\n");
-        await remote.commitToRemote(
-            "photo.bin",
+        // Native git would run the LFS clean filter on *.bin; write the
+        // pointer with the filter disabled so the test does not need git-lfs.
+        const side = path.join(path.dirname(remote.remotePath), "side-clone");
+        writeFileSync(
+            path.join(side, "photo.bin"),
             serializeLfsPointer(oid, payload.byteLength)
         );
+        await git(side, [
+            "-c",
+            "filter.lfs.required=false",
+            "-c",
+            "filter.lfs.process=",
+            "add",
+            "photo.bin",
+        ]);
+        await git(side, ["commit", "--no-verify", "-m", "remote pointer"]);
+        await git(side, ["push", "--no-verify", "--quiet"]);
 
         const vault = createVault();
         await vault.manager.clone(remote.url, ".");

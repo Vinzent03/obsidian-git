@@ -160,9 +160,12 @@ export async function rebaseOnto(
             const replayed = await replayChange(host, change, parent, hash);
             if (!replayed.conflicted) continue;
             if (mergeStrategy !== "none") {
+                // Plugin "theirs" means the remote/incoming side. After
+                // reset --hard onto tracking, that content is merge3 "ours"
+                // (HEAD), so the marker strategy is swapped versus merge.
                 const resolved = resolveConflictMarkers(
                     replayed.content,
-                    mergeStrategy
+                    mergeStrategy === "theirs" ? "ours" : "theirs"
                 );
                 if (resolved != undefined) {
                     host.writeWorktree(change.path, resolved);
