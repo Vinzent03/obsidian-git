@@ -25,6 +25,7 @@ import type {
     ObsidianGitSettings,
     MergeStrategy,
     ShowAuthorInHistoryView,
+    SyncMethod,
 } from "src/types";
 import { convertToRgb, formatMinutes, rgbToString } from "src/utils";
 
@@ -396,15 +397,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             new Setting(containerEl)
                 .setName("Merge strategy")
                 .setDesc(
-                    "The wasm-git engine integrates remote commits with merge only. Rebase and reset are not supported."
+                    "Decide how to integrate commits from your remote branch into your local branch."
                 )
                 .addDropdown((dropdown) => {
-                    const options: Record<string, string> = {
+                    const options: Record<SyncMethod, string> = {
                         merge: "Merge",
+                        rebase: "Rebase",
+                        reset: "Other sync service (Only updates the HEAD without touching the working directory)",
                     };
                     dropdown.addOptions(options);
-                    dropdown.setValue("merge");
-                    dropdown.setDisabled(true);
+                    dropdown.setValue(plugin.settings.syncMethod);
+
+                    dropdown.onChange(async (option) => {
+                        plugin.settings.syncMethod = option as SyncMethod;
+                        await plugin.saveSettings();
+                    });
                 });
 
             new Setting(containerEl)

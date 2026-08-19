@@ -22,7 +22,11 @@ import {
     gitUntracked,
 } from "../../helpers/gitCli";
 import { FsVaultAdapter } from "../../helpers/fsVaultAdapter";
-import { startGitHttpServer } from "../../helpers/gitHttpServer";
+import { startGitHttpServer, type LfsStore } from "../../helpers/gitHttpServer";
+import {
+    hashLfsContent,
+    serializeLfsPointer,
+} from "../../../src/gitManager/wasmGit/lfs";
 import {
     cleanupTempDirectory,
     createTempDirectory,
@@ -84,15 +88,18 @@ type RemoteFixture = {
     readFromRemote(ref: string): Promise<string>;
 };
 
-async function createHttpRemote(credentials?: {
-    username: string;
-    password: string;
-}): Promise<RemoteFixture> {
+async function createHttpRemote(
+    credentials?: {
+        username: string;
+        password: string;
+    },
+    lfsStore?: LfsStore
+): Promise<RemoteFixture> {
     const rootDir = createTempDirectory("obsidian-git-wasm-remote-");
     const remotePath = path.join(rootDir, "remote.git");
     await git(rootDir, ["init", "--bare", "--initial-branch=main", remotePath]);
     await git(remotePath, ["config", "http.receivepack", "true"]);
-    const server = await startGitHttpServer(rootDir, credentials);
+    const server = await startGitHttpServer(rootDir, credentials, { lfsStore });
     withCleanup({
         cleanup: () => {
             void server.close();
@@ -717,6 +724,101 @@ describe("WasmGit networking", () => {
         expect(conflicted).toContain("remote version");
     });
 
+    it("rebases diverged histories into a linear log", async () => {
+        const remote = await createHttpRemote();
+        const vault = createVault({ settings: { syncMethod: "rebase" } });
+        await seedRepoWithRemote(vault, remote);
+        await remote.commitToRemote("remote-side.md", "remote\n");
+        writeFileSync(path.join(vault.dir, "local-side.md"), "local\n");
+        await vault.manager.commitAll({ message: "local side" });
+
+        await vault.manager.pull();
+
+        expect(await vault.adapter.read("remote-side.md")).toBe("remote\n");
+        expect(await vault.adapter.exists("local-side.md")).toBe(true);
+        expect(
+            (
+                await git(vault.dir, [
+                    "rev-list",
+                    "--merges",
+                    "--count",
+                    "HEAD",
+                ])
+            ).trim()
+        ).toBe("0");
+        const messages = (await git(vault.dir, ["log", "--format=%s"])).trim();
+        expect(messages).toContain("local side");
+        expect(messages).toContain("remote: remote-side.md");
+    });
+
+    it("auto-resolves rebase conflicts with the theirs strategy", async () => {
+        const remote = await createHttpRemote();
+        const vault = createVault({
+            settings: { syncMethod: "rebase", mergeStrategy: "theirs" },
+        });
+        await seedRepoWithRemote(vault, remote);
+        await remote.commitToRemote("note.md", "remote version\n");
+        writeFileSync(path.join(vault.dir, "note.md"), "local version\n");
+        await vault.manager.commitAll({ message: "local version" });
+
+        await vault.manager.pull();
+
+        expect(await vault.adapter.read("note.md")).toBe("remote version\n");
+        expect(await gitIsClean(vault.dir)).toBe(true);
+        expect(
+            (
+                await git(vault.dir, [
+                    "rev-list",
+                    "--merges",
+                    "--count",
+                    "HEAD",
+                ])
+            ).trim()
+        ).toBe("0");
+    });
+
+    it("reports rebase conflicts and leaves markers with the none strategy", async () => {
+        const remote = await createHttpRemote();
+        const vault = createVault({
+            settings: { syncMethod: "rebase", mergeStrategy: "none" },
+        });
+        await seedRepoWithRemote(vault, remote);
+        await remote.commitToRemote("note.md", "remote version\n");
+        writeFileSync(path.join(vault.dir, "note.md"), "local version\n");
+        await vault.manager.commitAll({ message: "local version" });
+
+        await expect(vault.manager.pull()).rejects.toThrow(/rebase/i);
+
+        expect(vault.plugin.handleConflict).toHaveBeenCalledWith(["note.md"]);
+        expect(vault.plugin.localStorage.getConflict()).toBe(true);
+        const conflicted = await vault.adapter.read("note.md");
+        expect(conflicted).toContain("<<<<<<<");
+        expect(conflicted).toContain("local version");
+        expect(conflicted).toContain("remote version");
+    });
+
+    it("resets HEAD to the remote tip without touching the worktree", async () => {
+        const remote = await createHttpRemote();
+        const vault = createVault({ settings: { syncMethod: "reset" } });
+        await seedRepoWithRemote(vault, remote);
+        await remote.commitToRemote("from-remote.md", "incoming\n");
+        writeFileSync(path.join(vault.dir, "local-only.md"), "keep me\n");
+
+        await vault.manager.pull();
+
+        const remoteHead = (
+            await git(remote.remotePath, ["rev-parse", "HEAD"])
+        ).trim();
+        expect((await git(vault.dir, ["rev-parse", "HEAD"])).trim()).toBe(
+            remoteHead
+        );
+        expect(await vault.adapter.read("local-only.md")).toBe("keep me\n");
+        expect(await vault.adapter.exists("from-remote.md")).toBe(false);
+        expect(await git(vault.dir, ["show", "HEAD:from-remote.md"])).toBe(
+            "incoming\n"
+        );
+    });
+
     it("throws NoNetworkError when the remote is unreachable", async () => {
         const vault = createVault();
         await seedRepo(vault);
@@ -748,6 +850,84 @@ describe("WasmGit networking", () => {
         expect(await vault.manager.getRemoteBranches("origin")).toEqual([
             "origin/main",
         ]);
+    });
+});
+
+describe("WasmGit Git LFS", () => {
+    it("detects LFS-tracked paths from .gitattributes", async () => {
+        const vault = createVault();
+        await seedRepo(vault);
+        writeFileSync(
+            path.join(vault.dir, ".gitattributes"),
+            "*.bin filter=lfs\n"
+        );
+
+        expect(await vault.manager.isFileTrackedByLFS("photo.bin")).toBe(true);
+        expect(await vault.manager.isFileTrackedByLFS("note.md")).toBe(false);
+    });
+
+    it("stores a pointer in git and keeps the real file in the worktree", async () => {
+        const vault = createVault();
+        await seedRepo(vault);
+        writeFileSync(
+            path.join(vault.dir, ".gitattributes"),
+            "*.bin filter=lfs\n"
+        );
+        const payload = Buffer.from("binary-payload-for-lfs");
+        writeFileSync(path.join(vault.dir, "photo.bin"), payload);
+
+        await vault.manager.commitAll({ message: "add lfs file" });
+
+        expect(
+            new Uint8Array(await vault.adapter.readBinary("photo.bin"))
+        ).toEqual(new Uint8Array(payload));
+        const staged = await git(vault.dir, ["show", "HEAD:photo.bin"]);
+        expect(staged).toContain("git-lfs.github.com/spec/v1");
+        expect(staged).toContain(hashLfsContent(payload));
+    });
+
+    it("smudges LFS pointers on pull and uploads objects on push", async () => {
+        const store: LfsStore = new Map();
+        const remote = await createHttpRemote(undefined, store);
+        const vault = createVault();
+        await seedRepoWithRemote(vault, remote);
+        writeFileSync(
+            path.join(vault.dir, ".gitattributes"),
+            "*.bin filter=lfs\n"
+        );
+        const payload = Buffer.from("lfs-round-trip-bytes");
+        writeFileSync(path.join(vault.dir, "photo.bin"), payload);
+
+        await vault.manager.commitAll({ message: "lfs file" });
+        await vault.manager.push();
+
+        expect(store.has(hashLfsContent(payload))).toBe(true);
+
+        const other = createVault();
+        await other.manager.clone(remote.url, ".");
+        expect(
+            Buffer.from(await other.adapter.readBinary("photo.bin"))
+        ).toEqual(payload);
+    });
+
+    it("smudges a pointer that already lives on the remote", async () => {
+        const store: LfsStore = new Map();
+        const remote = await createHttpRemote(undefined, store);
+        const payload = Buffer.from("already-on-remote");
+        const oid = hashLfsContent(payload);
+        store.set(oid, payload);
+        await remote.commitToRemote(".gitattributes", "*.bin filter=lfs\n");
+        await remote.commitToRemote(
+            "photo.bin",
+            serializeLfsPointer(oid, payload.byteLength)
+        );
+
+        const vault = createVault();
+        await vault.manager.clone(remote.url, ".");
+
+        expect(
+            Buffer.from(await vault.adapter.readBinary("photo.bin"))
+        ).toEqual(payload);
     });
 });
 

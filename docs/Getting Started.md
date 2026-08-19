@@ -44,7 +44,6 @@ Desktop and mobile both use [wasm-git](https://github.com/petersalomonsen/wasm-g
 
 -   SSH authentication is not supported; only HTTP/HTTPS remotes with token or password authentication work
 -   Repo size is limited, because the repository is mirrored into memory for Git operations
--   Rebase merge strategy is not supported
 -   Submodules are not supported
 
 ## Performance on mobile

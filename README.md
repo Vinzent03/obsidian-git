@@ -96,8 +96,7 @@ Only HTTP/HTTPS remotes with a username and password or personal access token ar
 
 - No **SSH authentication**
 - Limited repo size, because the repository is mirrored into memory for Git operations
-- No rebase merge strategy
-- No submodules or Git LFS
+- No submodules
 
 ### Extra commands
 

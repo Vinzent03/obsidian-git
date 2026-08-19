@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import http from "http";
+import type { IncomingMessage, ServerResponse } from "http";
 import type { AddressInfo } from "net";
 
 export type GitHttpServer = {
@@ -8,16 +9,23 @@ export type GitHttpServer = {
     close(): Promise<void>;
 };
 
+export type LfsStore = Map<string, Buffer>;
+
 /**
  * Serves every git repository under `rootDir` over smart HTTP by delegating
  * each request to `git http-backend` (the reference CGI implementation).
  * Push is enabled; there is no authentication unless `credentials` is given,
  * in which case requests must carry a matching Basic Authorization header.
+ *
+ * When `lfsStore` is provided, Git LFS Batch API and object GET/PUT are
+ * served at `<repo>.git/info/lfs/...` and `/lfs/objects/<oid>`.
  */
 export async function startGitHttpServer(
     rootDir: string,
-    credentials?: { username: string; password: string }
+    credentials?: { username: string; password: string },
+    options?: { lfsStore?: LfsStore }
 ): Promise<GitHttpServer> {
+    const lfsStore = options?.lfsStore;
     const server = http.createServer((req, res) => {
         if (credentials) {
             const expected =
@@ -34,6 +42,9 @@ export async function startGitHttpServer(
             }
         }
         const url = new URL(req.url!, "http://localhost");
+        if (lfsStore && handleLfsRequest(req, res, url, lfsStore)) {
+            return;
+        }
         const backend = spawn("git", ["http-backend"], {
             env: {
                 ...process.env,
@@ -107,4 +118,94 @@ export async function startGitHttpServer(
                 server.close((error) => (error ? reject(error) : resolve()))
             ),
     };
+}
+
+function handleLfsRequest(
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+    store: LfsStore
+): boolean {
+    const object = url.pathname.match(/\/lfs\/objects\/([0-9a-f]{64})$/);
+    if (object) {
+        void handleLfsObject(req, res, object[1]!, store);
+        return true;
+    }
+    if (url.pathname.endsWith("/info/lfs/objects/batch")) {
+        void handleLfsBatch(req, res, store);
+        return true;
+    }
+    return false;
+}
+
+async function handleLfsBatch(
+    req: IncomingMessage,
+    res: ServerResponse,
+    store: LfsStore
+): Promise<void> {
+    const body = JSON.parse((await readBody(req)).toString()) as {
+        operation?: string;
+        objects?: { oid: string; size: number }[];
+    };
+    const host = req.headers.host ?? "127.0.0.1";
+    const objects = (body.objects ?? []).map((object) => {
+        const href = `http://${host}/lfs/objects/${object.oid}`;
+        if (body.operation === "download") {
+            if (!store.has(object.oid)) {
+                return {
+                    oid: object.oid,
+                    size: object.size,
+                    error: { code: 404, message: "Not found" },
+                };
+            }
+            return {
+                oid: object.oid,
+                size: object.size,
+                actions: { download: { href } },
+            };
+        }
+        return {
+            oid: object.oid,
+            size: object.size,
+            actions: store.has(object.oid) ? undefined : { upload: { href } },
+        };
+    });
+    res.writeHead(200, { "Content-Type": "application/vnd.git-lfs+json" });
+    res.end(JSON.stringify({ objects }));
+}
+
+async function handleLfsObject(
+    req: IncomingMessage,
+    res: ServerResponse,
+    oid: string,
+    store: LfsStore
+): Promise<void> {
+    if (req.method === "GET") {
+        const data = store.get(oid);
+        if (!data) {
+            res.writeHead(404);
+            res.end();
+            return;
+        }
+        res.writeHead(200, { "Content-Type": "application/octet-stream" });
+        res.end(data);
+        return;
+    }
+    if (req.method === "PUT") {
+        store.set(oid, await readBody(req));
+        res.writeHead(200);
+        res.end();
+        return;
+    }
+    res.writeHead(405);
+    res.end();
+}
+
+function readBody(req: IncomingMessage): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        req.on("data", (chunk: Buffer) => chunks.push(chunk));
+        req.on("end", () => resolve(Buffer.concat(chunks)));
+        req.on("error", reject);
+    });
 }

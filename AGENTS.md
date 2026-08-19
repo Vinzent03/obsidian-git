@@ -16,8 +16,9 @@ The main runtime boundary is:
     `wasm-git` (libgit2 compiled to WebAssembly) for both desktop and mobile.
     It contains the Emscripten module wrapper (`lg2.ts`), the vault-to-MEMFS
     mirror (`vaultMirror.ts`), the `requestUrl` HTTP transport bridge
-    (`httpBridge.ts`), CLI output parsers (`parsers.ts`), and the `WasmGit`
-    manager (`wasmGit.ts`).
+    (`httpBridge.ts`), CLI output parsers (`parsers.ts`), rebase replay
+    (`rebase.ts`), Git LFS (`lfs.ts`), and the `WasmGit` manager
+    (`wasmGit.ts`).
 -   `src/commands.ts` registers stable user-facing command IDs.
 -   `src/ui/` contains source-control, history, diff, modal, and status-bar UI.
 -   `src/editor/` contains CodeMirror integrations for diff signs, hunk actions,
