@@ -99,12 +99,20 @@ export class MyAdapter {
     async writeFile(path: string, data: string | BinaryData) {
         this.maybeLog("Write: " + path);
 
+        // isomorphic-git builds worktree paths as `${dir}/${fullpath}`. With an
+        // empty base path `dir` is "", so paths arrive here as "/note.md".
+        // Obsidian's vault APIs expect a normalized, leading-slash-free path;
+        // without this `getAbstractFileByPath` misses an existing file and the
+        // `vault.create*` calls below throw "File already exists" during any
+        // checkout that updates a tracked file (see issue #1164).
+        const vaultPath = normalizePath(path);
+
         if (typeof data === "string") {
-            const file = this.vault.getAbstractFileByPath(path);
+            const file = this.vault.getAbstractFileByPath(vaultPath);
             if (file instanceof TFile) {
                 return this.vault.modify(file, data);
             } else if (!this.isHiddenPath(path)) {
-                await this.vault.create(path, data);
+                return this.createOrOverwrite(vaultPath, data);
             } else {
                 return this.adapter.write(path, data);
             }
@@ -117,14 +125,40 @@ export class MyAdapter {
                 this.indexmtime = now;
                 // this.adapter.writeBinary(path, data);
             } else {
-                const file = this.vault.getAbstractFileByPath(path);
+                const file = this.vault.getAbstractFileByPath(vaultPath);
                 if (file instanceof TFile) {
                     return this.vault.modifyBinary(file, binaryData);
                 } else if (!this.isHiddenPath(path)) {
-                    await this.vault.createBinary(path, binaryData);
+                    return this.createOrOverwrite(vaultPath, binaryData);
                 } else {
                     return this.adapter.writeBinary(path, binaryData);
                 }
+            }
+        }
+    }
+
+    // Writes a file the vault metadata cache doesn't know about as a `TFile`.
+    // If it nonetheless already exists on disk (stale cache on mobile, or a path
+    // the cache keyed differently), overwrite it in place: `vault.create*` would
+    // throw "File already exists". isomorphic-git's checkout analysis has already
+    // decided this file should be written (a locally modified file yields a
+    // conflict, not an update, unless `force` was requested), so overwriting an
+    // existing file here does not clobber unsaved local work.
+    private async createOrOverwrite(
+        path: string,
+        data: string | ArrayBuffer
+    ): Promise<void> {
+        if (typeof data === "string") {
+            if (await this.adapter.exists(path)) {
+                await this.adapter.write(path, data);
+            } else {
+                await this.vault.create(path, data);
+            }
+        } else {
+            if (await this.adapter.exists(path)) {
+                await this.adapter.writeBinary(path, data);
+            } else {
+                await this.vault.createBinary(path, data);
             }
         }
     }

@@ -142,7 +142,11 @@ export type App = {
 };
 
 export function normalizePath(path: string): string {
-    return path.replace(/\\/g, "/").replace(/\/+/g, "/");
+    // Mirrors Obsidian's `normalizePath`: collapse slashes/backslashes, trim
+    // leading and trailing slashes, and fall back to "/" for the vault root.
+    path = path.replace(/([\\/])+/g, "/").replace(/(^\/+|\/+$)/g, "");
+    if (path === "") return "/";
+    return path.normalize("NFC");
 }
 
 export function setIcon(): void {}
