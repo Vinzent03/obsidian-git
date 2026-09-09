@@ -438,13 +438,11 @@ export class SimpleGit extends GitManager {
                 }
 
                 let body = "";
-                const root =
-                    (
-                        this.app.vault.adapter as FileSystemAdapter
-                    ).getBasePath() +
-                    (this.plugin.settings.basePath
-                        ? "/" + this.plugin.settings.basePath
-                        : "");
+                // `submodule foreach` prints paths relative to git's cwd, which
+                // is the repo root (see setGitInstance), not the vault folder.
+                // The vault may live in a subfolder of the repo, in which case
+                // prefixing the vault path yields a non-existent directory.
+                const root = this.absoluteRepoPath;
                 stdout.on("data", (chunk: Buffer) => {
                     body += chunk.toString("utf8");
                 });
