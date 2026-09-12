@@ -2,8 +2,12 @@ import { StateField, type EditorState, type Range } from "@codemirror/state";
 import {
     Decoration,
     EditorView,
+    showPanel,
     WidgetType,
     type DecorationSet,
+    type Panel,
+    type PanelConstructor,
+    type ViewUpdate,
 } from "@codemirror/view";
 import {
     ButtonComponent,
@@ -11,7 +15,7 @@ import {
     editorLivePreviewField,
 } from "obsidian";
 import { CONFLICT_OUTPUT_FILE } from "src/constants";
-import { resolveConflict } from "./actions";
+import { resolveAllConflicts, resolveConflict } from "./actions";
 import {
     parseConflictBlocks,
     type ConflictBlock,
@@ -33,9 +37,7 @@ function computeBlocks(state: EditorState): readonly ConflictBlock[] {
     return text.includes("<<<<<<<") ? parseConflictBlocks(text) : [];
 }
 
-export const conflictBlocksField = StateField.define<
-    readonly ConflictBlock[]
->({
+export const conflictBlocksField = StateField.define<readonly ConflictBlock[]>({
     create: computeBlocks,
     update: (value, transaction) =>
         transaction.docChanged || transaction.reconfigured
@@ -125,7 +127,58 @@ export const conflictDecorationsField = StateField.define<DecorationSet>({
     provide: (field) => EditorView.decorations.from(field),
 });
 
+class ConflictPanel implements Panel {
+    dom = createDiv({ cls: "git-conflict-panel" });
+    top = true;
+
+    constructor(private readonly view: EditorView) {
+        this.render();
+    }
+
+    update(update: ViewUpdate): void {
+        if (
+            update.docChanged ||
+            update.transactions.some((t) => t.reconfigured)
+        ) {
+            this.render();
+        }
+    }
+
+    private render(): void {
+        this.dom.empty();
+        const blocks = this.view.state.field(conflictBlocksField, false) ?? [];
+        if (blocks.length === 0) {
+            return;
+        }
+        this.dom.createSpan({
+            cls: "git-conflict-panel-label",
+            text: `${blocks.length} conflict${
+                blocks.length === 1 ? "" : "s"
+            } in file`,
+        });
+        addButtons(
+            this.dom,
+            {
+                ours: "Keep all ours",
+                theirs: "Keep all theirs",
+                both: "Keep both",
+            },
+            (choice) => resolveAllConflicts(this.view, choice)
+        );
+    }
+}
+
+const conflictPanelConstructor: PanelConstructor = (view) =>
+    new ConflictPanel(view);
+
+const conflictPanel = showPanel.compute([conflictBlocksField], (state) =>
+    state.field(conflictBlocksField).length > 0
+        ? conflictPanelConstructor
+        : null
+);
+
 export const conflictExtensions = [
     conflictBlocksField,
     conflictDecorationsField,
+    conflictPanel,
 ];
