@@ -1432,7 +1432,7 @@ export default class ObsidianGit extends Plugin {
                             file,
                             "/"
                         );
-                        return `- [[${link}]]`;
+                        return `- [ ] [[${link}]]`;
                     } else {
                         return `- Not a file: ${e}`;
                     }
