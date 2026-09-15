@@ -8,6 +8,8 @@ import type {
     WorkspaceLeaf,
 } from "obsidian";
 
+export type CommitMode = "smart" | "staged" | "all";
+
 export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
@@ -80,6 +82,10 @@ export interface ObsidianGitSettings {
     authorInHistoryView: ShowAuthorInHistoryView;
     dateInHistoryView: boolean;
     diffStyle: "git_unified" | "split";
+    /**
+     * Whether smart commit actions stage all changes when the index is empty.
+     */
+    autoStageOnEmptyIndex: boolean;
     hunks: {
         hunkCommands: boolean;
         showSigns: boolean;

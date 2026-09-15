@@ -282,7 +282,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 plugin.settings.customMessageOnAutoBackup
             );
 
-            new Setting(containerEl).setName("Commit message").setHeading();
+            new Setting(containerEl).setName("Commit").setHeading();
+
+            new Setting(containerEl)
+                .setName("Stage all changes when nothing is staged")
+                .setDesc(
+                    "When using Commit with nothing staged, stage and commit all changes. When disabled, changes must be staged first. Commit all changes and Commit-and-sync are unaffected."
+                )
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.autoStageOnEmptyIndex)
+                        .onChange(async (value) => {
+                            plugin.settings.autoStageOnEmptyIndex = value;
+                            await plugin.saveSettings();
+                        })
+                );
 
             const manualCommitMessageSetting = new Setting(containerEl)
                 .setName("Commit message on manual commit")
@@ -651,6 +665,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     plugin.setRefreshDebouncer();
                 });
             });
+
         new Setting(containerEl).setName("Miscellaneous").setHeading();
 
         if (plugin.gitManager instanceof SimpleGit) {

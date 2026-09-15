@@ -175,13 +175,15 @@ export default class AutomaticsManager {
                         }
                     }
                 }
-                const onlyStaged = this.plugin.settings.autoCommitOnlyStaged;
+                const mode = this.plugin.settings.autoCommitOnlyStaged
+                    ? "staged"
+                    : "all";
                 if (this.plugin.settings.differentIntervalCommitAndPush) {
-                    await this.plugin.commit({ fromAuto: true, onlyStaged });
+                    await this.plugin.commit({ fromAuto: true, mode });
                 } else {
                     await this.plugin.commitAndSync({
                         fromAutoBackup: true,
-                        onlyStaged,
+                        mode,
                     });
                 }
                 return true;

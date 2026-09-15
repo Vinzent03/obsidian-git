@@ -7,8 +7,25 @@ Open it using the "Open source control view" command. It lists all current chang
 - Open the diff view for changed files
 - Stage/Unstage all files
 - Push/Pull
-- Commit or [[Start here#commit-and-sync|commit-and-sync]]
+- Commit staged changes, stage all changes and commit, or [[Start here#commit-and-sync|commit-and-sync]]
+- Choose explicit commit actions from the menu next to the Commit button, including committing only staged changes and committing staged changes before syncing
 - Switch between list and tree view using the button at the top
+
+## Commit behavior
+
+The `Commit` command and the main Commit button use staged-first behavior:
+
+- If changes are staged, only those staged changes are committed. Unstaged changes remain in the working tree.
+- If nothing is staged and `Stage all changes when nothing is staged` is enabled, all changes are staged and committed.
+- If nothing is staged and that setting is disabled, no commit is created. Stage changes first or use `Commit all changes`.
+
+Explicit actions do not depend on this setting. `Commit staged` only commits the current index, while `Commit all changes` stages and commits everything. The actions menu in the source control view provides the same staged-only and all-changes choices.
+
+On desktop, the actions menu also provides `Amend staged`. It adds the staged changes to the previous commit and uses the message entered in the source control view as the amended commit message.
+
+The main `Commit-and-sync` command and button always stage and commit all changes before synchronizing. The source control actions menu also provides `Commit staged and sync` when only the current index should be committed.
+
+Automatic commits use their separate `Auto commit-and-sync only staged files` setting and are not affected by `Stage all changes when nothing is staged`.
 
 ## History View
 

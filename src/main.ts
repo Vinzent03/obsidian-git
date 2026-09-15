@@ -35,6 +35,7 @@ import { SimpleGit } from "./gitManager/simpleGit";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
 import Tools from "./tools";
 import type {
+    CommitMode,
     ElectronWindow,
     FileStatusResult,
     ObsidianGitSettings,
@@ -788,16 +789,26 @@ export default class ObsidianGit extends Plugin {
         this.app.workspace.trigger("obsidian-git:refresh");
     }
 
+    private resolveCommitMode(
+        mode: CommitMode,
+        stagedCount: number
+    ): Exclude<CommitMode, "smart"> | "nothing" {
+        if (mode === "all") return "all";
+        if (stagedCount > 0) return "staged";
+        if (mode === "staged") return "nothing";
+        return this.settings.autoStageOnEmptyIndex ? "all" : "nothing";
+    }
+
     async commitAndSync({
         fromAutoBackup,
         requestCustomMessage = false,
         commitMessage,
-        onlyStaged = false,
+        mode = "all",
     }: {
         fromAutoBackup: boolean;
         requestCustomMessage?: boolean;
         commitMessage?: string;
-        onlyStaged?: boolean;
+        mode?: CommitMode;
     }): Promise<void> {
         if (!(await this.isAllInitialized())) return;
 
@@ -812,7 +823,7 @@ export default class ObsidianGit extends Plugin {
             fromAuto: fromAutoBackup,
             requestCustomMessage,
             commitMessage,
-            onlyStaged,
+            mode,
         });
         if (!commitSuccessful) {
             return;
@@ -842,13 +853,13 @@ export default class ObsidianGit extends Plugin {
     async commit({
         fromAuto,
         requestCustomMessage = false,
-        onlyStaged = false,
+        mode = "all",
         commitMessage,
         amend = false,
     }: {
         fromAuto: boolean;
         requestCustomMessage?: boolean;
-        onlyStaged?: boolean;
+        mode?: CommitMode;
         commitMessage?: string;
         amend?: boolean;
     }): Promise<boolean> {
@@ -859,6 +870,8 @@ export default class ObsidianGit extends Plugin {
             let status: Status | undefined;
             let stagedFiles: { vaultPath: string; path: string }[] = [];
             let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
+            let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
+                mode === "smart" ? "nothing" : mode;
 
             if (this.gitManager instanceof SimpleGit) {
                 await this.mayDeleteConflictFile();
@@ -887,6 +900,7 @@ export default class ObsidianGit extends Plugin {
                 unstagedFiles = status.changed as unknown as (UnstagedFile & {
                     vaultPath: string;
                 })[];
+                resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
             } else {
                 // isomorphic-git section
 
@@ -904,9 +918,12 @@ export default class ObsidianGit extends Plugin {
                         await this.mayDeleteConflictFile();
                     }
                     const gitManager = this.gitManager as IsomorphicGit;
-                    if (onlyStaged) {
-                        stagedFiles = await gitManager.getStagedFiles();
-                    } else {
+                    stagedFiles = await gitManager.getStagedFiles();
+                    resolvedMode = this.resolveCommitMode(
+                        mode,
+                        stagedFiles.length
+                    );
+                    if (resolvedMode === "all") {
                         const res = await gitManager.getUnstagedFiles();
                         unstagedFiles = res.map(({ path, type }) => ({
                             vaultPath:
@@ -918,6 +935,15 @@ export default class ObsidianGit extends Plugin {
                 }
             }
 
+            if (resolvedMode === "nothing") {
+                this.displayMessage(
+                    "Nothing staged. Stage changes first or use Commit all changes."
+                );
+                return true;
+            }
+
+            const onlyStaged = resolvedMode === "staged";
+
             if (
                 await this.tools.hasTooBigFiles(
                     onlyStaged
@@ -928,10 +954,10 @@ export default class ObsidianGit extends Plugin {
                 return false;
             }
 
-            if (
-                unstagedFiles.length + stagedFiles.length !== 0 ||
-                hadConflict
-            ) {
+            const changesCountToCommit =
+                (onlyStaged ? 0 : unstagedFiles.length) + stagedFiles.length !==
+                0;
+            if (changesCountToCommit || hadConflict) {
                 // The commit message from settings or previously set in the
                 // source control view
                 let cmtMessage = (commitMessage ??= fromAuto
