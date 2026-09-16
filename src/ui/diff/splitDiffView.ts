@@ -1,6 +1,6 @@
 import type { Debouncer, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { debounce, ItemView, Platform, setIcon } from "obsidian";
-import { SPLIT_DIFF_VIEW_CONFIG } from "src/constants";
+import { DEFAULT_SETTINGS, SPLIT_DIFF_VIEW_CONFIG } from "src/constants";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
 import type { DiffViewState } from "src/types";
@@ -27,6 +27,19 @@ const readOnlyEditorTheme = EditorView.theme({
         display: "none !important",
     },
 });
+
+const READ_ONLY_DIFF_TIMEOUT_FACTOR = 10;
+
+export function getSplitDiffTimeout(
+    configuredTimeout: number,
+    editable: boolean
+): number {
+    const timeout =
+        Number.isInteger(configuredTimeout) && configuredTimeout > 0
+            ? configuredTimeout
+            : DEFAULT_SETTINGS.diffTimeout;
+    return editable ? timeout : timeout * READ_ONLY_DIFF_TIMEOUT_FACTOR;
+}
 
 // This class is not extending `FileView', because it needs a `TFile`, which is not possible for dot files like `.gitignore`, which this editor should support as well.`
 export default class SplitDiffView extends ItemView {
@@ -478,7 +491,10 @@ export default class SplitDiffView extends ItemView {
                     : undefined,
                 revertControls: showButtons ? "a-to-b" : undefined,
                 diffConfig: {
-                    scanLimit: this.bIsEditable ? 1000 : 10000, // default is 500
+                    timeout: getSplitDiffTimeout(
+                        this.plugin.settings.diffTimeout,
+                        this.bIsEditable
+                    ),
                 },
                 parent: container,
             });

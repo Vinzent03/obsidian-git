@@ -83,6 +83,11 @@ export interface ObsidianGitSettings {
     dateInHistoryView: boolean;
     diffStyle: "git_unified" | "split";
     /**
+     * Time in milliseconds available to compute an editable split diff.
+     * Read-only split diffs use ten times this value.
+     */
+    diffTimeout: number;
+    /**
      * Whether smart commit actions stage all changes when the index is empty.
      */
     autoStageOnEmptyIndex: boolean;

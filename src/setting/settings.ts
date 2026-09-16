@@ -690,6 +690,32 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         await plugin.saveSettings();
                     });
                 });
+
+            new Setting(containerEl)
+                .setName("Split diff view timeout")
+                .setDesc(
+                    "Maximum time in milliseconds to compute a detailed split diff. Higher values improve accuracy for large files with many changes but may reduce responsiveness. Read-only diffs use ten times this value."
+                )
+                .addText((text) => {
+                    text.inputEl.type = "number";
+                    text.inputEl.min = "1";
+                    text.inputEl.step = "1";
+                    this.setNonDefaultValue({
+                        text,
+                        settingsProperty: "diffTimeout",
+                    });
+                    text.setPlaceholder(String(DEFAULT_SETTINGS.diffTimeout));
+                    text.onChange(async (value) => {
+                        const timeout = Number(value);
+                        plugin.settings.diffTimeout =
+                            value !== "" &&
+                            Number.isInteger(timeout) &&
+                            timeout > 0
+                                ? timeout
+                                : DEFAULT_SETTINGS.diffTimeout;
+                        await plugin.saveSettings();
+                    });
+                });
         }
 
         new Setting(containerEl)

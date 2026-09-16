@@ -46,6 +46,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     authorInHistoryView: "hide",
     dateInHistoryView: false,
     diffStyle: "split",
+    diffTimeout: 50,
     autoStageOnEmptyIndex: true,
     hunks: {
         showSigns: false,
