@@ -304,9 +304,11 @@ describe("SimpleGit.push", () => {
         const plugin = createFakePlugin();
         const manager = createManager(repo.repoPath, repo.git, plugin);
 
+        expect(await manager.canPush()).toBe(true);
         const changedFiles = await manager.push();
 
         expect(changedFiles).toBeNull();
+        expect(await manager.canPush()).toBe(false);
         expect(
             await repo.raw(["ls-remote", "--heads", "origin", "local-only"])
         ).toContain(await repo.head());
@@ -314,6 +316,32 @@ describe("SimpleGit.push", () => {
             [{ operation: GitOperation.push }],
             [{ operation: GitOperation.idle }],
         ]);
+    });
+
+    it("uses the push target when it differs from the upstream branch", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkoutLocalBranch("dev");
+        await repo.raw(["branch", "--set-upstream-to=origin/main", "dev"]);
+        await repo.git.addConfig("push.default", "current");
+        await repo.writeAndCommit(
+            "dev-only.md",
+            "published\n",
+            "published on dev"
+        );
+        await repo.git.push(["--quiet"]);
+        const plugin = createFakePlugin();
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        expect(await manager.getUnpushedCommits()).toBe(0);
+        expect(await manager.canPush()).toBe(false);
+
+        await repo.writeAndCommit("new.md", "new\n", "new on dev");
+
+        expect(await manager.getUnpushedCommits()).toBe(1);
+        expect(await manager.canPush()).toBe(true);
+        expect(await manager.push()).toBe(1);
+        expect(await manager.getUnpushedCommits()).toBe(0);
+        expect(await manager.canPush()).toBe(false);
     });
 
     it("clears progress when done without manually setting push progress", async () => {
@@ -354,7 +382,7 @@ describe("SimpleGit.push", () => {
         ]);
     });
 
-    it("updates submodules only when no tracking branch exists", async () => {
+    it("updates submodules only when no push target exists", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
         await repo.git.checkoutLocalBranch("local-only");
         await repo.writeAndCommit("local-only.md", "local\n", "local only");
@@ -369,7 +397,7 @@ describe("SimpleGit.push", () => {
             await repo.raw(["ls-remote", "--heads", "origin", "local-only"])
         ).toBe("");
         expect(plugin.log).toHaveBeenCalledWith(
-            "No tracking branch found. Ignoring push of main repo and updating submodules only."
+            "No push target found. Ignoring push of main repo and updating submodules only."
         );
     });
 });
@@ -494,6 +522,36 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
         );
     });
 
+    it("squashes against the push target when it differs from the upstream branch", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkoutLocalBranch("dev");
+        await repo.raw(["branch", "--set-upstream-to=origin/main", "dev"]);
+        await repo.git.addConfig("push.default", "current");
+        await repo.appendAndCommit(
+            "note.md",
+            "published\n",
+            "published on dev"
+        );
+        await repo.git.push(["--quiet"]);
+        const publishedHead = await repo.head();
+        await repo.appendAndCommit("note.md", "one\n", "commit one");
+        await repo.appendAndCommit("note.md", "two\n", "commit two");
+        const plugin = createFakePlugin();
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        await manager.squashAllUnpushedCommits();
+
+        expect(await repo.unpushedCount("origin/dev")).toBe(1);
+        expect(await repo.raw(["rev-parse", "HEAD^"])).toBe(publishedHead);
+        expect(await repo.show("HEAD:note.md")).toBe(
+            "base\npublished\none\ntwo"
+        );
+        await expect(repo.git.push(["--quiet"])).resolves.toBeDefined();
+        expect(await repo.raw(["rev-parse", "origin/dev"])).toBe(
+            await repo.head()
+        );
+    });
+
     it("does nothing when there is only one unpushed commit", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
         await repo.appendAndCommit("note.md", "one\n", "commit one");
@@ -505,6 +563,24 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
 
         expect(await repo.head()).toBe(headBefore);
         expect(await repo.unpushedCount()).toBe(1);
+        expect(plugin.setPluginState).not.toHaveBeenCalled();
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
+    });
+
+    it("does nothing before the push target has been created", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkoutLocalBranch("dev");
+        await repo.raw(["branch", "--set-upstream-to=origin/main", "dev"]);
+        await repo.git.addConfig("push.default", "current");
+        await repo.appendAndCommit("note.md", "one\n", "commit one");
+        await repo.appendAndCommit("note.md", "two\n", "commit two");
+        const headBefore = await repo.head();
+        const plugin = createFakePlugin();
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        await manager.squashAllUnpushedCommits();
+
+        expect(await repo.head()).toBe(headBefore);
         expect(plugin.setPluginState).not.toHaveBeenCalled();
         expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
     });
