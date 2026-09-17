@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.40.0](https://github.com/Vinzent03/obsidian-git/compare/2.39.0...2.40.0) (2026-09-17)
+
+
+### Features
+
+* configure diffing timeout for split view ([c44eb0a](https://github.com/Vinzent03/obsidian-git/commit/c44eb0ad948f9a73534ffefe66de0442f7dbe2bc)), closes [#1171](https://github.com/Vinzent03/obsidian-git/issues/1171)
+* new setting to control behavior of commit command and button ([2221c6a](https://github.com/Vinzent03/obsidian-git/commit/2221c6a602c4a3617ca6f745dc3564e0939c314b)), closes [#1167](https://github.com/Vinzent03/obsidian-git/issues/1167) [#1036](https://github.com/Vinzent03/obsidian-git/issues/1036)
+
+
+### Bug Fixes
+
+* detect proper push target ([ecbea8d](https://github.com/Vinzent03/obsidian-git/commit/ecbea8d1c01b88566a687c5afac6e5106c9bf671)), closes [#1173](https://github.com/Vinzent03/obsidian-git/issues/1173)
+* **mobile:** normalize path in file adapter ([bac5123](https://github.com/Vinzent03/obsidian-git/commit/bac5123f20f43f99d6d714cd461f434fd24362cc)), closes [#1164](https://github.com/Vinzent03/obsidian-git/issues/1164)
+* resolve submodule paths against the repo root, not the vault folder ([#1174](https://github.com/Vinzent03/obsidian-git/issues/1174)) ([6ae85e9](https://github.com/Vinzent03/obsidian-git/commit/6ae85e9187c9661f97ac1fca265460ca7a550e27))
+
 ## [2.39.0](https://github.com/Vinzent03/obsidian-git/compare/2.38.6...2.39.0) (2026-08-12)
 
 
