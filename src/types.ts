@@ -8,6 +8,8 @@ import type {
     WorkspaceLeaf,
 } from "obsidian";
 
+export type CommitMode = "smart" | "staged" | "all";
+
 export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
@@ -22,6 +24,7 @@ export interface ObsidianGitSettings {
     autoPullOnBoot: boolean;
     autoCommitOnlyStaged: boolean;
     syncMethod: SyncMethod;
+    rebaseAutoStash: RebaseAutoStash;
     mergeStrategy: MergeStrategy;
     /**
      * Whether to push on commit-and-sync
@@ -80,6 +83,15 @@ export interface ObsidianGitSettings {
     authorInHistoryView: ShowAuthorInHistoryView;
     dateInHistoryView: boolean;
     diffStyle: "git_unified" | "split";
+    /**
+     * Time in milliseconds available to compute an editable split diff.
+     * Read-only split diffs use ten times this value.
+     */
+    diffTimeout: number;
+    /**
+     * Whether smart commit actions stage all changes when the index is empty.
+     */
+    autoStageOnEmptyIndex: boolean;
     hunks: {
         hunkCommands: boolean;
         showSigns: boolean;
@@ -99,6 +111,8 @@ export function mergeSettingsByPriority(
 }
 
 export type SyncMethod = "rebase" | "merge" | "reset";
+
+export type RebaseAutoStash = "enabled" | "disabled" | "git-config";
 
 export type MergeStrategy = "none" | "ours" | "theirs";
 

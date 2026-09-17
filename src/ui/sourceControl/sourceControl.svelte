@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { Platform, Scope, setIcon } from "obsidian";
+    import { Menu, Platform, Scope, setIcon } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import type ObsidianGit from "src/main";
     import type {
+        CommitMode,
         FileStatusResult,
         Status,
         StatusRootTreeItem,
@@ -39,6 +40,18 @@
     let stagedClosed: Record<string, boolean> = $state({});
     let unstagedClosed: Record<string, boolean> = $state({});
     let pulledClosed: Record<string, boolean> = $state({});
+
+    let stagedCount = $derived(status?.staged.length ?? 0);
+    let changedCount = $derived(status?.changed.length ?? 0);
+    let hasConflicts = $derived((status?.conflicted.length ?? 0) > 0);
+    let hasChanges = $derived(stagedCount + changedCount > 0);
+    let commitDisabled = $derived(!canCommit("smart"));
+    let commitAndSyncDisabled = $derived(!canCommitAndSync("all"));
+
+    let commitActionDescription = $derived(getCommitActionDescription(false));
+    let commitAndSyncActionDescription = $derived(
+        getCommitActionDescription(true)
+    );
 
     let showTree = $derived(plugin.settings.treeStructure);
     onMount(() => {
@@ -91,31 +104,82 @@
         });
     });
 
-    function commit() {
+    function getCommitActionDescription(sync: boolean): string {
+        const suffix = sync ? " and sync" : "";
+        if (hasConflicts) {
+            return "Resolve conflicts before committing";
+        }
+        if (!hasChanges) {
+            return sync
+                ? "Sync (no changes to commit)"
+                : "No changes to commit";
+        }
+        if (sync) {
+            return "Commit all changes and sync";
+        }
+        if (stagedCount > 0) {
+            return `Commit ${stagedCount} staged ${stagedCount === 1 ? "file" : "files"}${suffix}`;
+        }
+        if (!plugin.settings.autoStageOnEmptyIndex) {
+            return "Nothing staged — stage changes before committing";
+        }
+        return `Stage and commit all ${changedCount} changed ${changedCount === 1 ? "file" : "files"}${suffix}`;
+    }
+
+    function canCommit(mode: CommitMode): boolean {
+        if (hasConflicts) return false;
+        if (mode === "staged") return stagedCount > 0;
+        if (mode === "all") return hasChanges;
+        return (
+            stagedCount > 0 ||
+            (plugin.settings.autoStageOnEmptyIndex && changedCount > 0)
+        );
+    }
+
+    function canCommitAndSync(mode: "staged" | "all"): boolean {
+        if (hasConflicts) return false;
+        return mode === "all" || stagedCount > 0;
+    }
+
+    function commit(mode: CommitMode = "smart") {
+        if (!canCommit(mode)) return;
         loading = true;
         if (status) {
-            const onlyStaged = status.staged.length > 0;
             plugin.promiseQueue.addTask(() =>
                 plugin
-                    .commit({ fromAuto: false, commitMessage, onlyStaged })
+                    .commit({ fromAuto: false, commitMessage, mode })
                     .then(() => (commitMessage = plugin.settings.commitMessage))
                     .finally(triggerRefresh)
             );
         }
     }
 
-    function commitAndSync() {
+    function amendStaged() {
+        if (!canCommit("staged")) return;
+        loading = true;
+        plugin.promiseQueue.addTask(() =>
+            plugin
+                .commit({
+                    fromAuto: false,
+                    commitMessage,
+                    mode: "staged",
+                    amend: true,
+                })
+                .then(() => (commitMessage = plugin.settings.commitMessage))
+                .finally(triggerRefresh)
+        );
+    }
+
+    function commitAndSync(mode: "staged" | "all" = "all") {
+        if (!canCommitAndSync(mode)) return;
         loading = true;
         if (status) {
-            // If staged files exist only commit them, but if not, commit all.
-            // I hope this is the most intuitive way.
-            const onlyStaged = status.staged.length > 0;
             plugin.promiseQueue.addTask(() =>
                 plugin
                     .commitAndSync({
                         fromAutoBackup: false,
                         commitMessage,
-                        onlyStaged,
+                        mode,
                     })
                     .then(() => {
                         commitMessage = plugin.settings.commitMessage;
@@ -123,6 +187,43 @@
                     .finally(triggerRefresh)
             );
         }
+    }
+
+    function showCommitMenu(event: MouseEvent) {
+        event.stopPropagation();
+        const menu = Menu.forEvent(event);
+        menu.addItem((item) =>
+            item
+                .setTitle("Commit staged")
+                .setIcon("git-commit")
+                .setDisabled(!canCommit("staged"))
+                .onClick(() => commit("staged"))
+        );
+        menu.addItem((item) =>
+            item
+                .setTitle("Stage all and commit")
+                .setIcon("list-plus")
+                .setDisabled(!canCommit("all"))
+                .onClick(() => commit("all"))
+        );
+        if (Platform.isDesktopApp) {
+            menu.addItem((item) =>
+                item
+                    .setTitle("Amend staged")
+                    .setIcon("git-commit")
+                    .setDisabled(!canCommit("staged"))
+                    .onClick(amendStaged)
+            );
+        }
+        menu.addSeparator();
+        menu.addItem((item) =>
+            item
+                .setTitle("Commit staged and sync")
+                .setIcon("arrow-up-circle")
+                .setDisabled(!canCommit("staged"))
+                .onClick(() => commitAndSync("staged"))
+        );
+        menu.showAtMouseEvent(event);
     }
 
     async function refresh(): Promise<void> {
@@ -223,22 +324,36 @@
 <main data-type={SOURCE_CONTROL_VIEW_CONFIG.type} class="git-view">
     <div class="nav-header">
         <div class="nav-buttons-container">
-            <div
-                id="backup-btn"
-                data-icon="arrow-up-circle"
-                class="clickable-icon nav-action-button"
-                aria-label="Commit-and-sync"
-                bind:this={buttons[0]}
-                onclick={commitAndSync}
-            ></div>
-            <div
-                id="commit-btn"
-                data-icon="check"
-                class="clickable-icon nav-action-button"
-                aria-label="Commit"
-                bind:this={buttons[1]}
-                onclick={commit}
-            ></div>
+            <div class="commit-action-group">
+                <div
+                    id="backup-btn"
+                    data-icon="arrow-up-circle"
+                    class="clickable-icon nav-action-button"
+                    class:is-disabled={commitAndSyncDisabled}
+                    aria-label={commitAndSyncActionDescription}
+                    aria-disabled={commitAndSyncDisabled}
+                    bind:this={buttons[0]}
+                    onclick={() => commitAndSync()}
+                ></div>
+                <div
+                    id="commit-btn"
+                    data-icon="check"
+                    class="clickable-icon nav-action-button"
+                    class:is-disabled={commitDisabled}
+                    aria-label={commitActionDescription}
+                    aria-disabled={commitDisabled}
+                    bind:this={buttons[1]}
+                    onclick={() => commit()}
+                ></div>
+                <div
+                    id="commit-menu"
+                    data-icon="chevron-down"
+                    class="clickable-icon nav-action-button"
+                    aria-label="More commit actions"
+                    bind:this={buttons[10]}
+                    onclick={showCommitMenu}
+                ></div>
+            </div>
             <div
                 id="stage-all"
                 class="clickable-icon nav-action-button"
@@ -310,7 +425,6 @@
             ></div>
         {/if}
     </div>
-
     <div class="nav-files-container" style="position: relative;">
         {#if status && stagedHierarchy && changeHierarchy}
             <div class="tree-item nav-folder mod-root">
@@ -592,6 +706,30 @@
 </main>
 
 <style lang="scss">
+    .commit-action-group {
+        display: inline-flex;
+        flex: 0 0 auto;
+        gap: 0;
+        overflow: hidden;
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+
+        .nav-action-button {
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .nav-action-button + .nav-action-button {
+            border-left: 1px solid var(--background-modifier-border);
+        }
+
+        #commit-menu {
+            width: var(--size-4-5);
+            padding-right: 0;
+            padding-left: 0;
+        }
+    }
+
     .commit-msg-input {
         width: 100%;
         overflow: hidden;
@@ -606,6 +744,7 @@
         width: calc(100% - var(--size-4-8));
         margin: 4px auto;
     }
+
     main {
         .git-tools {
             .files-count {

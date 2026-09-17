@@ -25,7 +25,7 @@ All setup instructions (including mobile), common issues, tips, and advanced con
 
 ### 🔧 Source Control View
 
-Manage your file changes directly inside Obsidian like stage/unstage individual files and commit them.
+Manage your file changes directly inside Obsidian, including staging and unstaging individual files and committing them. The main Commit action commits staged changes when present. If nothing is staged, the `Stage all changes when nothing is staged` setting determines whether all changes are staged and committed. The actions menu provides explicit staged-only and all-changes alternatives, plus amending the previous commit on desktop.
 
 ![Source Control View](https://raw.githubusercontent.com/Vinzent03/obsidian-git/master/images/source-view.png)
 
@@ -58,7 +58,7 @@ View line-by-line changes directly in the editor with added, modified, and delet
   - `Unstage current file`
   - `Discard all changes`: Discard all changes in the repository
 - ✅ Commit
-  - `Commit`: If files are staged only commits those, otherwise commits only files that have been staged
+  - `Commit`: Commits staged changes when present. If nothing is staged, either stages and commits all changes or stops, depending on the `Stage all changes when nothing is staged` setting
   - `Commit with specific message`: Same as above, but with a custom message
   - `Commit all changes`: Commits all changes without pushing
   - `Commit all changes with specific message`: Same as above, but with a custom message

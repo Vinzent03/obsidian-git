@@ -26,6 +26,7 @@ import type ObsidianGit from "src/main";
 import type {
     ObsidianGitSettings,
     MergeStrategy,
+    RebaseAutoStash,
     ShowAuthorInHistoryView,
     SyncMethod,
 } from "src/types";
@@ -282,7 +283,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 plugin.settings.customMessageOnAutoBackup
             );
 
-            new Setting(containerEl).setName("Commit message").setHeading();
+            new Setting(containerEl).setName("Commit").setHeading();
+
+            new Setting(containerEl)
+                .setName("Stage all changes when nothing is staged")
+                .setDesc(
+                    "When using Commit with nothing staged, stage and commit all changes. When disabled, changes must be staged first. Commit all changes and Commit-and-sync are unaffected."
+                )
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(plugin.settings.autoStageOnEmptyIndex)
+                        .onChange(async (value) => {
+                            plugin.settings.autoStageOnEmptyIndex = value;
+                            await plugin.saveSettings();
+                        })
+                );
 
             const manualCommitMessageSetting = new Setting(containerEl)
                 .setName("Commit message on manual commit")
@@ -413,6 +428,32 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
                         dropdown.onChange(async (option) => {
                             plugin.settings.syncMethod = option as SyncMethod;
+                            await plugin.saveSettings();
+                            this.refreshDisplayWithDelay();
+                        });
+                    });
+
+            if (
+                plugin.gitManager instanceof SimpleGit &&
+                plugin.settings.syncMethod === "rebase"
+            )
+                new Setting(containerEl)
+                    .setName("Auto-stash changes when rebasing")
+                    .setDesc(
+                        "Temporarily stash local changes before rebasing and restore them afterward. Restoring changes may produce conflicts."
+                    )
+                    .addDropdown((dropdown) => {
+                        const options: Record<RebaseAutoStash, string> = {
+                            enabled: "Enabled",
+                            disabled: "Disabled",
+                            "git-config": "Use Git configuration",
+                        };
+                        dropdown.addOptions(options);
+                        dropdown.setValue(plugin.settings.rebaseAutoStash);
+
+                        dropdown.onChange(async (option) => {
+                            plugin.settings.rebaseAutoStash =
+                                option as RebaseAutoStash;
                             await plugin.saveSettings();
                         });
                     });
@@ -651,6 +692,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     plugin.setRefreshDebouncer();
                 });
             });
+
         new Setting(containerEl).setName("Miscellaneous").setHeading();
 
         if (plugin.gitManager instanceof SimpleGit) {
@@ -672,6 +714,32 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     dropdown.onChange(async (option) => {
                         plugin.settings.diffStyle =
                             option as ObsidianGitSettings["diffStyle"];
+                        await plugin.saveSettings();
+                    });
+                });
+
+            new Setting(containerEl)
+                .setName("Split diff view timeout")
+                .setDesc(
+                    "Maximum time in milliseconds to compute a detailed split diff. Higher values improve accuracy for large files with many changes but may reduce responsiveness. Read-only diffs use ten times this value."
+                )
+                .addText((text) => {
+                    text.inputEl.type = "number";
+                    text.inputEl.min = "1";
+                    text.inputEl.step = "1";
+                    this.setNonDefaultValue({
+                        text,
+                        settingsProperty: "diffTimeout",
+                    });
+                    text.setPlaceholder(String(DEFAULT_SETTINGS.diffTimeout));
+                    text.onChange(async (value) => {
+                        const timeout = Number(value);
+                        plugin.settings.diffTimeout =
+                            value !== "" &&
+                            Number.isInteger(timeout) &&
+                            timeout > 0
+                                ? timeout
+                                : DEFAULT_SETTINGS.diffTimeout;
                         await plugin.saveSettings();
                     });
                 });

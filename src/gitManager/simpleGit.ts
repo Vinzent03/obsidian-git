@@ -438,13 +438,11 @@ export class SimpleGit extends GitManager {
                 }
 
                 let body = "";
-                const root =
-                    (
-                        this.app.vault.adapter as FileSystemAdapter
-                    ).getBasePath() +
-                    (this.plugin.settings.basePath
-                        ? "/" + this.plugin.settings.basePath
-                        : "");
+                // `submodule foreach` prints paths relative to git's cwd, which
+                // is the repo root (see setGitInstance), not the vault folder.
+                // The vault may live in a subfolder of the repo, in which case
+                // prefixing the vault path yields a non-existent directory.
+                const root = this.absoluteRepoPath;
                 stdout.on("data", (chunk: Buffer) => {
                     body += chunk.toString("utf8");
                 });
@@ -712,8 +710,21 @@ export class SimpleGit extends GitManager {
                                 case "merge":
                                     await this.git.merge(args);
                                     break;
-                                case "rebase":
+                                case "rebase": {
+                                    if (
+                                        this.plugin.settings.rebaseAutoStash ===
+                                        "enabled"
+                                    ) {
+                                        args.push("--autostash");
+                                    } else if (
+                                        this.plugin.settings.rebaseAutoStash ===
+                                        "disabled"
+                                    ) {
+                                        args.push("--no-autostash");
+                                    }
                                     await this.git.rebase(args);
+                                    break;
+                                }
                             }
                         } catch (err) {
                             this.plugin.displayError(
@@ -777,7 +788,6 @@ export class SimpleGit extends GitManager {
                     console.log(res);
                 }
                 const status = await this.git.status();
-                const trackingBranch = status.tracking;
                 const currentBranch = status.current;
 
                 if (!currentBranch) {
@@ -787,18 +797,20 @@ export class SimpleGit extends GitManager {
                     return undefined;
                 }
 
-                if (!trackingBranch && this.plugin.settings.updateSubmodules) {
+                const pushTarget = await this.getPushTarget(currentBranch);
+
+                if (!pushTarget && this.plugin.settings.updateSubmodules) {
                     this.plugin.log(
-                        "No tracking branch found. Ignoring push of main repo and updating submodules only."
+                        "No push target found. Ignoring push of main repo and updating submodules only."
                     );
                     return undefined;
                 }
                 let remoteChangedFiles: number | null = null;
-                if (trackingBranch) {
+                if (pushTarget?.exists) {
                     remoteChangedFiles = (
                         await this.git.diffSummary([
                             currentBranch,
-                            trackingBranch,
+                            pushTarget.ref,
                             "--",
                         ])
                     ).changed;
@@ -814,30 +826,53 @@ export class SimpleGit extends GitManager {
     }
 
     /**
+     * Returns the remote-tracking ref that represents where an argument-less
+     * `git push` sends the current branch. Unlike the upstream ref, this takes
+     * push.default, branch.<name>.pushRemote and remote.pushDefault into
+     * account. The ref can be configured even when the remote branch has not
+     * been created yet.
+     */
+    private async getPushTarget(
+        currentBranch: string
+    ): Promise<{ ref: string; exists: boolean } | undefined> {
+        const ref = (
+            await this.git.raw([
+                "for-each-ref",
+                "--format=%(push)",
+                `refs/heads/${currentBranch}`,
+            ])
+        ).trim();
+        if (!ref) {
+            return undefined;
+        }
+
+        const existingRef = (
+            await this.git.raw(["for-each-ref", "--format=%(refname)", ref])
+        ).trim();
+        return { ref, exists: existingRef === ref };
+    }
+
+    /**
      * Squashes all local commits that have not been pushed yet into a single
      * commit. Only unpushed history is rewritten (HEAD is soft-reset onto the
-     * tracking branch), so this never requires a force-push and is safe across
+     * push target), so this never requires a force-push and is safe across
      * multiple devices. The squash commit reuses the message of the most recent
      * unpushed commit, so a custom, modal or script-derived commit message is
      * preserved instead of being overwritten by the auto-commit template.
-     * No-op if there is no tracking branch, the tracking branch no longer
-     * exists on the remote, there are fewer than two unpushed commits, a merge
-     * commit is present in the unpushed range, or there are staged but
-     * uncommitted changes.
+     * No-op if there is no push target, the push target does not exist yet,
+     * there are fewer than two unpushed commits, a merge commit is present in
+     * the unpushed range, or there are staged but uncommitted changes.
      */
     async squashAllUnpushedCommits(): Promise<void> {
         const status = await this.git.status();
-        const trackingBranch = status.tracking;
-        if (!trackingBranch || !status.current) {
+        if (!status.current) {
             return;
         }
-        // The tracking config can outlive the remote-tracking ref (e.g. the
-        // branch was deleted on the remote). Resetting onto a ref that no
-        // longer exists locally would fail, so bail out the same way
-        // getUnpushedCommits() does.
-        const [remote] = splitRemoteBranch(trackingBranch);
-        const remoteBranches = await this.getRemoteBranches(remote);
-        if (!remoteBranches.includes(trackingBranch)) {
+        // There is no safe remote base to reset onto before the push target has
+        // been created, or when Git cannot determine an argument-less push
+        // destination. Let the normal push publish the existing history.
+        const pushTarget = await this.getPushTarget(status.current);
+        if (!pushTarget?.exists) {
             return;
         }
         // A soft reset keeps the index, so any staged but uncommitted changes
@@ -850,7 +885,7 @@ export class SimpleGit extends GitManager {
         if (staged.length > 0) {
             return;
         }
-        const range = `${trackingBranch}..HEAD`;
+        const range = `${pushTarget.ref}..HEAD`;
         const unpushed = parseInt(
             (await this.git.raw(["rev-list", "--count", range])).trim(),
             10
@@ -874,7 +909,7 @@ export class SimpleGit extends GitManager {
         await this.withGitOperation(GitOperation.commit, async () => {
             // Soft reset keeps the index and working tree, so all unpushed
             // changes stay staged and are re-committed as a single commit.
-            await this.git.reset(["--soft", trackingBranch]);
+            await this.git.reset(["--soft", pushTarget.ref]);
             await this.git.raw(["commit", "-C", oldHead]);
             this.app.workspace.trigger("obsidian-git:head-change");
         });
@@ -882,23 +917,25 @@ export class SimpleGit extends GitManager {
 
     async getUnpushedCommits(): Promise<number> {
         const status = await this.git.status();
-        const trackingBranch = status.tracking;
         const currentBranch = status.current;
 
-        if (trackingBranch == null || currentBranch == null) {
+        if (currentBranch == null) {
             return 0;
         }
-        const [remote] = splitRemoteBranch(trackingBranch);
-        const remoteBranches = await this.getRemoteBranches(remote);
-        if (!remoteBranches.includes(trackingBranch)) {
+
+        const pushTarget = await this.getPushTarget(currentBranch);
+        if (!pushTarget) {
+            return 0;
+        }
+        if (!pushTarget.exists) {
             this.plugin.log(
-                `Tracking branch ${trackingBranch} does not exist on remote ${remote}.`
+                `Push target ${pushTarget.ref} does not exist on the remote yet.`
             );
             return 0;
         }
 
         const remoteChangedFiles = (
-            await this.git.diffSummary([currentBranch, trackingBranch, "--"])
+            await this.git.diffSummary([currentBranch, pushTarget.ref, "--"])
         ).changed;
 
         return remoteChangedFiles;
@@ -910,21 +947,26 @@ export class SimpleGit extends GitManager {
             return true;
         }
         const status = await this.git.status();
-        const trackingBranch = status.tracking;
         const currentBranch = status.current;
         if (!currentBranch) {
             this.plugin.log("During canPush check, no current branch found.");
             return false;
         }
 
-        if (!trackingBranch) {
+        const pushTarget = await this.getPushTarget(currentBranch);
+        if (!pushTarget) {
             return false;
         }
-        const remoteChangedFiles = (
-            await this.git.diffSummary([currentBranch, trackingBranch, "--"])
-        ).changed;
+        if (!pushTarget.exists) {
+            return true;
+        }
 
-        return remoteChangedFiles !== 0;
+        const [currentCommit, pushedCommit] = await Promise.all([
+            this.git.revparse([currentBranch]),
+            this.git.revparse([pushTarget.ref]),
+        ]);
+
+        return currentCommit !== pushedCommit;
     }
 
     async checkRequirements(): Promise<
