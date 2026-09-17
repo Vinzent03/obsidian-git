@@ -28,6 +28,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     showStatusBar: true,
     updateSubmodules: false,
     syncMethod: "merge",
+    rebaseAutoStash: "enabled",
     mergeStrategy: "none",
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,

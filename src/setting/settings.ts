@@ -26,6 +26,7 @@ import type ObsidianGit from "src/main";
 import type {
     ObsidianGitSettings,
     MergeStrategy,
+    RebaseAutoStash,
     ShowAuthorInHistoryView,
     SyncMethod,
 } from "src/types";
@@ -427,6 +428,32 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
                         dropdown.onChange(async (option) => {
                             plugin.settings.syncMethod = option as SyncMethod;
+                            await plugin.saveSettings();
+                            this.refreshDisplayWithDelay();
+                        });
+                    });
+
+            if (
+                plugin.gitManager instanceof SimpleGit &&
+                plugin.settings.syncMethod === "rebase"
+            )
+                new Setting(containerEl)
+                    .setName("Auto-stash changes when rebasing")
+                    .setDesc(
+                        "Temporarily stash local changes before rebasing and restore them afterward. Restoring changes may produce conflicts."
+                    )
+                    .addDropdown((dropdown) => {
+                        const options: Record<RebaseAutoStash, string> = {
+                            enabled: "Enabled",
+                            disabled: "Disabled",
+                            "git-config": "Use Git configuration",
+                        };
+                        dropdown.addOptions(options);
+                        dropdown.setValue(plugin.settings.rebaseAutoStash);
+
+                        dropdown.onChange(async (option) => {
+                            plugin.settings.rebaseAutoStash =
+                                option as RebaseAutoStash;
                             await plugin.saveSettings();
                         });
                     });

@@ -24,6 +24,7 @@ export interface ObsidianGitSettings {
     autoPullOnBoot: boolean;
     autoCommitOnlyStaged: boolean;
     syncMethod: SyncMethod;
+    rebaseAutoStash: RebaseAutoStash;
     mergeStrategy: MergeStrategy;
     /**
      * Whether to push on commit-and-sync
@@ -110,6 +111,8 @@ export function mergeSettingsByPriority(
 }
 
 export type SyncMethod = "rebase" | "merge" | "reset";
+
+export type RebaseAutoStash = "enabled" | "disabled" | "git-config";
 
 export type MergeStrategy = "none" | "ours" | "theirs";
 

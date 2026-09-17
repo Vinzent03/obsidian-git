@@ -1,4 +1,4 @@
-import { writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import simpleGit, {
     type SimpleGit as SimpleGitClient,
@@ -193,6 +193,78 @@ describe("SimpleGit.pull", () => {
             [{ operation: GitOperation.pull }],
             [{ operation: GitOperation.idle }],
         ]);
+    });
+
+    it("autostashes local changes when rebasing with autostash enabled", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await createRemoteCommit(repo);
+        repo.write("note.md", "local change\n");
+        await repo.git.addConfig("rebase.autoStash", "false");
+        const plugin = createFakePlugin();
+        plugin.settings.syncMethod = "rebase";
+        plugin.settings.mergeStrategy = "none";
+        plugin.settings.rebaseAutoStash = "enabled";
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toEqual([
+            {
+                path: "remote.md",
+                workingDir: "P",
+                vaultPath: "remote.md",
+            },
+        ]);
+        expect(await repo.show("HEAD:remote.md")).toBe("remote");
+        expect(readFileSync(path.join(repo.repoPath, "note.md"), "utf8")).toBe(
+            "local change\n"
+        );
+        expect(await repo.raw(["stash", "list"])).toBe("");
+    });
+
+    it("disables autostash when rebasing even when Git enables it", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await createRemoteCommit(repo);
+        repo.write("note.md", "local change\n");
+        await repo.git.addConfig("rebase.autoStash", "true");
+        const headBefore = await repo.head();
+        const plugin = createFakePlugin();
+        plugin.settings.syncMethod = "rebase";
+        plugin.settings.mergeStrategy = "none";
+        plugin.settings.rebaseAutoStash = "disabled";
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toBeUndefined();
+        expect(await repo.head()).toBe(headBefore);
+        expect(readFileSync(path.join(repo.repoPath, "note.md"), "utf8")).toBe(
+            "local change\n"
+        );
+        expect(plugin.displayError).toHaveBeenCalledWith(
+            expect.stringContaining("Pull failed (rebase)")
+        );
+    });
+
+    it("uses the Git autostash configuration when requested", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await createRemoteCommit(repo);
+        repo.write("note.md", "local change\n");
+        await repo.git.addConfig("rebase.autoStash", "true");
+        const plugin = createFakePlugin();
+        plugin.settings.syncMethod = "rebase";
+        plugin.settings.mergeStrategy = "none";
+        plugin.settings.rebaseAutoStash = "git-config";
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toHaveLength(1);
+        expect(await repo.show("HEAD:remote.md")).toBe("remote");
+        expect(readFileSync(path.join(repo.repoPath, "note.md"), "utf8")).toBe(
+            "local change\n"
+        );
+        expect(await repo.raw(["stash", "list"])).toBe("");
     });
 
     it("clears progress when done without manually setting pull progress", async () => {

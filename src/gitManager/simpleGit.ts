@@ -710,8 +710,21 @@ export class SimpleGit extends GitManager {
                                 case "merge":
                                     await this.git.merge(args);
                                     break;
-                                case "rebase":
+                                case "rebase": {
+                                    if (
+                                        this.plugin.settings.rebaseAutoStash ===
+                                        "enabled"
+                                    ) {
+                                        args.push("--autostash");
+                                    } else if (
+                                        this.plugin.settings.rebaseAutoStash ===
+                                        "disabled"
+                                    ) {
+                                        args.push("--no-autostash");
+                                    }
                                     await this.git.rebase(args);
+                                    break;
+                                }
                             }
                         } catch (err) {
                             this.plugin.displayError(
