@@ -106,9 +106,10 @@ export default class ObsidianGit extends Plugin {
         if (this.cachedStatus.conflicted.length > 0) {
             this.localStorage.setConflict(true);
             const known = this.localStorage.getConflictFiles();
-            const merged = Array.from(
-                new Set([...known, ...this.cachedStatus.conflicted])
+            const conflicted = this.cachedStatus.conflicted.map((path) =>
+                this.gitManager.getRelativeVaultPath(path)
             );
+            const merged = Array.from(new Set([...known, ...conflicted]));
             if (merged.length !== known.length) {
                 this.localStorage.setConflictFiles(merged);
             }
@@ -1464,12 +1465,18 @@ export default class ObsidianGit extends Plugin {
         return result;
     }
 
+    /**
+     * @param conflicted Paths relative to the Git repository.
+     */
     async handleConflict(conflicted?: string[]): Promise<void> {
         this.localStorage.setConflict(true);
         if (conflicted !== undefined && conflicted.length > 0) {
             const known = this.localStorage.getConflictFiles();
+            const vaultRelative = conflicted.map((path) =>
+                this.gitManager.getRelativeVaultPath(path)
+            );
             this.localStorage.setConflictFiles(
-                Array.from(new Set([...known, ...conflicted]))
+                Array.from(new Set([...known, ...vaultRelative]))
             );
         }
         if (this.localStorage.getConflictFiles().length === 0) {
