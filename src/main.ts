@@ -1465,6 +1465,11 @@ export default class ObsidianGit extends Plugin {
 
     async handleConflict(conflicted?: string[]): Promise<void> {
         this.localStorage.setConflict(true);
+
+        if (this.gitManager instanceof SimpleGit) {
+            return;
+        }
+
         let lines: string[] | undefined;
         if (conflicted !== undefined) {
             lines = [
