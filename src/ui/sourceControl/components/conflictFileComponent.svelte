@@ -19,7 +19,7 @@
     let side = $derived(getTooltipSide(view.leaf));
 
     $effect(() => {
-        if (button) setIcon(button, "check");
+        if (button) setIcon(button, count === 0 ? "plus" : "check");
     });
 
     $effect(() => {
