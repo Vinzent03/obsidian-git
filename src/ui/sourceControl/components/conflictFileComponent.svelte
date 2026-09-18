@@ -6,18 +6,24 @@
 
     interface Props {
         path: string;
+        count: number | undefined;
         view: GitView;
         manager: GitManager;
     }
 
-    let { path, view, manager }: Props = $props();
+    let { path, count, view, manager }: Props = $props();
     let button: HTMLElement | undefined = $state();
+    let resolvedIcon: HTMLElement | undefined = $state();
 
     let vaultPath = $derived(manager.getRelativeVaultPath(path));
     let side = $derived(getTooltipSide(view.leaf));
 
     $effect(() => {
         if (button) setIcon(button, "check");
+    });
+
+    $effect(() => {
+        if (resolvedIcon) setIcon(resolvedIcon, "check");
     });
 
     function open(event: MouseEvent) {
@@ -65,6 +71,40 @@
                     class="clickable-icon"
                 ></div>
             </div>
+            {#if count === 0}
+                <div
+                    class="type resolved"
+                    aria-label="No conflicts left"
+                    bind:this={resolvedIcon}
+                ></div>
+            {:else if count !== undefined}
+                <div
+                    class="type conflict"
+                    aria-label="{count} conflict(s) left"
+                >
+                    {count}
+                </div>
+            {/if}
         </div>
     </div>
 </main>
+
+<style lang="scss">
+    .git-tools .type.conflict {
+        color: var(--git-change);
+        width: auto;
+        min-width: var(--icon-m, 18px);
+        padding-left: 0;
+    }
+
+    .git-tools .type.resolved {
+        color: var(--git-insert);
+        width: var(--icon-m, 18px);
+        padding-left: 0;
+    }
+
+    .git-tools .type.resolved :global(svg) {
+        width: var(--icon-m, 18px);
+        height: var(--icon-m, 18px);
+    }
+</style>

@@ -38,6 +38,7 @@
     let stagedOpen = $state(true);
     let lastPulledFilesOpen = $state(true);
     let conflictsOpen = $state(true);
+    let conflictCounts: Record<string, number> = $state({});
     let unPushedCommits = $state(0);
     let stagedClosed: Record<string, boolean> = $state({});
     let unstagedClosed: Record<string, boolean> = $state({});
@@ -275,6 +276,27 @@
             changeHierarchy = undefined;
             stagedHierarchy = undefined;
         }
+        await updateConflictCounts();
+    }
+
+    async function updateConflictCounts(): Promise<void> {
+        const counts: Record<string, number> = {};
+        for (const conflict of status?.conflicted ?? []) {
+            counts[conflict] = 0;
+            try {
+                const content = await view.app.vault.adapter.read(
+                    plugin.gitManager.getRelativeVaultPath(conflict)
+                );
+                counts[conflict] = countConflictSections(content);
+            } catch {
+                // The file may be deleted on one side; nothing to resolve.
+            }
+        }
+        conflictCounts = counts;
+    }
+
+    function countConflictSections(content: string): number {
+        return (content.match(/^<{7}/gm) ?? []).length;
     }
 
     function triggerRefresh() {
@@ -472,6 +494,7 @@
                     {#each status.conflicted as conflict}
                         <ConflictFileComponent
                             path={conflict}
+                            count={conflictCounts[conflict]}
                             {view}
                             manager={plugin.gitManager}
                         />
