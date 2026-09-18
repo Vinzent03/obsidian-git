@@ -183,6 +183,11 @@ which itself is adapted from the diff2html library with the following original l
         var(--git-conflict-theirs) 25%,
         transparent
     );
+    --git-conflict-base-bg: color-mix(
+        in oklch,
+        var(--color-purple) 18%,
+        transparent
+    );
 }
 
 .git-diff {
@@ -795,12 +800,21 @@ div:hover > .git-gutter-marker.git-changedelete {
     padding: 1px 4px;
 }
 
+.git-conflict-base {
+    background-color: var(--git-conflict-base-bg);
+    padding: 1px 4px;
+}
+
 .git-conflict-ours-line {
     border-inline-start: 2px solid var(--git-conflict-ours-bg);
 }
 
 .git-conflict-theirs-line {
     border-inline-start: 2px solid var(--git-conflict-theirs-bg);
+}
+
+.git-conflict-base-line {
+    border-inline-start: 2px solid var(--git-conflict-base-bg);
 }
 
 .cm-line.git-conflict-marker-line::after {

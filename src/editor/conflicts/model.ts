@@ -12,6 +12,7 @@ export interface ConflictBlock {
     theirs: string;
     markers: ConflictMarker[];
     oursRange: { from: number; to: number };
+    baseRange?: { from: number; to: number };
     theirsRange: { from: number; to: number };
 }
 
@@ -106,6 +107,10 @@ export function parseConflictBlocks(text: string): ConflictBlock[] {
                 from: start.to + 1,
                 to: base !== undefined ? base.from : separator.from,
             },
+            baseRange:
+                base !== undefined
+                    ? { from: base.to + 1, to: separator.from }
+                    : undefined,
             theirsRange: { from: separator.to + 1, to: end.from },
         });
 

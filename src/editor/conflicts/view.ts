@@ -147,6 +147,15 @@ function buildDecorations(state: EditorState): DecorationSet {
             "git-conflict-ours",
             "git-conflict-ours-line"
         );
+        if (block.baseRange !== undefined) {
+            addSectionDecorations(
+                decorations,
+                state,
+                block.baseRange,
+                "git-conflict-base",
+                "git-conflict-base-line"
+            );
+        }
         addSectionDecorations(
             decorations,
             state,

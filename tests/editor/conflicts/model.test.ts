@@ -47,6 +47,7 @@ describe("parseConflictBlocks", () => {
         expect(
             text.slice(blocks[0]!.oursRange.from, blocks[0]!.oursRange.to)
         ).toBe("ours\n");
+        expect(blocks[0]!.baseRange).toBeUndefined();
         expect(
             text.slice(blocks[0]!.theirsRange.from, blocks[0]!.theirsRange.to)
         ).toBe("theirs\n");
@@ -92,5 +93,8 @@ describe("parseConflictBlocks", () => {
         expect(
             text.slice(blocks[0]!.markers[1]!.from, blocks[0]!.markers[1]!.to)
         ).toBe("||||||| merged common ancestors");
+        expect(
+            text.slice(blocks[0]!.baseRange!.from, blocks[0]!.baseRange!.to)
+        ).toBe("base\n");
     });
 });
