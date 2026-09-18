@@ -1,4 +1,4 @@
-export type ConflictChoice = "ours" | "theirs" | "both";
+export type ConflictChoice = "ours" | "theirs" | "base" | "both";
 
 export interface ConflictMarker {
     from: number;
@@ -10,6 +10,7 @@ export interface ConflictBlock {
     to: number;
     ours: string;
     theirs: string;
+    base?: string;
     markers: ConflictMarker[];
     oursRange: { from: number; to: number };
     baseRange?: { from: number; to: number };
@@ -102,6 +103,10 @@ export function parseConflictBlocks(text: string): ConflictBlock[] {
                 base !== undefined ? base.from : separator.from
             ),
             theirs: text.slice(separator.to + 1, end.from),
+            base:
+                base !== undefined
+                    ? text.slice(base.to + 1, separator.from)
+                    : undefined,
             markers,
             oursRange: {
                 from: start.to + 1,
@@ -121,7 +126,7 @@ export function parseConflictBlocks(text: string): ConflictBlock[] {
 }
 
 export function resolveBlockText(
-    block: Pick<ConflictBlock, "ours" | "theirs">,
+    block: Pick<ConflictBlock, "ours" | "theirs" | "base">,
     choice: ConflictChoice
 ): string {
     switch (choice) {
@@ -129,6 +134,11 @@ export function resolveBlockText(
             return block.ours;
         case "theirs":
             return block.theirs;
+        case "base":
+            if (block.base === undefined) {
+                throw new Error("Cannot keep the base of a two-way conflict");
+            }
+            return block.base;
         case "both":
             return block.ours + block.theirs;
     }

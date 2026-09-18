@@ -203,6 +203,11 @@ which itself is adapted from the diff2html library with the following original l
         var(--git-conflict-theirs) 25%,
         var(--interactive-normal)
     );
+    --git-conflict-base-button-bg: color-mix(
+        in oklch,
+        var(--color-purple) 15%,
+        var(--interactive-normal)
+    );
     --git-conflict-base-bg: color-mix(
         in oklch,
         var(--color-purple) 4%,
@@ -745,6 +750,7 @@ div:hover > .git-gutter-marker.git-changedelete {
 .cm-line.git-conflict-marker-line {
     display: flex !important;
     align-items: center;
+    background-color: var(--background-modifier-hover);
 }
 
 .cm-line.git-conflict-marker-line.HyperMD-quote {
@@ -757,7 +763,7 @@ div:hover > .git-gutter-marker.git-changedelete {
 }
 
 .git-conflict-marker {
-    background-color: var(--background-modifier-hover);
+    background-color: transparent;
 }
 
 .markdown-source-view.mod-cm6
@@ -768,11 +774,6 @@ div:hover > .git-gutter-marker.git-changedelete {
 .markdown-source-view.mod-cm6
     .cm-line.git-conflict-marker-line.git-conflict-marker-theirs {
     background-color: var(--git-conflict-theirs-header-bg);
-}
-
-.git-conflict-marker.git-conflict-marker-ours,
-.git-conflict-marker.git-conflict-marker-theirs {
-    background-color: transparent;
 }
 
 .git-conflict-panel {
@@ -819,6 +820,11 @@ div:hover > .git-gutter-marker.git-changedelete {
     color: var(--text-normal);
 }
 
+.git-conflict-actions-group .git-conflict-choose-base {
+    background-color: var(--git-conflict-base-button-bg);
+    color: var(--text-normal);
+}
+
 .git-conflict-actions-group .git-conflict-choose-both {
     background-color: var(--interactive-normal);
     color: var(--text-normal);
@@ -827,6 +833,7 @@ div:hover > .git-gutter-marker.git-changedelete {
 .git-conflict-actions-widget {
     flex: none;
     margin-left: var(--size-2-2);
+    border-radius: 0;
 }
 
 .cm-line.git-conflict-ours-line {
@@ -845,12 +852,6 @@ div:hover > .git-gutter-marker.git-changedelete {
     content: "";
     flex: 1;
     margin-left: var(--size-2-2);
-    border-bottom: 2px solid var(--background-modifier-border);
-}
-
-.cm-line.git-conflict-marker-line.git-conflict-marker-ours::after,
-.cm-line.git-conflict-marker-line.git-conflict-marker-theirs::after {
-    border-bottom: none;
 }
 
 .cm-line.git-conflict-marker-line .git-conflict-actions-widget {

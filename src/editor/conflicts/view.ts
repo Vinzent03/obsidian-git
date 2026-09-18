@@ -22,7 +22,7 @@ import {
     type ConflictChoice,
 } from "./model";
 
-const CHOICES = ["ours", "theirs", "both"] as const;
+const CHOICES = ["ours", "theirs", "base", "both"] as const;
 
 function computeBlocks(state: EditorState): readonly ConflictBlock[] {
     if (!state.field(editorLivePreviewField, false)) {
@@ -47,12 +47,16 @@ export const conflictBlocksField = StateField.define<readonly ConflictBlock[]>({
 
 function addButtons(
     group: HTMLElement,
-    labels: Record<ConflictChoice, string>,
+    labels: Partial<Record<ConflictChoice, string>>,
     onPick: (choice: ConflictChoice) => void
 ): void {
     for (const choice of CHOICES) {
+        const label = labels[choice];
+        if (label === undefined) {
+            continue;
+        }
         const button = new ButtonComponent(group)
-            .setButtonText(labels[choice])
+            .setButtonText(label)
             .onClick((event) => {
                 event.preventDefault();
                 onPick(choice);
@@ -75,7 +79,8 @@ class ConflictButtonsWidget extends WidgetType {
             other.block.from === this.block.from &&
             other.block.to === this.block.to &&
             other.block.ours === this.block.ours &&
-            other.block.theirs === this.block.theirs
+            other.block.theirs === this.block.theirs &&
+            other.block.base === this.block.base
         );
     }
 
@@ -83,10 +88,16 @@ class ConflictButtonsWidget extends WidgetType {
         const root = createDiv({
             cls: "git-conflict-actions-group git-conflict-actions-widget",
         });
-        addButtons(
-            root,
-            { ours: "Keep ours", theirs: "Keep theirs", both: "Keep both" },
-            (choice) => resolveConflict(view, this.block, choice)
+        const labels: Partial<Record<ConflictChoice, string>> = {
+            ours: "Keep ours",
+            theirs: "Keep theirs",
+            both: "Keep both",
+        };
+        if (this.block.base !== undefined) {
+            labels.base = "Keep base";
+        }
+        addButtons(root, labels, (choice) =>
+            resolveConflict(view, this.block, choice)
         );
         return root;
     }

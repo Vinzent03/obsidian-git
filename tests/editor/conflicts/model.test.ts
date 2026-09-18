@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseConflictBlocks } from "../../../src/editor/conflicts/model";
+import {
+    parseConflictBlocks,
+    resolveBlockText,
+} from "../../../src/editor/conflicts/model";
 
 function lines(...values: string[]): string {
     return values.join("\n") + "\n";
@@ -25,6 +28,7 @@ describe("parseConflictBlocks", () => {
         expect(blocks).toHaveLength(1);
         expect(blocks[0]!.ours).toBe("ours\n");
         expect(blocks[0]!.theirs).toBe("theirs\n");
+        expect(blocks[0]!.base).toBeUndefined();
         expect(text.slice(blocks[0]!.from, blocks[0]!.to)).toBe(
             lines(
                 "<<<<<<< HEAD",
@@ -89,6 +93,8 @@ describe("parseConflictBlocks", () => {
         expect(blocks).toHaveLength(1);
         expect(blocks[0]!.ours).toBe("ours\n");
         expect(blocks[0]!.theirs).toBe("theirs\n");
+        expect(blocks[0]!.base).toBe("base\n");
+        expect(resolveBlockText(blocks[0]!, "base")).toBe("base\n");
         expect(blocks[0]!.markers).toHaveLength(4);
         expect(
             text.slice(blocks[0]!.markers[1]!.from, blocks[0]!.markers[1]!.to)
