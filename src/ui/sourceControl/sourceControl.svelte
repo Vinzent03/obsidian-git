@@ -11,6 +11,7 @@
     import { FileType } from "src/types";
     import { arrayProxyWithNewLength, getDisplayPath } from "src/utils";
     import { slide } from "svelte/transition";
+    import ConflictFileComponent from "./components/conflictFileComponent.svelte";
     import FileComponent from "./components/fileComponent.svelte";
     import PulledFileComponent from "./components/pulledFileComponent.svelte";
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
@@ -36,6 +37,7 @@
     let changesOpen = $state(true);
     let stagedOpen = $state(true);
     let lastPulledFilesOpen = $state(true);
+    let conflictsOpen = $state(true);
     let unPushedCommits = $state(0);
     let stagedClosed: Record<string, boolean> = $state({});
     let unstagedClosed: Record<string, boolean> = $state({});
@@ -425,6 +427,60 @@
             ></div>
         {/if}
     </div>
+
+    {#if status && status.conflicted.length > 0}
+        <div
+            class="conflicts tree-item nav-folder"
+            class:is-collapsed={!conflictsOpen}
+        >
+            <div
+                class="tree-item-self is-clickable nav-folder-title"
+                onclick={() => (conflictsOpen = !conflictsOpen)}
+            >
+                <div
+                    class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+                    class:is-collapsed={!conflictsOpen}
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="svg-icon right-triangle"
+                        ><path d="M3 8L12 17L21 8" /></svg
+                    >
+                </div>
+                <div class="tree-item-inner nav-folder-title-content">
+                    Conflicts
+                </div>
+                <div class="git-tools">
+                    <div class="files-count">
+                        {status.conflicted.length}
+                    </div>
+                </div>
+            </div>
+            {#if conflictsOpen}
+                <div
+                    class="tree-item-children nav-folder-children"
+                    transition:slide|local={{ duration: 150 }}
+                >
+                    {#each status.conflicted as conflict}
+                        <ConflictFileComponent
+                            path={conflict}
+                            {view}
+                            manager={plugin.gitManager}
+                        />
+                    {/each}
+                </div>
+            {/if}
+        </div>
+    {/if}
+
     <div class="nav-files-container" style="position: relative;">
         {#if status && stagedHierarchy && changeHierarchy}
             <div class="tree-item nav-folder mod-root">
@@ -745,6 +801,27 @@
         margin: 4px auto;
     }
 
+    .conflicts {
+        --nav-indentation-guide-color: var(--color-red);
+        --collapse-icon-color: var(--color-red);
+        --collapse-icon-color-collapsed: var(--color-red);
+        border: 1px solid var(--git-delete);
+        background-color: var(--git-delete-bg);
+        border-radius: var(--radius-s);
+        margin: 4px var(--size-4-2);
+
+        .nav-folder-collapse-indicator {
+            color: var(--color-red);
+
+            svg {
+                color: var(--color-red);
+            }
+        }
+
+        .tree-item-children {
+            border-inline-start-color: var(--color-red);
+        }
+    }
     main {
         .git-tools {
             .files-count {
