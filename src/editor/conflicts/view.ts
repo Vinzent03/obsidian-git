@@ -3,6 +3,7 @@ import {
     Decoration,
     EditorView,
     showPanel,
+    WidgetType,
     type DecorationSet,
     type Panel,
     type PanelConstructor,
@@ -14,7 +15,7 @@ import {
     editorLivePreviewField,
 } from "obsidian";
 import { CONFLICT_OUTPUT_FILE } from "src/constants";
-import { resolveAllConflicts } from "./actions";
+import { resolveAllConflicts, resolveConflict } from "./actions";
 import {
     parseConflictBlocks,
     type ConflictBlock,
@@ -64,18 +65,55 @@ function addButtons(
     }
 }
 
+class ConflictButtonsWidget extends WidgetType {
+    constructor(private readonly block: ConflictBlock) {
+        super();
+    }
+
+    eq(other: ConflictButtonsWidget): boolean {
+        return (
+            other.block.from === this.block.from &&
+            other.block.to === this.block.to &&
+            other.block.ours === this.block.ours &&
+            other.block.theirs === this.block.theirs
+        );
+    }
+
+    toDOM(view: EditorView): HTMLElement {
+        const root = createDiv({
+            cls: "git-conflict-actions-group git-conflict-actions-widget",
+        });
+        addButtons(
+            root,
+            { ours: "Keep ours", theirs: "Keep theirs", both: "Keep both" },
+            (choice) => resolveConflict(view, this.block, choice)
+        );
+        return root;
+    }
+}
+
 function buildDecorations(state: EditorState): DecorationSet {
     const blocks = state.field(conflictBlocksField, false) ?? [];
     const decorations: Range<Decoration>[] = [];
     for (const block of blocks) {
+        const headMarker = block.markers[0]!;
         for (const marker of block.markers) {
             decorations.push(
+                Decoration.line({ class: "git-conflict-marker-line" }).range(
+                    marker.from
+                ),
                 Decoration.mark({ class: "git-conflict-marker" }).range(
                     marker.from,
                     marker.to
                 )
             );
         }
+        decorations.push(
+            Decoration.widget({
+                widget: new ConflictButtonsWidget(block),
+                side: 1,
+            }).range(headMarker.to)
+        );
     }
     return Decoration.set(decorations, true);
 }

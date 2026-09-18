@@ -715,6 +715,11 @@ div:hover > .git-gutter-marker.git-changedelete {
     margin-right: 0.3em;
 }
 
+.cm-line.git-conflict-marker-line {
+    display: flex !important;
+    align-items: center;
+}
+
 .git-conflict-marker {
     background-color: var(--background-modifier-hover);
 }
@@ -766,4 +771,9 @@ div:hover > .git-gutter-marker.git-changedelete {
 .git-conflict-actions-group .git-conflict-choose-both {
     background-color: var(--icon-color);
     color: black;
+}
+
+.git-conflict-actions-widget {
+    flex: none;
+    margin-left: var(--size-2-2);
 }
