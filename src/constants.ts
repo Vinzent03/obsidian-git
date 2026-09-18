@@ -35,6 +35,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     basePath: "",
     differentIntervalCommitAndPush: false,
     changedFilesInStatusBar: false,
+    limitToVault: false,
     showedMobileNotice: false,
     refreshSourceControlTimer: 7000,
     showBranchStatusBar: true,

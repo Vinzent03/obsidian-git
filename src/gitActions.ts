@@ -364,14 +364,20 @@ export class GitActions {
 
     private reportPullResult(result: PullResult): void {
         switch (result.status) {
-            case "updated":
+            case "updated": {
+                const totalFiles = result.files.length + result.outsideVault;
+                const outsideMessage =
+                    result.outsideVault > 0
+                        ? ` (${result.files.length} in the vault, ${result.outsideVault} outside)`
+                        : "";
                 this.plugin.displayMessage(
-                    `Pulled ${result.files.length} ${
-                        result.files.length == 1 ? "file" : "files"
-                    } from remote`
+                    `Pulled ${totalFiles} ${
+                        totalFiles == 1 ? "file" : "files"
+                    } from remote${outsideMessage}`
                 );
                 this.plugin.lastPulledFiles = result.files;
                 return;
+            }
             case "up-to-date":
                 this.plugin.displayMessage("Pull: Everything is up-to-date");
                 return;
@@ -518,7 +524,10 @@ export class GitActions {
             unstagedFiles = status.changed as unknown as (UnstagedFile & {
                 vaultPath: string;
             })[];
-            resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
+            resolvedMode = this.resolveCommitMode(
+                mode,
+                stagedFiles.length + status.stagedOutsideVault
+            );
         } else {
             // isomorphic-git section
 
@@ -537,7 +546,7 @@ export class GitActions {
         }
 
         if (fromAuto && mergeInProgress) {
-            if (status.conflicted.length > 0) {
+            if (status.conflicted.length + status.conflictedOutsideVault > 0) {
                 throw new GitConflictError(
                     status.conflicted,
                     new Error(
@@ -566,7 +575,10 @@ export class GitActions {
         }
 
         const changesCountToCommit =
-            (onlyStaged ? 0 : unstagedFiles.length) + stagedFiles.length !== 0;
+            (onlyStaged ? 0 : unstagedFiles.length) +
+                stagedFiles.length +
+                status.stagedOutsideVault !==
+            0;
         if (changesCountToCommit || mergeInProgress) {
             // The commit message from settings or previously set in the
             // source control view
@@ -751,11 +763,13 @@ export class GitActions {
         }
         // Refresh because of pull
         const status = await this.plugin.updateCachedStatus();
-        if (status.conflicted.length > 0) {
+        const conflictCount =
+            status.conflicted.length + status.conflictedOutsideVault;
+        if (conflictCount > 0) {
             return {
                 status: "blocked",
                 reason: "conflicts",
-                files: status.conflicted.length,
+                files: conflictCount,
             };
         } else if (this.plugin.state.mergeInProgress) {
             return { status: "blocked", reason: "merge-in-progress" };

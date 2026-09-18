@@ -56,9 +56,15 @@
     let conflictsClosed: Record<string, boolean> = $state({});
     let pulledClosed: Record<string, boolean> = $state({});
 
-    let stagedCount = $derived(status?.staged.length ?? 0);
+    let stagedCount = $derived(
+        (status?.staged.length ?? 0) + (status?.stagedOutsideVault ?? 0)
+    );
     let changedCount = $derived(status?.changed.length ?? 0);
-    let hasConflicts = $derived((status?.conflicted.length ?? 0) > 0);
+    let hasConflicts = $derived(
+        (status?.conflicted.length ?? 0) +
+            (status?.conflictedOutsideVault ?? 0) >
+            0
+    );
     let hasChanges = $derived(stagedCount + changedCount > 0);
     let commitDisabled = $derived(!canCommit("smart"));
     let commitAndSyncDisabled = $derived(!canCommitAndSync("all"));
@@ -272,7 +278,10 @@
                 title: "",
                 path: "",
                 vaultPath: "",
-                children: plugin.gitManager.getTreeStructure(lastPulledFiles),
+                children: plugin.gitManager.getTreeStructure(
+                    lastPulledFiles,
+                    plugin.settings.limitToVault ? "vault" : "repository"
+                ),
             };
         }
         if (status) {
@@ -288,13 +297,19 @@
                 title: "",
                 path: "",
                 vaultPath: "",
-                children: plugin.gitManager.getTreeStructure(status.changed),
+                children: plugin.gitManager.getTreeStructure(
+                    status.changed,
+                    plugin.settings.limitToVault ? "vault" : "repository"
+                ),
             };
             stagedHierarchy = {
                 title: "",
                 path: "",
                 vaultPath: "",
-                children: plugin.gitManager.getTreeStructure(status.staged),
+                children: plugin.gitManager.getTreeStructure(
+                    status.staged,
+                    plugin.settings.limitToVault ? "vault" : "repository"
+                ),
             };
             conflictHierarchy = {
                 title: "",
@@ -658,6 +673,38 @@
                         </div>
                     {/if}
                 </div>
+                {#if status.stagedOutsideVault > 0}
+                    <div class="staged tree-item nav-folder">
+                        <div class="tree-item-self nav-folder-title">
+                            <div
+                                class="tree-item-inner nav-folder-title-content"
+                            >
+                                Staged outside vault
+                            </div>
+                            <div class="git-tools">
+                                <div class="files-count">
+                                    {status.stagedOutsideVault}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
+                {#if status.conflictedOutsideVault > 0}
+                    <div class="changes tree-item nav-folder">
+                        <div class="tree-item-self nav-folder-title">
+                            <div
+                                class="tree-item-inner nav-folder-title-content"
+                            >
+                                Conflicts outside vault
+                            </div>
+                            <div class="git-tools">
+                                <div class="files-count">
+                                    {status.conflictedOutsideVault}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
                 <div
                     class="changes tree-item nav-folder"
                     class:is-collapsed={!changesOpen}

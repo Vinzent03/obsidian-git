@@ -179,6 +179,26 @@ export abstract class GitManager {
         return filePath;
     }
 
+    /**
+     * Returns the repository-relative vault directory when file operations
+     * should be limited to a vault that is contained by the repository.
+     * An undefined value means the whole repository is inside the vault, the
+     * vault is the repository root, or the backend cannot address a parent
+     * repository.
+     */
+    protected getVaultPathspec(): string | undefined {
+        return undefined;
+    }
+
+    protected isPathInsideVault(filePath: string): boolean {
+        const vaultPath = this.getVaultPathspec();
+        return (
+            vaultPath == undefined ||
+            filePath === vaultPath ||
+            filePath.startsWith(vaultPath + "/")
+        );
+    }
+
     unload(): void {}
 
     /*
@@ -233,11 +253,13 @@ export abstract class GitManager {
     }
 
     getTreeStructure<T = DiffFile | FileStatusResult>(
-        children: (T & { path: string })[]
+        children: (T & { path: string; vaultPath: string })[],
+        root: "repository" | "vault" = "repository"
     ): TreeItem<T>[] {
         interface TrieNode {
             title: string;
             path: string;
+            vaultPath: string;
             data?: T;
             children: Map<string, TrieNode>;
         }
@@ -245,20 +267,32 @@ export abstract class GitManager {
         const rootChildren = new Map<string, TrieNode>();
 
         for (const item of children) {
-            const parts = item.path.split("/");
+            const treePath = root === "vault" ? item.vaultPath : item.path;
+            const parts = treePath.split("/");
             let currentChildren = rootChildren;
-            let currentPath = "";
+            let currentTreePath = "";
 
             for (let i = 0; i < parts.length; i++) {
                 const part = parts[i]!;
-                currentPath = currentPath ? currentPath + "/" + part : part;
+                currentTreePath = currentTreePath
+                    ? currentTreePath + "/" + part
+                    : part;
                 const isLast = i === parts.length - 1;
 
                 let node = currentChildren.get(part);
                 if (!node) {
+                    const path =
+                        root === "vault"
+                            ? this.getRelativeRepoPath(currentTreePath)
+                            : currentTreePath;
+                    const vaultPath =
+                        root === "vault"
+                            ? currentTreePath
+                            : this.getRelativeVaultPath(currentTreePath);
                     node = {
                         title: part,
-                        path: currentPath,
+                        path,
+                        vaultPath,
                         children: new Map<string, TrieNode>(),
                     };
                     currentChildren.set(part, node);
@@ -278,7 +312,7 @@ export abstract class GitManager {
                     list.push({
                         title: node.title,
                         path: node.path,
-                        vaultPath: this.getRelativeVaultPath(node.path),
+                        vaultPath: node.vaultPath,
                         children: convert(node.children),
                     });
                 } else {
@@ -286,7 +320,7 @@ export abstract class GitManager {
                         title: node.title,
                         data: node.data,
                         path: node.path,
-                        vaultPath: this.getRelativeVaultPath(node.path),
+                        vaultPath: node.vaultPath,
                     });
                 }
             }
@@ -302,7 +336,7 @@ export abstract class GitManager {
         let status: Status | undefined;
         if (template.includes("{{numFiles}}")) {
             status = await this.status();
-            const numFiles = status.staged.length;
+            const numFiles = status.staged.length + status.stagedOutsideVault;
             template = template.replace("{{numFiles}}", String(numFiles));
         }
         if (template.includes("{{hostname}}")) {
@@ -319,7 +353,7 @@ export abstract class GitManager {
             const changeset: { [key: string]: string[] } = {};
             let files = "";
             // If there are more than 100 files, we don't list them all
-            if (status.staged.length < 100) {
+            if (status.staged.length + status.stagedOutsideVault < 100) {
                 status.staged.forEach((value: FileStatusResult) => {
                     if (value.index in changeset) {
                         changeset[value.index]!.push(value.path);
@@ -334,6 +368,9 @@ export abstract class GitManager {
                 }
 
                 files = chunks.join(", ");
+                if (status.stagedOutsideVault > 0) {
+                    files += `${files ? ", " : ""}${status.stagedOutsideVault} outside vault`;
+                }
             } else {
                 files = "Too many files to list";
             }
@@ -349,8 +386,11 @@ export abstract class GitManager {
             const status2 = status ?? (await this.status());
             let files = "";
             // If there are more than 100 files, we don't list them all
-            if (status2.staged.length < 100) {
+            if (status2.staged.length + status2.stagedOutsideVault < 100) {
                 files = status2.staged.map((e) => e.path).join("\n");
+                if (status2.stagedOutsideVault > 0) {
+                    files += `${files ? "\n" : ""}${status2.stagedOutsideVault} staged file${status2.stagedOutsideVault === 1 ? "" : "s"} outside the vault`;
+                }
             } else {
                 files = "Too many files to list";
             }

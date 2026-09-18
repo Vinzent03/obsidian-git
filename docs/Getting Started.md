@@ -32,6 +32,16 @@ To clone, you have to use a remote URL. This can be one of two protocols: either
 > - One solution is to put the git repository above your Obsidian vault. So that your vault is a sub directory of your git repository.
 > - Another solution is to move the `.git` directory to another location and create a `.git` file in your vault with only the following line: `gitdir: <path-to-your-actual-git-direcotry>`
 
+## Vault inside a larger repository
+
+By default, the plugin manages the entire Git repository, including files outside the vault. Enable **Limit file operations to the vault** in the advanced settings to reduce file-oriented operations and file listings to the vault directory. This limits status, staging, unstaging, discarding, and submodule updates where possible.
+
+Git operations that apply to repository history or the working tree as a whole remain repository-wide. Pulling, merging, rebasing, checking out branches, fetching, pushing, and branch operations can therefore still affect files outside the vault. Repository history also remains global.
+
+Files outside the vault that were already staged are not unstaged by the plugin and are included in the next commit. The Source Control view shows their count without loading their paths. Conflicts outside the vault are also counted and must be resolved outside Obsidian before committing or pushing.
+
+The limit is path-based. If a file is moved from the vault to a directory outside it, Git treats that as a deletion inside the vault and an addition outside it. The deletion can be staged automatically, while the external addition is left unstaged.
+
 # Mobile
 The Git implementation on mobile is **very unstable**! I would not recommend using this plugin on mobile, but try other syncing services.
 

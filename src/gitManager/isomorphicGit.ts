@@ -223,7 +223,14 @@ export class IsomorphicGit extends GitManager {
             }
             window.clearTimeout(timeout);
             notice?.hide();
-            return { all, changed, staged, conflicted };
+            return {
+                all,
+                changed,
+                staged,
+                conflicted,
+                stagedOutsideVault: 0,
+                conflictedOutsideVault: 0,
+            };
         } catch (error) {
             window.clearTimeout(timeout);
             notice?.hide();
@@ -579,6 +586,7 @@ export class IsomorphicGit extends GitManager {
 
                 return {
                     status: "updated",
+                    outsideVault: 0,
                     files: changedFiles.map<FileStatusResult>((file) => ({
                         path: file.path,
                         workingDir: "P",

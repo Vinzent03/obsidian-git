@@ -235,6 +235,34 @@ export class SimpleGit extends GitManager {
         return filePath;
     }
 
+    protected getVaultPathspec(): string | undefined {
+        if (!this.plugin.settings.limitToVault) return undefined;
+
+        const adapter = this.app.vault.adapter as FileSystemAdapter;
+        const vaultPath = path.resolve(adapter.getBasePath());
+        const repositoryPath = path.resolve(this.absoluteRepoPath);
+        const relativePath = path.relative(repositoryPath, vaultPath);
+
+        if (
+            relativePath === "" ||
+            relativePath === ".." ||
+            relativePath.startsWith(".." + path.sep) ||
+            path.isAbsolute(relativePath)
+        ) {
+            return undefined;
+        }
+
+        return relativePath.split(path.sep).join("/");
+    }
+
+    private async countPathsOutsideVault(args: string[]): Promise<number> {
+        const output = await this.git.raw([...args, "-z"]);
+        return output
+            .split("\0")
+            .filter((filePath) => filePath && !this.isPathInsideVault(filePath))
+            .length;
+    }
+
     private get absPluginConfigPath(): string {
         const adapter = this.app.vault.adapter as FileSystemAdapter;
         const vaultPath = adapter.getBasePath();
@@ -390,10 +418,26 @@ export class SimpleGit extends GitManager {
     }
 
     async status(opts?: { path?: string }): Promise<Status> {
-        const dir = opts?.path;
-        const status = await this.git.status(
-            dir != undefined ? ["--", dir] : []
-        );
+        const dir = opts?.path ?? this.getVaultPathspec();
+        const [status, stagedOutsideVault, conflictedOutsideVault] =
+            await Promise.all([
+                this.git.status(dir != undefined ? ["--", dir] : []),
+                this.getVaultPathspec() == undefined
+                    ? 0
+                    : this.countPathsOutsideVault([
+                          "diff",
+                          "--cached",
+                          "--name-only",
+                          "--diff-filter=ACDMRT",
+                      ]),
+                this.getVaultPathspec() == undefined
+                    ? 0
+                    : this.countPathsOutsideVault([
+                          "diff",
+                          "--name-only",
+                          "--diff-filter=U",
+                      ]),
+            ]);
 
         const allFilesFormatted = status.files.map<FileStatusResult>((e) => {
             const res = this.formatPath(e);
@@ -418,6 +462,8 @@ export class SimpleGit extends GitManager {
                 (e) => e.index !== " " && e.index != "U"
             ),
             conflicted,
+            stagedOutsideVault,
+            conflictedOutsideVault,
         };
     }
 
@@ -486,7 +532,23 @@ export class SimpleGit extends GitManager {
                             }
                             return undefined;
                         })
-                        .filter((i): i is string => !!i);
+                        .filter((i): i is string => !!i)
+                        .filter((submodulePath) => {
+                            if (this.getVaultPathspec() == undefined) {
+                                return true;
+                            }
+                            const adapter = this.app.vault
+                                .adapter as FileSystemAdapter;
+                            const relativePath = path.relative(
+                                path.resolve(adapter.getBasePath()),
+                                path.resolve(submodulePath)
+                            );
+                            return !(
+                                relativePath === ".." ||
+                                relativePath.startsWith(".." + path.sep) ||
+                                path.isAbsolute(relativePath)
+                            );
+                        });
 
                     strippedSubmods.reverse();
                     resolve(strippedSubmods);
@@ -591,7 +653,10 @@ export class SimpleGit extends GitManager {
                         .commit(await this.formatCommitMessage(message));
                 }
             }
-            await this.git.add("-A");
+            const vaultPath = this.getVaultPathspec();
+            await this.git.add(
+                vaultPath == undefined ? "-A" : ["-A", "--", vaultPath]
+            );
 
             const res = await this.git.commit(
                 await this.formatCommitMessage(message),
@@ -638,11 +703,15 @@ export class SimpleGit extends GitManager {
     }
 
     async stageAll({ dir }: { dir?: string }): Promise<void> {
-        await this.git.add(dir ?? "-A");
+        const scopedDir = dir ?? this.getVaultPathspec();
+        await this.git.add(
+            scopedDir == undefined ? "-A" : ["-A", "--", scopedDir]
+        );
     }
 
     async unstageAll({ dir }: { dir?: string }): Promise<void> {
-        await this.git.reset(dir != undefined ? ["--", dir] : []);
+        const scopedDir = dir ?? this.getVaultPathspec();
+        await this.git.reset(scopedDir != undefined ? ["--", scopedDir] : []);
     }
 
     async unstage(path: string, relativeToVault: boolean): Promise<void> {
@@ -668,7 +737,7 @@ export class SimpleGit extends GitManager {
     }
 
     async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {
-        const dir = opts?.path;
+        const dir = opts?.path ?? this.getVaultPathspec();
         const args = [];
         if (dir != undefined) {
             args.push("--", dir);
@@ -698,19 +767,25 @@ export class SimpleGit extends GitManager {
     }
 
     async discardAll({ dir }: { dir?: string }): Promise<void> {
-        return this.discard(dir ?? ".");
+        return this.discard(dir ?? this.getVaultPathspec() ?? ".");
     }
 
     async pull(): Promise<PullResult> {
         return this.withGitOperation(GitOperation.pull, async () => {
             try {
-                if (this.plugin.settings.updateSubmodules)
-                    await this.git.subModule([
+                if (this.plugin.settings.updateSubmodules) {
+                    const args = [
                         "update",
                         "--remote",
                         "--merge",
                         "--recursive",
-                    ]);
+                    ];
+                    const vaultPath = this.getVaultPathspec();
+                    if (vaultPath != undefined) {
+                        args.push("--", vaultPath);
+                    }
+                    await this.git.subModule(args);
+                }
 
                 const branchInfo = await this.branchInfo();
                 if (!branchInfo.current) {
@@ -794,18 +869,23 @@ export class SimpleGit extends GitManager {
                         "--name-only",
                     ]);
 
+                    const changedPaths = filesChanged
+                        .split(/\r\n|\r|\n/)
+                        .filter((value) => value.length > 0);
+                    const vaultFiles = changedPaths.filter((filePath) =>
+                        this.isPathInsideVault(filePath)
+                    );
                     return {
                         status: "updated",
-                        files: filesChanged
-                            .split(/\r\n|\r|\n/)
-                            .filter((value) => value.length > 0)
-                            .map((e) => {
-                                return <FileStatusResult>{
+                        outsideVault: changedPaths.length - vaultFiles.length,
+                        files: vaultFiles.map(
+                            (e) =>
+                                <FileStatusResult>{
                                     path: e,
                                     workingDir: "P",
                                     vaultPath: this.getRelativeVaultPath(e),
-                                };
-                            }),
+                                }
+                        ),
                     };
                 } else {
                     return { status: "up-to-date" };
@@ -834,12 +914,28 @@ export class SimpleGit extends GitManager {
         return this.withGitOperation(GitOperation.push, async () => {
             try {
                 if (this.plugin.settings.updateSubmodules) {
-                    const res = await this.git.subModule([
-                        "foreach",
-                        "--recursive",
-                        `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`,
-                    ]);
-                    console.log(res);
+                    if (this.getVaultPathspec() == undefined) {
+                        await this.git.subModule([
+                            "foreach",
+                            "--recursive",
+                            `tracking=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)"); echo $tracking; if [ ! -z "$(git diff --shortstat $tracking)" ]; then git push; fi`,
+                        ]);
+                    } else {
+                        const submodulePaths = await this.getSubmodulePaths();
+                        for (const submodulePath of submodulePaths) {
+                            const submoduleGit = this.git.cwd({
+                                path: submodulePath,
+                                root: false,
+                            });
+                            const submoduleStatus = await submoduleGit.status();
+                            if (
+                                submoduleStatus.tracking &&
+                                submoduleStatus.ahead > 0
+                            ) {
+                                await submoduleGit.push();
+                            }
+                        }
+                    }
                 }
                 const status = await this.git.status();
                 const currentBranch = status.detached

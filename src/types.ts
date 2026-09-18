@@ -66,6 +66,11 @@ export interface ObsidianGitSettings {
     username?: string;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;
+    /**
+     * Limit file-oriented Git operations and file listings to the vault when
+     * the vault is a subdirectory of the repository.
+     */
+    limitToVault: boolean;
 
     /**
      * @deprecated Migrated to `syncMethod = 'merge'`
@@ -128,8 +133,20 @@ export interface Status {
     changed: FileStatusResult[];
     staged: FileStatusResult[];
 
+    /**
+     * Number of staged files omitted because they are outside the vault.
+     * Only nonzero if {@link ObsidianGitSettings.limitToVault} is true.
+     */
+    stagedOutsideVault: number;
+
     /** Paths with unresolved entries in the Git index. */
     conflicted: string[];
+    /**
+     * Number of conflicted files outside the vault.
+     *
+     * Only nonzero if {@link ObsidianGitSettings.limitToVault} is true.
+     * */
+    conflictedOutsideVault: number;
 }
 
 export interface GitTimestamp {
@@ -254,7 +271,7 @@ export type NotReadyResult = {
 };
 
 export type PullResult =
-    | { status: "updated"; files: FileStatusResult[] }
+    | { status: "updated"; files: FileStatusResult[]; outsideVault: number }
     | { status: "up-to-date" }
     | { status: "skipped"; reason: "no-upstream" }
     | NotReadyResult;

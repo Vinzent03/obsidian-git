@@ -946,6 +946,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             }
         }
 
+        new Setting(containerEl)
+            .setName("Limit file operations to the vault")
+            .setDesc(
+                "When the vault is inside a larger Git repository, limit status, staging, unstaging, discarding, and submodule updates to the vault where possible. Already staged files outside the vault are still committed. Pull, checkout, branch, fetch, push, and repository history remain repository-wide."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(plugin.settings.limitToVault)
+                    .onChange(async (value) => {
+                        plugin.settings.limitToVault = value;
+                        await plugin.saveSettings();
+                        await plugin.refresh();
+                    })
+            );
+
         if (plugin.gitManager instanceof SimpleGit)
             new Setting(containerEl)
                 .setName("Custom Git binary path")

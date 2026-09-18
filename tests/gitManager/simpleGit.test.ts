@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import simpleGit, {
     type SimpleGit as SimpleGitClient,
@@ -6,9 +6,39 @@ import simpleGit, {
 } from "simple-git";
 import { describe, expect, it, vi } from "vitest";
 import { GitOperation, type GitProgress } from "../../src/types";
+import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { withCleanup } from "../helpers/cleanup";
-import type { FakePlugin } from "../helpers/createFakePlugin";
+import { createFakePlugin, type FakePlugin } from "../helpers/createFakePlugin";
+import { createRepoWithOrigin } from "../helpers/gitRepo";
 import { createSimpleGitTestContext } from "../helpers/simpleGit";
+
+function createManager(
+    repoPath: string,
+    gitClient: SimpleGitClient,
+    plugin: FakePlugin = createFakePlugin(),
+    vaultPath = repoPath
+): SimpleGit {
+    (
+        plugin.app as unknown as {
+            vault: {
+                adapter: {
+                    getBasePath(): string;
+                    exists(filePath: string): Promise<boolean>;
+                };
+            };
+        }
+    ).vault = {
+        adapter: {
+            getBasePath: () => vaultPath,
+            exists: (filePath: string) =>
+                Promise.resolve(existsSync(path.join(vaultPath, filePath))),
+        },
+    };
+    const manager = new SimpleGit(plugin);
+    manager.git = gitClient;
+    manager.absoluteRepoPath = repoPath;
+    return manager;
+}
 
 function addStatusBar(plugin: FakePlugin) {
     const displayProgress = vi.fn<(progress: GitProgress) => void>();
@@ -21,14 +51,28 @@ function addStatusBar(plugin: FakePlugin) {
     return statusBar;
 }
 
+async function addVaultDirectory(
+    repo: Awaited<ReturnType<typeof createRepoWithOrigin>>
+) {
+    mkdirSync(path.join(repo.repoPath, "docs"));
+    repo.write("docs/vault.md", "vault base\n");
+    await repo.git.add("docs/vault.md");
+    await repo.git.commit("add vault");
+    await repo.git.push(["--quiet"]);
+    return path.join(repo.repoPath, "docs");
+}
+
 type ProgressMapper = {
     toGitProgress(progress: SimpleGitProgressEvent): GitProgress;
 };
 
-async function createRemoteCommit(repo: {
-    dir: string;
-    remotePath: string;
-}): Promise<void> {
+async function createRemoteCommit(
+    repo: {
+        dir: string;
+        remotePath: string;
+    },
+    files: Record<string, string> = { "remote.md": "remote\n" }
+): Promise<void> {
     const remoteWorktreePath = path.join(repo.dir, "remote-worktree");
     await simpleGit(repo.dir).raw([
         "clone",
@@ -42,8 +86,12 @@ async function createRemoteCommit(repo: {
     });
     await remoteGit.addConfig("user.email", "test@example.com");
     await remoteGit.addConfig("user.name", "Test User");
-    writeFileSync(path.join(remoteWorktreePath, "remote.md"), "remote\n");
-    await remoteGit.add("remote.md");
+    for (const [filePath, content] of Object.entries(files)) {
+        const absolutePath = path.join(remoteWorktreePath, filePath);
+        mkdirSync(path.dirname(absolutePath), { recursive: true });
+        writeFileSync(absolutePath, content);
+    }
+    await remoteGit.add(Object.keys(files));
     await remoteGit.commit("remote commit");
     await remoteGit.push(["--quiet"]);
 }
@@ -96,6 +144,157 @@ describe("SimpleGit.commit", () => {
             "obsidian-git:head-change"
         );
     });
+
+    it("stages vault changes and commits files already staged outside the vault", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        repo.write("docs/vault.md", "vault changed\n");
+        repo.write("note.md", "outside unstaged\n");
+        repo.write("outside-staged.md", "outside staged\n");
+        await repo.git.add("outside-staged.md");
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = true;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+
+        const changes = await manager.commitAll({ message: "scoped commit" });
+
+        expect(changes).toBe(2);
+        expect(await repo.show("HEAD:docs/vault.md")).toBe("vault changed");
+        expect(await repo.show("HEAD:outside-staged.md")).toBe(
+            "outside staged"
+        );
+        expect(await repo.show("HEAD:note.md")).toBe("base");
+        expect(await repo.statusPorcelain()).toBe("M note.md");
+    });
+});
+
+describe("SimpleGit vault scope", () => {
+    it("keeps repository-wide behavior when the setting is disabled", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        repo.write("docs/vault.md", "vault changed\n");
+        repo.write("note.md", "outside changed\n");
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = false;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+
+        const status = await manager.status();
+
+        expect(status.changed.map((file) => file.path).sort()).toEqual([
+            "docs/vault.md",
+            "note.md",
+        ]);
+        expect(status.stagedOutsideVault).toBe(0);
+    });
+
+    it("limits status data while counting staged files outside the vault", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        repo.write("docs/vault.md", "vault changed\n");
+        repo.write("docs/new.md", "new vault file\n");
+        repo.write("note.md", "outside unstaged\n");
+        repo.write("outside-staged.md", "outside staged\n");
+        await repo.git.add("outside-staged.md");
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = true;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+
+        const status = await manager.status();
+
+        expect(status.changed.map((file) => file.path).sort()).toEqual([
+            "docs/new.md",
+            "docs/vault.md",
+        ]);
+        expect(status.staged).toEqual([]);
+        expect(status.stagedOutsideVault).toBe(1);
+        expect(status.conflictedOutsideVault).toBe(0);
+
+        const tree = manager.getTreeStructure(status.changed, "vault");
+        expect(tree.map((item) => item.title).sort()).toEqual([
+            "new.md",
+            "vault.md",
+        ]);
+        expect(tree.map((item) => item.path).sort()).toEqual([
+            "docs/new.md",
+            "docs/vault.md",
+        ]);
+        expect(tree.map((item) => item.vaultPath).sort()).toEqual([
+            "new.md",
+            "vault.md",
+        ]);
+    });
+
+    it("unstages and discards only changes inside the vault", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        repo.write("docs/vault.md", "vault changed\n");
+        repo.write("note.md", "outside changed\n");
+        await repo.git.add(["docs/vault.md", "note.md"]);
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = true;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+
+        await manager.unstageAll({});
+        expect(await repo.cachedDiffNames()).toBe("note.md");
+
+        await manager.discardAll({});
+        expect(readFileSync(path.join(vaultPath, "vault.md"), "utf8")).toBe(
+            "vault base\n"
+        );
+        expect(readFileSync(path.join(repo.repoPath, "note.md"), "utf8")).toBe(
+            "outside changed\n"
+        );
+    });
+
+    it("counts conflicts outside the vault without listing unrelated changes", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        await createRemoteCommit(repo, {
+            "docs/vault.md": "remote vault change\n",
+            "note.md": "remote change\n",
+        });
+        repo.write("docs/vault.md", "local vault change\n");
+        repo.write("note.md", "local change\n");
+        await repo.git.add(["docs/vault.md", "note.md"]);
+        await repo.git.commit("local change");
+        await repo.git.fetch();
+        await expect(repo.git.merge(["origin/main"])).rejects.toThrow();
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = true;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+
+        const status = await manager.status();
+
+        expect(status.conflicted).toEqual(["docs/vault.md"]);
+        expect(status.conflictedOutsideVault).toBe(1);
+        expect(status.changed).toEqual([]);
+        expect(status.all.map((file) => file.path)).toEqual(["docs/vault.md"]);
+    });
 });
 
 describe("SimpleGit.pull", () => {
@@ -118,6 +317,7 @@ describe("SimpleGit.pull", () => {
                     vaultPath: "remote.md",
                 },
             ],
+            outsideVault: 0,
         });
         expect(await repo.headMessage()).toBe("remote commit");
         expect(await repo.show("HEAD:remote.md")).toBe("remote");
@@ -129,6 +329,39 @@ describe("SimpleGit.pull", () => {
         expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
             "obsidian-git:head-change"
         );
+    });
+
+    it("reports vault and outside-vault changes separately", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        await createRemoteCommit(repo, {
+            "docs/remote.md": "vault remote\n",
+            "outside-remote.md": "outside remote\n",
+        });
+        const plugin = createFakePlugin();
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.mergeStrategy = "none";
+        plugin.settings.limitToVault = true;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+
+        const changes = await manager.pull();
+
+        expect(changes).toEqual({
+            status: "updated",
+            files: [
+                {
+                    path: "docs/remote.md",
+                    workingDir: "P",
+                    vaultPath: "remote.md",
+                },
+            ],
+            outsideVault: 1,
+        });
     });
 
     it("returns an explicit result when the branch is already up to date", async () => {
@@ -208,6 +441,7 @@ describe("SimpleGit.pull", () => {
                     vaultPath: "remote.md",
                 },
             ],
+            outsideVault: 0,
         });
         expect(await repo.show("HEAD:remote.md")).toBe("remote");
         expect(readFileSync(path.join(repo.repoPath, "note.md"), "utf8")).toBe(
@@ -292,6 +526,7 @@ describe("SimpleGit.pull", () => {
                     vaultPath: "remote.md",
                 },
             ],
+            outsideVault: 0,
         });
         expect(await repo.headMessage()).toBe("remote commit");
         expect(await repo.show("HEAD:remote.md")).toBe("remote");

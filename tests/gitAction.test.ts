@@ -28,6 +28,8 @@ describe("runGitAction", () => {
             changed: [],
             staged: [],
             conflicted: ["note.md"],
+            stagedOutsideVault: 0,
+            conflictedOutsideVault: 0,
         });
 
         const result = await runGitAction(host, () =>
