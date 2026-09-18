@@ -175,17 +175,37 @@ which itself is adapted from the diff2html library with the following original l
     --git-conflict-theirs: var(--color-blue);
     --git-conflict-ours-bg: color-mix(
         in oklch,
-        var(--git-conflict-ours) 25%,
+        var(--git-conflict-ours) 10%,
         transparent
     );
     --git-conflict-theirs-bg: color-mix(
         in oklch,
+        var(--git-conflict-theirs) 10%,
+        transparent
+    );
+    --git-conflict-ours-header-bg: color-mix(
+        in oklch,
+        var(--git-conflict-ours) 25%,
+        transparent
+    );
+    --git-conflict-theirs-header-bg: color-mix(
+        in oklch,
         var(--git-conflict-theirs) 25%,
         transparent
     );
+    --git-conflict-ours-button-bg: color-mix(
+        in oklch,
+        var(--git-conflict-ours) 25%,
+        var(--interactive-normal)
+    );
+    --git-conflict-theirs-button-bg: color-mix(
+        in oklch,
+        var(--git-conflict-theirs) 25%,
+        var(--interactive-normal)
+    );
     --git-conflict-base-bg: color-mix(
         in oklch,
-        var(--color-purple) 18%,
+        var(--color-purple) 4%,
         transparent
     );
 }
@@ -728,12 +748,31 @@ div:hover > .git-gutter-marker.git-changedelete {
 }
 
 .cm-line.git-conflict-marker-line.HyperMD-quote {
+    /* The closing Git marker (`>>>>>>>`) is parsed by Live Preview as nested
+     * Markdown blockquotes. Obsidian marks these layout rules as important, so
+     * the conflict marker must use important as well to undo that styling. */
     text-indent: 0 !important;
     padding-inline-start: 0 !important;
+    border-inline-start: none !important;
 }
 
 .git-conflict-marker {
     background-color: var(--background-modifier-hover);
+}
+
+.markdown-source-view.mod-cm6
+    .cm-line.git-conflict-marker-line.git-conflict-marker-ours {
+    background-color: var(--git-conflict-ours-header-bg);
+}
+
+.markdown-source-view.mod-cm6
+    .cm-line.git-conflict-marker-line.git-conflict-marker-theirs {
+    background-color: var(--git-conflict-theirs-header-bg);
+}
+
+.git-conflict-marker.git-conflict-marker-ours,
+.git-conflict-marker.git-conflict-marker-theirs {
+    background-color: transparent;
 }
 
 .git-conflict-panel {
@@ -771,17 +810,17 @@ div:hover > .git-gutter-marker.git-changedelete {
 }
 
 .git-conflict-actions-group .git-conflict-choose-ours {
-    background-color: var(--git-conflict-ours-bg);
+    background-color: var(--git-conflict-ours-button-bg);
     color: var(--text-normal);
 }
 
 .git-conflict-actions-group .git-conflict-choose-theirs {
-    background-color: var(--git-conflict-theirs-bg);
+    background-color: var(--git-conflict-theirs-button-bg);
     color: var(--text-normal);
 }
 
 .git-conflict-actions-group .git-conflict-choose-both {
-    background-color: var(--background-modifier-hover);
+    background-color: var(--interactive-normal);
     color: var(--text-normal);
 }
 
@@ -790,31 +829,16 @@ div:hover > .git-gutter-marker.git-changedelete {
     margin-left: var(--size-2-2);
 }
 
-.git-conflict-ours {
+.cm-line.git-conflict-ours-line {
     background-color: var(--git-conflict-ours-bg);
-    padding: 1px 4px;
 }
 
-.git-conflict-theirs {
+.cm-line.git-conflict-theirs-line {
     background-color: var(--git-conflict-theirs-bg);
-    padding: 1px 4px;
 }
 
-.git-conflict-base {
+.cm-line.git-conflict-base-line {
     background-color: var(--git-conflict-base-bg);
-    padding: 1px 4px;
-}
-
-.git-conflict-ours-line {
-    border-inline-start: 2px solid var(--git-conflict-ours-bg);
-}
-
-.git-conflict-theirs-line {
-    border-inline-start: 2px solid var(--git-conflict-theirs-bg);
-}
-
-.git-conflict-base-line {
-    border-inline-start: 2px solid var(--git-conflict-base-bg);
 }
 
 .cm-line.git-conflict-marker-line::after {
@@ -822,6 +846,11 @@ div:hover > .git-gutter-marker.git-changedelete {
     flex: 1;
     margin-left: var(--size-2-2);
     border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.cm-line.git-conflict-marker-line.git-conflict-marker-ours::after,
+.cm-line.git-conflict-marker-line.git-conflict-marker-theirs::after {
+    border-bottom: none;
 }
 
 .cm-line.git-conflict-marker-line .git-conflict-actions-widget {

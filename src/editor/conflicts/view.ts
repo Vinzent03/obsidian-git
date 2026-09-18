@@ -96,25 +96,17 @@ function addSectionDecorations(
     decorations: Range<Decoration>[],
     state: EditorState,
     range: { from: number; to: number },
-    tintClass: string,
-    emptyLineClass: string
+    lineClass: string
 ): void {
     if (range.from >= range.to) {
         return;
     }
-    decorations.push(
-        Decoration.mark({ class: tintClass }).range(range.from, range.to)
-    );
     const firstLine = state.doc.lineAt(range.from).number;
-    const lastLine = state.doc.lineAt(range.to).number;
+    const lastLine = state.doc.lineAt(range.to - 1).number;
     for (let n = firstLine; n <= lastLine; n++) {
-        if (state.doc.line(n).length === 0) {
-            decorations.push(
-                Decoration.line({ class: emptyLineClass }).range(
-                    state.doc.line(n).from
-                )
-            );
-        }
+        decorations.push(
+            Decoration.line({ class: lineClass }).range(state.doc.line(n).from)
+        );
     }
 }
 
@@ -123,15 +115,20 @@ function buildDecorations(state: EditorState): DecorationSet {
     const decorations: Range<Decoration>[] = [];
     for (const block of blocks) {
         const headMarker = block.markers[0]!;
-        for (const marker of block.markers) {
+        for (const [index, marker] of block.markers.entries()) {
+            const sideClass =
+                index === 0
+                    ? " git-conflict-marker-ours"
+                    : index === block.markers.length - 1
+                      ? " git-conflict-marker-theirs"
+                      : "";
             decorations.push(
-                Decoration.line({ class: "git-conflict-marker-line" }).range(
-                    marker.from
-                ),
-                Decoration.mark({ class: "git-conflict-marker" }).range(
-                    marker.from,
-                    marker.to
-                )
+                Decoration.line({
+                    class: `git-conflict-marker-line${sideClass}`,
+                }).range(marker.from),
+                Decoration.mark({
+                    class: `git-conflict-marker${sideClass}`,
+                }).range(marker.from, marker.to)
             );
         }
         decorations.push(
@@ -144,7 +141,6 @@ function buildDecorations(state: EditorState): DecorationSet {
             decorations,
             state,
             block.oursRange,
-            "git-conflict-ours",
             "git-conflict-ours-line"
         );
         if (block.baseRange !== undefined) {
@@ -152,7 +148,6 @@ function buildDecorations(state: EditorState): DecorationSet {
                 decorations,
                 state,
                 block.baseRange,
-                "git-conflict-base",
                 "git-conflict-base-line"
             );
         }
@@ -160,7 +155,6 @@ function buildDecorations(state: EditorState): DecorationSet {
             decorations,
             state,
             block.theirsRange,
-            "git-conflict-theirs",
             "git-conflict-theirs-line"
         );
     }
