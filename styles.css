@@ -171,14 +171,16 @@ which itself is adapted from the diff2html library with the following original l
     --git-change: #d0b44c;
     --git-move: #3572b0;
 
+    --git-conflict-ours: var(--color-cyan);
+    --git-conflict-theirs: var(--color-blue);
     --git-conflict-ours-bg: color-mix(
-        in srgb,
-        var(--git-selected) 25%,
+        in oklch,
+        var(--git-conflict-ours) 25%,
         transparent
     );
     --git-conflict-theirs-bg: color-mix(
-        in srgb,
-        var(--git-change) 25%,
+        in oklch,
+        var(--git-conflict-theirs) 25%,
         transparent
     );
 }
@@ -764,18 +766,18 @@ div:hover > .git-gutter-marker.git-changedelete {
 }
 
 .git-conflict-actions-group .git-conflict-choose-ours {
-    background-color: var(--git-selected);
-    color: black;
+    background-color: var(--git-conflict-ours-bg);
+    color: var(--text-normal);
 }
 
 .git-conflict-actions-group .git-conflict-choose-theirs {
-    background-color: var(--git-change);
-    color: black;
+    background-color: var(--git-conflict-theirs-bg);
+    color: var(--text-normal);
 }
 
 .git-conflict-actions-group .git-conflict-choose-both {
-    background-color: var(--icon-color);
-    color: black;
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
 }
 
 .git-conflict-actions-widget {
