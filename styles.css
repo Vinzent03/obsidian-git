@@ -720,6 +720,11 @@ div:hover > .git-gutter-marker.git-changedelete {
     align-items: center;
 }
 
+.cm-line.git-conflict-marker-line.HyperMD-quote {
+    text-indent: 0 !important;
+    padding-inline-start: 0 !important;
+}
+
 .git-conflict-marker {
     background-color: var(--background-modifier-hover);
 }
