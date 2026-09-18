@@ -800,3 +800,14 @@ div:hover > .git-gutter-marker.git-changedelete {
 .git-conflict-theirs-line {
     border-inline-start: 2px solid var(--git-conflict-theirs-bg);
 }
+
+.cm-line.git-conflict-marker-line::after {
+    content: "";
+    flex: 1;
+    margin-left: var(--size-2-2);
+    border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.cm-line.git-conflict-marker-line .git-conflict-actions-widget {
+    order: 2;
+}
