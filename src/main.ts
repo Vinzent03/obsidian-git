@@ -839,7 +839,7 @@ export default class ObsidianGit extends Plugin {
         if (!this.settings.disablePush) {
             // Prevent trying to push every time. Only if unpushed commits are present
             if (
-                (await this.remotesAreSet()) &&
+                (await this.isPushRemoteSet()) &&
                 (await this.gitManager.canPush())
             ) {
                 await this.push();
@@ -1105,7 +1105,7 @@ export default class ObsidianGit extends Plugin {
      */
     async push(): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
-        if (!(await this.remotesAreSet())) {
+        if (!(await this.isPushRemoteSet())) {
             return false;
         }
         const hadConflict = this.localStorage.getConflict();
@@ -1177,7 +1177,7 @@ export default class ObsidianGit extends Plugin {
      *  See {@link pullChangesFromRemote} for the command version.
      */
     async pull(): Promise<false | number> {
-        if (!(await this.remotesAreSet())) {
+        if (!(await this.isPullRemoteSet())) {
             return false;
         }
         try {
@@ -1202,7 +1202,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async fetch(): Promise<void> {
-        if (!(await this.remotesAreSet())) {
+        if (!(await this.isPushRemoteSet())) {
             return;
         }
         try {
@@ -1335,21 +1335,43 @@ export default class ObsidianGit extends Plugin {
         return undefined;
     }
 
-    /** Ensures that the upstream branch is set.
-     * If not, it will prompt the user to set it.
-     *
-     * An exception is when the user has submodules enabled.
-     * In this case, the upstream branch is not required,
-     * to allow pulling/pushing only the submodules and not the outer repo.
-     */
-    async remotesAreSet(): Promise<boolean> {
-        if (this.settings.updateSubmodules) {
-            return true;
-        }
-        if (
+    private async canAutoSetupPushRemote(): Promise<boolean> {
+        return (
             this.gitManager instanceof SimpleGit &&
             (await this.gitManager.getConfig("push.autoSetupRemote", "all")) ==
                 "true"
+        );
+    }
+
+    /**
+     * A pull needs an existing upstream. When Git is configured to create the
+     * upstream on the first push, skip the pull and let that push establish it.
+     */
+    async isPullRemoteSet(): Promise<boolean> {
+        if (this.settings.updateSubmodules) {
+            return true;
+        }
+        if ((await this.gitManager.branchInfo()).tracking) {
+            return true;
+        }
+        if (await this.canAutoSetupPushRemote()) {
+            new Notice(
+                "Upstream branch will be created on first push. Skipping pull.\nUse set upstream branch command to set it manually if desired."
+            );
+            return false;
+        }
+        new Notice("No upstream branch is set. Please select one.");
+        return await this.setUpstreamBranch();
+    }
+
+    /**
+     * A push can proceed without an existing upstream when Git is configured
+     * to create it automatically.
+     */
+    async isPushRemoteSet(): Promise<boolean> {
+        if (
+            this.settings.updateSubmodules ||
+            (await this.canAutoSetupPushRemote())
         ) {
             return true;
         }

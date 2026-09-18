@@ -348,6 +348,24 @@ describe("SimpleGit.pull", () => {
         );
         expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
     });
+
+    it("skips pulling when no tracking branch exists", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkoutLocalBranch("local-only");
+        const headBefore = await repo.head();
+        const plugin = createFakePlugin();
+        const manager = createManager(repo.repoPath, repo.git, plugin);
+
+        const changes = await manager.pull();
+
+        expect(changes).toBeUndefined();
+        expect(await repo.head()).toBe(headBefore);
+        expect(plugin.log).toHaveBeenCalledWith(
+            "No tracking branch found. Ignoring pull."
+        );
+        expect(plugin.displayError).not.toHaveBeenCalled();
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
+    });
 });
 
 describe("SimpleGit.push", () => {

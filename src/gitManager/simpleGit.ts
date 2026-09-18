@@ -677,19 +677,18 @@ export class SimpleGit extends GitManager {
                     branchInfo.current,
                 ]);
 
-                if (
-                    !branchInfo.tracking &&
-                    this.plugin.settings.updateSubmodules
-                ) {
+                if (!branchInfo.tracking) {
                     this.plugin.log(
-                        "No tracking branch found. Ignoring pull of main repo and updating submodules only."
+                        this.plugin.settings.updateSubmodules
+                            ? "No tracking branch found. Ignoring pull of main repo and updated submodules only."
+                            : "No tracking branch found. Ignoring pull."
                     );
                     return;
                 }
 
                 await this.git.fetch();
                 const upstreamCommit = await this.git.revparse([
-                    branchInfo.tracking!,
+                    branchInfo.tracking,
                 ]);
 
                 if (localCommit !== upstreamCommit) {
@@ -698,7 +697,7 @@ export class SimpleGit extends GitManager {
                         this.plugin.settings.syncMethod === "rebase"
                     ) {
                         try {
-                            const args = [branchInfo.tracking!];
+                            const args = [branchInfo.tracking];
 
                             if (this.plugin.settings.mergeStrategy !== "none") {
                                 args.push(
