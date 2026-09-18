@@ -43,17 +43,22 @@ export const conflictBlocksField = StateField.define<readonly ConflictBlock[]>({
 });
 
 function addButtons(
-    parent: HTMLElement,
+    group: HTMLElement,
     labels: Record<ConflictChoice, string>,
     onPick: (choice: ConflictChoice) => void
 ): void {
     for (const choice of CHOICES) {
-        new ButtonComponent(parent)
+        const button = new ButtonComponent(group)
             .setButtonText(labels[choice])
             .onClick((event) => {
                 event.preventDefault();
                 onPick(choice);
             });
+        button.buttonEl.addClass(
+            "clickable-icon",
+            "nav-action-button",
+            `git-conflict-choose-${choice}`
+        );
     }
 }
 
@@ -87,7 +92,7 @@ class ConflictPanel implements Panel {
             } in file`,
         });
         addButtons(
-            this.dom,
+            this.dom.createDiv({ cls: "git-conflict-actions-group" }),
             {
                 ours: "Keep all ours",
                 theirs: "Keep all theirs",
