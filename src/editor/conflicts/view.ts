@@ -1,7 +1,9 @@
-import { StateField, type EditorState } from "@codemirror/state";
+import { StateField, type EditorState, type Range } from "@codemirror/state";
 import {
+    Decoration,
     EditorView,
     showPanel,
+    type DecorationSet,
     type Panel,
     type PanelConstructor,
     type ViewUpdate,
@@ -62,6 +64,31 @@ function addButtons(
     }
 }
 
+function buildDecorations(state: EditorState): DecorationSet {
+    const blocks = state.field(conflictBlocksField, false) ?? [];
+    const decorations: Range<Decoration>[] = [];
+    for (const block of blocks) {
+        for (const marker of block.markers) {
+            decorations.push(
+                Decoration.mark({ class: "git-conflict-marker" }).range(
+                    marker.from,
+                    marker.to
+                )
+            );
+        }
+    }
+    return Decoration.set(decorations, true);
+}
+
+export const conflictMarkersField = StateField.define<DecorationSet>({
+    create: (state) => buildDecorations(state),
+    update: (value, transaction) =>
+        transaction.docChanged || transaction.reconfigured
+            ? buildDecorations(transaction.state)
+            : value,
+    provide: (field) => EditorView.decorations.from(field),
+});
+
 class ConflictPanel implements Panel {
     dom = createDiv({ cls: "git-conflict-panel" });
     top = true;
@@ -112,4 +139,8 @@ const conflictPanel = showPanel.compute([conflictBlocksField], (state) =>
         : null
 );
 
-export const conflictExtensions = [conflictBlocksField, conflictPanel];
+export const conflictExtensions = [
+    conflictBlocksField,
+    conflictMarkersField,
+    conflictPanel,
+];

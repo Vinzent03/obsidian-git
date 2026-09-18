@@ -34,6 +34,16 @@ describe("parseConflictBlocks", () => {
                 ">>>>>>> origin/master"
             )
         );
+        expect(blocks[0]!.markers).toHaveLength(3);
+        expect(
+            text.slice(blocks[0]!.markers[0]!.from, blocks[0]!.markers[0]!.to)
+        ).toBe("<<<<<<< HEAD");
+        expect(
+            text.slice(blocks[0]!.markers[1]!.from, blocks[0]!.markers[1]!.to)
+        ).toBe("=======");
+        expect(
+            text.slice(blocks[0]!.markers[2]!.from, blocks[0]!.markers[2]!.to)
+        ).toBe(">>>>>>> origin/master");
     });
 
     it("parses multiple conflicts", () => {
@@ -72,5 +82,9 @@ describe("parseConflictBlocks", () => {
         expect(blocks).toHaveLength(1);
         expect(blocks[0]!.ours).toBe("ours\n");
         expect(blocks[0]!.theirs).toBe("theirs\n");
+        expect(blocks[0]!.markers).toHaveLength(4);
+        expect(
+            text.slice(blocks[0]!.markers[1]!.from, blocks[0]!.markers[1]!.to)
+        ).toBe("||||||| merged common ancestors");
     });
 });

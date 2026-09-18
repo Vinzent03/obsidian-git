@@ -715,6 +715,10 @@ div:hover > .git-gutter-marker.git-changedelete {
     margin-right: 0.3em;
 }
 
+.git-conflict-marker {
+    background-color: var(--background-modifier-hover);
+}
+
 .git-conflict-panel {
     display: flex;
     align-items: center;

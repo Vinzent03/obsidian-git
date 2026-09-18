@@ -1,10 +1,16 @@
 export type ConflictChoice = "ours" | "theirs" | "both";
 
+export interface ConflictMarker {
+    from: number;
+    to: number;
+}
+
 export interface ConflictBlock {
     from: number;
     to: number;
     ours: string;
     theirs: string;
+    markers: ConflictMarker[];
 }
 
 interface Line {
@@ -76,14 +82,24 @@ export function parseConflictBlocks(text: string): ConflictBlock[] {
 
         const separator = lines[separatorIndex]!;
         const end = lines[endIndex]!;
+        const base = baseIndex !== -1 ? lines[baseIndex]! : undefined;
+        const markers: ConflictMarker[] = [{ from: start.from, to: start.to }];
+        if (base !== undefined) {
+            markers.push({ from: base.from, to: base.to });
+        }
+        markers.push(
+            { from: separator.from, to: separator.to },
+            { from: end.from, to: end.to }
+        );
         blocks.push({
             from: start.from,
             to: end.to < text.length ? end.to + 1 : end.to,
             ours: text.slice(
                 start.to + 1,
-                baseIndex !== -1 ? lines[baseIndex]!.from : separator.from
+                base !== undefined ? base.from : separator.from
             ),
             theirs: text.slice(separator.to + 1, end.from),
+            markers,
         });
 
         i = endIndex;
