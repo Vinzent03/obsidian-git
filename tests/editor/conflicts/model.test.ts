@@ -71,7 +71,6 @@ describe("parseConflictBlocks", () => {
         const blocks = parseConflictBlocks(text);
         expect(blocks).toHaveLength(1);
         expect(blocks[0]!.ours).toBe("ours\n");
-        expect(blocks[0]!.base).toBe("base\n");
         expect(blocks[0]!.theirs).toBe("theirs\n");
     });
 });

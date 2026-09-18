@@ -1,10 +1,7 @@
-import { StateField, type EditorState, type Range } from "@codemirror/state";
+import { StateField, type EditorState } from "@codemirror/state";
 import {
-    Decoration,
     EditorView,
     showPanel,
-    WidgetType,
-    type DecorationSet,
     type Panel,
     type PanelConstructor,
     type ViewUpdate,
@@ -15,7 +12,7 @@ import {
     editorLivePreviewField,
 } from "obsidian";
 import { CONFLICT_OUTPUT_FILE } from "src/constants";
-import { resolveAllConflicts, resolveConflict } from "./actions";
+import { resolveAllConflicts } from "./actions";
 import {
     parseConflictBlocks,
     type ConflictBlock,
@@ -59,73 +56,6 @@ function addButtons(
             });
     }
 }
-
-class ConflictBlockWidget extends WidgetType {
-    constructor(private readonly block: ConflictBlock) {
-        super();
-    }
-
-    eq(other: ConflictBlockWidget): boolean {
-        return (
-            other.block.from === this.block.from &&
-            other.block.to === this.block.to
-        );
-    }
-
-    toDOM(view: EditorView): HTMLElement {
-        const root = createDiv({ cls: "git-conflict" });
-
-        const header = root.createDiv({ cls: "git-conflict-header" });
-        header.createSpan({
-            cls: "git-conflict-header-label",
-            text: "Conflict",
-        });
-        addButtons(
-            header,
-            { ours: "Keep ours", theirs: "Keep theirs", both: "Keep both" },
-            (choice) => resolveConflict(view, this.block, choice)
-        );
-
-        addSide(root, "ours", "Ours", this.block.ours);
-        addSide(root, "theirs", "Theirs", this.block.theirs);
-
-        return root;
-    }
-}
-
-function addSide(
-    parent: HTMLElement,
-    cls: string,
-    label: string,
-    content: string
-): void {
-    const side = parent.createDiv({ cls: `git-conflict-side ${cls}` });
-    side.createDiv({ cls: "git-conflict-side-label", text: label });
-    side.createDiv({ cls: "git-conflict-side-content", text: content });
-}
-
-function buildDecorations(state: EditorState): DecorationSet {
-    const blocks = state.field(conflictBlocksField, false) ?? [];
-    const decorations: Range<Decoration>[] = [];
-    for (const block of blocks) {
-        decorations.push(
-            Decoration.replace({
-                widget: new ConflictBlockWidget(block),
-                block: true,
-            }).range(block.from, block.to)
-        );
-    }
-    return Decoration.set(decorations, true);
-}
-
-export const conflictDecorationsField = StateField.define<DecorationSet>({
-    create: (state) => buildDecorations(state),
-    update: (value, transaction) =>
-        transaction.docChanged || transaction.reconfigured
-            ? buildDecorations(transaction.state)
-            : value,
-    provide: (field) => EditorView.decorations.from(field),
-});
 
 class ConflictPanel implements Panel {
     dom = createDiv({ cls: "git-conflict-panel" });
@@ -177,8 +107,4 @@ const conflictPanel = showPanel.compute([conflictBlocksField], (state) =>
         : null
 );
 
-export const conflictExtensions = [
-    conflictBlocksField,
-    conflictDecorationsField,
-    conflictPanel,
-];
+export const conflictExtensions = [conflictBlocksField, conflictPanel];

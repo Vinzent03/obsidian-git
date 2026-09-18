@@ -170,6 +170,17 @@ which itself is adapted from the diff2html library with the following original l
     --git-insert: #399839;
     --git-change: #d0b44c;
     --git-move: #3572b0;
+
+    --git-conflict-ours-bg: color-mix(
+        in srgb,
+        var(--git-selected) 25%,
+        transparent
+    );
+    --git-conflict-theirs-bg: color-mix(
+        in srgb,
+        var(--git-change) 25%,
+        transparent
+    );
 }
 
 .git-diff {
@@ -704,39 +715,6 @@ div:hover > .git-gutter-marker.git-changedelete {
     margin-right: 0.3em;
 }
 
-.git-conflict {
-    margin: var(--size-2-2) 0;
-}
-
-.git-conflict-header {
-    display: flex;
-    align-items: center;
-    gap: var(--size-2-2);
-    margin-bottom: var(--size-2-2);
-}
-
-.git-conflict-header-label {
-    color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
-    margin-inline-end: auto;
-}
-
-.git-conflict-side {
-    border-inline-start: 2px solid var(--background-modifier-border);
-    padding-inline-start: var(--size-2-2);
-    margin-bottom: var(--size-2-1);
-}
-
-.git-conflict-side-label {
-    color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
-}
-
-.git-conflict-side-content {
-    font-family: var(--font-monospace);
-    white-space: pre-wrap;
-}
-
 .git-conflict-panel {
     display: flex;
     align-items: center;
@@ -751,4 +729,3 @@ div:hover > .git-gutter-marker.git-changedelete {
     font-size: var(--font-ui-smaller);
     margin-inline-end: auto;
 }
-
