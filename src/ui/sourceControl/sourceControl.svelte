@@ -70,6 +70,14 @@
                 () => void refresh().catch(console.error)
             )
         );
+        view.registerEvent(
+            view.app.vault.on("modify", (file) => {
+                const path = plugin.gitManager.getRelativeRepoPath(file.path);
+                if (status?.conflicted.includes(path)) {
+                    void updateConflictCounts(path);
+                }
+            })
+        );
         if (view.plugin.cachedStatus == undefined) {
             view.plugin.refresh().catch(console.error);
         } else {
@@ -279,9 +287,10 @@
         await updateConflictCounts();
     }
 
-    async function updateConflictCounts(): Promise<void> {
-        const counts: Record<string, number> = {};
-        for (const conflict of status?.conflicted ?? []) {
+    async function updateConflictCounts(path?: string): Promise<void> {
+        const targets = path ? [path] : (status?.conflicted ?? []);
+        const counts = path ? { ...conflictCounts } : {};
+        for (const conflict of targets) {
             counts[conflict] = 0;
             try {
                 const content = await view.app.vault.adapter.read(
