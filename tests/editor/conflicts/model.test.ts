@@ -44,6 +44,12 @@ describe("parseConflictBlocks", () => {
         expect(
             text.slice(blocks[0]!.markers[2]!.from, blocks[0]!.markers[2]!.to)
         ).toBe(">>>>>>> origin/master");
+        expect(
+            text.slice(blocks[0]!.oursRange.from, blocks[0]!.oursRange.to)
+        ).toBe("ours\n");
+        expect(
+            text.slice(blocks[0]!.theirsRange.from, blocks[0]!.theirsRange.to)
+        ).toBe("theirs\n");
     });
 
     it("parses multiple conflicts", () => {

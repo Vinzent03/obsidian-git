@@ -11,6 +11,8 @@ export interface ConflictBlock {
     ours: string;
     theirs: string;
     markers: ConflictMarker[];
+    oursRange: { from: number; to: number };
+    theirsRange: { from: number; to: number };
 }
 
 interface Line {
@@ -100,6 +102,11 @@ export function parseConflictBlocks(text: string): ConflictBlock[] {
             ),
             theirs: text.slice(separator.to + 1, end.from),
             markers,
+            oursRange: {
+                from: start.to + 1,
+                to: base !== undefined ? base.from : separator.from,
+            },
+            theirsRange: { from: separator.to + 1, to: end.from },
         });
 
         i = endIndex;

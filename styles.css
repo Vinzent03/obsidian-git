@@ -782,3 +782,21 @@ div:hover > .git-gutter-marker.git-changedelete {
     flex: none;
     margin-left: var(--size-2-2);
 }
+
+.git-conflict-ours {
+    background-color: var(--git-conflict-ours-bg);
+    padding: 1px 4px;
+}
+
+.git-conflict-theirs {
+    background-color: var(--git-conflict-theirs-bg);
+    padding: 1px 4px;
+}
+
+.git-conflict-ours-line {
+    border-inline-start: 2px solid var(--git-conflict-ours-bg);
+}
+
+.git-conflict-theirs-line {
+    border-inline-start: 2px solid var(--git-conflict-theirs-bg);
+}

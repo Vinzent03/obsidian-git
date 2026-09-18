@@ -92,6 +92,32 @@ class ConflictButtonsWidget extends WidgetType {
     }
 }
 
+function addSectionDecorations(
+    decorations: Range<Decoration>[],
+    state: EditorState,
+    range: { from: number; to: number },
+    tintClass: string,
+    emptyLineClass: string
+): void {
+    if (range.from >= range.to) {
+        return;
+    }
+    decorations.push(
+        Decoration.mark({ class: tintClass }).range(range.from, range.to)
+    );
+    const firstLine = state.doc.lineAt(range.from).number;
+    const lastLine = state.doc.lineAt(range.to).number;
+    for (let n = firstLine; n <= lastLine; n++) {
+        if (state.doc.line(n).length === 0) {
+            decorations.push(
+                Decoration.line({ class: emptyLineClass }).range(
+                    state.doc.line(n).from
+                )
+            );
+        }
+    }
+}
+
 function buildDecorations(state: EditorState): DecorationSet {
     const blocks = state.field(conflictBlocksField, false) ?? [];
     const decorations: Range<Decoration>[] = [];
@@ -113,6 +139,20 @@ function buildDecorations(state: EditorState): DecorationSet {
                 widget: new ConflictButtonsWidget(block),
                 side: 1,
             }).range(headMarker.to)
+        );
+        addSectionDecorations(
+            decorations,
+            state,
+            block.oursRange,
+            "git-conflict-ours",
+            "git-conflict-ours-line"
+        );
+        addSectionDecorations(
+            decorations,
+            state,
+            block.theirsRange,
+            "git-conflict-theirs",
+            "git-conflict-theirs-line"
         );
     }
     return Decoration.set(decorations, true);
