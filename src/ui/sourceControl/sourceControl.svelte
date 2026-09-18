@@ -39,6 +39,14 @@
     let lastPulledFilesOpen = $state(true);
     let conflictsOpen = $state(true);
     let conflictCounts: Record<string, number> = $state({});
+    let sortedConflicts = $derived(
+        [...(status?.conflicted ?? [])].sort((a, b) => {
+            const aResolved = conflictCounts[a] === 0 ? 0 : 1;
+            const bResolved = conflictCounts[b] === 0 ? 0 : 1;
+            if (aResolved !== bResolved) return aResolved - bResolved;
+            return a.localeCompare(b);
+        })
+    );
     let unPushedCommits = $state(0);
     let stagedClosed: Record<string, boolean> = $state({});
     let unstagedClosed: Record<string, boolean> = $state({});
@@ -288,7 +296,7 @@
     }
 
     async function updateConflictCounts(path?: string): Promise<void> {
-        const targets = path ? [path] : (status?.conflicted ?? []);
+        const targets = path ? [path] : status?.conflicted ?? [];
         const counts = path ? { ...conflictCounts } : {};
         for (const conflict of targets) {
             counts[conflict] = 0;
@@ -500,7 +508,7 @@
                     class="tree-item-children nav-folder-children"
                     transition:slide|local={{ duration: 150 }}
                 >
-                    {#each status.conflicted as conflict}
+                    {#each sortedConflicts as conflict}
                         <ConflictFileComponent
                             path={conflict}
                             count={conflictCounts[conflict]}
