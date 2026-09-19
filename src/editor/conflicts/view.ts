@@ -22,7 +22,7 @@ import {
     type ConflictChoice,
 } from "./model";
 
-const CHOICES = ["ours", "theirs", "base", "both"] as const;
+const CHOICES = ["ours", "base", "theirs", "both"] as const;
 
 function computeBlocks(state: EditorState): readonly ConflictBlock[] {
     if (!state.field(editorLivePreviewField, false)) {
@@ -210,13 +210,17 @@ class ConflictPanel implements Panel {
                 blocks.length === 1 ? "" : "s"
             } in file`,
         });
+        const labels: Partial<Record<ConflictChoice, string>> = {
+            ours: "Keep all ours",
+            theirs: "Keep all theirs",
+            both: "Keep both",
+        };
+        if (blocks.every((block) => block.base !== undefined)) {
+            labels.base = "Keep all base";
+        }
         addButtons(
             this.dom.createDiv({ cls: "git-conflict-actions-group" }),
-            {
-                ours: "Keep all ours",
-                theirs: "Keep all theirs",
-                both: "Keep both",
-            },
+            labels,
             (choice) => resolveAllConflicts(this.view, choice)
         );
     }
