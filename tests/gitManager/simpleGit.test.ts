@@ -14,7 +14,8 @@ import { createRepoWithOrigin } from "../helpers/gitRepo";
 function createManager(
     repoPath: string,
     gitClient: SimpleGitClient,
-    plugin: FakePlugin = createFakePlugin()
+    plugin: FakePlugin = createFakePlugin(),
+    vaultPath = repoPath
 ): SimpleGit {
     (
         plugin.app as unknown as {
@@ -22,7 +23,7 @@ function createManager(
         }
     ).vault = {
         adapter: {
-            getBasePath: () => repoPath,
+            getBasePath: () => vaultPath,
         },
     };
     const manager = new SimpleGit(plugin);
@@ -30,6 +31,29 @@ function createManager(
     manager.absoluteRepoPath = repoPath;
     return manager;
 }
+
+describe("SimpleGit.status", () => {
+    it("keeps conflict paths repository-relative", async () => {
+        const vaultPath = path.join("root", "vault");
+        const repoPath = path.join(vaultPath, "nested-repository");
+        const gitClient = {
+            status: vi.fn().mockResolvedValue({
+                files: [],
+                conflicted: ["notes/conflicted.md"],
+            }),
+        } as unknown as SimpleGitClient;
+        const manager = createManager(
+            repoPath,
+            gitClient,
+            createFakePlugin(),
+            vaultPath
+        );
+
+        const status = await manager.status();
+
+        expect(status.conflicted).toEqual(["notes/conflicted.md"]);
+    });
+});
 
 function addStatusBar(plugin: FakePlugin) {
     const displayProgress = vi.fn<(progress: GitProgress) => void>();
