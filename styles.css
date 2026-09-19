@@ -194,17 +194,17 @@ which itself is adapted from the diff2html library with the following original l
         transparent
     );
     --git-conflict-ours-button-bg: color-mix(
-        in oklch,
+        in oklab,
         var(--git-conflict-ours) 25%,
         var(--interactive-normal)
     );
     --git-conflict-theirs-button-bg: color-mix(
-        in oklch,
+        in oklab,
         var(--git-conflict-theirs) 25%,
         var(--interactive-normal)
     );
     --git-conflict-base-button-bg: color-mix(
-        in oklch,
+        in oklab,
         var(--color-purple) 15%,
         var(--interactive-normal)
     );
