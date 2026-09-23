@@ -55,6 +55,23 @@ describe("SimpleGit.status", () => {
     });
 });
 
+describe("SimpleGit.show", () => {
+    it("applies the configured textconv filter", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await simpleGit({
+            baseDir: repo.repoPath,
+            unsafe: { allowUnsafeDiffTextConv: true },
+        }).addConfig("diff.upper.textconv", "tr a-z A-Z <");
+        repo.write(".gitattributes", "*.secret diff=upper\n");
+        await repo.writeAndCommit("note.secret", "hidden\n", "add secret");
+        const manager = createManager(repo.repoPath, repo.git);
+
+        const content = await manager.show("HEAD", "note.secret");
+
+        expect(content).toBe("HIDDEN\n");
+    });
+});
+
 function addStatusBar(plugin: FakePlugin) {
     const displayProgress = vi.fn<(progress: GitProgress) => void>();
     const clearProgress = vi.fn<(display?: boolean) => void>();
