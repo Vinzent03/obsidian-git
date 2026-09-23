@@ -87,6 +87,7 @@ export class SimpleGit extends GitManager {
                     allowUnsafeMergeDriver: true,
                     allowUnsafeSshCommand: true,
                     allowUnsafePager: true,
+                    allowUnsafeDiffTextConv: true,
                 },
             });
             const pathPaths = this.plugin.localStorage.getPATHPaths();
@@ -1075,7 +1076,9 @@ export class SimpleGit extends GitManager {
     ): Promise<string> {
         const path = this.getRelativeRepoPath(file, relativeToVault);
 
-        return this.git.show([commitHash + ":" + path]);
+        // `--textconv` applies a configured diff.*.textconv filter (e.g.
+        // git-crypt, git-secret), matching what `git diff` shows.
+        return this.git.show(["--textconv", commitHash + ":" + path]);
     }
 
     private async getLocalBranchUpstream(

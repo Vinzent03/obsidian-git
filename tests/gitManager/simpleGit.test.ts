@@ -705,3 +705,17 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
         expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
     });
 });
+
+describe("SimpleGit.show", () => {
+    it("applies the configured textconv filter", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.addConfig("diff.upper.textconv", "tr a-z A-Z <");
+        repo.write(".gitattributes", "*.secret diff=upper\n");
+        await repo.writeAndCommit("note.secret", "hidden\n", "add secret");
+        const manager = createManager(repo.repoPath, repo.git);
+
+        const content = await manager.show("HEAD", "note.secret");
+
+        expect(content).toBe("HIDDEN\n");
+    });
+});
