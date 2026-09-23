@@ -78,14 +78,15 @@
                 () => void refresh().catch(console.error)
             )
         );
-        view.registerEvent(
-            view.app.vault.on("modify", (file) => {
-                const path = plugin.gitManager.getRelativeRepoPath(file.path);
-                if (status?.conflicted.includes(path)) {
-                    void updateConflictCounts(path);
-                }
-            })
-        );
+        const modifyEvent = view.app.vault.on("modify", (file) => {
+            if (!status?.conflicted) {
+                return;
+            }
+            const path = plugin.gitManager.getRelativeRepoPath(file.path);
+            if (status?.conflicted.includes(path)) {
+                void updateConflictCounts(path);
+            }
+        });
         if (view.plugin.cachedStatus == undefined) {
             view.plugin.refresh().catch(console.error);
         } else {
@@ -96,6 +97,8 @@
         view.scope.register(["Ctrl"], "Enter", (_: KeyboardEvent) =>
             commitAndSync()
         );
+
+        return () => view.app.vault.offref(modifyEvent);
     });
     $effect(() => {
         buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
