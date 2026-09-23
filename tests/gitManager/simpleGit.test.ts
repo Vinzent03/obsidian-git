@@ -709,11 +709,7 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
 describe("SimpleGit.show", () => {
     it("applies the configured textconv filter", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
-        const unsafeGit = simpleGit({
-            baseDir: repo.repoPath,
-            unsafe: { allowUnsafeDiffTextConv: true },
-        });
-        await unsafeGit.addConfig("diff.upper.textconv", "tr a-z A-Z <");
+        await repo.git.addConfig("diff.upper.textconv", "tr a-z A-Z <");
         repo.write(".gitattributes", "*.secret diff=upper\n");
         await repo.writeAndCommit("note.secret", "hidden\n", "add secret");
         const manager = createManager(repo.repoPath, repo.git);
