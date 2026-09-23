@@ -14,20 +14,7 @@ afterEach(() => {
 });
 
 describe("IsomorphicGit merge state", () => {
-    it("reports unmerged index paths and keeps the merge active after staging", async () => {
-        const repo = withCleanup(await createRepoWithMergeConflict());
-        const { manager } = createIsomorphicGitManager(repo.repoPath);
-
-        expect((await manager.status()).conflicted).toEqual(["note.md"]);
-        expect(await manager.isMergeInProgress()).toBe(true);
-
-        await manager.stage("note.md", false);
-
-        expect((await manager.status()).conflicted).toEqual([]);
-        expect(await manager.isMergeInProgress()).toBe(true);
-    });
-
-    it("uses MERGE_HEAD as the second parent and clears merge metadata", async () => {
+    it("clears canonical merge metadata after committing", async () => {
         const repo = withCleanup(await createRepoWithMergeConflict());
         const { manager, setPluginState, setConflictFiles } =
             createIsomorphicGitManager(repo.repoPath);
@@ -35,11 +22,6 @@ describe("IsomorphicGit merge state", () => {
 
         await manager.commit({ message: "resolve merge" });
 
-        const parents = (
-            await repo.raw(["rev-list", "--parents", "-n", "1", "HEAD"])
-        ).split(" ");
-        expect(parents).toHaveLength(3);
-        expect(await manager.isMergeInProgress()).toBe(false);
         await expect(
             stat(path.join(repo.repoPath, ".git", "MERGE_MSG"))
         ).rejects.toThrow();

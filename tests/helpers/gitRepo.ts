@@ -17,6 +17,7 @@ export type TestRepo = {
     mergeCommitCount(range?: string): Promise<number>;
     show(ref: string): Promise<string>;
     write(filePath: string, content: string): void;
+    remove(filePath: string): void;
     writeAndCommit(
         filePath: string,
         content: string,
@@ -97,6 +98,7 @@ function createTestRepoFixture(args: {
             ),
         show: (ref) => gitRaw(git, ["show", ref]),
         write: (filePath, content) => write(repoPath, filePath, content),
+        remove: (filePath) => rmSync(path.join(repoPath, filePath)),
         writeAndCommit: (filePath, content, message) =>
             writeAndCommit(git, repoPath, filePath, content, message),
         appendAndCommit: (filePath, content, message) =>

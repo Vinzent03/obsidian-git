@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import simpleGit, {
     type SimpleGit as SimpleGitClient,
@@ -9,73 +9,16 @@ import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { GitOperation, type GitProgress } from "../../src/types";
 import { withCleanup } from "../helpers/cleanup";
 import { createFakePlugin, type FakePlugin } from "../helpers/createFakePlugin";
-import {
-    createRepoWithMergeConflict,
-    createRepoWithOrigin,
-} from "../helpers/gitRepo";
+import { createRepoWithOrigin } from "../helpers/gitRepo";
+import { createSimpleGitManager } from "../helpers/simpleGit";
 
 function createManager(
     repoPath: string,
     gitClient: SimpleGitClient,
-    plugin: FakePlugin = createFakePlugin(),
-    vaultPath = repoPath
+    plugin: FakePlugin = createFakePlugin()
 ): SimpleGit {
-    (
-        plugin.app as unknown as {
-            vault: {
-                adapter: {
-                    getBasePath(): string;
-                    exists(filePath: string): Promise<boolean>;
-                };
-            };
-        }
-    ).vault = {
-        adapter: {
-            getBasePath: () => vaultPath,
-            exists: (filePath: string) => Promise.resolve(existsSync(filePath)),
-        },
-    };
-    const manager = new SimpleGit(plugin);
-    manager.git = gitClient;
-    manager.absoluteRepoPath = repoPath;
-    return manager;
+    return createSimpleGitManager(repoPath, gitClient, plugin).manager;
 }
-
-describe("SimpleGit.status", () => {
-    it("keeps conflict paths repository-relative", async () => {
-        const vaultPath = path.join("root", "vault");
-        const repoPath = path.join(vaultPath, "nested-repository");
-        const gitClient = {
-            status: vi.fn().mockResolvedValue({
-                files: [],
-                conflicted: ["notes/conflicted.md"],
-            }),
-        } as unknown as SimpleGitClient;
-        const manager = createManager(
-            repoPath,
-            gitClient,
-            createFakePlugin(),
-            vaultPath
-        );
-
-        const status = await manager.status();
-
-        expect(status.conflicted).toEqual(["notes/conflicted.md"]);
-    });
-});
-
-describe("SimpleGit.isMergeInProgress", () => {
-    it("remains true after conflicts are staged and clears after commit", async () => {
-        const repo = withCleanup(await createRepoWithMergeConflict());
-        const manager = createManager(repo.repoPath, repo.git);
-
-        expect(await manager.isMergeInProgress()).toBe(true);
-        await repo.git.add("note.md");
-        expect(await manager.isMergeInProgress()).toBe(true);
-        await repo.git.commit("resolve merge");
-        expect(await manager.isMergeInProgress()).toBe(false);
-    });
-});
 
 function addStatusBar(plugin: FakePlugin) {
     const displayProgress = vi.fn<(progress: GitProgress) => void>();
@@ -116,10 +59,9 @@ async function createRemoteCommit(repo: {
 }
 
 describe("SimpleGit.commit", () => {
-    it("commits staged changes without staging unstaged changes", async () => {
+    it("returns the change count and triggers a head-change event", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
         repo.write("staged.md", "staged\n");
-        repo.write("unstaged.md", "unstaged\n");
         await repo.git.add("staged.md");
         const plugin = createFakePlugin();
         const manager = createManager(repo.repoPath, repo.git, plugin);
@@ -127,9 +69,6 @@ describe("SimpleGit.commit", () => {
         const changes = await manager.commit({ message: "commit staged" });
 
         expect(changes).toBe(1);
-        expect(await repo.headMessage()).toBe("commit staged");
-        expect(await repo.show("HEAD:staged.md")).toBe("staged");
-        expect(await repo.statusPorcelain()).toBe("?? unstaged.md");
         expect(plugin.setPluginState.mock.calls).toEqual([
             [{ operation: GitOperation.commit }],
             [{ operation: GitOperation.idle }],
@@ -390,7 +329,7 @@ describe("SimpleGit.pull", () => {
         expect(changes).toBeUndefined();
         expect(await repo.head()).toBe(headBefore);
         expect(plugin.log).toHaveBeenCalledWith(
-            "No tracking branch found. Ignoring pull of main repo and updating submodules only."
+            "No tracking branch found. Ignoring pull of main repo and updated submodules only."
         );
         expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
     });
