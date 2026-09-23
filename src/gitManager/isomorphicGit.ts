@@ -582,11 +582,7 @@ export class IsomorphicGit extends GitManager {
             } catch (error) {
                 progressNotice?.hide();
                 if (error instanceof Errors.MergeConflictError) {
-                    await this.plugin.handleConflict(
-                        error.data.filepaths.map((file) =>
-                            this.getRelativeVaultPath(file)
-                        )
-                    );
+                    await this.plugin.handleConflict(error.data.filepaths);
                 }
 
                 this.plugin.displayError(error);
