@@ -1066,17 +1066,9 @@ export class SimpleGit extends GitManager {
     ): Promise<string> {
         const path = this.getRelativeRepoPath(file, relativeToVault);
 
-        // `git show <rev>:<path>` returns the raw blob and never applies a
-        // configured diff.*.textconv filter. `git cat-file --textconv` runs
-        // the same textconv driver `git diff` uses, so files tracked with a
-        // clean/smudge + textconv filter (e.g. git-crypt, git-secret) render
-        // decrypted content in the diff view and editor change signs instead
-        // of raw ciphertext.
-        return this.git.raw([
-            "cat-file",
-            "--textconv",
-            commitHash + ":" + path,
-        ]);
+        // `--textconv` applies a configured diff.*.textconv filter (e.g.
+        // git-crypt, git-secret), matching what `git diff` shows.
+        return this.git.show(["--textconv", commitHash + ":" + path]);
     }
 
     private async getLocalBranchUpstream(
