@@ -414,6 +414,15 @@ export class SimpleGit extends GitManager {
         };
     }
 
+    async isMergeInProgress(): Promise<boolean> {
+        const mergeHead = await this.git.revparse(["--git-path", "MERGE_HEAD"]);
+        const mergeHeadPath = path.resolve(
+            this.absoluteRepoPath,
+            mergeHead.trim()
+        );
+        return this.app.vault.adapter.exists(mergeHeadPath);
+    }
+
     async submoduleAwareHeadRevisonInContainingDirectory(
         filepath: string
     ): Promise<string> {

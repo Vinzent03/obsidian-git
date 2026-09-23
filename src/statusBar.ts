@@ -96,10 +96,10 @@ export class StatusBar {
             this.textEl.style.marginLeft = "5px";
         }
 
-        if (this.plugin.localStorage.getConflict()) {
+        if (this.plugin.state.mergeInProgress) {
             setIcon(this.conflictEl, "alert-circle");
             this.conflictEl.ariaLabel =
-                "You have merge conflicts. Resolve them and commit afterwards.";
+                "A merge is in progress. Resolve any conflicts and commit afterwards.";
             this.conflictEl.style.marginRight = "5px";
             this.conflictEl.addClass(this.base + "conflict");
         } else {
