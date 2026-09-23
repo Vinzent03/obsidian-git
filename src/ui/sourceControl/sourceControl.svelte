@@ -39,6 +39,7 @@
     let lastPulledFilesOpen = $state(true);
     let conflictsOpen = $state(true);
     let conflictCounts: Record<string, number> = $state({});
+    let conflictCountUpdate: Promise<void> = Promise.resolve();
     let sortedConflicts = $derived(
         [...(status?.conflicted ?? [])].sort((a, b) => {
             const aResolved = conflictCounts[a] === 0 ? 0 : 1;
@@ -298,7 +299,16 @@
         await updateConflictCounts();
     }
 
-    async function updateConflictCounts(path?: string): Promise<void> {
+    // Serialize updates so concurrent file saves cannot overwrite newer counts.
+    function updateConflictCounts(path?: string): Promise<void> {
+        const update = conflictCountUpdate.then(() =>
+            performConflictCountUpdate(path)
+        );
+        conflictCountUpdate = update.catch(() => undefined);
+        return update;
+    }
+
+    async function performConflictCountUpdate(path?: string): Promise<void> {
         const targets = path ? [path] : status?.conflicted ?? [];
         const counts = path ? { ...conflictCounts } : {};
         for (const conflict of targets) {
