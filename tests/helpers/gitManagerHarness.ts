@@ -1,11 +1,9 @@
 import path from "path";
 import type { GitManager } from "../../src/gitManager/gitManager";
-import { createFakePlugin, type FakePlugin } from "./createFakePlugin";
+import type { FakePlugin } from "./createFakePlugin";
 import { createRepoWithOrigin, type TestRepo } from "./gitRepo";
 import { createIsomorphicGitManager } from "./isomorphicGit";
-import { createSimpleGitManager } from "./simpleGit";
-
-export type GitFixture = () => Promise<TestRepo>;
+import { createSimpleGitTestContext, type GitFixture } from "./simpleGit";
 
 export interface GitManagerTestHarness {
     manager: GitManager;
@@ -33,31 +31,18 @@ function getVaultOptions(repo: TestRepo): {
 }
 
 async function createSimpleGitHarness(
-    fixture: GitFixture = createRepoWithOrigin
+    fixture?: GitFixture
 ): Promise<GitManagerTestHarness> {
-    const repo = await fixture();
-    const testPlugin = createFakePlugin();
-    const { manager, plugin } = createSimpleGitManager(
-        repo.repoPath,
-        repo.git,
-        testPlugin,
-        getVaultOptions(repo)
-    );
-    return {
-        manager,
-        repo,
-        plugin,
-        cleanup: () => {
-            manager.unload();
-            repo.cleanup();
-        },
-    };
+    return createSimpleGitTestContext({
+        fixture,
+        getVaultOptions,
+    });
 }
 
 async function createIsomorphicGitHarness(
-    fixture: GitFixture = createRepoWithOrigin
+    fixture?: GitFixture
 ): Promise<GitManagerTestHarness> {
-    const repo = await fixture();
+    const repo = await (fixture ?? createRepoWithOrigin)();
     const { manager, plugin } = createIsomorphicGitManager(
         repo.repoPath,
         getVaultOptions(repo)
