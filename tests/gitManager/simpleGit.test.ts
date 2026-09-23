@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import simpleGit, {
     type SimpleGit as SimpleGitClient,
@@ -9,7 +9,10 @@ import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { GitOperation, type GitProgress } from "../../src/types";
 import { withCleanup } from "../helpers/cleanup";
 import { createFakePlugin, type FakePlugin } from "../helpers/createFakePlugin";
-import { createRepoWithOrigin } from "../helpers/gitRepo";
+import {
+    createRepoWithMergeConflict,
+    createRepoWithOrigin,
+} from "../helpers/gitRepo";
 
 function createManager(
     repoPath: string,
@@ -19,11 +22,17 @@ function createManager(
 ): SimpleGit {
     (
         plugin.app as unknown as {
-            vault: { adapter: { getBasePath(): string } };
+            vault: {
+                adapter: {
+                    getBasePath(): string;
+                    exists(filePath: string): Promise<boolean>;
+                };
+            };
         }
     ).vault = {
         adapter: {
             getBasePath: () => vaultPath,
+            exists: (filePath: string) => Promise.resolve(existsSync(filePath)),
         },
     };
     const manager = new SimpleGit(plugin);
@@ -52,6 +61,19 @@ describe("SimpleGit.status", () => {
         const status = await manager.status();
 
         expect(status.conflicted).toEqual(["notes/conflicted.md"]);
+    });
+});
+
+describe("SimpleGit.isMergeInProgress", () => {
+    it("remains true after conflicts are staged and clears after commit", async () => {
+        const repo = withCleanup(await createRepoWithMergeConflict());
+        const manager = createManager(repo.repoPath, repo.git);
+
+        expect(await manager.isMergeInProgress()).toBe(true);
+        await repo.git.add("note.md");
+        expect(await manager.isMergeInProgress()).toBe(true);
+        await repo.git.commit("resolve merge");
+        expect(await manager.isMergeInProgress()).toBe(false);
     });
 });
 

@@ -128,9 +128,7 @@ export interface Status {
     changed: FileStatusResult[];
     staged: FileStatusResult[];
 
-    /*
-     * Only available for `SimpleGit` gitManager
-     */
+    /** Paths with unresolved entries in the Git index. */
     conflicted: string[];
 }
 
@@ -252,6 +250,7 @@ export interface FileStatusResult {
 
 export interface PluginState {
     offlineMode: boolean;
+    mergeInProgress: boolean;
     operation: GitOperation;
 }
 

@@ -35,6 +35,8 @@ export abstract class GitManager {
 
     abstract status(opts?: { path?: string }): Promise<Status>;
 
+    abstract isMergeInProgress(): Promise<boolean>;
+
     abstract commitAll(_: {
         message: string;
         status?: Status;

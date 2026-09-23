@@ -12,7 +12,6 @@ export class LocalStorageSettings {
         const keys = [
             "password",
             "hostname",
-            "conflict",
             "lastAutoPull",
             "lastAutoBackup",
             "lastAutoPush",
@@ -61,14 +60,6 @@ export class LocalStorageSettings {
 
     setHostname(value: string): void {
         return this.app.saveLocalStorage(this.prefix + "hostname", value);
-    }
-
-    getConflict(): boolean {
-        return this.app.loadLocalStorage(this.prefix + "conflict") == "true";
-    }
-
-    setConflict(value: boolean): void {
-        return this.app.saveLocalStorage(this.prefix + "conflict", `${value}`);
     }
 
     getConflictFiles(): string[] {
