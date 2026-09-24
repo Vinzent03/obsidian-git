@@ -383,6 +383,7 @@ export enum FileType {
     staged,
     changed,
     pulled,
+    conflicted,
 }
 
 export class NoNetworkError extends Error {

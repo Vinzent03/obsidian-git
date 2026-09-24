@@ -403,15 +403,19 @@ export class SimpleGit extends GitManager {
                 vaultPath: this.getRelativeVaultPath(res.path),
             };
         });
+        const conflicted = status.conflicted.map(
+            (path) => this.formatPath({ path }).path
+        );
+        const conflictedPaths = new Set(conflicted);
         return {
             all: allFilesFormatted,
-            changed: allFilesFormatted.filter((e) => e.workingDir !== " "),
+            changed: allFilesFormatted.filter(
+                (e) => e.workingDir !== " " && !conflictedPaths.has(e.path)
+            ),
             staged: allFilesFormatted.filter(
                 (e) => e.index !== " " && e.index != "U"
             ),
-            conflicted: status.conflicted.map(
-                (path) => this.formatPath({ path }).path
-            ),
+            conflicted,
         };
     }
 
@@ -421,7 +425,19 @@ export class SimpleGit extends GitManager {
             this.absoluteRepoPath,
             mergeHead.trim()
         );
-        return this.app.vault.adapter.exists(mergeHeadPath);
+        try {
+            await fsPromises.access(mergeHeadPath);
+            return true;
+        } catch (error) {
+            if (
+                error instanceof Error &&
+                "code" in error &&
+                error.code === "ENOENT"
+            ) {
+                return false;
+            }
+            throw error;
+        }
     }
 
     async submoduleAwareHeadRevisonInContainingDirectory(

@@ -11,6 +11,7 @@
     import { FileType } from "src/types";
     import { arrayProxyWithNewLength, getDisplayPath } from "src/utils";
     import { slide } from "svelte/transition";
+    import ConflictFileComponent from "./components/conflictFileComponent.svelte";
     import FileComponent from "./components/fileComponent.svelte";
     import PulledFileComponent from "./components/pulledFileComponent.svelte";
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
@@ -26,19 +27,33 @@
 
     let { plugin, view }: Props = $props();
     let loading: boolean = $state(false);
+    let mergeInProgress = $state(false);
     let status: Status | undefined = $state();
     let lastPulledFiles: FileStatusResult[] = $state([]);
     let commitMessage = $derived(plugin.settings.commitMessage);
     let buttons: HTMLElement[] = $state([]);
     let changeHierarchy: StatusRootTreeItem | undefined = $state();
     let stagedHierarchy: StatusRootTreeItem | undefined = $state();
+    let conflictHierarchy: StatusRootTreeItem | undefined = $state();
     let lastPulledFilesHierarchy: StatusRootTreeItem | undefined = $state();
     let changesOpen = $state(true);
     let stagedOpen = $state(true);
     let lastPulledFilesOpen = $state(true);
+    let conflictsOpen = $state(true);
+    let conflictCounts: Record<string, number> = $state({});
+    let conflictCountUpdate: Promise<void> = Promise.resolve();
+    let sortedConflicts = $derived(
+        [...(status?.conflicted ?? [])].sort((a, b) => {
+            const aResolved = conflictCounts[a] === 0 ? 0 : 1;
+            const bResolved = conflictCounts[b] === 0 ? 0 : 1;
+            if (aResolved !== bResolved) return aResolved - bResolved;
+            return a.localeCompare(b);
+        })
+    );
     let unPushedCommits = $state(0);
     let stagedClosed: Record<string, boolean> = $state({});
     let unstagedClosed: Record<string, boolean> = $state({});
+    let conflictsClosed: Record<string, boolean> = $state({});
     let pulledClosed: Record<string, boolean> = $state({});
 
     let stagedCount = $derived(status?.staged.length ?? 0);
@@ -67,6 +82,15 @@
                 () => void refresh().catch(console.error)
             )
         );
+        const modifyEvent = view.app.vault.on("modify", (file) => {
+            if (!status?.conflicted) {
+                return;
+            }
+            const path = plugin.gitManager.getRelativeRepoPath(file.path);
+            if (status?.conflicted.includes(path)) {
+                void updateConflictCounts(path);
+            }
+        });
         if (view.plugin.cachedStatus == undefined) {
             view.plugin.refresh().catch(console.error);
         } else {
@@ -77,6 +101,8 @@
         view.scope.register(["Ctrl"], "Enter", (_: KeyboardEvent) =>
             commitAndSync()
         );
+
+        return () => view.app.vault.offref(modifyEvent);
     });
     $effect(() => {
         buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
@@ -232,6 +258,7 @@
         unPushedCommits = await plugin.gitManager.getUnpushedCommits();
 
         status = plugin.cachedStatus;
+        mergeInProgress = plugin.state.mergeInProgress;
         loading = false;
         if (
             plugin.lastPulledFiles &&
@@ -267,10 +294,55 @@
                 vaultPath: "",
                 children: plugin.gitManager.getTreeStructure(status.staged),
             };
+            conflictHierarchy = {
+                title: "",
+                path: "",
+                vaultPath: "",
+                children: plugin.gitManager.getTreeStructure(
+                    status.conflicted.map((path) => ({
+                        path,
+                        vaultPath: plugin.gitManager.getRelativeVaultPath(path),
+                        index: "U",
+                        workingDir: "U",
+                    }))
+                ),
+            };
         } else {
             changeHierarchy = undefined;
             stagedHierarchy = undefined;
+            conflictHierarchy = undefined;
         }
+        await updateConflictCounts();
+    }
+
+    // Serialize updates so concurrent file saves cannot overwrite newer counts.
+    function updateConflictCounts(path?: string): Promise<void> {
+        const update = conflictCountUpdate.then(() =>
+            performConflictCountUpdate(path)
+        );
+        conflictCountUpdate = update.catch(() => undefined);
+        return update;
+    }
+
+    async function performConflictCountUpdate(path?: string): Promise<void> {
+        const targets = path ? [path] : status?.conflicted ?? [];
+        const counts = path ? { ...conflictCounts } : {};
+        for (const conflict of targets) {
+            counts[conflict] = 0;
+            try {
+                const content = await view.app.vault.adapter.read(
+                    plugin.gitManager.getRelativeVaultPath(conflict)
+                );
+                counts[conflict] = countConflictSections(content);
+            } catch {
+                // The file may be deleted on one side; nothing to resolve.
+            }
+        }
+        conflictCounts = counts;
+    }
+
+    function countConflictSections(content: string): number {
+        return (content.match(/^<{7}/gm) ?? []).length;
     }
 
     function triggerRefresh() {
@@ -406,6 +478,16 @@
                 bind:this={buttons[7]}
                 onclick={triggerRefresh}
             ></div>
+            {#if mergeInProgress}
+                <div
+                    id="merge-status"
+                    class="clickable-icon nav-action-button merge-status"
+                    data-icon="git-merge"
+                    aria-label="Merge in progress — select for help"
+                    bind:this={buttons[11]}
+                    onclick={() => plugin.openMergeConflictHelp()}
+                ></div>
+            {/if}
         </div>
     </div>
     <div class="git-commit-msg">
@@ -423,7 +505,74 @@
             ></div>
         {/if}
     </div>
+
     <div class="nav-files-container" style="position: relative;">
+        {#if status && status.conflicted.length > 0}
+            <div
+                class="conflicts tree-item nav-folder"
+                class:is-collapsed={!conflictsOpen}
+            >
+                <div
+                    class="tree-item-self is-clickable nav-folder-title"
+                    onclick={() => (conflictsOpen = !conflictsOpen)}
+                >
+                    <div
+                        class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+                        class:is-collapsed={!conflictsOpen}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="svg-icon right-triangle"
+                            ><path d="M3 8L12 17L21 8" /></svg
+                        >
+                    </div>
+                    <div class="tree-item-inner nav-folder-title-content">
+                        Conflicts
+                    </div>
+                    <div class="git-tools">
+                        <div class="files-count">
+                            {status.conflicted.length}
+                        </div>
+                    </div>
+                </div>
+                {#if conflictsOpen}
+                    <div
+                        class="tree-item-children nav-folder-children"
+                        transition:slide|local={{ duration: 150 }}
+                    >
+                        {#if showTree && conflictHierarchy}
+                            <TreeComponent
+                                hierarchy={conflictHierarchy}
+                                {plugin}
+                                {view}
+                                fileType={FileType.conflicted}
+                                {conflictCounts}
+                                topLevel={true}
+                                bind:closed={conflictsClosed}
+                            />
+                        {:else}
+                            {#each sortedConflicts as conflict}
+                                <ConflictFileComponent
+                                    path={conflict}
+                                    count={conflictCounts[conflict]}
+                                    {view}
+                                    manager={plugin.gitManager}
+                                />
+                            {/each}
+                        {/if}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+
         {#if status && stagedHierarchy && changeHierarchy}
             <div class="tree-item nav-folder mod-root">
                 <div
@@ -728,6 +877,10 @@
         }
     }
 
+    .merge-status {
+        color: var(--text-warning);
+    }
+
     .commit-msg-input {
         width: 100%;
         overflow: hidden;
@@ -743,6 +896,35 @@
         margin: 4px auto;
     }
 
+    .conflicts {
+        --nav-indentation-guide-color: var(--text-warning);
+        --collapse-icon-color: var(--text-warning);
+        --collapse-icon-color-collapsed: var(--text-warning);
+
+        > .nav-folder-title {
+            color: var(--text-warning);
+        }
+
+        .nav-folder-collapse-indicator {
+            color: var(--text-warning);
+
+            svg {
+                color: var(--text-warning);
+            }
+        }
+
+        :global(.topLevel .nav-folder-collapse-indicator) {
+            color: var(--text-warning);
+        }
+
+        :global(.topLevel .nav-folder-collapse-indicator svg) {
+            color: var(--text-warning);
+        }
+
+        .tree-item-children {
+            border-inline-start-color: var(--text-warning);
+        }
+    }
     main {
         .git-tools {
             .files-count {

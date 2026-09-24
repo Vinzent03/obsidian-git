@@ -6,8 +6,6 @@ export const DATE_TIME_FORMAT_SECONDS = `${DATE_FORMAT} HH:mm:ss`;
 
 export const GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH = 40;
 
-export const CONFLICT_OUTPUT_FILE = "conflict-files-obsidian-git.md";
-
 export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     autoCommitMessage: "vault backup: {{date}}",

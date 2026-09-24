@@ -3,7 +3,6 @@ import type { Debouncer, Menu, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import {
     debounce,
     FileSystemAdapter,
-    MarkdownView,
     normalizePath,
     Notice,
     Platform,
@@ -22,7 +21,6 @@ import { CustomMessageModal } from "src/ui/modals/customMessageModal";
 import AutomaticsManager from "./automaticsManager";
 import { addCommmands } from "./commands";
 import {
-    CONFLICT_OUTPUT_FILE,
     DEFAULT_SETTINGS,
     DIFF_VIEW_CONFIG,
     HISTORY_VIEW_CONFIG,
@@ -51,6 +49,7 @@ import HistoryView from "./ui/history/historyView";
 import ReadOnlyFileView from "./ui/readOnlyFileView";
 import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
+import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import {
@@ -106,19 +105,12 @@ export default class ObsidianGit extends Plugin {
     async updateCachedStatus(): Promise<Status> {
         this.app.workspace.trigger("obsidian-git:loading-status");
         this.cachedStatus = await this.gitManager.status();
-        if (this.cachedStatus.conflicted.length > 0) {
-            const known = this.localStorage.getConflictFiles();
-            const conflicted = this.cachedStatus.conflicted.map((path) =>
-                this.gitManager.getRelativeVaultPath(path)
-            );
-            const merged = Array.from(new Set([...known, ...conflicted]));
-            if (merged.length !== known.length) {
-                this.localStorage.setConflictFiles(merged);
-            }
+        const newMergeInProgress = await this.gitManager.isMergeInProgress();
+        if (newMergeInProgress && !this.state.mergeInProgress) {
+            this.handleConflict();
         }
-
         this.setPluginState({
-            mergeInProgress: await this.gitManager.isMergeInProgress(),
+            mergeInProgress: newMergeInProgress,
         });
         await this.branchBar?.display();
 
@@ -260,21 +252,6 @@ export default class ObsidianGit extends Plugin {
                 this.onActiveLeafChange(leaf);
             })
         );
-        this.registerEvent(
-            this.app.workspace.on("file-open", (file) => {
-                if (file?.path === CONFLICT_OUTPUT_FILE) {
-                    void this.tools.refreshConflictNote();
-                }
-            })
-        );
-        this.registerEvent(
-            this.app.workspace.on("active-leaf-change", () => {
-                this.maybeRefreshConflictNote();
-            })
-        );
-        this.registerDomEvent(window, "focus", () => {
-            this.maybeRefreshConflictNote();
-        });
         this.registerEvent(
             this.app.vault.on("modify", () => {
                 this.debRefresh();
@@ -812,7 +789,6 @@ export default class ObsidianGit extends Plugin {
                         status.conflicted.length == 1 ? "file" : "files"
                     }`
                 );
-                await this.handleConflict(status.conflicted);
             }
         }
 
@@ -900,7 +876,6 @@ export default class ObsidianGit extends Plugin {
             let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
                 mode === "smart" ? "nothing" : mode;
 
-            await this.mayDeleteConflictFile();
             const status = await this.updateCachedStatus();
             const mergeInProgress = this.state.mergeInProgress;
             if (this.gitManager instanceof SimpleGit) {
@@ -936,7 +911,6 @@ export default class ObsidianGit extends Plugin {
                             status.conflicted.length == 1 ? "file" : "files"
                         }. Please resolve them and commit per command.`
                     );
-                    await this.handleConflict(status.conflicted);
                 } else {
                     this.displayError(
                         "Did not commit automatically because a merge is in progress. Commit it manually."
@@ -1113,8 +1087,6 @@ export default class ObsidianGit extends Plugin {
             return false;
         }
         try {
-            await this.mayDeleteConflictFile();
-
             // Refresh because of pull
             const status = await this.updateCachedStatus();
             if (status.conflicted.length > 0) {
@@ -1123,7 +1095,6 @@ export default class ObsidianGit extends Plugin {
                         status.conflicted.length
                     } ${status.conflicted.length == 1 ? "file" : "files"}`
                 );
-                await this.handleConflict(status.conflicted);
                 return false;
             } else if (this.state.mergeInProgress) {
                 this.displayError(
@@ -1211,22 +1182,6 @@ export default class ObsidianGit extends Plugin {
             this.app.workspace.trigger("obsidian-git:refresh");
         } catch (error) {
             this.displayError(error);
-        }
-    }
-
-    async mayDeleteConflictFile(): Promise<void> {
-        this.localStorage.setConflictFiles([]);
-        const file = this.app.vault.getAbstractFileByPath(CONFLICT_OUTPUT_FILE);
-        if (file) {
-            this.app.workspace.iterateAllLeaves((leaf) => {
-                if (
-                    leaf.view instanceof MarkdownView &&
-                    leaf.view.file?.path == file.path
-                ) {
-                    leaf.detach();
-                }
-            });
-            await this.app.vault.delete(file);
         }
     }
 
@@ -1462,28 +1417,12 @@ export default class ObsidianGit extends Plugin {
         return result;
     }
 
-    /**
-     * @param conflicted Paths relative to the Git repository.
-     */
-    async handleConflict(conflicted?: string[]): Promise<void> {
-        this.setPluginState({
-            mergeInProgress: await this.gitManager.isMergeInProgress(),
-        });
-        if (conflicted !== undefined && conflicted.length > 0) {
-            const known = this.localStorage.getConflictFiles();
-            const vaultRelative = conflicted.map((path) =>
-                this.gitManager.getRelativeVaultPath(path)
-            );
-            this.localStorage.setConflictFiles(
-                Array.from(new Set([...known, ...vaultRelative]))
-            );
-        }
-        if (this.localStorage.getConflictFiles().length === 0) {
-            return;
-        }
-        await this.tools.writeAndOpenFile(
-            await this.tools.buildConflictNoteContent()
-        );
+    handleConflict(): void {
+        this.displayMessage("Resolve conflicts and commit manually");
+    }
+
+    openMergeConflictHelp(): void {
+        new MergeConflictModal(this).open();
     }
 
     async editRemotes(): Promise<string | undefined> {
@@ -1570,12 +1509,6 @@ export default class ObsidianGit extends Plugin {
 
         if (remoteName) {
             await this.gitManager.removeRemote(remoteName);
-        }
-    }
-
-    private maybeRefreshConflictNote(): void {
-        if (this.app.workspace.getActiveFile()?.path === CONFLICT_OUTPUT_FILE) {
-            void this.tools.refreshConflictNote();
         }
     }
 

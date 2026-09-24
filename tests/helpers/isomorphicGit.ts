@@ -8,8 +8,7 @@ export type IsomorphicGitTestContext = {
     manager: IsomorphicGit;
     plugin: FakePlugin;
     setPluginState: ReturnType<typeof vi.fn>;
-    setConflictFiles: ReturnType<typeof vi.fn>;
-    handleConflict: ReturnType<typeof vi.fn>;
+    updateCachedStatus: ReturnType<typeof vi.fn>;
 };
 
 function createNodeVault(root: string) {
@@ -97,14 +96,12 @@ export function createIsomorphicGitManager(
     } as FakePlugin["settings"];
 
     const setPluginState = vi.fn();
-    const setConflictFiles = vi.fn();
-    const handleConflict = vi.fn();
+    const updateCachedStatus = vi.fn();
     plugin.localStorage = {
-        setConflictFiles,
         getHostname: vi.fn().mockReturnValue(null),
     } as unknown as FakePlugin["localStorage"];
     plugin.setPluginState = setPluginState;
-    plugin.handleConflict = handleConflict;
+    plugin.updateCachedStatus = updateCachedStatus;
     (plugin.app as unknown as { vault: unknown }).vault = createNodeVault(
         options.vaultPath ?? repoPath
     );
@@ -115,7 +112,6 @@ export function createIsomorphicGitManager(
         manager,
         plugin,
         setPluginState,
-        setConflictFiles,
-        handleConflict,
+        updateCachedStatus,
     };
 }

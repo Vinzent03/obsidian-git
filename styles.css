@@ -134,6 +134,16 @@
     color: var(--text-accent);
 }
 
+.obsidian-git-merge-help ol {
+    padding-inline-start: var(--size-4-6);
+}
+
+.obsidian-git-merge-help-resolved {
+    padding: var(--size-4-3);
+    border-inline-start: 2px solid var(--color-green);
+    background-color: var(--background-secondary);
+}
+
 /* ====== diff2html ======
 The following styles are adapted from the obsidian-version-history plugin by
 @kometenstaub https://github.com/kometenstaub/obsidian-version-history-diff/blob/main/src/styles.scss

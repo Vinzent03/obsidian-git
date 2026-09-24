@@ -9,12 +9,7 @@ import {
     type PanelConstructor,
     type ViewUpdate,
 } from "@codemirror/view";
-import {
-    ButtonComponent,
-    editorInfoField,
-    editorLivePreviewField,
-} from "obsidian";
-import { CONFLICT_OUTPUT_FILE } from "src/constants";
+import { ButtonComponent, editorLivePreviewField } from "obsidian";
 import { resolveAllConflicts, resolveConflict } from "./actions";
 import {
     parseConflictBlocks,
@@ -26,11 +21,6 @@ const CHOICES = ["ours", "base", "theirs", "both"] as const;
 
 function computeBlocks(state: EditorState): readonly ConflictBlock[] {
     if (!state.field(editorLivePreviewField, false)) {
-        return [];
-    }
-    if (
-        state.field(editorInfoField, false)?.file?.path === CONFLICT_OUTPUT_FILE
-    ) {
         return [];
     }
     const text = state.doc.toString();

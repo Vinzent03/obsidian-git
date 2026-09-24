@@ -204,8 +204,12 @@ export class IsomorphicGit extends GitManager {
             const changed: FileStatusResult[] = [];
             const staged: FileStatusResult[] = [];
             const all: FileStatusResult[] = [];
+            const conflictedPaths = new Set(conflicted);
             for (const file of status) {
-                if (file.workingDir !== " ") {
+                if (
+                    file.workingDir !== " " &&
+                    !conflictedPaths.has(file.path)
+                ) {
                     changed.push(file);
                 }
                 if (file.index !== " " && file.index !== "U") {
@@ -277,11 +281,10 @@ export class IsomorphicGit extends GitManager {
                 const committedFiles = await this.getCommittedFilesCount(oid);
                 await this.clearMergeState();
                 this.plugin.setPluginState({ mergeInProgress: false });
-                this.plugin.localStorage.setConflictFiles([]);
                 return committedFiles;
             } catch (error) {
                 if (error instanceof Errors.UnmergedPathsError) {
-                    await this.plugin.handleConflict(error.data.filepaths);
+                    await this.plugin.updateCachedStatus();
                 }
                 this.plugin.displayError(error);
                 throw error;
@@ -638,7 +641,7 @@ export class IsomorphicGit extends GitManager {
                     if (mergeState !== undefined) {
                         await this.writeMergeState(mergeState);
                     }
-                    await this.plugin.handleConflict(error.data.filepaths);
+                    await this.plugin.updateCachedStatus();
                 }
 
                 this.plugin.displayError(error);
