@@ -102,6 +102,32 @@ This registers the repo for automatic cleanup after the current test.
 Call `repo.cleanup()` directly only when a test needs to remove the repository
 before the test finishes.
 
+### GitManager Contract Harness
+
+`tests/helpers/gitManagerHarness.ts` exposes the real `SimpleGit` and
+`IsomorphicGit` implementations through the same test context. Shared behavior
+belongs in `tests/gitManager/gitManager.test.ts`, which runs every assertion
+against both backends and gives each test a fresh temporary repository.
+The SimpleGit harness calls `setGitInstance()`; the fixture's separate Git
+client is reserved for setup and repository-level assertions.
+
+SimpleGit-specific tests can create everything they need in one call:
+
+```ts
+const { repo, plugin, manager } = withCleanup(
+    await createSimpleGitTestContext()
+);
+```
+
+The factory also accepts `configurePlugin`, `plugin`, `fixture`, and
+`gitClient` options. Use `gitClient` only when a focused unit test deliberately
+needs a mocked SimpleGit client; otherwise the production `setGitInstance()`
+path is used.
+
+Keep native Git integration details in `simpleGit.test.ts` and
+isomorphic-git filesystem, transport, and merge-metadata details in
+`isomorphicGit.test.ts`.
+
 ## Design Principles
 
 -   Prefer pure unit tests for pure logic.

@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import type ObsidianGit from "../../src/main";
+import { GitOperation } from "../../src/types";
 
 export type FakePlugin = ObsidianGit & {
     app: {
@@ -21,6 +22,11 @@ export function createFakePlugin(): FakePlugin {
         },
         settings: {},
         localStorage: {},
+        state: {
+            offlineMode: false,
+            mergeInProgress: false,
+            operation: GitOperation.idle,
+        },
         setPluginState: vi.fn(),
         log: vi.fn(),
         displayError: vi.fn(),

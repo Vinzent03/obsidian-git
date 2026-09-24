@@ -74,6 +74,7 @@ export default class ObsidianGit extends Plugin {
     state: PluginState = {
         operation: GitOperation.idle,
         offlineMode: false,
+        mergeInProgress: false,
     };
     lastPulledFiles!: FileStatusResult[];
     gitReady = false;
@@ -104,7 +105,6 @@ export default class ObsidianGit extends Plugin {
         this.app.workspace.trigger("obsidian-git:loading-status");
         this.cachedStatus = await this.gitManager.status();
         if (this.cachedStatus.conflicted.length > 0) {
-            this.localStorage.setConflict(true);
             const known = this.localStorage.getConflictFiles();
             const conflicted = this.cachedStatus.conflicted.map((path) =>
                 this.gitManager.getRelativeVaultPath(path)
@@ -113,11 +113,12 @@ export default class ObsidianGit extends Plugin {
             if (merged.length !== known.length) {
                 this.localStorage.setConflictFiles(merged);
             }
-            await this.branchBar?.display();
-        } else {
-            this.localStorage.setConflict(false);
-            await this.branchBar?.display();
         }
+
+        this.setPluginState({
+            mergeInProgress: await this.gitManager.isMergeInProgress(),
+        });
+        await this.branchBar?.display();
 
         this.app.workspace.trigger(
             "obsidian-git:status-changed",
@@ -888,35 +889,15 @@ export default class ObsidianGit extends Plugin {
     }): Promise<boolean> {
         if (!(await this.isAllInitialized())) return false;
         try {
-            let hadConflict = this.localStorage.getConflict();
-
-            let status: Status | undefined;
             let stagedFiles: { vaultPath: string; path: string }[] = [];
             let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
             let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
                 mode === "smart" ? "nothing" : mode;
 
+            await this.mayDeleteConflictFile();
+            const status = await this.updateCachedStatus();
+            const mergeInProgress = this.state.mergeInProgress;
             if (this.gitManager instanceof SimpleGit) {
-                await this.mayDeleteConflictFile();
-                status = await this.updateCachedStatus();
-
-                //Should not be necessary, but just in case
-                if (status.conflicted.length == 0) {
-                    hadConflict = false;
-                }
-
-                // check for conflict files on auto backup
-                if (fromAuto && status.conflicted.length > 0) {
-                    this.displayError(
-                        `Did not commit, because you have conflicts in ${
-                            status.conflicted.length
-                        } ${
-                            status.conflicted.length == 1 ? "file" : "files"
-                        }. Please resolve them and commit per command.`
-                    );
-                    await this.handleConflict(status.conflicted);
-                    return false;
-                }
                 stagedFiles = status.staged;
 
                 // This typecast is only needed to hide the fact that `type` is missing, but that is only needed for isomorphic-git
@@ -927,35 +908,35 @@ export default class ObsidianGit extends Plugin {
             } else {
                 // isomorphic-git section
 
-                if (fromAuto && hadConflict) {
-                    // isomorphic-git doesn't have a way to detect current
-                    // conflicts, they are only detected on commit
-                    //
-                    // Conflicts should only be resolved by manually committing.
-                    this.displayError(
-                        `Did not commit, because you have conflicts. Please resolve them and commit per command.`
-                    );
-                    return false;
-                } else {
-                    if (hadConflict) {
-                        await this.mayDeleteConflictFile();
-                    }
-                    const gitManager = this.gitManager as IsomorphicGit;
-                    stagedFiles = await gitManager.getStagedFiles();
-                    resolvedMode = this.resolveCommitMode(
-                        mode,
-                        stagedFiles.length
-                    );
-                    if (resolvedMode === "all") {
-                        const res = await gitManager.getUnstagedFiles();
-                        unstagedFiles = res.map(({ path, type }) => ({
-                            vaultPath:
-                                this.gitManager.getRelativeVaultPath(path),
-                            path,
-                            type,
-                        }));
-                    }
+                const gitManager = this.gitManager as IsomorphicGit;
+                stagedFiles = await gitManager.getStagedFiles();
+                resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
+                if (resolvedMode === "all") {
+                    const res = await gitManager.getUnstagedFiles();
+                    unstagedFiles = res.map(({ path, type }) => ({
+                        vaultPath: this.gitManager.getRelativeVaultPath(path),
+                        path,
+                        type,
+                    }));
                 }
+            }
+
+            if (fromAuto && mergeInProgress) {
+                if (status.conflicted.length > 0) {
+                    this.displayError(
+                        `Did not commit, because you have conflicts in ${
+                            status.conflicted.length
+                        } ${
+                            status.conflicted.length == 1 ? "file" : "files"
+                        }. Please resolve them and commit per command.`
+                    );
+                    await this.handleConflict(status.conflicted);
+                } else {
+                    this.displayError(
+                        "Did not commit automatically because a merge is in progress. Commit it manually."
+                    );
+                }
+                return false;
             }
 
             if (resolvedMode === "nothing") {
@@ -980,7 +961,7 @@ export default class ObsidianGit extends Plugin {
             const changesCountToCommit =
                 (onlyStaged ? 0 : unstagedFiles.length) + stagedFiles.length !==
                 0;
-            if (changesCountToCommit || hadConflict) {
+            if (changesCountToCommit || mergeInProgress) {
                 // The commit message from settings or previously set in the
                 // source control view
                 let cmtMessage = (commitMessage ??= fromAuto
@@ -1072,7 +1053,7 @@ export default class ObsidianGit extends Plugin {
                     return false;
                 }
 
-                let committedFiles: number | undefined;
+                let committedFiles: number;
                 if (onlyStaged) {
                     committedFiles = await this.gitManager.commit({
                         message: cmtMessage,
@@ -1092,12 +1073,6 @@ export default class ObsidianGit extends Plugin {
                     await this.updateCachedStatus();
                 }
 
-                let roughly = false;
-                if (committedFiles === undefined) {
-                    roughly = true;
-                    committedFiles =
-                        unstagedFiles.length + stagedFiles.length || 0;
-                }
                 if (committedFiles === 0) {
                     // simple-git resolves with { changes: 0 } instead of
                     // throwing when there is nothing to commit (e.g. the
@@ -1106,7 +1081,7 @@ export default class ObsidianGit extends Plugin {
                     this.displayMessage("No changes to commit");
                 } else {
                     this.displayMessage(
-                        `Committed${roughly ? " approx." : ""} ${committedFiles} ${
+                        `Committed ${committedFiles} ${
                             committedFiles == 1 ? "file" : "files"
                         }`
                     );
@@ -1131,17 +1106,12 @@ export default class ObsidianGit extends Plugin {
         if (!(await this.isPushRemoteSet())) {
             return false;
         }
-        const hadConflict = this.localStorage.getConflict();
         try {
-            if (this.gitManager instanceof SimpleGit)
-                await this.mayDeleteConflictFile();
+            await this.mayDeleteConflictFile();
 
             // Refresh because of pull
-            let status: Status;
-            if (
-                this.gitManager instanceof SimpleGit &&
-                (status = await this.updateCachedStatus()).conflicted.length > 0
-            ) {
+            const status = await this.updateCachedStatus();
+            if (status.conflicted.length > 0) {
                 this.displayError(
                     `Cannot push. You have conflicts in ${
                         status.conflicted.length
@@ -1149,11 +1119,10 @@ export default class ObsidianGit extends Plugin {
                 );
                 await this.handleConflict(status.conflicted);
                 return false;
-            } else if (
-                this.gitManager instanceof IsomorphicGit &&
-                hadConflict
-            ) {
-                this.displayError(`Cannot push. You have conflicts`);
+            } else if (this.state.mergeInProgress) {
+                this.displayError(
+                    "Cannot push while a merge is still in progress"
+                );
                 return false;
             }
             // Squash local unpushed commits into one before pushing, so frequent
@@ -1491,7 +1460,9 @@ export default class ObsidianGit extends Plugin {
      * @param conflicted Paths relative to the Git repository.
      */
     async handleConflict(conflicted?: string[]): Promise<void> {
-        this.localStorage.setConflict(true);
+        this.setPluginState({
+            mergeInProgress: await this.gitManager.isMergeInProgress(),
+        });
         if (this.gitManager instanceof SimpleGit) {
             return;
         }

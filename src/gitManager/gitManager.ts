@@ -35,17 +35,16 @@ export abstract class GitManager {
 
     abstract status(opts?: { path?: string }): Promise<Status>;
 
+    abstract isMergeInProgress(): Promise<boolean>;
+
     abstract commitAll(_: {
         message: string;
         status?: Status;
         unstagedFiles?: UnstagedFile[];
         amend?: boolean;
-    }): Promise<number | undefined>;
+    }): Promise<number>;
 
-    abstract commit(_: {
-        message: string;
-        amend?: boolean;
-    }): Promise<number | undefined>;
+    abstract commit(_: { message: string; amend?: boolean }): Promise<number>;
 
     abstract stageAll(_: { dir?: string; status?: Status }): Promise<void>;
 

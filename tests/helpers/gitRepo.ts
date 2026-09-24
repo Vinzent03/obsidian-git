@@ -17,6 +17,7 @@ export type TestRepo = {
     mergeCommitCount(range?: string): Promise<number>;
     show(ref: string): Promise<string>;
     write(filePath: string, content: string): void;
+    remove(filePath: string): void;
     writeAndCommit(
         filePath: string,
         content: string,
@@ -97,6 +98,7 @@ function createTestRepoFixture(args: {
             ),
         show: (ref) => gitRaw(git, ["show", ref]),
         write: (filePath, content) => write(repoPath, filePath, content),
+        remove: (filePath) => rmSync(path.join(repoPath, filePath)),
         writeAndCommit: (filePath, content, message) =>
             writeAndCommit(git, repoPath, filePath, content, message),
         appendAndCommit: (filePath, content, message) =>
@@ -129,4 +131,21 @@ export async function createRepoWithOrigin(): Promise<TestRepo> {
     await git.push(["--quiet", "-u", "origin", "main"]);
 
     return createTestRepoFixture({ dir, remotePath, repoPath, git });
+}
+
+export async function createRepoWithMergeConflict(): Promise<TestRepo> {
+    const repo = await createRepoWithOrigin();
+    await repo.git.checkoutLocalBranch("other");
+    await repo.writeAndCommit("note.md", "other\n", "other change");
+    await repo.git.checkout("main");
+    await repo.writeAndCommit("note.md", "ours\n", "our change");
+
+    try {
+        await repo.git.merge(["other"]);
+    } catch {
+        return repo;
+    }
+
+    repo.cleanup();
+    throw new Error("Expected the test repository merge to conflict");
 }

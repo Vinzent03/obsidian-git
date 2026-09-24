@@ -87,6 +87,7 @@ export class SimpleGit extends GitManager {
                     allowUnsafeMergeDriver: true,
                     allowUnsafeSshCommand: true,
                     allowUnsafePager: true,
+                    allowUnsafeDiffTextConv: true,
                 },
             });
             const pathPaths = this.plugin.localStorage.getPATHPaths();
@@ -412,6 +413,15 @@ export class SimpleGit extends GitManager {
                 (path) => this.formatPath({ path }).path
             ),
         };
+    }
+
+    async isMergeInProgress(): Promise<boolean> {
+        const mergeHead = await this.git.revparse(["--git-path", "MERGE_HEAD"]);
+        const mergeHeadPath = path.resolve(
+            this.absoluteRepoPath,
+            mergeHead.trim()
+        );
+        return this.app.vault.adapter.exists(mergeHeadPath);
     }
 
     async submoduleAwareHeadRevisonInContainingDirectory(
@@ -787,7 +797,9 @@ export class SimpleGit extends GitManager {
                     console.log(res);
                 }
                 const status = await this.git.status();
-                const currentBranch = status.current;
+                const currentBranch = status.detached
+                    ? undefined
+                    : status.current;
 
                 if (!currentBranch) {
                     this.plugin.displayError(
@@ -916,7 +928,7 @@ export class SimpleGit extends GitManager {
 
     async getUnpushedCommits(): Promise<number> {
         const status = await this.git.status();
-        const currentBranch = status.current;
+        const currentBranch = status.detached ? undefined : status.current;
 
         if (currentBranch == null) {
             return 0;
@@ -946,7 +958,7 @@ export class SimpleGit extends GitManager {
             return true;
         }
         const status = await this.git.status();
-        const currentBranch = status.current;
+        const currentBranch = status.detached ? undefined : status.current;
         if (!currentBranch) {
             this.plugin.log("During canPush check, no current branch found.");
             return false;
@@ -985,7 +997,7 @@ export class SimpleGit extends GitManager {
         const branches = await this.git.branch(["--no-color"]);
 
         return {
-            current: status.current || undefined,
+            current: status.detached ? undefined : status.current || undefined,
             tracking: status.tracking || undefined,
             branches: branches.all,
         };
@@ -1066,7 +1078,9 @@ export class SimpleGit extends GitManager {
     ): Promise<string> {
         const path = this.getRelativeRepoPath(file, relativeToVault);
 
-        return this.git.show([commitHash + ":" + path]);
+        // `--textconv` applies a configured diff.*.textconv filter (e.g.
+        // git-crypt, git-secret), matching what `git diff` shows.
+        return this.git.show(["--textconv", commitHash + ":" + path]);
     }
 
     private async getLocalBranchUpstream(

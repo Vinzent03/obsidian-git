@@ -11,6 +11,8 @@ import type {
     WalkerEntry,
 } from "isomorphic-git";
 import git, { Errors, readBlob } from "isomorphic-git";
+import { GitIndexManager } from "isomorphic-git/managers";
+import { FileSystem } from "isomorphic-git/models";
 import { normalizePath, Notice, requestUrl } from "obsidian";
 import type ObsidianGit from "../main";
 import type {
@@ -29,6 +31,10 @@ import { MyAdapter } from "./myAdapter";
 import diff3Merge from "diff3";
 
 export class IsomorphicGit extends GitManager {
+    private static readonly MERGE_HEAD = "MERGE_HEAD";
+    private static readonly MERGE_MESSAGE = "MERGE_MSG";
+    private static readonly MERGE_MODE = "MERGE_MODE";
+    private static readonly ORIGINAL_HEAD = "ORIG_HEAD";
     private readonly FILE = 0;
     private readonly HEAD = 1;
     private readonly WORKDIR = 2;
@@ -187,6 +193,14 @@ export class IsomorphicGit extends GitManager {
                 await this.wrapFS(git.statusMatrix(statusOpts))
             ).map((row) => this.getFileStatusResult(row));
 
+            let conflicted = await this.getConflictedFiles();
+            if (opts?.path != undefined) {
+                const path = opts.path.replace(/\/$/, "");
+                conflicted = conflicted.filter(
+                    (file) => file === path || file.startsWith(`${path}/`)
+                );
+            }
+
             const changed: FileStatusResult[] = [];
             const staged: FileStatusResult[] = [];
             const all: FileStatusResult[] = [];
@@ -201,7 +215,6 @@ export class IsomorphicGit extends GitManager {
                     all.push(file);
                 }
             }
-            const conflicted: string[] = [];
             window.clearTimeout(timeout);
             notice?.hide();
             return { all, changed, staged, conflicted };
@@ -217,16 +230,18 @@ export class IsomorphicGit extends GitManager {
         message,
         status,
         unstagedFiles,
+        amend,
     }: {
         message: string;
         status?: Status;
         unstagedFiles?: UnstagedFile[];
-    }): Promise<number | undefined> {
+        amend?: boolean;
+    }): Promise<number> {
         try {
             await this.checkAuthorInfo();
 
             await this.stageAll({ status, unstagedFiles });
-            return this.commit({ message });
+            return this.commit({ message, amend });
         } catch (error) {
             this.plugin.displayError(error);
             throw error;
@@ -235,32 +250,39 @@ export class IsomorphicGit extends GitManager {
 
     async commit({
         message,
+        amend,
     }: {
         message: string;
         amend?: boolean;
-    }): Promise<undefined> {
+    }): Promise<number> {
         return this.withGitOperation(GitOperation.commit, async () => {
             try {
                 await this.checkAuthorInfo();
                 const formatMessage = await this.formatCommitMessage(message);
-                const hadConflict = this.plugin.localStorage.getConflict();
+                const mergeHeads = await this.getMergeHeads();
                 let parent: string[] | undefined = undefined;
 
-                if (hadConflict) {
-                    const branchInfo = await this.branchInfo();
-                    parent = [branchInfo.current!, branchInfo.tracking!];
+                if (mergeHeads.length > 0) {
+                    parent = [await this.resolveRef("HEAD"), ...mergeHeads];
                 }
 
-                await this.wrapFS(
+                const oid = await this.wrapFS(
                     git.commit({
                         ...this.getRepo(),
                         message: formatMessage,
+                        amend,
                         parent: parent,
                     })
                 );
-                this.plugin.localStorage.setConflict(false);
-                return undefined;
+                const committedFiles = await this.getCommittedFilesCount(oid);
+                await this.clearMergeState();
+                this.plugin.setPluginState({ mergeInProgress: false });
+                this.plugin.localStorage.setConflictFiles([]);
+                return committedFiles;
             } catch (error) {
+                if (error instanceof Errors.UnmergedPathsError) {
+                    await this.plugin.handleConflict(error.data.filepaths);
+                }
                 this.plugin.displayError(error);
                 throw error;
             }
@@ -489,21 +511,52 @@ export class IsomorphicGit extends GitManager {
         return this.wrapFS(git.resolveRef({ ...this.getRepo(), ref }));
     }
 
-    async pull(): Promise<FileStatusResult[]> {
+    async pull(): Promise<FileStatusResult[] | undefined> {
         const progressNotice = this.showNotice("Initializing pull");
         return this.withGitOperation(GitOperation.pull, async () => {
+            let mergeState:
+                | { ours: string; theirs: string; message: string }
+                | undefined;
             try {
-                const localCommit = await this.resolveRef("HEAD");
-                await this.fetch();
+                if (await this.isMergeInProgress()) {
+                    throw new Error(
+                        "Cannot pull because a merge is still in progress. Commit or abort it first."
+                    );
+                }
                 const branchInfo = await this.branchInfo();
+                if (!branchInfo.current) {
+                    progressNotice?.hide();
+                    this.plugin.displayError(
+                        "No current branch found. Cannot pull."
+                    );
+                    return undefined;
+                }
+
+                const localCommit = await this.resolveRef(branchInfo.current);
+
+                if (!branchInfo.tracking) {
+                    progressNotice?.hide();
+                    this.plugin.log("No tracking branch found. Ignoring pull.");
+                    return undefined;
+                }
+
+                await this.fetch();
 
                 await this.checkAuthorInfo();
+
+                const theirs = await this.resolveRef(branchInfo.tracking);
+                mergeState = {
+                    ours: localCommit,
+                    theirs,
+                    message: `Merge branch '${branchInfo.tracking}' into ${branchInfo.current}`,
+                };
 
                 const mergeRes = await this.wrapFS(
                     git.merge({
                         ...this.getRepo(),
                         ours: branchInfo.current,
-                        theirs: branchInfo.tracking!,
+                        theirs: branchInfo.tracking,
+                        message: mergeState.message,
                         abortOnConflict: false,
                         mergeDriver:
                             this.plugin.settings.mergeStrategy !== "none"
@@ -582,6 +635,9 @@ export class IsomorphicGit extends GitManager {
             } catch (error) {
                 progressNotice?.hide();
                 if (error instanceof Errors.MergeConflictError) {
+                    if (mergeState !== undefined) {
+                        await this.writeMergeState(mergeState);
+                    }
                     await this.plugin.handleConflict(error.data.filepaths);
                 }
 
@@ -591,20 +647,29 @@ export class IsomorphicGit extends GitManager {
         });
     }
 
-    async push(): Promise<number> {
-        if (!(await this.canPush())) {
-            return 0;
-        }
+    async push(): Promise<number | undefined> {
         const progressNotice = this.showNotice("Initializing push");
         return this.withGitOperation(GitOperation.push, async () => {
             try {
                 const status = await this.branchInfo();
                 const trackingBranch = status.tracking;
                 const currentBranch = status.current;
+                if (!currentBranch) {
+                    progressNotice?.hide();
+                    this.plugin.displayError(
+                        "No current branch found. Cannot push."
+                    );
+                    return undefined;
+                }
+                if (!trackingBranch) {
+                    progressNotice?.hide();
+                    this.plugin.log("No tracking branch found. Ignoring push.");
+                    return undefined;
+                }
                 const numChangedFiles = (
                     await this.getFileChangesCount(
-                        currentBranch!,
-                        trackingBranch!
+                        currentBranch,
+                        trackingBranch
                     )
                 ).length;
 
@@ -658,8 +723,16 @@ export class IsomorphicGit extends GitManager {
         const trackingBranch = status.tracking;
         const currentBranch = status.current;
 
-        const current = await this.resolveRef(currentBranch!);
-        const tracking = await this.resolveRef(trackingBranch!);
+        if (!currentBranch) {
+            this.plugin.log("During canPush check, no current branch found.");
+            return false;
+        }
+        if (!trackingBranch) {
+            return false;
+        }
+
+        const current = await this.resolveRef(currentBranch);
+        const tracking = await this.resolveRef(trackingBranch);
 
         return current != tracking;
     }
@@ -674,23 +747,27 @@ export class IsomorphicGit extends GitManager {
 
     async branchInfo(): Promise<BranchInfo & { remote: string }> {
         try {
-            const current = (await git.currentBranch(this.getRepo())) || "";
+            const current = await git.currentBranch(this.getRepo());
 
             const branches = await git.listBranches(this.getRepo());
 
             const remote =
-                (await this.getConfig(`branch.${current}.remote`)) ?? "origin";
+                (current &&
+                    (await this.getConfig(`branch.${current}.remote`))) ??
+                "origin";
 
-            const trackingBranch = (
-                await this.getConfig(`branch.${current}.merge`)
-            )?.split("refs/heads")[1];
+            const trackingBranch = current
+                ? (await this.getConfig(`branch.${current}.merge`))?.split(
+                      "refs/heads"
+                  )[1]
+                : undefined;
 
             const tracking = trackingBranch
                 ? remote + trackingBranch
                 : undefined;
 
             return {
-                current: current,
+                current: current || undefined,
                 tracking: tracking,
                 branches: branches,
                 remote: remote,
@@ -950,6 +1027,92 @@ export class IsomorphicGit extends GitManager {
         );
     }
 
+    private async getConflictedFiles(): Promise<string[]> {
+        const result = GitIndexManager.acquire(
+            {
+                fs: new FileSystem(this.fs),
+                gitdir: this.getGitDirPath(),
+                cache: {},
+            },
+            (index) => index.unmergedPaths as unknown
+        ) as Promise<unknown>;
+        const conflicted = await this.wrapFS(result);
+        if (
+            !Array.isArray(conflicted) ||
+            !conflicted.every((path: unknown) => typeof path === "string")
+        ) {
+            throw new TypeError(
+                "isomorphic-git returned invalid unmerged paths"
+            );
+        }
+        return conflicted;
+    }
+
+    private getMergeStatePath(filename: string): string {
+        return normalizePath(`${this.getGitDirPath()}/${filename}`);
+    }
+
+    async isMergeInProgress(): Promise<boolean> {
+        return this.app.vault.adapter.exists(
+            this.getMergeStatePath(IsomorphicGit.MERGE_HEAD)
+        );
+    }
+
+    private async getMergeHeads(): Promise<string[]> {
+        const path = this.getMergeStatePath(IsomorphicGit.MERGE_HEAD);
+        if (!(await this.app.vault.adapter.exists(path))) {
+            return [];
+        }
+
+        return (await this.app.vault.adapter.read(path))
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+    }
+
+    private async writeMergeState({
+        ours,
+        theirs,
+        message,
+    }: {
+        ours: string;
+        theirs: string;
+        message: string;
+    }): Promise<void> {
+        const adapter = this.app.vault.adapter;
+        await adapter.write(
+            this.getMergeStatePath(IsomorphicGit.ORIGINAL_HEAD),
+            `${ours}\n`
+        );
+        await adapter.write(
+            this.getMergeStatePath(IsomorphicGit.MERGE_MESSAGE),
+            `${message}\n`
+        );
+        await adapter.write(
+            this.getMergeStatePath(IsomorphicGit.MERGE_MODE),
+            ""
+        );
+        // MERGE_HEAD is written last because its presence marks the merge as active.
+        await adapter.write(
+            this.getMergeStatePath(IsomorphicGit.MERGE_HEAD),
+            `${theirs}\n`
+        );
+    }
+
+    private async clearMergeState(): Promise<void> {
+        const adapter = this.app.vault.adapter;
+        for (const filename of [
+            IsomorphicGit.MERGE_HEAD,
+            IsomorphicGit.MERGE_MESSAGE,
+            IsomorphicGit.MERGE_MODE,
+        ]) {
+            const path = this.getMergeStatePath(filename);
+            if (await adapter.exists(path)) {
+                await adapter.remove(path);
+            }
+        }
+    }
+
     async updateUpstreamBranch(remoteBranch: string): Promise<void> {
         const [remote, branch] = splitRemoteBranch(remoteBranch);
         const branchInfo = await this.branchInfo();
@@ -971,6 +1134,23 @@ export class IsomorphicGit extends GitManager {
     updateGitPath(_: string): Promise<void> {
         // isomorphic-git library has its own git client
         return Promise.resolve();
+    }
+
+    private async getCommittedFilesCount(oid: string): Promise<number> {
+        const { commit } = await this.wrapFS(
+            git.readCommit({ ...this.getRepo(), oid })
+        );
+        const parent = commit.parent[0];
+
+        if (!parent) {
+            return (
+                await this.wrapFS(
+                    git.listFiles({ ...this.getRepo(), ref: oid })
+                )
+            ).length;
+        }
+
+        return (await this.getFileChangesCount(parent, oid)).length;
     }
 
     async getFileChangesCount(

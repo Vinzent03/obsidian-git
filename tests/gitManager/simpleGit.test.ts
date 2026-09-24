@@ -5,55 +5,10 @@ import simpleGit, {
     type SimpleGitProgressEvent,
 } from "simple-git";
 import { describe, expect, it, vi } from "vitest";
-import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { GitOperation, type GitProgress } from "../../src/types";
 import { withCleanup } from "../helpers/cleanup";
-import { createFakePlugin, type FakePlugin } from "../helpers/createFakePlugin";
-import { createRepoWithOrigin } from "../helpers/gitRepo";
-
-function createManager(
-    repoPath: string,
-    gitClient: SimpleGitClient,
-    plugin: FakePlugin = createFakePlugin(),
-    vaultPath = repoPath
-): SimpleGit {
-    (
-        plugin.app as unknown as {
-            vault: { adapter: { getBasePath(): string } };
-        }
-    ).vault = {
-        adapter: {
-            getBasePath: () => vaultPath,
-        },
-    };
-    const manager = new SimpleGit(plugin);
-    manager.git = gitClient;
-    manager.absoluteRepoPath = repoPath;
-    return manager;
-}
-
-describe("SimpleGit.status", () => {
-    it("keeps conflict paths repository-relative", async () => {
-        const vaultPath = path.join("root", "vault");
-        const repoPath = path.join(vaultPath, "nested-repository");
-        const gitClient = {
-            status: vi.fn().mockResolvedValue({
-                files: [],
-                conflicted: ["notes/conflicted.md"],
-            }),
-        } as unknown as SimpleGitClient;
-        const manager = createManager(
-            repoPath,
-            gitClient,
-            createFakePlugin(),
-            vaultPath
-        );
-
-        const status = await manager.status();
-
-        expect(status.conflicted).toEqual(["notes/conflicted.md"]);
-    });
-});
+import type { FakePlugin } from "../helpers/createFakePlugin";
+import { createSimpleGitTestContext } from "../helpers/simpleGit";
 
 function addStatusBar(plugin: FakePlugin) {
     const displayProgress = vi.fn<(progress: GitProgress) => void>();
@@ -94,74 +49,16 @@ async function createRemoteCommit(repo: {
 }
 
 describe("SimpleGit.commit", () => {
-    it("commits staged changes without staging unstaged changes", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+    it("returns the change count and triggers a head-change event", async () => {
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         repo.write("staged.md", "staged\n");
-        repo.write("unstaged.md", "unstaged\n");
         await repo.git.add("staged.md");
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.commit({ message: "commit staged" });
 
         expect(changes).toBe(1);
-        expect(await repo.headMessage()).toBe("commit staged");
-        expect(await repo.show("HEAD:staged.md")).toBe("staged");
-        expect(await repo.statusPorcelain()).toBe("?? unstaged.md");
-        expect(plugin.setPluginState.mock.calls).toEqual([
-            [{ operation: GitOperation.commit }],
-            [{ operation: GitOperation.idle }],
-        ]);
-        expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
-            "obsidian-git:head-change"
-        );
-    });
-
-    it("amends the previous commit when amend is true", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
-        const headBefore = await repo.head();
-        repo.write("note.md", "base\namended\n");
-        await repo.git.add("note.md");
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
-
-        const changes = await manager.commit({
-            message: "amended base",
-            amend: true,
-        });
-
-        expect(changes).toBe(1);
-        expect(await repo.head()).not.toBe(headBefore);
-        expect(await repo.headMessage()).toBe("amended base");
-        expect(await repo.unpushedCount()).toBe(1);
-        expect(await repo.show("HEAD:note.md")).toBe("base\namended");
-        expect(await repo.statusPorcelain()).toBe("");
-    });
-});
-
-describe("SimpleGit.commitAll", () => {
-    it("stages and commits tracked, untracked, and deleted files", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
-        await repo.writeAndCommit(
-            "delete-me.md",
-            "delete me\n",
-            "add deleted file"
-        );
-        await repo.git.push(["--quiet"]);
-        repo.write("note.md", "base\nchanged\n");
-        repo.write("created.md", "created\n");
-        await repo.raw(["rm", "delete-me.md"]);
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
-
-        const changes = await manager.commitAll({ message: "commit all" });
-
-        expect(changes).toBe(3);
-        expect(await repo.headMessage()).toBe("commit all");
-        expect(await repo.show("HEAD:note.md")).toBe("base\nchanged");
-        expect(await repo.show("HEAD:created.md")).toBe("created");
-        expect(await repo.statusPorcelain()).toBe("");
-        await expect(repo.show("HEAD:delete-me.md")).rejects.toThrow();
         expect(plugin.setPluginState.mock.calls).toEqual([
             [{ operation: GitOperation.commit }],
             [{ operation: GitOperation.idle }],
@@ -174,12 +71,12 @@ describe("SimpleGit.commitAll", () => {
 
 describe("SimpleGit.pull", () => {
     it("pulls remote changes and returns changed files", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await createRemoteCommit(repo);
-        const plugin = createFakePlugin();
         plugin.settings.syncMethod = "merge";
         plugin.settings.mergeStrategy = "none";
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.pull();
 
@@ -203,11 +100,11 @@ describe("SimpleGit.pull", () => {
     });
 
     it("returns an empty change list when the branch is already up to date", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
-        const plugin = createFakePlugin();
+        const { plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         plugin.settings.syncMethod = "merge";
         plugin.settings.mergeStrategy = "none";
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.pull();
 
@@ -220,15 +117,15 @@ describe("SimpleGit.pull", () => {
     });
 
     it("autostashes local changes when rebasing with autostash enabled", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await createRemoteCommit(repo);
         repo.write("note.md", "local change\n");
         await repo.git.addConfig("rebase.autoStash", "false");
-        const plugin = createFakePlugin();
         plugin.settings.syncMethod = "rebase";
         plugin.settings.mergeStrategy = "none";
         plugin.settings.rebaseAutoStash = "enabled";
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.pull();
 
@@ -247,16 +144,16 @@ describe("SimpleGit.pull", () => {
     });
 
     it("disables autostash when rebasing even when Git enables it", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await createRemoteCommit(repo);
         repo.write("note.md", "local change\n");
         await repo.git.addConfig("rebase.autoStash", "true");
         const headBefore = await repo.head();
-        const plugin = createFakePlugin();
         plugin.settings.syncMethod = "rebase";
         plugin.settings.mergeStrategy = "none";
         plugin.settings.rebaseAutoStash = "disabled";
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.pull();
 
@@ -271,15 +168,15 @@ describe("SimpleGit.pull", () => {
     });
 
     it("uses the Git autostash configuration when requested", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await createRemoteCommit(repo);
         repo.write("note.md", "local change\n");
         await repo.git.addConfig("rebase.autoStash", "true");
-        const plugin = createFakePlugin();
         plugin.settings.syncMethod = "rebase";
         plugin.settings.mergeStrategy = "none";
         plugin.settings.rebaseAutoStash = "git-config";
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.pull();
 
@@ -292,12 +189,12 @@ describe("SimpleGit.pull", () => {
     });
 
     it("clears progress when done without manually setting pull progress", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
-        const plugin = createFakePlugin();
+        const { plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         plugin.settings.syncMethod = "merge";
         plugin.settings.mergeStrategy = "none";
         const statusBar = addStatusBar(plugin);
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.pull();
 
@@ -306,11 +203,11 @@ describe("SimpleGit.pull", () => {
     });
 
     it("resets the current branch to upstream when sync method is reset", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await createRemoteCommit(repo);
-        const plugin = createFakePlugin();
         plugin.settings.syncMethod = "reset";
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.pull();
 
@@ -329,7 +226,6 @@ describe("SimpleGit.pull", () => {
     });
 
     it("reports an error when no current branch is checked out", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
         const fetch = vi.fn().mockResolvedValue(undefined);
         const git = {
             status: vi.fn().mockResolvedValue({
@@ -339,8 +235,9 @@ describe("SimpleGit.pull", () => {
             branch: vi.fn().mockResolvedValue({ all: ["main", "origin/main"] }),
             fetch,
         } as unknown as SimpleGitClient;
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, git, plugin);
+        const { plugin, manager } = withCleanup(
+            await createSimpleGitTestContext({ gitClient: git })
+        );
 
         const changes = await manager.pull();
 
@@ -356,29 +253,29 @@ describe("SimpleGit.pull", () => {
     });
 
     it("updates submodules only when no tracking branch exists", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkoutLocalBranch("local-only");
         const headBefore = await repo.head();
-        const plugin = createFakePlugin();
         plugin.settings.updateSubmodules = true;
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.pull();
 
         expect(changes).toBeUndefined();
         expect(await repo.head()).toBe(headBefore);
         expect(plugin.log).toHaveBeenCalledWith(
-            "No tracking branch found. Ignoring pull of main repo and updating submodules only."
+            "No tracking branch found. Ignoring pull of main repo and updated submodules only."
         );
         expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
     });
 
     it("skips pulling when no tracking branch exists", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkoutLocalBranch("local-only");
         const headBefore = await repo.head();
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changes = await manager.pull();
 
@@ -394,10 +291,10 @@ describe("SimpleGit.pull", () => {
 
 describe("SimpleGit.push", () => {
     it("pushes local commits and returns the changed file count", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.appendAndCommit("note.md", "local\n", "local commit");
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changedFiles = await manager.push();
 
@@ -411,12 +308,12 @@ describe("SimpleGit.push", () => {
     });
 
     it("returns null when pushing without a tracking branch", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkoutLocalBranch("local-only");
         await repo.git.addConfig("push.default", "current");
         await repo.writeAndCommit("local-only.md", "local\n", "local only");
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         expect(await manager.canPush()).toBe(true);
         const changedFiles = await manager.push();
@@ -433,7 +330,9 @@ describe("SimpleGit.push", () => {
     });
 
     it("uses the push target when it differs from the upstream branch", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkoutLocalBranch("dev");
         await repo.raw(["branch", "--set-upstream-to=origin/main", "dev"]);
         await repo.git.addConfig("push.default", "current");
@@ -443,8 +342,6 @@ describe("SimpleGit.push", () => {
             "published on dev"
         );
         await repo.git.push(["--quiet"]);
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         expect(await manager.getUnpushedCommits()).toBe(0);
         expect(await manager.canPush()).toBe(false);
@@ -459,10 +356,10 @@ describe("SimpleGit.push", () => {
     });
 
     it("clears progress when done without manually setting push progress", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
-        const plugin = createFakePlugin();
+        const { plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         const statusBar = addStatusBar(plugin);
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.push();
 
@@ -471,7 +368,6 @@ describe("SimpleGit.push", () => {
     });
 
     it("reports an error when no current branch is checked out", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
         const push = vi.fn().mockResolvedValue(undefined);
         const git = {
             status: vi.fn().mockResolvedValue({
@@ -480,8 +376,9 @@ describe("SimpleGit.push", () => {
             }),
             push,
         } as unknown as SimpleGitClient;
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, git, plugin);
+        const { plugin, manager } = withCleanup(
+            await createSimpleGitTestContext({ gitClient: git })
+        );
 
         const changedFiles = await manager.push();
 
@@ -497,12 +394,12 @@ describe("SimpleGit.push", () => {
     });
 
     it("updates submodules only when no push target exists", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkoutLocalBranch("local-only");
         await repo.writeAndCommit("local-only.md", "local\n", "local only");
-        const plugin = createFakePlugin();
         plugin.settings.updateSubmodules = true;
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         const changedFiles = await manager.push();
 
@@ -518,10 +415,10 @@ describe("SimpleGit.push", () => {
 
 describe("SimpleGit.fetch", () => {
     it("sets the fetch operation and clears progress when done", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
-        const plugin = createFakePlugin();
+        const { plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         const statusBar = addStatusBar(plugin);
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.fetch();
 
@@ -536,12 +433,12 @@ describe("SimpleGit.fetch", () => {
 
 describe("SimpleGit.checkout", () => {
     it("sets the checkout operation and clears progress when done", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkout(["--quiet", "-b", "feature"]);
         await repo.git.checkout(["--quiet", "main"]);
-        const plugin = createFakePlugin();
         const statusBar = addStatusBar(plugin);
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.checkout("feature");
 
@@ -559,8 +456,7 @@ describe("SimpleGit.checkout", () => {
 
 describe("SimpleGit progress", () => {
     it("maps simple-git progress events to status bar progress", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
-        const manager = createManager(repo.repoPath, repo.git);
+        const { manager } = withCleanup(await createSimpleGitTestContext());
         const mapper = manager as unknown as ProgressMapper;
 
         expect(
@@ -615,11 +511,11 @@ describe("SimpleGit progress", () => {
 
 describe("SimpleGit.squashAllUnpushedCommits", () => {
     it("squashes multiple unpushed commits into one commit with the previous HEAD message", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.appendAndCommit("note.md", "one\n", "commit one");
         await repo.appendAndCommit("note.md", "two\n", "commit two");
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.squashAllUnpushedCommits();
 
@@ -637,7 +533,9 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
     });
 
     it("squashes against the push target when it differs from the upstream branch", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkoutLocalBranch("dev");
         await repo.raw(["branch", "--set-upstream-to=origin/main", "dev"]);
         await repo.git.addConfig("push.default", "current");
@@ -650,8 +548,6 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
         const publishedHead = await repo.head();
         await repo.appendAndCommit("note.md", "one\n", "commit one");
         await repo.appendAndCommit("note.md", "two\n", "commit two");
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.squashAllUnpushedCommits();
 
@@ -667,11 +563,11 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
     });
 
     it("does nothing when there is only one unpushed commit", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.appendAndCommit("note.md", "one\n", "commit one");
         const headBefore = await repo.head();
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.squashAllUnpushedCommits();
 
@@ -682,15 +578,15 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
     });
 
     it("does nothing before the push target has been created", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkoutLocalBranch("dev");
         await repo.raw(["branch", "--set-upstream-to=origin/main", "dev"]);
         await repo.git.addConfig("push.default", "current");
         await repo.appendAndCommit("note.md", "one\n", "commit one");
         await repo.appendAndCommit("note.md", "two\n", "commit two");
         const headBefore = await repo.head();
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.squashAllUnpushedCommits();
 
@@ -700,14 +596,14 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
     });
 
     it("does nothing when staged changes are present", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.appendAndCommit("note.md", "one\n", "commit one");
         await repo.appendAndCommit("note.md", "two\n", "commit two");
         repo.write("staged.md", "staged\n");
         await repo.git.add("staged.md");
         const headBefore = await repo.head();
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.squashAllUnpushedCommits();
 
@@ -719,7 +615,9 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
     });
 
     it("does nothing when unpushed history contains a merge commit", async () => {
-        const repo = withCleanup(await createRepoWithOrigin());
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
         await repo.git.checkout(["--quiet", "-b", "feature"]);
         await repo.writeAndCommit("feature.md", "feature\n", "feature");
         await repo.git.checkout(["--quiet", "main"]);
@@ -733,8 +631,6 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
             "merge feature",
         ]);
         const headBefore = await repo.head();
-        const plugin = createFakePlugin();
-        const manager = createManager(repo.repoPath, repo.git, plugin);
 
         await manager.squashAllUnpushedCommits();
 
@@ -742,5 +638,20 @@ describe("SimpleGit.squashAllUnpushedCommits", () => {
         expect(await repo.mergeCommitCount()).toBe(1);
         expect(plugin.setPluginState).not.toHaveBeenCalled();
         expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
+    });
+});
+
+describe("SimpleGit.show", () => {
+    it("applies the configured textconv filter", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        repo.write(".gitattributes", "*.secret diff=upper\n");
+        await repo.writeAndCommit("note.secret", "hidden\n", "add secret");
+        await manager.setConfig("diff.upper.textconv", "tr a-z A-Z <");
+
+        const content = await manager.show("HEAD", "note.secret");
+
+        expect(content).toBe("HIDDEN\n");
     });
 });
