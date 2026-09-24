@@ -1,16 +1,10 @@
 import { Notice, Platform, TFile } from "obsidian";
-import {
-    CONFLICT_OUTPUT_FILE,
-    DIFF_VIEW_CONFIG,
-    SPLIT_DIFF_VIEW_CONFIG,
-} from "./constants";
+import { DIFF_VIEW_CONFIG, SPLIT_DIFF_VIEW_CONFIG } from "./constants";
 import type ObsidianGit from "./main";
 import { SimpleGit } from "./gitManager/simpleGit";
 import { getNewLeaf, splitRemoteBranch } from "./utils";
 import { GeneralModal } from "./ui/modals/generalModal";
 import type { DiffViewState } from "./types";
-
-const CONFLICT_MARKER_REGEX = /^(?:<{7}|>{7})(?:[ \t]|$)/m;
 
 export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
@@ -77,99 +71,6 @@ export default class Tools {
         }
         return false;
     }
-    async writeAndOpenFile(text?: string) {
-        if (text !== undefined) {
-            await this.plugin.app.vault.adapter.write(
-                CONFLICT_OUTPUT_FILE,
-                text
-            );
-        }
-        let fileIsAlreadyOpened = false;
-        this.plugin.app.workspace.iterateAllLeaves((leaf) => {
-            if (
-                leaf.getDisplayText() != "" &&
-                CONFLICT_OUTPUT_FILE.startsWith(leaf.getDisplayText())
-            ) {
-                fileIsAlreadyOpened = true;
-            }
-        });
-        if (!fileIsAlreadyOpened) {
-            await this.plugin.app.workspace.openLinkText(
-                CONFLICT_OUTPUT_FILE,
-                "/",
-                true
-            );
-        }
-    }
-
-    async buildConflictNoteContent(): Promise<string> {
-        const conflicts = this.plugin.localStorage.getConflictFiles();
-        const resolved = await Promise.all(
-            conflicts.map(async (filepath) => {
-                let content: string;
-                try {
-                    content =
-                        await this.plugin.app.vault.adapter.read(filepath);
-                } catch {
-                    return true;
-                }
-                return !CONFLICT_MARKER_REGEX.test(content);
-            })
-        );
-
-        return [
-            "# Conflicts",
-            "Please resolve them and commit them using the commands `Git: Commit all changes` followed by `Git: Push`",
-            "(This file will automatically be deleted before commit)",
-            "[[#Additional Instructions]] available below file list",
-            "",
-            ...conflicts.map((filepath, i) => {
-                const mark = resolved[i] ? "x" : " ";
-                const file =
-                    this.plugin.app.vault.getAbstractFileByPath(filepath);
-                if (file instanceof TFile) {
-                    const link = this.plugin.app.metadataCache.fileToLinktext(
-                        file,
-                        "/"
-                    );
-                    return `- [${mark}] [[${link}]]`;
-                } else {
-                    return `- [${mark}] Not a file: ${filepath}`;
-                }
-            }),
-            `
-# Additional Instructions
-I strongly recommend to use "Source mode" for viewing the conflicted files. For simple conflicts, in each file listed above replace every occurrence of the following text blocks with the desired text.
-
-\`\`\`diff
-<<<<<<< HEAD
-    File changes in local repository
-=======
-    File changes in remote repository
->>>>>>> origin/main
-\`\`\``,
-        ].join("\n");
-    }
-
-    async refreshConflictNote(): Promise<void> {
-        if (this.plugin.localStorage.getConflictFiles().length === 0) {
-            return;
-        }
-        const text = await this.buildConflictNoteContent();
-        const file =
-            this.plugin.app.vault.getAbstractFileByPath(CONFLICT_OUTPUT_FILE);
-        if (file instanceof TFile) {
-            if ((await this.plugin.app.vault.read(file)) !== text) {
-                await this.plugin.app.vault.modify(file, text);
-            }
-        } else {
-            await this.plugin.app.vault.adapter.write(
-                CONFLICT_OUTPUT_FILE,
-                text
-            );
-        }
-    }
-
     openDiff({
         aFile,
         bFile,

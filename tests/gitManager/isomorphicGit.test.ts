@@ -16,8 +16,9 @@ afterEach(() => {
 describe("IsomorphicGit merge state", () => {
     it("clears canonical merge metadata after committing", async () => {
         const repo = withCleanup(await createRepoWithMergeConflict());
-        const { manager, setPluginState, setConflictFiles } =
-            createIsomorphicGitManager(repo.repoPath);
+        const { manager, setPluginState } = createIsomorphicGitManager(
+            repo.repoPath
+        );
         await manager.stage("note.md", false);
 
         await manager.commit({ message: "resolve merge" });
@@ -31,12 +32,11 @@ describe("IsomorphicGit merge state", () => {
         expect(setPluginState).toHaveBeenCalledWith({
             mergeInProgress: false,
         });
-        expect(setConflictFiles).toHaveBeenCalledWith([]);
     });
 
     it("refreshes conflict handling from an unmerged-paths commit error", async () => {
         const repo = withCleanup(await createRepoWithMergeConflict());
-        const { manager, handleConflict } = createIsomorphicGitManager(
+        const { manager, updateCachedStatus } = createIsomorphicGitManager(
             repo.repoPath
         );
 
@@ -44,13 +44,13 @@ describe("IsomorphicGit merge state", () => {
             manager.commit({ message: "still conflicted" })
         ).rejects.toBeInstanceOf(Errors.UnmergedPathsError);
 
-        expect(handleConflict).toHaveBeenCalledWith(["note.md"]);
+        expect(updateCachedStatus).toHaveBeenCalledWith();
         expect(await manager.isMergeInProgress()).toBe(true);
     });
 
     it("writes canonical merge metadata when an isomorphic merge conflicts", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
-        const { manager, handleConflict } = createIsomorphicGitManager(
+        const { manager, updateCachedStatus } = createIsomorphicGitManager(
             repo.repoPath
         );
         vi.spyOn(manager, "resolveRef")
@@ -80,6 +80,6 @@ describe("IsomorphicGit merge state", () => {
         await expect(
             readFile(path.join(repo.repoPath, ".git", "MERGE_MSG"), "utf8")
         ).resolves.toBe("Merge branch 'origin/main' into main\n");
-        expect(handleConflict).toHaveBeenCalledWith(["note.md"]);
+        expect(updateCachedStatus).toHaveBeenCalledWith();
     });
 });
