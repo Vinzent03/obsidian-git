@@ -371,6 +371,14 @@ export type DiffViewState = {
     bRef?: string;
 };
 
+export type ReadOnlyFileViewState = {
+    /** The repository-relative path of the file. */
+    file: string;
+
+    /** The commit containing the file snapshot. */
+    ref: string;
+};
+
 export enum FileType {
     staged,
     changed,

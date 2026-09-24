@@ -1455,6 +1455,20 @@ export class IsomorphicGit extends GitManager {
         }
     }
 
+    async show(
+        commitHash: string,
+        file: string,
+        relativeToVault = true
+    ): Promise<string> {
+        const filepath = this.getRelativeRepoPath(file, relativeToVault);
+        const { blob } = await readBlob({
+            ...this.getRepo(),
+            oid: commitHash,
+            filepath,
+        });
+        return new TextDecoder().decode(blob);
+    }
+
     async getLastCommitTime(): Promise<Date | undefined> {
         const repo = this.getRepo();
         const oid = await this.resolveRef("HEAD");
