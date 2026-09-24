@@ -67,60 +67,6 @@ describe("SimpleGit.commit", () => {
             "obsidian-git:head-change"
         );
     });
-
-    it("amends the previous commit when amend is true", async () => {
-        const { repo, manager } = withCleanup(
-            await createSimpleGitTestContext()
-        );
-        const headBefore = await repo.head();
-        repo.write("note.md", "base\namended\n");
-        await repo.git.add("note.md");
-
-        const changes = await manager.commit({
-            message: "amended base",
-            amend: true,
-        });
-
-        expect(changes).toBe(1);
-        expect(await repo.head()).not.toBe(headBefore);
-        expect(await repo.headMessage()).toBe("amended base");
-        expect(await repo.unpushedCount()).toBe(1);
-        expect(await repo.show("HEAD:note.md")).toBe("base\namended");
-        expect(await repo.statusPorcelain()).toBe("");
-    });
-});
-
-describe("SimpleGit.commitAll", () => {
-    it("stages and commits tracked, untracked, and deleted files", async () => {
-        const { repo, plugin, manager } = withCleanup(
-            await createSimpleGitTestContext()
-        );
-        await repo.writeAndCommit(
-            "delete-me.md",
-            "delete me\n",
-            "add deleted file"
-        );
-        await repo.git.push(["--quiet"]);
-        repo.write("note.md", "base\nchanged\n");
-        repo.write("created.md", "created\n");
-        await repo.raw(["rm", "delete-me.md"]);
-
-        const changes = await manager.commitAll({ message: "commit all" });
-
-        expect(changes).toBe(3);
-        expect(await repo.headMessage()).toBe("commit all");
-        expect(await repo.show("HEAD:note.md")).toBe("base\nchanged");
-        expect(await repo.show("HEAD:created.md")).toBe("created");
-        expect(await repo.statusPorcelain()).toBe("");
-        await expect(repo.show("HEAD:delete-me.md")).rejects.toThrow();
-        expect(plugin.setPluginState.mock.calls).toEqual([
-            [{ operation: GitOperation.commit }],
-            [{ operation: GitOperation.idle }],
-        ]);
-        expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
-            "obsidian-git:head-change"
-        );
-    });
 });
 
 describe("SimpleGit.pull", () => {

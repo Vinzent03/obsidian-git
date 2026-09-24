@@ -1053,7 +1053,7 @@ export default class ObsidianGit extends Plugin {
                     return false;
                 }
 
-                let committedFiles: number | undefined;
+                let committedFiles: number;
                 if (onlyStaged) {
                     committedFiles = await this.gitManager.commit({
                         message: cmtMessage,
@@ -1073,12 +1073,6 @@ export default class ObsidianGit extends Plugin {
                     await this.updateCachedStatus();
                 }
 
-                let roughly = false;
-                if (committedFiles === undefined) {
-                    roughly = true;
-                    committedFiles =
-                        unstagedFiles.length + stagedFiles.length || 0;
-                }
                 if (committedFiles === 0) {
                     // simple-git resolves with { changes: 0 } instead of
                     // throwing when there is nothing to commit (e.g. the
@@ -1087,7 +1081,7 @@ export default class ObsidianGit extends Plugin {
                     this.displayMessage("No changes to commit");
                 } else {
                     this.displayMessage(
-                        `Committed${roughly ? " approx." : ""} ${committedFiles} ${
+                        `Committed ${committedFiles} ${
                             committedFiles == 1 ? "file" : "files"
                         }`
                     );

@@ -797,7 +797,9 @@ export class SimpleGit extends GitManager {
                     console.log(res);
                 }
                 const status = await this.git.status();
-                const currentBranch = status.current;
+                const currentBranch = status.detached
+                    ? undefined
+                    : status.current;
 
                 if (!currentBranch) {
                     this.plugin.displayError(
@@ -926,7 +928,7 @@ export class SimpleGit extends GitManager {
 
     async getUnpushedCommits(): Promise<number> {
         const status = await this.git.status();
-        const currentBranch = status.current;
+        const currentBranch = status.detached ? undefined : status.current;
 
         if (currentBranch == null) {
             return 0;
@@ -956,7 +958,7 @@ export class SimpleGit extends GitManager {
             return true;
         }
         const status = await this.git.status();
-        const currentBranch = status.current;
+        const currentBranch = status.detached ? undefined : status.current;
         if (!currentBranch) {
             this.plugin.log("During canPush check, no current branch found.");
             return false;
@@ -995,7 +997,7 @@ export class SimpleGit extends GitManager {
         const branches = await this.git.branch(["--no-color"]);
 
         return {
-            current: status.current || undefined,
+            current: status.detached ? undefined : status.current || undefined,
             tracking: status.tracking || undefined,
             branches: branches.all,
         };

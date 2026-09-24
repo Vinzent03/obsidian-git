@@ -114,11 +114,95 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         repo.write("unstaged.md", "unstaged\n");
         await repo.git.add("staged.md");
 
-        await manager.commit({ message: "commit staged" });
+        const committedFiles = await manager.commit({
+            message: "commit staged",
+        });
 
+        expect(committedFiles).toBe(1);
         expect(await repo.headMessage()).toBe("commit staged");
         expect(await repo.show("HEAD:staged.md")).toBe("staged");
         expect(await repo.statusPorcelain()).toBe("?? unstaged.md");
+    });
+
+    it("amends the previous commit and returns the committed file count", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        const headBefore = await repo.head();
+        repo.write("note.md", "base\namended\n");
+        await repo.git.add("note.md");
+
+        const committedFiles = await manager.commit({
+            message: "amended base",
+            amend: true,
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.head()).not.toBe(headBefore);
+        expect(await repo.headMessage()).toBe("amended base");
+        expect(await repo.unpushedCount()).toBe(1);
+        expect(await repo.show("HEAD:note.md")).toBe("base\namended");
+        expect(await repo.statusPorcelain()).toBe("");
+    });
+
+    it("stages and commits tracked, untracked, and deleted files", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        await repo.writeAndCommit(
+            "delete-me.md",
+            "delete me\n",
+            "add deleted file"
+        );
+        await repo.git.push(["--quiet"]);
+        repo.write("note.md", "base\nchanged\n");
+        repo.write("created.md", "created\n");
+        repo.remove("delete-me.md");
+
+        const committedFiles = await manager.commitAll({
+            message: "commit all",
+        });
+
+        expect(committedFiles).toBe(3);
+        expect(await repo.headMessage()).toBe("commit all");
+        expect(await repo.show("HEAD:note.md")).toBe("base\nchanged");
+        expect(await repo.show("HEAD:created.md")).toBe("created");
+        expect(await repo.statusPorcelain()).toBe("");
+        await expect(repo.show("HEAD:delete-me.md")).rejects.toThrow();
+    });
+
+    it("normalizes detached HEAD and handles operations without a current branch", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.raw(["checkout", "--quiet", "--detach", "HEAD"]);
+
+        const branchInfo = await manager.branchInfo();
+
+        expect(branchInfo.current).toBeUndefined();
+        expect(branchInfo.tracking).toBeUndefined();
+        await expect(manager.canPush()).resolves.toBe(false);
+        await expect(manager.pull()).resolves.toBeUndefined();
+        expect(plugin.displayError).toHaveBeenCalledWith(
+            "No current branch found. Cannot pull."
+        );
+        await expect(manager.push()).resolves.toBeUndefined();
+        expect(plugin.displayError).toHaveBeenCalledWith(
+            "No current branch found. Cannot push."
+        );
+    });
+
+    it("normalizes a missing tracking branch and skips pulling", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.git.checkoutLocalBranch("local-only");
+
+        const branchInfo = await manager.branchInfo();
+
+        expect(branchInfo.current).toBe("local-only");
+        expect(branchInfo.tracking).toBeUndefined();
+        await expect(manager.canPush()).resolves.toBe(false);
+        await expect(manager.pull()).resolves.toBeUndefined();
+        expect(plugin.log).toHaveBeenCalledWith(
+            "No tracking branch found. Ignoring pull."
+        );
     });
 
     it("removes a conflict after staging while keeping the merge active", async () => {

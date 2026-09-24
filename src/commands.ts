@@ -1,4 +1,4 @@
-import { Notice, Platform, TFolder, WorkspaceLeaf } from "obsidian";
+import { Notice, TFolder, WorkspaceLeaf } from "obsidian";
 import { HISTORY_VIEW_CONFIG, SOURCE_CONTROL_VIEW_CONFIG } from "./constants";
 import { SimpleGit } from "./gitManager/simpleGit";
 import ObsidianGit from "./main";
@@ -234,21 +234,19 @@ export function addCommmands(plugin: ObsidianGit) {
             ),
     });
 
-    if (Platform.isDesktopApp) {
-        plugin.addCommand({
-            id: "commit-amend-staged-specified-message",
-            name: "Amend staged",
-            callback: () =>
-                plugin.promiseQueue.addTask(() =>
-                    plugin.commit({
-                        fromAuto: false,
-                        requestCustomMessage: true,
-                        mode: "staged",
-                        amend: true,
-                    })
-                ),
-        });
-    }
+    plugin.addCommand({
+        id: "commit-amend-staged-specified-message",
+        name: "Amend staged",
+        callback: () =>
+            plugin.promiseQueue.addTask(() =>
+                plugin.commit({
+                    fromAuto: false,
+                    requestCustomMessage: true,
+                    mode: "staged",
+                    amend: true,
+                })
+            ),
+    });
 
     plugin.addCommand({
         id: "commit-smart-specified-message",

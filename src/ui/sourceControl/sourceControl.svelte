@@ -206,15 +206,13 @@
                 .setDisabled(!canCommit("all"))
                 .onClick(() => commit("all"))
         );
-        if (Platform.isDesktopApp) {
-            menu.addItem((item) =>
-                item
-                    .setTitle("Amend staged")
-                    .setIcon("git-commit")
-                    .setDisabled(!canCommit("staged"))
-                    .onClick(amendStaged)
-            );
-        }
+        menu.addItem((item) =>
+            item
+                .setTitle("Amend staged")
+                .setIcon("git-commit")
+                .setDisabled(!canCommit("staged"))
+                .onClick(amendStaged)
+        );
         menu.addSeparator();
         menu.addItem((item) =>
             item
