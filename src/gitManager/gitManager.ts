@@ -144,6 +144,12 @@ export abstract class GitManager {
         hash?: string
     ): Promise<string>;
 
+    abstract show(
+        commitHash: string,
+        file: string,
+        relativeToVault?: boolean
+    ): Promise<string>;
+
     abstract getLastCommitTime(): Promise<Date | undefined>;
 
     // Constructs a path relative to the vault from a path relative to the git repository

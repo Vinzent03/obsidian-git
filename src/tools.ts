@@ -1,10 +1,14 @@
 import { Notice, Platform, TFile } from "obsidian";
-import { DIFF_VIEW_CONFIG, SPLIT_DIFF_VIEW_CONFIG } from "./constants";
+import {
+    DIFF_VIEW_CONFIG,
+    READ_ONLY_FILE_VIEW_CONFIG,
+    SPLIT_DIFF_VIEW_CONFIG,
+} from "./constants";
 import type ObsidianGit from "./main";
 import { SimpleGit } from "./gitManager/simpleGit";
 import { getNewLeaf, splitRemoteBranch } from "./utils";
 import { GeneralModal } from "./ui/modals/generalModal";
-import type { DiffViewState } from "./types";
+import type { DiffViewState, ReadOnlyFileViewState } from "./types";
 
 export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
@@ -109,6 +113,15 @@ export default class Tools {
                 state: state,
             });
         }
+    }
+
+    async openFileAtCommit(file: string, ref: string): Promise<void> {
+        const state: ReadOnlyFileViewState = { file, ref };
+        await this.plugin.app.workspace.getLeaf("tab").setViewState({
+            type: READ_ONLY_FILE_VIEW_CONFIG.type,
+            active: true,
+            state,
+        });
     }
 
     async runRawCommand() {

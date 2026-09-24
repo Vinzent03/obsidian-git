@@ -24,6 +24,7 @@ import {
     DEFAULT_SETTINGS,
     DIFF_VIEW_CONFIG,
     HISTORY_VIEW_CONFIG,
+    READ_ONLY_FILE_VIEW_CONFIG,
     SOURCE_CONTROL_VIEW_CONFIG,
     SPLIT_DIFF_VIEW_CONFIG,
 } from "./constants";
@@ -45,6 +46,7 @@ import { GitOperation, mergeSettingsByPriority, NoNetworkError } from "./types";
 import DiffView from "./ui/diff/diffView";
 import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
+import ReadOnlyFileView from "./ui/readOnlyFileView";
 import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
@@ -281,6 +283,10 @@ export default class ObsidianGit extends Plugin {
 
         this.registerView(HISTORY_VIEW_CONFIG.type, (leaf) => {
             return new HistoryView(leaf, this);
+        });
+
+        this.registerView(READ_ONLY_FILE_VIEW_CONFIG.type, (leaf) => {
+            return new ReadOnlyFileView(leaf, this);
         });
 
         this.registerView(DIFF_VIEW_CONFIG.type, (leaf) => {

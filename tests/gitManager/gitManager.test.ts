@@ -76,6 +76,21 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect(status.staged.map((file) => file.path)).toEqual(["staged.md"]);
     });
 
+    it("reads a file snapshot from a commit without changing the working tree", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        const commit = await repo.head();
+        repo.write("note.md", "working tree\n");
+
+        await expect(
+            manager.show(commit, `${plugin.settings.basePath}/note.md`)
+        ).resolves.toBe("base\n");
+        await expect(manager.show(commit, "note.md", false)).resolves.toBe(
+            "base\n"
+        );
+        await expect(repo.statusPorcelain()).resolves.toBe("M note.md");
+    });
+
     it("updates status after staging and unstaging a vault-relative path", async () => {
         context = await backend.create();
         const { manager, plugin, repo } = context;
