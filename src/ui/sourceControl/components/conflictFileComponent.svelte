@@ -90,17 +90,30 @@
 </main>
 
 <style lang="scss">
+    .git-tools {
+        display: grid;
+        grid-template-columns: var(--icon-m, 18px) 4ch;
+        column-gap: var(--size-2-1);
+        align-items: center;
+    }
+
+    .git-tools .buttons {
+        width: var(--icon-m, 18px);
+    }
+
     .git-tools .type.conflict {
         color: var(--git-change);
-        width: auto;
-        min-width: var(--icon-m, 18px);
-        padding-left: 0;
+        width: 4ch;
+        padding: 0;
+        justify-content: flex-end;
+        font-variant-numeric: tabular-nums;
     }
 
     .git-tools .type.resolved {
         color: var(--git-insert);
-        width: var(--icon-m, 18px);
-        padding-left: 0;
+        width: 4ch;
+        padding: 0;
+        justify-content: flex-end;
     }
 
     .git-tools .type.resolved :global(svg) {

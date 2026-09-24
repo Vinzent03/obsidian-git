@@ -8,6 +8,7 @@
     import { slide } from "svelte/transition";
     import type GitView from "../sourceControl";
     import FileComponent from "./fileComponent.svelte";
+    import ConflictFileComponent from "./conflictFileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";
     import {
@@ -24,6 +25,7 @@
         fileType: FileType;
         topLevel?: boolean;
         closed: Record<string, boolean>;
+        conflictCounts?: Record<string, number>;
     }
 
     let {
@@ -33,6 +35,7 @@
         fileType,
         topLevel = false,
         closed = $bindable(),
+        conflictCounts = {},
     }: Props = $props();
 
     onMount(() => {
@@ -91,6 +94,13 @@
                     />
                 {:else if fileType == FileType.pulled}
                     <PulledFileComponent change={entity.data} {view} />
+                {:else if fileType == FileType.conflicted}
+                    <ConflictFileComponent
+                        path={entity.data.path}
+                        count={conflictCounts[entity.data.path]}
+                        manager={plugin.gitManager}
+                        {view}
+                    />
                 {/if}
             </div>
         {:else}
@@ -165,7 +175,7 @@
                                         /></svg
                                     >
                                 </div>
-                            {:else}
+                            {:else if fileType == FileType.changed}
                                 <div
                                     data-icon="undo"
                                     aria-label="Discard"
@@ -234,6 +244,7 @@
                             {plugin}
                             {view}
                             {fileType}
+                            {conflictCounts}
                             bind:closed
                         />
                     </div>

@@ -33,6 +33,7 @@
     let buttons: HTMLElement[] = $state([]);
     let changeHierarchy: StatusRootTreeItem | undefined = $state();
     let stagedHierarchy: StatusRootTreeItem | undefined = $state();
+    let conflictHierarchy: StatusRootTreeItem | undefined = $state();
     let lastPulledFilesHierarchy: StatusRootTreeItem | undefined = $state();
     let changesOpen = $state(true);
     let stagedOpen = $state(true);
@@ -51,6 +52,7 @@
     let unPushedCommits = $state(0);
     let stagedClosed: Record<string, boolean> = $state({});
     let unstagedClosed: Record<string, boolean> = $state({});
+    let conflictsClosed: Record<string, boolean> = $state({});
     let pulledClosed: Record<string, boolean> = $state({});
 
     let stagedCount = $derived(status?.staged.length ?? 0);
@@ -290,9 +292,23 @@
                 vaultPath: "",
                 children: plugin.gitManager.getTreeStructure(status.staged),
             };
+            conflictHierarchy = {
+                title: "",
+                path: "",
+                vaultPath: "",
+                children: plugin.gitManager.getTreeStructure(
+                    status.conflicted.map((path) => ({
+                        path,
+                        vaultPath: plugin.gitManager.getRelativeVaultPath(path),
+                        index: "U",
+                        workingDir: "U",
+                    }))
+                ),
+            };
         } else {
             changeHierarchy = undefined;
             stagedHierarchy = undefined;
+            conflictHierarchy = undefined;
         }
         await updateConflictCounts();
     }
@@ -478,61 +494,73 @@
         {/if}
     </div>
 
-    {#if status && status.conflicted.length > 0}
-        <div
-            class="conflicts tree-item nav-folder"
-            class:is-collapsed={!conflictsOpen}
-        >
+    <div class="nav-files-container" style="position: relative;">
+        {#if status && status.conflicted.length > 0}
             <div
-                class="tree-item-self is-clickable nav-folder-title"
-                onclick={() => (conflictsOpen = !conflictsOpen)}
+                class="conflicts tree-item nav-folder"
+                class:is-collapsed={!conflictsOpen}
             >
                 <div
-                    class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
-                    class:is-collapsed={!conflictsOpen}
+                    class="tree-item-self is-clickable nav-folder-title"
+                    onclick={() => (conflictsOpen = !conflictsOpen)}
                 >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="svg-icon right-triangle"
-                        ><path d="M3 8L12 17L21 8" /></svg
+                    <div
+                        class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+                        class:is-collapsed={!conflictsOpen}
                     >
-                </div>
-                <div class="tree-item-inner nav-folder-title-content">
-                    Conflicts
-                </div>
-                <div class="git-tools">
-                    <div class="files-count">
-                        {status.conflicted.length}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="svg-icon right-triangle"
+                            ><path d="M3 8L12 17L21 8" /></svg
+                        >
+                    </div>
+                    <div class="tree-item-inner nav-folder-title-content">
+                        Conflicts
+                    </div>
+                    <div class="git-tools">
+                        <div class="files-count">
+                            {status.conflicted.length}
+                        </div>
                     </div>
                 </div>
+                {#if conflictsOpen}
+                    <div
+                        class="tree-item-children nav-folder-children"
+                        transition:slide|local={{ duration: 150 }}
+                    >
+                        {#if showTree && conflictHierarchy}
+                            <TreeComponent
+                                hierarchy={conflictHierarchy}
+                                {plugin}
+                                {view}
+                                fileType={FileType.conflicted}
+                                {conflictCounts}
+                                topLevel={true}
+                                bind:closed={conflictsClosed}
+                            />
+                        {:else}
+                            {#each sortedConflicts as conflict}
+                                <ConflictFileComponent
+                                    path={conflict}
+                                    count={conflictCounts[conflict]}
+                                    {view}
+                                    manager={plugin.gitManager}
+                                />
+                            {/each}
+                        {/if}
+                    </div>
+                {/if}
             </div>
-            {#if conflictsOpen}
-                <div
-                    class="tree-item-children nav-folder-children"
-                    transition:slide|local={{ duration: 150 }}
-                >
-                    {#each sortedConflicts as conflict}
-                        <ConflictFileComponent
-                            path={conflict}
-                            count={conflictCounts[conflict]}
-                            {view}
-                            manager={plugin.gitManager}
-                        />
-                    {/each}
-                </div>
-            {/if}
-        </div>
-    {/if}
+        {/if}
 
-    <div class="nav-files-container" style="position: relative;">
         {#if status && stagedHierarchy && changeHierarchy}
             <div class="tree-item nav-folder mod-root">
                 <div
@@ -853,24 +881,32 @@
     }
 
     .conflicts {
-        --nav-indentation-guide-color: var(--color-red);
-        --collapse-icon-color: var(--color-red);
-        --collapse-icon-color-collapsed: var(--color-red);
-        border: 1px solid var(--git-delete);
-        background-color: var(--git-delete-bg);
-        border-radius: var(--radius-s);
-        margin: 4px var(--size-4-2);
+        --nav-indentation-guide-color: var(--text-warning);
+        --collapse-icon-color: var(--text-warning);
+        --collapse-icon-color-collapsed: var(--text-warning);
+
+        > .nav-folder-title {
+            color: var(--text-warning);
+        }
 
         .nav-folder-collapse-indicator {
-            color: var(--color-red);
+            color: var(--text-warning);
 
             svg {
-                color: var(--color-red);
+                color: var(--text-warning);
             }
         }
 
+        :global(.topLevel .nav-folder-collapse-indicator) {
+            color: var(--text-warning);
+        }
+
+        :global(.topLevel .nav-folder-collapse-indicator svg) {
+            color: var(--text-warning);
+        }
+
         .tree-item-children {
-            border-inline-start-color: var(--color-red);
+            border-inline-start-color: var(--text-warning);
         }
     }
     main {
