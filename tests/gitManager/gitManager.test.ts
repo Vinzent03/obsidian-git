@@ -208,8 +208,21 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
     it("removes a conflict after staging while keeping the merge active", async () => {
         context = await backend.create(createRepoWithMergeConflict);
         const { manager, repo } = context;
+        repo.write("untracked.md", "untracked\n");
 
-        expect((await manager.status()).conflicted).toEqual(["note.md"]);
+        const status = await manager.status();
+        expect(status.conflicted).toEqual(["note.md"]);
+        expect(status.all.map((file) => file.path)).toContain("note.md");
+        expect(status.changed.map((file) => file.path)).not.toContain(
+            "note.md"
+        );
+        expect(status.changed).toContainEqual(
+            expect.objectContaining({
+                path: "untracked.md",
+                index: "U",
+                workingDir: "U",
+            })
+        );
         expect(await manager.isMergeInProgress()).toBe(true);
 
         repo.write("note.md", "resolved\n");

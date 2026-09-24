@@ -403,15 +403,19 @@ export class SimpleGit extends GitManager {
                 vaultPath: this.getRelativeVaultPath(res.path),
             };
         });
+        const conflicted = status.conflicted.map(
+            (path) => this.formatPath({ path }).path
+        );
+        const conflictedPaths = new Set(conflicted);
         return {
             all: allFilesFormatted,
-            changed: allFilesFormatted.filter((e) => e.workingDir !== " "),
+            changed: allFilesFormatted.filter(
+                (e) => e.workingDir !== " " && !conflictedPaths.has(e.path)
+            ),
             staged: allFilesFormatted.filter(
                 (e) => e.index !== " " && e.index != "U"
             ),
-            conflicted: status.conflicted.map(
-                (path) => this.formatPath({ path }).path
-            ),
+            conflicted,
         };
     }
 
