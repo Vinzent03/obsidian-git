@@ -425,7 +425,19 @@ export class SimpleGit extends GitManager {
             this.absoluteRepoPath,
             mergeHead.trim()
         );
-        return this.app.vault.adapter.exists(mergeHeadPath);
+        try {
+            await fsPromises.access(mergeHeadPath);
+            return true;
+        } catch (error) {
+            if (
+                error instanceof Error &&
+                "code" in error &&
+                error.code === "ENOENT"
+            ) {
+                return false;
+            }
+            throw error;
+        }
     }
 
     async submoduleAwareHeadRevisonInContainingDirectory(

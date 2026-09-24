@@ -47,6 +47,7 @@ import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
 import { BranchModal } from "./ui/modals/branchModal";
 import { GeneralModal } from "./ui/modals/generalModal";
+import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import {
@@ -1412,6 +1413,10 @@ export default class ObsidianGit extends Plugin {
 
     handleConflict(): void {
         this.displayMessage("Resolve conflicts and commit manually");
+    }
+
+    openMergeConflictHelp(): void {
+        new MergeConflictModal(this).open();
     }
 
     async editRemotes(): Promise<string | undefined> {

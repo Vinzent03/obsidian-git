@@ -83,6 +83,14 @@ export class StatusBar {
             this.conflictEl = this.statusBarEl.createDiv();
             this.conflictEl.setAttribute("data-tooltip-position", "top");
             this.conflictEl.style.float = "left";
+            this.conflictEl.setAttribute("role", "button");
+            this.conflictEl.onclick = () => this.plugin.openMergeConflictHelp();
+            this.conflictEl.onkeydown = (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    this.plugin.openMergeConflictHelp();
+                }
+            };
 
             this.pausedEl = this.statusBarEl.createDiv();
             this.pausedEl.setAttribute("data-tooltip-position", "top");
@@ -97,13 +105,17 @@ export class StatusBar {
         }
 
         if (this.plugin.state.mergeInProgress) {
-            setIcon(this.conflictEl, "alert-circle");
+            setIcon(this.conflictEl, "git-merge");
             this.conflictEl.ariaLabel =
-                "A merge is in progress. Resolve any conflicts and commit afterwards.";
+                "Merge in progress. Select for help resolving and finishing the merge.";
+            this.conflictEl.tabIndex = 0;
+            this.conflictEl.style.cursor = "pointer";
             this.conflictEl.style.marginRight = "5px";
             this.conflictEl.addClass(this.base + "conflict");
         } else {
             this.conflictEl.empty();
+            this.conflictEl.tabIndex = -1;
+            this.conflictEl.style.cursor = "";
             this.conflictEl.style.marginRight = "";
         }
 
@@ -125,6 +137,7 @@ export class StatusBar {
             setIcon(this.iconEl, this.getProgressIcon());
             this.displayProgressText();
             this.statusBarEl.addClass(this.base + "progress");
+            this.addMergeHelpToTooltip();
             return;
         }
 
@@ -175,6 +188,18 @@ export class StatusBar {
                 this.statusBarEl.addClass(this.base + "failed-init");
                 break;
         }
+        this.addMergeHelpToTooltip();
+    }
+
+    private addMergeHelpToTooltip(): void {
+        if (!this.plugin.state.mergeInProgress) return;
+
+        const mergeHelp =
+            "Merge in progress. Select the merge icon for help resolving and finishing it.";
+        const current = this.statusBarEl.ariaLabel;
+        this.statusBarEl.ariaLabel = current
+            ? `${mergeHelp}\n${current}`
+            : mergeHelp;
     }
 
     private displayProgressText(): void {

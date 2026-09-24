@@ -27,6 +27,7 @@
 
     let { plugin, view }: Props = $props();
     let loading: boolean = $state(false);
+    let mergeInProgress = $state(false);
     let status: Status | undefined = $state();
     let lastPulledFiles: FileStatusResult[] = $state([]);
     let commitMessage = $derived(plugin.settings.commitMessage);
@@ -257,6 +258,7 @@
         unPushedCommits = await plugin.gitManager.getUnpushedCommits();
 
         status = plugin.cachedStatus;
+        mergeInProgress = plugin.state.mergeInProgress;
         loading = false;
         if (
             plugin.lastPulledFiles &&
@@ -476,6 +478,16 @@
                 bind:this={buttons[7]}
                 onclick={triggerRefresh}
             ></div>
+            {#if mergeInProgress}
+                <div
+                    id="merge-status"
+                    class="clickable-icon nav-action-button merge-status"
+                    data-icon="git-merge"
+                    aria-label="Merge in progress — select for help"
+                    bind:this={buttons[11]}
+                    onclick={() => plugin.openMergeConflictHelp()}
+                ></div>
+            {/if}
         </div>
     </div>
     <div class="git-commit-msg">
@@ -863,6 +875,10 @@
             padding-right: 0;
             padding-left: 0;
         }
+    }
+
+    .merge-status {
+        color: var(--text-warning);
     }
 
     .commit-msg-input {
