@@ -45,6 +45,7 @@ import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { HunkActions } from "./editor/signs/hunkActions";
+import { coalesce } from "./coalesce";
 import { EditorIntegration } from "./editor/editorIntegration";
 import { runGitAction, type GitActionResult } from "./gitAction";
 import { GitActions } from "./gitActions";
@@ -111,7 +112,14 @@ export default class ObsidianGit extends Plugin {
         return this.cachedStatus;
     }
 
-    async refresh() {
+    /**
+     * Refreshes the cached status and notifies listeners. Calls made while a
+     * refresh is running are coalesced into a single follow-up refresh, so
+     * bursts of triggers don't start overlapping `git status` runs.
+     */
+    refresh = coalesce(() => this.refreshNow());
+
+    private async refreshNow(): Promise<void> {
         if (!this.gitReady) return;
 
         const gitViews = this.app.workspace.getLeavesOfType(
