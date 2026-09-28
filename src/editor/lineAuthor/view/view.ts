@@ -94,7 +94,7 @@ function lineAuthoringGutterMarkersRangeSet(
     }
 
     const laSettings = latestSettings.get();
-    digest.update("s" + Object.values(latestSettings).join(","));
+    digest.update("s" + JSON.stringify(laSettings));
 
     const cacheKey = digest.hex();
 
