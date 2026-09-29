@@ -8,10 +8,6 @@ type WorkspaceRootWithSide = {
     readonly side?: "left" | "right";
 };
 
-export function assertNever(x: never): never {
-    throw new Error(`Unexpected object: ${String(x)}`);
-}
-
 export function plural(
     count: number,
     singular: string,

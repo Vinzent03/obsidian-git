@@ -20,6 +20,7 @@ export default defineConfig(
             },
         },
         rules: {
+            "@typescript-eslint/switch-exhaustiveness-check": "error",
             "@typescript-eslint/no-unused-vars": [
                 "error",
                 {

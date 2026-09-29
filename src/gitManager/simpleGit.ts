@@ -1644,6 +1644,8 @@ function parseHeaderInto(header: string[], out: Blame, line: number) {
         case "filename":
             commit.previous!.filename = value;
             break;
+        case undefined:
+            break;
     }
     out.commits.set(commitHash, commit);
 }

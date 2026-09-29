@@ -247,6 +247,7 @@ export class StatusBar {
                 return "upload";
             case "Checking out":
                 return "git-branch";
+            case undefined:
             default:
                 return "git-pull-request";
         }

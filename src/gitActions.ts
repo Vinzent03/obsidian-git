@@ -33,7 +33,6 @@ import { BranchModal } from "./ui/modals/branchModal";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import {
-    assertNever,
     convertPathToAbsoluteGitignoreRule,
     formatRemoteUrl,
     spawnAsync,
@@ -99,13 +98,10 @@ export class GitActions {
     }
 
     private reportInitRepositoryResult(result: InitRepositoryResult): void {
-        const status = result.status;
-        switch (status) {
+        switch (result.status) {
             case "initialized":
                 this.plugin.displayMessage("Initialized new repo");
                 return;
-            default:
-                return assertNever(status);
         }
     }
 
@@ -161,8 +157,6 @@ export class GitActions {
                 return;
             case "cancelled":
                 return;
-            default:
-                return assertNever(result);
         }
     }
 
@@ -289,9 +283,8 @@ export class GitActions {
                     case "no-url":
                     case "no-directory":
                         return;
-                    default:
-                        return assertNever(reason);
                 }
+                return;
             }
             case "invalid": {
                 const reason = result.reason;
@@ -301,12 +294,8 @@ export class GitActions {
                             "Invalid depth. Aborting clone."
                         );
                         return;
-                    default:
-                        return assertNever(reason);
                 }
             }
-            default:
-                return assertNever(result);
         }
     }
 
@@ -354,12 +343,8 @@ export class GitActions {
                     case "too-many-changes":
                         this.plugin.displayError("Too many changes to display");
                         return;
-                    default:
-                        return assertNever(reason);
                 }
             }
-            default:
-                return assertNever(result);
         }
     }
 
@@ -396,12 +381,8 @@ export class GitActions {
                     case "not-ready":
                     case "no-upstream":
                         return;
-                    default:
-                        return assertNever(reason);
                 }
             }
-            default:
-                return assertNever(result);
         }
     }
 
@@ -453,8 +434,6 @@ export class GitActions {
                     reason: "commit-skipped",
                     commit: commitResult,
                 };
-            default:
-                return assertNever(commitResult);
         }
 
         if (
@@ -499,8 +478,6 @@ export class GitActions {
                         reason: "push-skipped",
                         commit: commitResult,
                     };
-                default:
-                    return assertNever(pushResult);
             }
         }
 
@@ -739,9 +716,8 @@ export class GitActions {
                     case "no-changes":
                         this.plugin.displayMessage("No changes to commit");
                         return;
-                    default:
-                        return assertNever(reason);
                 }
+                return;
             }
             case "skipped": {
                 const reason = result.reason;
@@ -754,12 +730,8 @@ export class GitActions {
                     case "not-ready":
                     case "files-too-large":
                         return;
-                    default:
-                        return assertNever(reason);
                 }
             }
-            default:
-                return assertNever(result);
         }
     }
 
@@ -840,9 +812,8 @@ export class GitActions {
                             "Cannot push while a merge is still in progress"
                         );
                         return;
-                    default:
-                        return assertNever(reason);
                 }
+                return;
             }
             case "skipped": {
                 const reason = result.reason;
@@ -850,12 +821,8 @@ export class GitActions {
                     case "not-ready":
                     case "no-upstream":
                         return;
-                    default:
-                        return assertNever(reason);
                 }
             }
-            default:
-                return assertNever(result);
         }
     }
 
@@ -902,12 +869,8 @@ export class GitActions {
                     case "not-ready":
                     case "no-upstream":
                         return;
-                    default:
-                        return assertNever(reason);
                 }
             }
-            default:
-                return assertNever(result);
         }
     }
 
@@ -1071,8 +1034,6 @@ export class GitActions {
             case "cancelled":
             case "skipped":
                 return;
-            default:
-                return assertNever(result);
         }
     }
 
@@ -1107,8 +1068,6 @@ export class GitActions {
             case "cancelled":
             case "skipped":
                 return;
-            default:
-                return assertNever(result);
         }
     }
 
@@ -1162,8 +1121,6 @@ export class GitActions {
             case "cancelled":
             case "skipped":
                 return;
-            default:
-                return assertNever(result);
         }
     }
 
@@ -1257,8 +1214,6 @@ export class GitActions {
                 return;
             case "skipped":
                 return;
-            default:
-                return assertNever(result);
         }
     }
 
@@ -1389,8 +1344,6 @@ export class GitActions {
             case "cancelled":
             case "skipped":
                 return;
-            default:
-                return assertNever(result);
         }
     }
 
@@ -1439,8 +1392,6 @@ export class GitActions {
             case "cancelled":
             case "skipped":
                 return;
-            default:
-                return assertNever(result);
         }
     }
 
@@ -1514,8 +1465,6 @@ export class GitActions {
             case "cancelled":
             case "skipped":
                 return;
-            default:
-                return assertNever(result);
         }
     }
 }
