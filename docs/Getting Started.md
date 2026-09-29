@@ -56,6 +56,10 @@ I am using [isomorphic-git](https://isomorphic-git.org/), which is a re-implemen
 -   Repo size is limited, because of memory restrictions
 -   Rebase merge strategy is not supported
 -   Submodules are not supported
+-   Symlinks are not supported because Obsidian's mobile file API does not provide operations to create or read them.
+-   File permissions, including the executable bit, are not supported by Obsidian's mobile file API.
+
+File systems on different platforms allow different characters in filenames. A filename that works on macOS may fail on Android, preventing a pull or checkout. Use filenames that are valid on every device where you use the vault.
 
 ## Performance on mobile
 
