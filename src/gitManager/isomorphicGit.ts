@@ -802,12 +802,12 @@ export class IsomorphicGit extends GitManager {
         );
     }
 
-    async getConfig(path: string): Promise<string> {
+    async getConfig(path: string): Promise<string | undefined> {
         return this.wrapFS(
             git.getConfig({
                 ...this.getRepo(),
                 path: path,
-            }) as Promise<string>
+            }) as Promise<string | undefined>
         );
     }
 

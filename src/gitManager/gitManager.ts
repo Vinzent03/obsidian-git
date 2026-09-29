@@ -98,6 +98,7 @@ export abstract class GitManager {
 
     abstract clone(url: string, dir: string, depth?: number): Promise<void>;
 
+    /** Sets a repository-local value, or removes it when value is undefined. */
     abstract setConfig(
         path: string,
         value: string | number | boolean | undefined
