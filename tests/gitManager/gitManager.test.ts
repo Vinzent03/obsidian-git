@@ -216,10 +216,11 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
             "No current branch found. Cannot pull."
         );
         expect(plugin.displayError).not.toHaveBeenCalled();
-        await expect(manager.push()).resolves.toBeUndefined();
-        expect(plugin.displayError).toHaveBeenCalledWith(
-            "No current branch found. Cannot push."
-        );
+        await expect(manager.push()).resolves.toEqual({
+            status: "blocked",
+            reason: "no-branch",
+        });
+        expect(plugin.displayError).not.toHaveBeenCalled();
     });
 
     it("normalizes a missing tracking branch and skips pulling", async () => {

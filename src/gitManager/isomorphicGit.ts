@@ -20,6 +20,7 @@ import type {
     FileStatusResult,
     LogEntry,
     PullResult,
+    PushResult,
     Status,
     UnstagedFile,
     WalkDifference,
@@ -293,19 +294,14 @@ export class IsomorphicGit extends GitManager {
         } else {
             vaultPath = this.getRelativeVaultPath(filepath);
         }
-        try {
-            if (await this.app.vault.adapter.exists(vaultPath)) {
-                await this.wrapFS(
-                    git.add({ ...this.getRepo(), filepath: gitPath })
-                );
-            } else {
-                await this.wrapFS(
-                    git.remove({ ...this.getRepo(), filepath: gitPath })
-                );
-            }
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
+        if (await this.app.vault.adapter.exists(vaultPath)) {
+            await this.wrapFS(
+                git.add({ ...this.getRepo(), filepath: gitPath })
+            );
+        } else {
+            await this.wrapFS(
+                git.remove({ ...this.getRepo(), filepath: gitPath })
+            );
         }
     }
 
@@ -361,15 +357,10 @@ export class IsomorphicGit extends GitManager {
     }
 
     async unstage(filepath: string, relativeToVault: boolean): Promise<void> {
-        try {
-            filepath = this.getRelativeRepoPath(filepath, relativeToVault);
-            await this.wrapFS(
-                git.resetIndex({ ...this.getRepo(), filepath: filepath })
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        filepath = this.getRelativeRepoPath(filepath, relativeToVault);
+        await this.wrapFS(
+            git.resetIndex({ ...this.getRepo(), filepath: filepath })
+        );
     }
 
     async unstageAll({
@@ -379,40 +370,30 @@ export class IsomorphicGit extends GitManager {
         dir?: string;
         status?: Status;
     }): Promise<void> {
-        try {
-            let staged: string[];
-            if (status) {
-                staged = status.staged.map((file) => file.path);
-            } else {
-                const res = await this.getStagedFiles(dir ?? ".");
-                staged = res.map(({ path }) => path);
-            }
-            await this.wrapFS(
-                Promise.all(
-                    staged.map((file) =>
-                        git.resetIndex({ ...this.getRepo(), filepath: file })
-                    )
-                )
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
+        let staged: string[];
+        if (status) {
+            staged = status.staged.map((file) => file.path);
+        } else {
+            const res = await this.getStagedFiles(dir ?? ".");
+            staged = res.map(({ path }) => path);
         }
+        await this.wrapFS(
+            Promise.all(
+                staged.map((file) =>
+                    git.resetIndex({ ...this.getRepo(), filepath: file })
+                )
+            )
+        );
     }
 
     async discard(filepath: string): Promise<void> {
-        try {
-            await this.wrapFS(
-                git.checkout({
-                    ...this.getRepo(),
-                    filepaths: [filepath],
-                    force: true,
-                })
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        await this.wrapFS(
+            git.checkout({
+                ...this.getRepo(),
+                filepaths: [filepath],
+                force: true,
+            })
+        );
     }
 
     async discardAll({
@@ -442,18 +423,13 @@ export class IsomorphicGit extends GitManager {
                 .map(({ path }) => path);
         }
 
-        try {
-            await this.wrapFS(
-                git.checkout({
-                    ...this.getRepo(),
-                    filepaths: files,
-                    force: true,
-                })
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        await this.wrapFS(
+            git.checkout({
+                ...this.getRepo(),
+                filepaths: files,
+                force: true,
+            })
+        );
     }
 
     async getUntrackedPaths(opts: {
@@ -622,7 +598,7 @@ export class IsomorphicGit extends GitManager {
         });
     }
 
-    async push(): Promise<number | undefined> {
+    async push(): Promise<PushResult> {
         const progressNotice = this.showNotice("Initializing push");
         return this.withGitOperation(GitOperation.push, async () => {
             try {
@@ -631,15 +607,12 @@ export class IsomorphicGit extends GitManager {
                 const currentBranch = status.current;
                 if (!currentBranch) {
                     progressNotice?.hide();
-                    this.plugin.displayError(
-                        "No current branch found. Cannot push."
-                    );
-                    return undefined;
+                    return { status: "blocked", reason: "no-branch" };
                 }
                 if (!trackingBranch) {
                     progressNotice?.hide();
                     this.plugin.log("No tracking branch found. Ignoring push.");
-                    return undefined;
+                    return { status: "skipped", reason: "no-upstream" };
                 }
                 const numChangedFiles = (
                     await this.getFileChangesCount(
@@ -664,10 +637,11 @@ export class IsomorphicGit extends GitManager {
                     })
                 );
                 progressNotice?.hide();
-                return numChangedFiles;
+                return numChangedFiles === 0
+                    ? { status: "up-to-date" }
+                    : { status: "pushed", files: numChangedFiles };
             } catch (error) {
                 progressNotice?.hide();
-                this.plugin.displayError(error);
                 throw error;
             }
         });
@@ -754,41 +728,26 @@ export class IsomorphicGit extends GitManager {
     }
 
     async checkout(branch: string, remote?: string): Promise<void> {
-        try {
-            return this.wrapFS(
+        return this.withGitOperation(GitOperation.checkout, () =>
+            this.wrapFS(
                 git.checkout({
                     ...this.getRepo(),
                     ref: branch,
                     force: !!remote,
                     remote,
                 })
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+            )
+        );
     }
 
     async createBranch(branch: string): Promise<void> {
-        try {
-            await this.wrapFS(
-                git.branch({ ...this.getRepo(), ref: branch, checkout: true })
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        await this.wrapFS(
+            git.branch({ ...this.getRepo(), ref: branch, checkout: true })
+        );
     }
 
     async deleteBranch(branch: string): Promise<void> {
-        try {
-            await this.wrapFS(
-                git.deleteBranch({ ...this.getRepo(), ref: branch })
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        await this.wrapFS(git.deleteBranch({ ...this.getRepo(), ref: branch }));
     }
 
     branchIsMerged(_: string): Promise<boolean> {
@@ -796,12 +755,7 @@ export class IsomorphicGit extends GitManager {
     }
 
     async init(): Promise<void> {
-        try {
-            await this.wrapFS(git.init(this.getRepo()));
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        await this.wrapFS(git.init(this.getRepo()));
     }
 
     async clone(url: string, dir: string, depth?: number): Promise<void> {
@@ -822,11 +776,8 @@ export class IsomorphicGit extends GitManager {
                     },
                 })
             );
+        } finally {
             progressNotice?.hide();
-        } catch (error) {
-            progressNotice?.hide();
-            this.plugin.displayError(error);
-            throw error;
         }
     }
 
@@ -834,18 +785,13 @@ export class IsomorphicGit extends GitManager {
         path: string,
         value: string | number | boolean | undefined
     ): Promise<void> {
-        try {
-            return this.wrapFS(
-                git.setConfig({
-                    ...this.getRepo(),
-                    path: path,
-                    value: value,
-                })
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        return this.wrapFS(
+            git.setConfig({
+                ...this.getRepo(),
+                path: path,
+                value: value,
+            })
+        );
     }
 
     async getConfig(path: string): Promise<string> {
@@ -882,19 +828,14 @@ export class IsomorphicGit extends GitManager {
     }
 
     async setRemote(name: string, url: string): Promise<void> {
-        try {
-            await this.wrapFS(
-                git.addRemote({
-                    ...this.getRepo(),
-                    remote: name,
-                    url: url,
-                    force: true,
-                })
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        await this.wrapFS(
+            git.addRemote({
+                ...this.getRepo(),
+                remote: name,
+                url: url,
+                force: true,
+            })
+        );
     }
 
     async getRemoteBranches(remote: string): Promise<string[]> {

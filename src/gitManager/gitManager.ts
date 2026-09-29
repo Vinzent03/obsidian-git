@@ -8,6 +8,7 @@ import type {
     FileStatusResult,
     LogEntry,
     PullResult,
+    PushResult,
     Status,
     TreeItem,
     UnstagedFile,
@@ -73,14 +74,7 @@ export abstract class GitManager {
 
     abstract pull(): Promise<PullResult>;
 
-    /**
-     * Pushes to the remote repository.
-     *
-     * @returns `numper`: number of pushed files
-     * @returns `undefined` for other states, but a notification is done elsewhere
-     * @returns `null` if push was successful, but changed files could not be determined
-     */
-    abstract push(): Promise<number | undefined | null>;
+    abstract push(): Promise<PushResult>;
 
     abstract getUnpushedCommits(): Promise<number>;
 

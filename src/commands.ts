@@ -3,10 +3,7 @@ import { HISTORY_VIEW_CONFIG, SOURCE_CONTROL_VIEW_CONFIG } from "./constants";
 import { SimpleGit } from "./gitManager/simpleGit";
 import ObsidianGit from "./main";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
-import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
-import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
-import { assertNever } from "./utils";
 import { togglePreviewHunk } from "./editor/signs/tooltip";
 
 export function addCommmands(plugin: ObsidianGit) {
@@ -147,9 +144,12 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                plugin
-                    .addFileToGitignore(file!.path, file instanceof TFolder)
-                    .catch((e) => plugin.displayError(e));
+                plugin.promiseQueue.addTask(() =>
+                    plugin.addFileToGitignore(
+                        file!.path,
+                        file instanceof TFolder
+                    )
+                );
                 return true;
             }
         },
@@ -311,132 +311,75 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "edit-remotes",
         name: "Edit remotes",
-        callback: () =>
-            plugin.editRemotes().catch((e) => plugin.displayError(e)),
+        callback: () => plugin.promiseQueue.addTask(() => plugin.editRemotes()),
     });
 
     plugin.addCommand({
         id: "remove-remote",
         name: "Remove remote",
         callback: () =>
-            plugin.removeRemote().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() => plugin.removeRemote()),
     });
 
     plugin.addCommand({
         id: "set-upstream-branch",
         name: "Set upstream branch",
         callback: () =>
-            plugin.setUpstreamBranch().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() => plugin.setUpstreamBranch()),
     });
 
     plugin.addCommand({
         id: "delete-repo",
         name: "CAUTION: Delete repository",
-        callback: async () => {
-            const repoExists = await app.vault.adapter.exists(
-                `${plugin.settings.basePath}/.git`
-            );
-            if (repoExists) {
-                const modal = new GeneralModal(plugin, {
-                    options: ["NO", "YES"],
-                    placeholder:
-                        "Do you really want to delete the repository (.git directory)? plugin action cannot be undone.",
-                    onlySelection: true,
-                });
-                const shouldDelete = (await modal.openAndGetResult()) === "YES";
-                if (shouldDelete) {
-                    await app.vault.adapter.rmdir(
-                        `${plugin.settings.basePath}/.git`,
-                        true
-                    );
-                    new Notice(
-                        "Successfully deleted repository. Reloading plugin..."
-                    );
-                    plugin.unloadPlugin();
-                    await plugin.init({ fromReload: true });
-                }
-            } else {
-                new Notice("No repository found");
-            }
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.deleteRepository()),
     });
 
     plugin.addCommand({
         id: "init-repo",
         name: "Initialize a new repo",
         callback: () =>
-            plugin.createNewRepo().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() => plugin.createNewRepo()),
     });
 
     plugin.addCommand({
         id: "clone-repo",
         name: "Clone an existing remote repo",
         callback: () =>
-            plugin.cloneNewRepo().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() => plugin.cloneNewRepo()),
     });
 
     plugin.addCommand({
         id: "list-changed-files",
         name: "List changed files",
-        callback: async () => {
-            if (!(await plugin.isAllInitialized())) return;
-
-            try {
-                const status = await plugin.updateCachedStatus();
-                if (status.changed.length + status.staged.length > 500) {
-                    plugin.displayError("Too many changes to display");
-                    return;
-                }
-
-                new ChangedFilesModal(plugin, status.all).open();
-            } catch (e) {
-                plugin.displayError(e);
-            }
-        },
+        callback: () => plugin.listChangedFiles(),
     });
 
     plugin.addCommand({
         id: "switch-branch",
         name: "Switch branch",
-        callback: () => {
-            plugin.switchBranch().catch((e) => plugin.displayError(e));
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.switchBranch()),
     });
 
     plugin.addCommand({
         id: "create-branch",
         name: "Create new branch",
-        callback: () => {
-            plugin.createBranch().catch((e) => plugin.displayError(e));
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.createBranch()),
     });
 
     plugin.addCommand({
         id: "delete-branch",
         name: "Delete branch",
-        callback: () => {
-            plugin.deleteBranch().catch((e) => plugin.displayError(e));
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.deleteBranch()),
     });
 
     plugin.addCommand({
         id: "discard-all",
         name: "CAUTION: Discard all changes",
-        callback: async () => {
-            const res = await plugin.discardAll();
-            switch (res) {
-                case "discard":
-                    new Notice("Discarded all changes in tracked files.");
-                    break;
-                case "delete":
-                    new Notice("Discarded all files.");
-                    break;
-                case false:
-                    break;
-                default:
-                    assertNever(res);
-            }
-        },
+        callback: () => plugin.promiseQueue.addTask(() => plugin.discardAll()),
     });
 
     plugin.addCommand({
@@ -464,9 +407,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 // only available on desktop
                 return gitManager instanceof SimpleGit;
             } else {
-                plugin.tools
-                    .runRawCommand()
-                    .catch((e) => plugin.displayError(e));
+                void plugin.tools.runRawCommand();
                 return true;
             }
         },

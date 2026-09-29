@@ -375,9 +375,9 @@ describe("SimpleGit.push", () => {
         );
         await repo.appendAndCommit("note.md", "local\n", "local commit");
 
-        const changedFiles = await manager.push();
+        const result = await manager.push();
 
-        expect(changedFiles).toBe(1);
+        expect(result).toEqual({ status: "pushed", files: 1 });
         expect(await repo.unpushedCount()).toBe(0);
         expect(await repo.show("origin/main:note.md")).toBe("base\nlocal");
         expect(plugin.setPluginState.mock.calls).toEqual([
@@ -395,9 +395,9 @@ describe("SimpleGit.push", () => {
         await repo.writeAndCommit("local-only.md", "local\n", "local only");
 
         expect(await manager.canPush()).toBe(true);
-        const changedFiles = await manager.push();
+        const result = await manager.push();
 
-        expect(changedFiles).toBeNull();
+        expect(result).toEqual({ status: "pushed", files: null });
         expect(await manager.canPush()).toBe(false);
         expect(
             await repo.raw(["ls-remote", "--heads", "origin", "local-only"])
@@ -429,7 +429,7 @@ describe("SimpleGit.push", () => {
 
         expect(await manager.getUnpushedCommits()).toBe(1);
         expect(await manager.canPush()).toBe(true);
-        expect(await manager.push()).toBe(1);
+        expect(await manager.push()).toEqual({ status: "pushed", files: 1 });
         expect(await manager.getUnpushedCommits()).toBe(0);
         expect(await manager.canPush()).toBe(false);
     });
@@ -440,13 +440,15 @@ describe("SimpleGit.push", () => {
         );
         const statusBar = addStatusBar(plugin);
 
-        await manager.push();
+        await expect(manager.push()).resolves.toEqual({
+            status: "up-to-date",
+        });
 
         expect(statusBar.displayProgress).not.toHaveBeenCalled();
         expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
     });
 
-    it("reports an error when no current branch is checked out", async () => {
+    it("returns a blocked result when no current branch is checked out", async () => {
         const push = vi.fn().mockResolvedValue(undefined);
         const git = {
             status: vi.fn().mockResolvedValue({
@@ -459,12 +461,10 @@ describe("SimpleGit.push", () => {
             await createSimpleGitTestContext({ gitClient: git })
         );
 
-        const changedFiles = await manager.push();
+        const result = await manager.push();
 
-        expect(changedFiles).toBeUndefined();
-        expect(plugin.displayError).toHaveBeenCalledWith(
-            "No current branch found. Cannot push."
-        );
+        expect(result).toEqual({ status: "blocked", reason: "no-branch" });
+        expect(plugin.displayError).not.toHaveBeenCalled();
         expect(push).not.toHaveBeenCalled();
         expect(plugin.setPluginState.mock.calls).toEqual([
             [{ operation: GitOperation.push }],
@@ -480,9 +480,12 @@ describe("SimpleGit.push", () => {
         await repo.writeAndCommit("local-only.md", "local\n", "local only");
         plugin.settings.updateSubmodules = true;
 
-        const changedFiles = await manager.push();
+        const result = await manager.push();
 
-        expect(changedFiles).toBeUndefined();
+        expect(result).toEqual({
+            status: "skipped",
+            reason: "no-upstream",
+        });
         expect(
             await repo.raw(["ls-remote", "--heads", "origin", "local-only"])
         ).toBe("");

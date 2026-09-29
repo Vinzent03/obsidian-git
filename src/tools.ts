@@ -1,4 +1,4 @@
-import { Notice, Platform, TFile } from "obsidian";
+import { Platform, TFile } from "obsidian";
 import {
     DIFF_VIEW_CONFIG,
     READ_ONLY_FILE_VIEW_CONFIG,
@@ -125,8 +125,7 @@ export default class Tools {
     }
 
     async runRawCommand() {
-        const gitManager = this.plugin.gitManager;
-        if (!(gitManager instanceof SimpleGit)) {
+        if (!(this.plugin.gitManager instanceof SimpleGit)) {
             return;
         }
         const modal = new GeneralModal(this.plugin, {
@@ -136,21 +135,8 @@ export default class Tools {
         const command = await modal.openAndGetResult();
         if (command === undefined) return;
 
-        this.plugin.promiseQueue.addTask(async () => {
-            const notice = new Notice(`Running '${command}'...`, 999_999);
-
-            try {
-                const res = await gitManager.rawCommand(command);
-                if (res) {
-                    notice.setMessage(res);
-                    window.setTimeout(() => notice.hide(), 5000);
-                } else {
-                    notice.hide();
-                }
-            } catch (e) {
-                notice.hide();
-                throw e;
-            }
-        });
+        this.plugin.promiseQueue.addTask(() =>
+            this.plugin.runRawCommand(command)
+        );
     }
 }

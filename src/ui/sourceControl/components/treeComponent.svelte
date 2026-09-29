@@ -48,25 +48,15 @@
 
     function stage(event: MouseEvent, path: string) {
         event.stopPropagation();
-        plugin.gitManager
-            .stageAll({ dir: path })
-            .catch((e) => plugin.displayError(e))
-            .finally(() => {
-                view.app.workspace.trigger("obsidian-git:refresh");
-            });
+        plugin.promiseQueue.addTask(() => plugin.stageAll(path));
     }
     function unstage(event: MouseEvent, path: string) {
         event.stopPropagation();
-        plugin.gitManager
-            .unstageAll({ dir: path })
-            .catch((e) => plugin.displayError(e))
-            .finally(() => {
-                view.app.workspace.trigger("obsidian-git:refresh");
-            });
+        plugin.promiseQueue.addTask(() => plugin.unstageAll(path));
     }
     function discard(event: MouseEvent, item: TreeItem) {
         event.stopPropagation();
-        void plugin.discardAll(item.vaultPath);
+        plugin.promiseQueue.addTask(() => plugin.discardAll(item.vaultPath));
     }
     function fold(event: MouseEvent, item: TreeItem) {
         event.stopPropagation();
@@ -81,17 +71,9 @@
         {#if entity.data}
             <div>
                 {#if fileType == FileType.staged}
-                    <StagedFileComponent
-                        change={entity.data}
-                        manager={plugin.gitManager}
-                        {view}
-                    />
+                    <StagedFileComponent change={entity.data} {view} />
                 {:else if fileType == FileType.changed}
-                    <FileComponent
-                        change={entity.data}
-                        manager={plugin.gitManager}
-                        {view}
-                    />
+                    <FileComponent change={entity.data} {view} />
                 {:else if fileType == FileType.pulled}
                     <PulledFileComponent change={entity.data} {view} />
                 {:else if fileType == FileType.conflicted}

@@ -248,10 +248,90 @@ export interface FileStatusResult {
     workingDir: string;
 }
 
+export type NotReadyResult = {
+    status: "skipped";
+    reason: "not-ready";
+};
+
 export type PullResult =
     | { status: "updated"; files: FileStatusResult[] }
     | { status: "up-to-date" }
-    | { status: "skipped"; reason: "no-upstream" };
+    | { status: "skipped"; reason: "no-upstream" }
+    | NotReadyResult;
+
+export type PushResult =
+    | { status: "pushed"; files: number | null }
+    | { status: "up-to-date" }
+    | { status: "blocked"; reason: "no-branch" }
+    | { status: "blocked"; reason: "conflicts"; files: number }
+    | { status: "blocked"; reason: "merge-in-progress" }
+    | { status: "skipped"; reason: "no-upstream" }
+    | NotReadyResult;
+
+export type FetchResult =
+    | { status: "fetched" }
+    | { status: "skipped"; reason: "no-upstream" }
+    | NotReadyResult;
+
+export type SwitchBranchResult =
+    | { status: "switched"; branch: string }
+    | { status: "cancelled" }
+    | NotReadyResult;
+
+export type CreateBranchResult =
+    | { status: "created"; branch: string }
+    | { status: "cancelled" }
+    | NotReadyResult;
+
+export type DeleteBranchResult =
+    | { status: "deleted"; branch: string }
+    | { status: "cancelled" }
+    | NotReadyResult;
+
+export type FileStateMutationResult = { status: "updated" } | NotReadyResult;
+
+export type ListChangedFilesResult =
+    | { status: "displayed" }
+    | { status: "blocked"; reason: "too-many-changes"; files: number }
+    | NotReadyResult;
+
+export type DiscardActionResult =
+    | { status: "discarded"; target: "file" | "tracked" | "all" }
+    | { status: "cancelled" }
+    | { status: "skipped"; reason: "no-changes" }
+    | NotReadyResult;
+
+export type InitRepositoryResult = { status: "initialized" };
+
+export type DeleteRepositoryResult =
+    | { status: "deleted" }
+    | { status: "not-found" }
+    | { status: "cancelled" };
+
+export type CloneRepositoryResult =
+    | { status: "cloned" }
+    | {
+          status: "cancelled";
+          reason: "no-url" | "no-directory" | "safety-declined" | "no-depth";
+      }
+    | { status: "invalid"; reason: "depth" };
+
+export type EditRemoteResult =
+    | { status: "updated"; remote: string }
+    | { status: "cancelled" }
+    | NotReadyResult;
+
+export type RemoveRemoteResult =
+    | { status: "removed"; remote: string }
+    | { status: "cancelled" }
+    | NotReadyResult;
+
+export type SetUpstreamResult =
+    | { status: "updated"; branch: string }
+    | { status: "cancelled" }
+    | NotReadyResult;
+
+export type RawCommandResult = { status: "completed"; output: string };
 
 export type CommitResult =
     | { status: "committed"; files: number }
@@ -261,8 +341,9 @@ export type CommitResult =
       }
     | {
           status: "skipped";
-          reason: "not-ready" | "merge-in-progress" | "files-too-large";
-      };
+          reason: "merge-in-progress" | "files-too-large";
+      }
+    | NotReadyResult;
 
 export type CommitAndSyncResult =
     | { status: "synced"; commit: CommitResult }
@@ -274,13 +355,10 @@ export type CommitAndSyncResult =
     | { status: "nothing-to-push"; commit: CommitResult }
     | {
           status: "skipped";
-          reason:
-              | "not-ready"
-              | "commit-skipped"
-              | "push-skipped"
-              | "push-failed";
-          commit?: CommitResult;
-      };
+          reason: "commit-skipped" | "push-skipped";
+          commit: CommitResult;
+      }
+    | NotReadyResult;
 
 export interface PluginState {
     offlineMode: boolean;

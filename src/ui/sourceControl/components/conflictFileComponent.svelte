@@ -38,12 +38,7 @@
 
     function resolve(event: MouseEvent) {
         event.stopPropagation();
-        manager
-            .stage(path, false)
-            .catch((e) => view.plugin.displayError(e))
-            .finally(() => {
-                view.app.workspace.trigger("obsidian-git:refresh");
-            });
+        view.plugin.promiseQueue.addTask(() => view.plugin.stage(path, false));
     }
 </script>
 

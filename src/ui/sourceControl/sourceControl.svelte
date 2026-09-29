@@ -354,21 +354,13 @@
     function stageAll(event: MouseEvent) {
         event.stopPropagation();
         loading = true;
-        plugin.promiseQueue.addTask(() =>
-            plugin.gitManager
-                .stageAll({ status: status })
-                .finally(triggerRefresh)
-        );
+        plugin.promiseQueue.addTask(() => plugin.stageAll());
     }
 
     function unstageAll(event: MouseEvent) {
         event.stopPropagation();
         loading = true;
-        plugin.promiseQueue.addTask(() =>
-            plugin.gitManager
-                .unstageAll({ status: status })
-                .finally(triggerRefresh)
-        );
+        plugin.promiseQueue.addTask(() => plugin.unstageAll());
     }
 
     function push() {
@@ -385,7 +377,7 @@
     }
     function discard(event: Event) {
         event.stopPropagation();
-        void plugin.discardAll();
+        plugin.promiseQueue.addTask(() => plugin.discardAll());
     }
 
     let rows = $derived((commitMessage.match(/\n/g) || []).length + 1 || 1);
@@ -659,7 +651,6 @@
                                     <StagedFileComponent
                                         change={stagedFile}
                                         {view}
-                                        manager={plugin.gitManager}
                                     />
                                 {/each}
                                 <TooManyFilesComponent files={status.staged} />
@@ -774,11 +765,7 @@
                                 />
                             {:else}
                                 {#each arrayProxyWithNewLength(status.changed, 500) as change}
-                                    <FileComponent
-                                        {change}
-                                        {view}
-                                        manager={plugin.gitManager}
-                                    />
+                                    <FileComponent {change} {view} />
                                 {/each}
                                 <TooManyFilesComponent files={status.changed} />
                             {/if}

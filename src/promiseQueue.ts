@@ -1,13 +1,9 @@
-import type ObsidianGit from "./main";
-
 export class PromiseQueue {
     private tasks: {
         task: () => Promise<unknown>;
         onFinished: (res: unknown) => void;
     }[] = [];
     private currentTask: Promise<unknown> | null = null;
-
-    constructor(private readonly plugin: ObsidianGit) {}
 
     /**
      * Add a task to the queue.
@@ -49,7 +45,7 @@ export class PromiseQueue {
                     }
                 },
                 (e) => {
-                    this.plugin.displayError(e);
+                    console.error("Unhandled PromiseQueue task rejection", e);
                     try {
                         item.onFinished(undefined);
                     } catch (err) {

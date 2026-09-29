@@ -25,6 +25,7 @@ import type {
     GitProgress,
     LogEntry,
     PullResult,
+    PushResult,
     Status,
 } from "../types";
 import { GitConflictError, GitOperation, NoNetworkError } from "../types";
@@ -829,7 +830,7 @@ export class SimpleGit extends GitManager {
         throw error;
     }
 
-    async push(): Promise<number | undefined | null> {
+    async push(): Promise<PushResult> {
         return this.withGitOperation(GitOperation.push, async () => {
             try {
                 if (this.plugin.settings.updateSubmodules) {
@@ -846,10 +847,7 @@ export class SimpleGit extends GitManager {
                     : status.current;
 
                 if (!currentBranch) {
-                    this.plugin.displayError(
-                        "No current branch found. Cannot push."
-                    );
-                    return undefined;
+                    return { status: "blocked", reason: "no-branch" };
                 }
 
                 const pushTarget = await this.getPushTarget(currentBranch);
@@ -858,7 +856,7 @@ export class SimpleGit extends GitManager {
                     this.plugin.log(
                         "No push target found. Ignoring push of main repo and updating submodules only."
                     );
-                    return undefined;
+                    return { status: "skipped", reason: "no-upstream" };
                 }
                 let remoteChangedFiles: number | null = null;
                 if (pushTarget?.exists) {
@@ -873,7 +871,9 @@ export class SimpleGit extends GitManager {
 
                 await this.git.push();
 
-                return remoteChangedFiles;
+                return remoteChangedFiles === 0
+                    ? { status: "up-to-date" }
+                    : { status: "pushed", files: remoteChangedFiles };
             } catch (e) {
                 this.convertErrors(e);
             }
@@ -1510,10 +1510,7 @@ export class SimpleGit extends GitManager {
         } catch (error) {
             const errorMessage =
                 error instanceof Error ? error.message : String(error);
-            this.plugin.displayError(
-                `Error checking LFS status: ${errorMessage}`
-            );
-            return false;
+            throw new Error(`Error checking LFS status: ${errorMessage}`);
         }
     }
 }

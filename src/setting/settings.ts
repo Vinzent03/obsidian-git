@@ -885,7 +885,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         (await plugin.gitManager.getConfig("user.name")) ?? ""
                     );
                     cb.onChange(async (value) => {
-                        await plugin.gitManager.setConfig(
+                        await plugin.setGitConfig(
                             "user.name",
                             value == "" ? undefined : value
                         );
@@ -900,7 +900,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         (await plugin.gitManager.getConfig("user.email")) ?? ""
                     );
                     cb.onChange(async (value) => {
-                        await plugin.gitManager.setConfig(
+                        await plugin.setGitConfig(
                             "user.email",
                             value == "" ? undefined : value
                         );
@@ -956,10 +956,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     cb.setValue(plugin.localStorage.getGitPath() ?? "");
                     cb.setPlaceholder("git");
                     cb.onChange((value) => {
-                        plugin.localStorage.setGitPath(value);
-                        plugin.gitManager
-                            .updateGitPath(value || "git")
-                            .catch((e) => plugin.displayError(e));
+                        void plugin.changeGitPath(value);
                     });
                 });
 
@@ -997,7 +994,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     cb.setButtonText("Reload");
                     cb.setCta();
                     cb.onClick(async () => {
-                        await (plugin.gitManager as SimpleGit).setGitInstance();
+                        await plugin.reloadGitManager();
                     });
                 });
 
@@ -1013,11 +1010,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 cb.setValue(plugin.settings.basePath);
                 cb.setPlaceholder("directory/directory-with-git-repo");
                 cb.onChange(async (value) => {
-                    plugin.settings.basePath = value;
-                    await plugin.saveSettings();
-                    plugin.gitManager
-                        .updateBasePath(value || "")
-                        .catch((e) => plugin.displayError(e));
+                    await plugin.changeBasePath(value || "");
                 });
             });
 

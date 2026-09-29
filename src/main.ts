@@ -37,13 +37,29 @@ import type {
     CommitAndSyncResult,
     CommitMode,
     CommitResult,
+    CloneRepositoryResult,
+    CreateBranchResult,
+    DeleteBranchResult,
+    DeleteRepositoryResult,
+    DiscardActionResult,
+    EditRemoteResult,
     ElectronWindow,
+    FetchResult,
     FileStatusResult,
+    InitRepositoryResult,
+    ListChangedFilesResult,
+    NotReadyResult,
     ObsidianGitSettings,
     PluginState,
     PullResult,
+    PushResult,
+    RawCommandResult,
+    RemoveRemoteResult,
+    SetUpstreamResult,
     Status,
+    SwitchBranchResult,
     UnstagedFile,
+    FileStateMutationResult,
 } from "./types";
 import {
     GitConflictError,
@@ -56,6 +72,7 @@ import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
 import ReadOnlyFileView from "./ui/readOnlyFileView";
 import { BranchModal } from "./ui/modals/branchModal";
+import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
 import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
 import GitView from "./ui/sourceControl/sourceControl";
@@ -67,7 +84,7 @@ import {
     spawnAsync,
     splitRemoteBranch,
 } from "./utils";
-import { DiscardModal, type DiscardResult } from "./ui/modals/discardModal";
+import { DiscardModal } from "./ui/modals/discardModal";
 import { HunkActions } from "./editor/signs/hunkActions";
 import { EditorIntegration } from "./editor/editorIntegration";
 import { runGitAction, type GitActionResult } from "./gitAction";
@@ -103,7 +120,7 @@ export default class ObsidianGit extends Plugin {
     };
     lastPulledFiles!: FileStatusResult[];
     gitReady = false;
-    promiseQueue: PromiseQueue = new PromiseQueue(this);
+    promiseQueue: PromiseQueue = new PromiseQueue();
 
     /**
      * Debouncer for the auto commit after file changes.
@@ -367,21 +384,22 @@ export default class ObsidianGit extends Plugin {
     async addFileToGitignore(
         filePath: string,
         isFolder?: boolean
-    ): Promise<void> {
-        const gitRelativePath = this.gitManager.getRelativeRepoPath(
-            filePath,
-            true
-        );
-        // Define an absolute rule that can apply only for this item.
-        const gitignoreRule = convertPathToAbsoluteGitignoreRule({
-            isFolder,
-            gitRelativePath,
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.runFileStateMutation(async () => {
+            const gitRelativePath = this.gitManager.getRelativeRepoPath(
+                filePath,
+                true
+            );
+            // Define an absolute rule that can apply only for this item.
+            const gitignoreRule = convertPathToAbsoluteGitignoreRule({
+                isFolder,
+                gitRelativePath,
+            });
+            await this.app.vault.adapter.append(
+                this.gitManager.getRelativeVaultPath(".gitignore"),
+                "\n" + gitignoreRule
+            );
         });
-        await this.app.vault.adapter.append(
-            this.gitManager.getRelativeVaultPath(".gitignore"),
-            "\n" + gitignoreRule
-        );
-        this.app.workspace.trigger("obsidian-git:refresh");
     }
 
     handleFileMenu(
@@ -410,14 +428,11 @@ export default class ObsidianGit extends Plugin {
                             if (file instanceof TFile) {
                                 await this.stageFile(file);
                             } else {
-                                await this.gitManager.stageAll({
-                                    dir: this.gitManager.getRelativeRepoPath(
+                                await this.stageAll(
+                                    this.gitManager.getRelativeRepoPath(
                                         filePath,
                                         true
-                                    ),
-                                });
-                                this.app.workspace.trigger(
-                                    "obsidian-git:refresh"
+                                    )
                                 );
                             }
                         });
@@ -432,15 +447,11 @@ export default class ObsidianGit extends Plugin {
                             if (file instanceof TFile) {
                                 await this.unstageFile(file);
                             } else {
-                                await this.gitManager.unstageAll({
-                                    dir: this.gitManager.getRelativeRepoPath(
+                                await this.unstageAll(
+                                    this.gitManager.getRelativeRepoPath(
                                         filePath,
                                         true
-                                    ),
-                                });
-
-                                this.app.workspace.trigger(
-                                    "obsidian-git:refresh"
+                                    )
                                 );
                             }
                         });
@@ -451,10 +462,12 @@ export default class ObsidianGit extends Plugin {
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
-                        this.addFileToGitignore(
-                            filePath,
-                            file instanceof TFolder
-                        ).catch((e) => this.displayError(e));
+                        this.promiseQueue.addTask(() =>
+                            this.addFileToGitignore(
+                                filePath,
+                                file instanceof TFolder
+                            )
+                        );
                     });
             });
         }
@@ -465,10 +478,12 @@ export default class ObsidianGit extends Plugin {
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
-                        this.addFileToGitignore(
-                            filePath,
-                            file instanceof TFolder
-                        ).catch((e) => this.displayError(e));
+                        this.promiseQueue.addTask(() =>
+                            this.addFileToGitignore(
+                                filePath,
+                                file instanceof TFolder
+                            )
+                        );
                     });
             });
             const gitManager = this.app.vault.adapter;
@@ -667,115 +682,218 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    async createNewRepo() {
-        try {
-            await this.gitManager.init();
-            new Notice("Initialized new repo");
-            await this.init({ fromReload: true });
-        } catch (e) {
-            this.displayError(e);
+    async createNewRepo(): Promise<GitActionResult<InitRepositoryResult>> {
+        const actionResult = await runGitAction<InitRepositoryResult>(
+            this,
+            async () => {
+                await this.gitManager.init();
+                await this.init({ fromReload: true });
+                return { status: "initialized" };
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportInitRepositoryResult(actionResult.value);
+        }
+        return actionResult;
+    }
+
+    private reportInitRepositoryResult(result: InitRepositoryResult): void {
+        const status = result.status;
+        switch (status) {
+            case "initialized":
+                this.displayMessage("Initialized new repo");
+                return;
+            default:
+                return assertNever(status);
         }
     }
 
-    async cloneNewRepo() {
-        const modal = new GeneralModal(this, {
+    async deleteRepository(): Promise<GitActionResult<DeleteRepositoryResult>> {
+        const actionResult = await runGitAction<DeleteRepositoryResult>(
+            this,
+            async () => {
+                const repositoryPath = this.settings.basePath
+                    ? `${this.settings.basePath}/.git`
+                    : ".git";
+                if (!(await this.app.vault.adapter.exists(repositoryPath))) {
+                    return { status: "not-found" };
+                }
+
+                const shouldDelete =
+                    (await new GeneralModal(this, {
+                        options: ["NO", "YES"],
+                        placeholder:
+                            "Do you really want to delete the repository (.git directory)? This action cannot be undone.",
+                        onlySelection: true,
+                    }).openAndGetResult()) === "YES";
+                if (!shouldDelete) {
+                    return { status: "cancelled" };
+                }
+
+                await this.app.vault.adapter.rmdir(repositoryPath, true);
+                return { status: "deleted" };
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportDeleteRepositoryResult(actionResult.value);
+            if (actionResult.value.status === "deleted") {
+                this.unloadPlugin();
+                await this.init({ fromReload: true });
+            }
+        }
+        return actionResult;
+    }
+
+    private reportDeleteRepositoryResult(result: DeleteRepositoryResult): void {
+        switch (result.status) {
+            case "deleted":
+                this.displayMessage(
+                    "Successfully deleted repository. Reloading plugin..."
+                );
+                return;
+            case "not-found":
+                this.displayMessage("No repository found");
+                return;
+            case "cancelled":
+                return;
+            default:
+                return assertNever(result);
+        }
+    }
+
+    async cloneNewRepo(): Promise<GitActionResult<CloneRepositoryResult>> {
+        const actionResult = await runGitAction<CloneRepositoryResult>(
+            this,
+            () => this.performCloneNewRepo()
+        );
+        if (actionResult.status === "success") {
+            this.reportCloneRepositoryResult(actionResult.value);
+        }
+        return actionResult;
+    }
+
+    private async performCloneNewRepo(): Promise<CloneRepositoryResult> {
+        const url = await new GeneralModal(this, {
             placeholder: "Enter remote URL",
-        });
-        const url = await modal.openAndGetResult();
-        if (url) {
-            const confirmOption = "Vault Root";
-            let dir = await new GeneralModal(this, {
-                options:
-                    this.gitManager instanceof IsomorphicGit
-                        ? [confirmOption]
-                        : [],
-                placeholder:
-                    "Enter directory for clone. It needs to be empty or not existent.",
-                allowEmpty: this.gitManager instanceof IsomorphicGit,
+        }).openAndGetResult();
+        if (!url) {
+            return { status: "cancelled", reason: "no-url" };
+        }
+
+        const confirmOption = "Vault Root";
+        let dir = await new GeneralModal(this, {
+            options:
+                this.gitManager instanceof IsomorphicGit ? [confirmOption] : [],
+            placeholder:
+                "Enter directory for clone. It needs to be empty or not existent.",
+            allowEmpty: this.gitManager instanceof IsomorphicGit,
+        }).openAndGetResult();
+        if (dir === undefined) {
+            return { status: "cancelled", reason: "no-directory" };
+        }
+        if (dir === confirmOption) {
+            dir = ".";
+        }
+
+        dir = normalizePath(dir);
+        if (dir === "/") {
+            dir = ".";
+        }
+
+        if (dir === ".") {
+            const containsConflictDir = await new GeneralModal(this, {
+                options: ["NO", "YES"],
+                placeholder: `Does your remote repo contain a ${this.app.vault.configDir} directory at the root?`,
+                onlySelection: true,
             }).openAndGetResult();
-            if (dir == undefined) return;
-            if (dir === confirmOption) {
-                dir = ".";
-            }
-
-            dir = normalizePath(dir);
-            if (dir === "/") {
-                dir = ".";
-            }
-
-            if (dir === ".") {
-                const modal = new GeneralModal(this, {
-                    options: ["NO", "YES"],
-                    placeholder: `Does your remote repo contain a ${this.app.vault.configDir} directory at the root?`,
-                    onlySelection: true,
-                });
-                const containsConflictDir = await modal.openAndGetResult();
-                if (containsConflictDir === undefined) {
-                    new Notice("Aborted clone");
-                    return;
-                } else if (containsConflictDir === "YES") {
-                    const confirmOption =
-                        "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
-                    const modal = new GeneralModal(this, {
-                        options: ["Abort clone", confirmOption],
+            if (containsConflictDir === undefined) {
+                return { status: "cancelled", reason: "safety-declined" };
+            } else if (containsConflictDir === "YES") {
+                const deleteConfirmation =
+                    "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
+                const shouldDelete =
+                    (await new GeneralModal(this, {
+                        options: ["Abort clone", deleteConfirmation],
                         placeholder: `To avoid conflicts, the local ${this.app.vault.configDir} directory needs to be deleted.`,
                         onlySelection: true,
-                    });
-                    const shouldDelete =
-                        (await modal.openAndGetResult()) === confirmOption;
-                    if (shouldDelete) {
-                        await this.app.vault.adapter.rmdir(
-                            this.app.vault.configDir,
-                            true
-                        );
-                    } else {
-                        new Notice("Aborted clone");
-                        return;
-                    }
+                    }).openAndGetResult()) === deleteConfirmation;
+                if (!shouldDelete) {
+                    return { status: "cancelled", reason: "safety-declined" };
                 }
-            }
-            const depth = await new GeneralModal(this, {
-                placeholder:
-                    "Specify depth of clone. Leave empty for full clone.",
-                allowEmpty: true,
-            }).openAndGetResult();
-            let depthInt = undefined;
-            if (depth === undefined) {
-                new Notice("Aborted clone");
-                return;
-            }
-
-            if (depth !== "") {
-                depthInt = parseInt(depth);
-                if (isNaN(depthInt)) {
-                    new Notice("Invalid depth. Aborting clone.");
-                    return;
-                }
-            }
-            new Notice(`Cloning new repo into "${dir}"`);
-            const oldBase = this.settings.basePath;
-            const customDir = dir && dir !== ".";
-            //Set new base path before clone to ensure proper .git/index file location in isomorphic-git
-            if (customDir) {
-                this.settings.basePath = dir;
-            }
-            try {
-                await this.gitManager.clone(
-                    formatRemoteUrl(url),
-                    dir,
-                    depthInt
+                await this.app.vault.adapter.rmdir(
+                    this.app.vault.configDir,
+                    true
                 );
-                new Notice("Cloned new repo.");
-                new Notice("Please restart Obsidian");
+            }
+        }
 
-                if (customDir) {
-                    await this.saveSettings();
-                }
-            } catch (error) {
-                this.displayError(error);
-                this.settings.basePath = oldBase;
+        const depth = await new GeneralModal(this, {
+            placeholder: "Specify depth of clone. Leave empty for full clone.",
+            allowEmpty: true,
+        }).openAndGetResult();
+        if (depth === undefined) {
+            return { status: "cancelled", reason: "no-depth" };
+        }
+
+        let depthInt: number | undefined;
+        if (depth !== "") {
+            depthInt = parseInt(depth);
+            if (isNaN(depthInt)) {
+                return { status: "invalid", reason: "depth" };
+            }
+        }
+
+        new Notice(`Cloning new repo into "${dir}"`);
+        const oldBase = this.settings.basePath;
+        const customDir = dir !== ".";
+        if (customDir) {
+            this.settings.basePath = dir;
+        }
+        try {
+            await this.gitManager.clone(formatRemoteUrl(url), dir, depthInt);
+            if (customDir) {
                 await this.saveSettings();
             }
+            return { status: "cloned" };
+        } catch (error) {
+            this.settings.basePath = oldBase;
+            await this.saveSettings();
+            throw error;
+        }
+    }
+
+    private reportCloneRepositoryResult(result: CloneRepositoryResult): void {
+        switch (result.status) {
+            case "cloned":
+                this.displayMessage("Cloned new repo.");
+                this.displayMessage("Please restart Obsidian");
+                return;
+            case "cancelled": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "safety-declined":
+                    case "no-depth":
+                        this.displayMessage("Aborted clone");
+                        return;
+                    case "no-url":
+                    case "no-directory":
+                        return;
+                    default:
+                        return assertNever(reason);
+                }
+            }
+            case "invalid": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "depth":
+                        this.displayMessage("Invalid depth. Aborting clone.");
+                        return;
+                    default:
+                        return assertNever(reason);
+                }
+            }
+            default:
+                return assertNever(result);
         }
     }
 
@@ -790,10 +908,61 @@ export default class ObsidianGit extends Plugin {
         return this.gitReady;
     }
 
+    private runReadyGitAction<T>(
+        action: () => Promise<T>
+    ): Promise<GitActionResult<T | NotReadyResult>> {
+        return runGitAction(this, async () => {
+            if (!(await this.isAllInitialized())) {
+                return { status: "skipped", reason: "not-ready" };
+            }
+            return action();
+        });
+    }
+
+    async listChangedFiles(): Promise<GitActionResult<ListChangedFilesResult>> {
+        const actionResult =
+            await this.runReadyGitAction<ListChangedFilesResult>(async () => {
+                const status = await this.updateCachedStatus();
+                const files = status.changed.length + status.staged.length;
+                if (files > 500) {
+                    return {
+                        status: "blocked",
+                        reason: "too-many-changes",
+                        files,
+                    };
+                }
+
+                new ChangedFilesModal(this, status.all).open();
+                return { status: "displayed" };
+            });
+        if (actionResult.status === "success") {
+            this.reportListChangedFilesResult(actionResult.value);
+        }
+        return actionResult;
+    }
+
+    private reportListChangedFilesResult(result: ListChangedFilesResult): void {
+        switch (result.status) {
+            case "displayed":
+            case "skipped":
+                return;
+            case "blocked": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "too-many-changes":
+                        this.displayError("Too many changes to display");
+                        return;
+                    default:
+                        return assertNever(reason);
+                }
+            }
+            default:
+                return assertNever(result);
+        }
+    }
+
     ///Used for command
     async pullChangesFromRemote(): Promise<void> {
-        if (!(await this.isAllInitialized())) return;
-
         const actionResult = await this.pull();
         if (actionResult.status !== "success") {
             return;
@@ -822,6 +991,7 @@ export default class ObsidianGit extends Plugin {
             case "skipped": {
                 const reason = result.reason;
                 switch (reason) {
+                    case "not-ready":
                     case "no-upstream":
                         return;
                     default:
@@ -846,15 +1016,9 @@ export default class ObsidianGit extends Plugin {
     async commitAndSync(
         options: CommitAndSyncOptions
     ): Promise<GitActionResult<CommitAndSyncResult>> {
-        return runGitAction<CommitAndSyncResult>(this, async () => {
-            if (!(await this.isAllInitialized())) {
-                return {
-                    status: "skipped",
-                    reason: "not-ready",
-                };
-            }
-            return this.performCommitAndSync(options);
-        });
+        return this.runReadyGitAction<CommitAndSyncResult>(() =>
+            this.performCommitAndSync(options)
+        );
     }
 
     private async performCommitAndSync({
@@ -916,34 +1080,37 @@ export default class ObsidianGit extends Plugin {
 
         // Prevent trying to push every time. Only if unpushed commits are present
         if (await this.gitManager.canPush()) {
-            const pushed = await this.push();
-            return pushed
-                ? { status: "synced", commit: commitResult }
-                : {
-                      status: "skipped",
-                      reason: "push-failed",
-                      commit: commitResult,
-                  };
+            const pushResult = await this.performPush();
+            this.reportPushResult(pushResult);
+            switch (pushResult.status) {
+                case "pushed":
+                    return { status: "synced", commit: commitResult };
+                case "up-to-date":
+                    return {
+                        status: "nothing-to-push",
+                        commit: commitResult,
+                    };
+                case "blocked":
+                case "skipped":
+                    return {
+                        status: "skipped",
+                        reason: "push-skipped",
+                        commit: commitResult,
+                    };
+                default:
+                    return assertNever(pushResult);
+            }
         }
 
-        this.displayMessage("No commits to push");
+        this.reportPushResult({ status: "up-to-date" });
         return { status: "nothing-to-push", commit: commitResult };
     }
 
     async commit(
         options: CommitOptions
     ): Promise<GitActionResult<CommitResult>> {
-        const actionResult = await runGitAction<CommitResult>(
-            this,
-            async () => {
-                if (!(await this.isAllInitialized())) {
-                    return {
-                        status: "skipped",
-                        reason: "not-ready",
-                    };
-                }
-                return this.performCommit(options);
-            }
+        const actionResult = await this.runReadyGitAction<CommitResult>(() =>
+            this.performCommit(options)
         );
         if (actionResult.status === "success") {
             this.reportCommitResult(actionResult.value);
@@ -1193,70 +1360,104 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    /*
-     * Returns true if push was successful
-     */
-    async push(): Promise<boolean> {
-        if (!(await this.isAllInitialized())) return false;
-        if (!(await this.isPushRemoteSet())) {
-            return false;
+    async push(): Promise<GitActionResult<PushResult>> {
+        const actionResult = await this.runReadyGitAction<PushResult>(() =>
+            this.performPush()
+        );
+        if (actionResult.status === "success") {
+            this.reportPushResult(actionResult.value);
         }
-        try {
-            // Refresh because of pull
-            const status = await this.updateCachedStatus();
-            if (status.conflicted.length > 0) {
-                this.displayError(
-                    `Cannot push. You have conflicts in ${
-                        status.conflicted.length
-                    } ${status.conflicted.length == 1 ? "file" : "files"}`
-                );
-                return false;
-            } else if (this.state.mergeInProgress) {
-                this.displayError(
-                    "Cannot push while a merge is still in progress"
-                );
-                return false;
-            }
-            // Squash local unpushed commits into one before pushing, so frequent
-            // local commits don't clutter the remote history. Only unpushed
-            // history is rewritten (no force-push). Conflicts are excluded above.
-            if (
-                this.settings.squashCommitsBeforePush &&
-                this.gitManager instanceof SimpleGit
-            ) {
-                await this.gitManager.squashAllUnpushedCommits();
-            }
-            this.log("Pushing....");
-            const pushedFiles = await this.gitManager.push();
+        return actionResult;
+    }
 
-            if (pushedFiles !== undefined) {
-                if (pushedFiles === null) {
-                    this.displayMessage(`Pushed to remote`);
-                } else if (pushedFiles > 0) {
+    private async performPush(): Promise<PushResult> {
+        if (!(await this.isPushRemoteSet())) {
+            return { status: "skipped", reason: "no-upstream" };
+        }
+        // Refresh because of pull
+        const status = await this.updateCachedStatus();
+        if (status.conflicted.length > 0) {
+            return {
+                status: "blocked",
+                reason: "conflicts",
+                files: status.conflicted.length,
+            };
+        } else if (this.state.mergeInProgress) {
+            return { status: "blocked", reason: "merge-in-progress" };
+        }
+        // Squash local unpushed commits into one before pushing, so frequent
+        // local commits don't clutter the remote history. Only unpushed
+        // history is rewritten (no force-push). Conflicts are excluded above.
+        if (
+            this.settings.squashCommitsBeforePush &&
+            this.gitManager instanceof SimpleGit
+        ) {
+            await this.gitManager.squashAllUnpushedCommits();
+        }
+        this.log("Pushing....");
+        const result = await this.gitManager.push();
+        this.setPluginState({ offlineMode: false });
+        this.app.workspace.trigger("obsidian-git:refresh");
+        return result;
+    }
+
+    private reportPushResult(result: PushResult): void {
+        switch (result.status) {
+            case "pushed":
+                if (result.files === null) {
+                    this.displayMessage("Pushed to remote");
+                } else {
                     this.displayMessage(
-                        `Pushed ${pushedFiles} ${
-                            pushedFiles == 1 ? "file" : "files"
+                        `Pushed ${result.files} ${
+                            result.files == 1 ? "file" : "files"
                         } to remote`
                     );
-                } else {
-                    this.displayMessage(`No commits to push`);
+                }
+                return;
+            case "up-to-date":
+                this.displayMessage("No commits to push");
+                return;
+            case "blocked": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "no-branch":
+                        this.displayError(
+                            "No current branch found. Cannot push."
+                        );
+                        return;
+                    case "conflicts":
+                        this.displayError(
+                            `Cannot push. You have conflicts in ${
+                                result.files
+                            } ${result.files == 1 ? "file" : "files"}`
+                        );
+                        return;
+                    case "merge-in-progress":
+                        this.displayError(
+                            "Cannot push while a merge is still in progress"
+                        );
+                        return;
+                    default:
+                        return assertNever(reason);
                 }
             }
-            this.setPluginState({ offlineMode: false });
-            this.app.workspace.trigger("obsidian-git:refresh");
-            return true;
-        } catch (e) {
-            if (e instanceof NoNetworkError) {
-                this.handleNoNetworkError(e);
-            } else {
-                this.displayError(e);
+            case "skipped": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "not-ready":
+                    case "no-upstream":
+                        return;
+                    default:
+                        return assertNever(reason);
+                }
             }
-            return false;
+            default:
+                return assertNever(result);
         }
     }
 
     async pull(): Promise<GitActionResult<PullResult>> {
-        return runGitAction(this, () => this.performPull());
+        return this.runReadyGitAction<PullResult>(() => this.performPull());
     }
 
     private async performPull(): Promise<PullResult> {
@@ -1269,123 +1470,319 @@ export default class ObsidianGit extends Plugin {
         return result;
     }
 
-    async fetch(): Promise<void> {
-        if (!(await this.isPushRemoteSet())) {
-            return;
+    async fetch(): Promise<GitActionResult<FetchResult>> {
+        const actionResult = await this.runReadyGitAction<FetchResult>(
+            async () => {
+                if (!(await this.isPushRemoteSet())) {
+                    return { status: "skipped", reason: "no-upstream" };
+                }
+                await this.gitManager.fetch();
+                this.setPluginState({ offlineMode: false });
+                this.app.workspace.trigger("obsidian-git:refresh");
+                return { status: "fetched" };
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportFetchResult(actionResult.value);
         }
-        try {
-            await this.gitManager.fetch();
+        return actionResult;
+    }
 
-            this.displayMessage(`Fetched from remote`);
-            this.setPluginState({ offlineMode: false });
+    private reportFetchResult(result: FetchResult): void {
+        switch (result.status) {
+            case "fetched":
+                this.displayMessage("Fetched from remote");
+                return;
+            case "skipped": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "not-ready":
+                    case "no-upstream":
+                        return;
+                    default:
+                        return assertNever(reason);
+                }
+            }
+            default:
+                return assertNever(result);
+        }
+    }
+
+    async stageFile(
+        file: TFile
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.stage(file.path, true);
+    }
+
+    async stage(
+        path: string,
+        relativeToVault: boolean
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.runFileStateMutation(() =>
+            this.gitManager.stage(path, relativeToVault)
+        );
+    }
+
+    async stageAll(
+        path?: string
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.runFileStateMutation(() =>
+            this.gitManager.stageAll({ dir: path })
+        );
+    }
+
+    async unstageFile(
+        file: TFile
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.unstage(file.path, true);
+    }
+
+    async unstage(
+        path: string,
+        relativeToVault: boolean
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.runFileStateMutation(() =>
+            this.gitManager.unstage(path, relativeToVault)
+        );
+    }
+
+    async unstageAll(
+        path?: string
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.runFileStateMutation(() =>
+            this.gitManager.unstageAll({ dir: path })
+        );
+    }
+
+    async applyPatch(
+        patch: string
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.runFileStateMutation(async () => {
+            if (!(this.gitManager instanceof SimpleGit)) {
+                throw new Error(
+                    "Applying a patch is only supported on desktop"
+                );
+            }
+            await this.gitManager.applyPatch(patch);
+        });
+    }
+
+    private async runFileStateMutation(
+        action: () => Promise<void>
+    ): Promise<GitActionResult<FileStateMutationResult>> {
+        return this.runReadyGitAction<FileStateMutationResult>(async () => {
+            await action();
             this.app.workspace.trigger("obsidian-git:refresh");
-        } catch (error) {
-            this.displayError(error);
-        }
+            return { status: "updated" };
+        });
     }
 
-    async stageFile(file: TFile): Promise<boolean> {
-        if (!(await this.isAllInitialized())) return false;
-
-        await this.gitManager.stage(file.path, true);
-
-        this.app.workspace.trigger("obsidian-git:refresh");
-
-        return true;
+    async setGitConfig(
+        path: string,
+        value: string | number | boolean | undefined
+    ): Promise<GitActionResult<void>> {
+        return runGitAction(this, () => this.gitManager.setConfig(path, value));
     }
 
-    async unstageFile(file: TFile): Promise<boolean> {
-        if (!(await this.isAllInitialized())) return false;
-
-        await this.gitManager.unstage(file.path, true);
-
-        this.app.workspace.trigger("obsidian-git:refresh");
-
-        return true;
+    async changeGitPath(path: string): Promise<GitActionResult<void>> {
+        return runGitAction(this, async () => {
+            this.localStorage.setGitPath(path);
+            await this.gitManager.updateGitPath(path || "git");
+        });
     }
 
-    async switchBranch(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return undefined;
+    async reloadGitManager(): Promise<GitActionResult<void>> {
+        return runGitAction(this, async () => {
+            if (!(this.gitManager instanceof SimpleGit)) {
+                throw new Error(
+                    "Reloading native Git is only supported on desktop"
+                );
+            }
+            await this.gitManager.setGitInstance();
+        });
+    }
 
-        const branchInfo = await this.gitManager.branchInfo();
-        const selectedBranch = await new BranchModal(
+    async changeBasePath(path: string): Promise<GitActionResult<void>> {
+        return runGitAction(this, async () => {
+            this.settings.basePath = path;
+            await this.saveSettings();
+            await this.gitManager.updateBasePath(path);
+        });
+    }
+
+    async runRawCommand(
+        command: string
+    ): Promise<GitActionResult<RawCommandResult>> {
+        const notice = new Notice(`Running '${command}'...`, 999_999);
+        const actionResult = await runGitAction<RawCommandResult>(
             this,
-            branchInfo.branches
-        ).openAndGetReslt();
-
-        if (selectedBranch != undefined) {
-            await this.gitManager.checkout(selectedBranch);
-            this.displayMessage(`Switched to ${selectedBranch}`);
-            this.app.workspace.trigger("obsidian-git:refresh");
-            await this.branchBar?.display();
-            return selectedBranch;
+            async () => {
+                if (!(this.gitManager instanceof SimpleGit)) {
+                    throw new Error(
+                        "Raw Git commands are only supported on desktop"
+                    );
+                }
+                return {
+                    status: "completed",
+                    output: await this.gitManager.rawCommand(command),
+                };
+            }
+        );
+        if (actionResult.status === "success" && actionResult.value.output) {
+            notice.setMessage(actionResult.value.output);
+            window.setTimeout(() => notice.hide(), 5000);
+        } else {
+            notice.hide();
         }
-        return undefined;
+        return actionResult;
     }
 
-    async switchRemoteBranch(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return undefined;
+    async switchBranch(): Promise<GitActionResult<SwitchBranchResult>> {
+        const actionResult = await this.runReadyGitAction<SwitchBranchResult>(
+            async () => {
+                const branchInfo = await this.gitManager.branchInfo();
+                const selectedBranch = await new BranchModal(
+                    this,
+                    branchInfo.branches
+                ).openAndGetReslt();
+                if (selectedBranch === undefined) {
+                    return { status: "cancelled" };
+                }
 
-        const selectedBranch = (await this.selectRemoteBranch()) || "";
-
-        const [remote, branch] = splitRemoteBranch(selectedBranch);
-
-        if (branch != undefined && remote != undefined) {
-            await this.gitManager.checkout(branch, remote);
-            this.displayMessage(`Switched to ${selectedBranch}`);
-            await this.branchBar?.display();
-            return selectedBranch;
+                await this.gitManager.checkout(selectedBranch);
+                this.app.workspace.trigger("obsidian-git:refresh");
+                await this.branchBar?.display();
+                return { status: "switched", branch: selectedBranch };
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportSwitchBranchResult(actionResult.value);
         }
-        return undefined;
+        return actionResult;
     }
 
-    async createBranch(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return undefined;
+    async switchRemoteBranch(): Promise<GitActionResult<SwitchBranchResult>> {
+        const actionResult = await this.runReadyGitAction<SwitchBranchResult>(
+            async () => {
+                const selectedBranch = await this.selectRemoteBranch();
+                if (selectedBranch === undefined) {
+                    return { status: "cancelled" };
+                }
+                const [remote, branch] = splitRemoteBranch(selectedBranch);
+                if (branch === undefined || remote === undefined) {
+                    return { status: "cancelled" };
+                }
 
-        const newBranch = await new GeneralModal(this, {
-            placeholder: "Create new branch",
-        }).openAndGetResult();
-        if (newBranch != undefined) {
-            await this.gitManager.createBranch(newBranch);
-            this.displayMessage(`Created new branch ${newBranch}`);
-            await this.branchBar?.display();
-            return newBranch;
+                await this.gitManager.checkout(branch, remote);
+                await this.branchBar?.display();
+                return { status: "switched", branch: selectedBranch };
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportSwitchBranchResult(actionResult.value);
         }
-        return undefined;
+        return actionResult;
     }
 
-    async deleteBranch(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return undefined;
+    private reportSwitchBranchResult(result: SwitchBranchResult): void {
+        switch (result.status) {
+            case "switched":
+                this.displayMessage(`Switched to ${result.branch}`);
+                return;
+            case "cancelled":
+            case "skipped":
+                return;
+            default:
+                return assertNever(result);
+        }
+    }
 
-        const branchInfo = await this.gitManager.branchInfo();
-        if (branchInfo.current) branchInfo.branches.remove(branchInfo.current);
-        const branch = await new GeneralModal(this, {
-            options: branchInfo.branches,
-            placeholder: "Delete branch",
-            onlySelection: true,
-        }).openAndGetResult();
-        if (branch != undefined) {
-            let force = false;
-            const merged = await this.gitManager.branchIsMerged(branch);
-            // Using await inside IF throws exception
-            if (!merged) {
-                const forceAnswer = await new GeneralModal(this, {
-                    options: ["YES", "NO"],
-                    placeholder:
-                        "This branch isn't merged into HEAD. Force delete?",
+    async createBranch(): Promise<GitActionResult<CreateBranchResult>> {
+        const actionResult = await this.runReadyGitAction<CreateBranchResult>(
+            async () => {
+                const branch = await new GeneralModal(this, {
+                    placeholder: "Create new branch",
+                }).openAndGetResult();
+                if (branch === undefined) {
+                    return { status: "cancelled" };
+                }
+
+                await this.gitManager.createBranch(branch);
+                await this.branchBar?.display();
+                return { status: "created", branch };
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportCreateBranchResult(actionResult.value);
+        }
+        return actionResult;
+    }
+
+    private reportCreateBranchResult(result: CreateBranchResult): void {
+        switch (result.status) {
+            case "created":
+                this.displayMessage(`Created new branch ${result.branch}`);
+                return;
+            case "cancelled":
+            case "skipped":
+                return;
+            default:
+                return assertNever(result);
+        }
+    }
+
+    async deleteBranch(): Promise<GitActionResult<DeleteBranchResult>> {
+        const actionResult = await this.runReadyGitAction<DeleteBranchResult>(
+            async () => {
+                const branchInfo = await this.gitManager.branchInfo();
+                if (branchInfo.current) {
+                    branchInfo.branches.remove(branchInfo.current);
+                }
+                const branch = await new GeneralModal(this, {
+                    options: branchInfo.branches,
+                    placeholder: "Delete branch",
                     onlySelection: true,
                 }).openAndGetResult();
-                if (forceAnswer !== "YES") {
-                    return undefined;
+                if (branch === undefined) {
+                    return { status: "cancelled" };
                 }
-                force = forceAnswer === "YES";
+
+                let force = false;
+                const merged = await this.gitManager.branchIsMerged(branch);
+                if (!merged) {
+                    const forceAnswer = await new GeneralModal(this, {
+                        options: ["YES", "NO"],
+                        placeholder:
+                            "This branch isn't merged into HEAD. Force delete?",
+                        onlySelection: true,
+                    }).openAndGetResult();
+                    if (forceAnswer !== "YES") {
+                        return { status: "cancelled" };
+                    }
+                    force = true;
+                }
+                await this.gitManager.deleteBranch(branch, force);
+                await this.branchBar?.display();
+                return { status: "deleted", branch };
             }
-            await this.gitManager.deleteBranch(branch, force);
-            this.displayMessage(`Deleted branch ${branch}`);
-            await this.branchBar?.display();
-            return branch;
+        );
+        if (actionResult.status === "success") {
+            this.reportDeleteBranchResult(actionResult.value);
         }
-        return undefined;
+        return actionResult;
+    }
+
+    private reportDeleteBranchResult(result: DeleteBranchResult): void {
+        switch (result.status) {
+            case "deleted":
+                this.displayMessage(`Deleted branch ${result.branch}`);
+                return;
+            case "cancelled":
+            case "skipped":
+                return;
+            default:
+                return assertNever(result);
+        }
     }
 
     private async canAutoSetupPushRemote(): Promise<boolean> {
@@ -1414,7 +1811,9 @@ export default class ObsidianGit extends Plugin {
             return false;
         }
         new Notice("No upstream branch is set. Please select one.");
-        return await this.setUpstreamBranch();
+        const result = await this.performSetUpstreamBranch();
+        this.reportSetUpstreamResult(result);
+        return result.status === "updated";
     }
 
     /**
@@ -1430,90 +1829,171 @@ export default class ObsidianGit extends Plugin {
         }
         if (!(await this.gitManager.branchInfo()).tracking) {
             new Notice("No upstream branch is set. Please select one.");
-            return await this.setUpstreamBranch();
+            const result = await this.performSetUpstreamBranch();
+            this.reportSetUpstreamResult(result);
+            return result.status === "updated";
         }
         return true;
     }
 
-    async setUpstreamBranch(): Promise<boolean> {
+    async setUpstreamBranch(): Promise<GitActionResult<SetUpstreamResult>> {
+        const actionResult = await this.runReadyGitAction<SetUpstreamResult>(
+            async () => {
+                return this.performSetUpstreamBranch();
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportSetUpstreamResult(actionResult.value);
+        }
+        return actionResult;
+    }
+
+    private async performSetUpstreamBranch(): Promise<SetUpstreamResult> {
         const remoteBranch = await this.selectRemoteBranch();
 
         if (remoteBranch == undefined) {
-            this.displayError("Aborted. No upstream-branch is set!", 10000);
-            return false;
-        } else {
-            await this.gitManager.updateUpstreamBranch(remoteBranch);
-            this.displayMessage(`Set upstream branch to ${remoteBranch}`);
-            return true;
+            return { status: "cancelled" };
+        }
+        await this.gitManager.updateUpstreamBranch(remoteBranch);
+        return { status: "updated", branch: remoteBranch };
+    }
+
+    private reportSetUpstreamResult(result: SetUpstreamResult): void {
+        switch (result.status) {
+            case "updated":
+                this.displayMessage(`Set upstream branch to ${result.branch}`);
+                return;
+            case "cancelled":
+                this.displayError("Aborted. No upstream-branch is set!", 10000);
+                return;
+            case "skipped":
+                return;
+            default:
+                return assertNever(result);
         }
     }
 
-    async discardAll(path?: string): Promise<DiscardResult> {
-        if (!(await this.isAllInitialized())) return false;
+    async discardFile(
+        file: FileStatusResult
+    ): Promise<GitActionResult<DiscardActionResult>> {
+        const actionResult = await this.runReadyGitAction<DiscardActionResult>(
+            async () => {
+                const deleteFile = file.workingDir === "U";
+                const selection = await new DiscardModal({
+                    app: this.app,
+                    filesToDeleteCount: deleteFile ? 1 : 0,
+                    filesToDiscardCount: deleteFile ? 0 : 1,
+                    path: file.vaultPath,
+                }).openAndGetResult();
+                if (selection === false) {
+                    return { status: "cancelled" };
+                }
 
-        const status = await this.gitManager.status({ path });
-
-        let filesToDeleteCount = 0;
-        let filesToDiscardCount = 0;
-        for (const file of status.changed) {
-            if (file.workingDir == "U") {
-                filesToDeleteCount++;
-            } else {
-                filesToDiscardCount++;
-            }
-        }
-        if (filesToDeleteCount + filesToDiscardCount == 0) {
-            return false;
-        }
-
-        const result = await new DiscardModal({
-            app: this.app,
-            filesToDeleteCount,
-            filesToDiscardCount,
-            path: path ?? "",
-        }).openAndGetResult();
-
-        switch (result) {
-            case false:
-                return result;
-            case "discard":
-                await this.gitManager.discardAll({
-                    dir: path,
-                    status: this.cachedStatus,
-                });
-                break;
-            case "delete": {
-                await this.gitManager.discardAll({
-                    dir: path,
-                    status: this.cachedStatus,
-                });
-                const untrackedPaths = await this.gitManager.getUntrackedPaths({
-                    path,
-                    status: this.cachedStatus,
-                });
-                for (const file of untrackedPaths) {
-                    const vaultPath =
-                        this.gitManager.getRelativeVaultPath(file);
-                    const tFile =
-                        this.app.vault.getAbstractFileByPath(vaultPath);
-
+                if (selection === "delete") {
+                    const tFile = this.app.vault.getAbstractFileByPath(
+                        file.vaultPath
+                    );
                     if (tFile) {
                         await this.app.fileManager.trashFile(tFile);
                     } else {
-                        if (file.endsWith("/")) {
+                        await this.app.vault.adapter.remove(file.vaultPath);
+                    }
+                } else {
+                    await this.gitManager.discard(file.path);
+                }
+                this.app.workspace.trigger("obsidian-git:refresh");
+                return { status: "discarded", target: "file" };
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportDiscardResult(actionResult.value, false);
+        }
+        return actionResult;
+    }
+
+    async discardAll(
+        path?: string
+    ): Promise<GitActionResult<DiscardActionResult>> {
+        const actionResult = await this.runReadyGitAction<DiscardActionResult>(
+            async () => {
+                const status = await this.gitManager.status({ path });
+                let filesToDeleteCount = 0;
+                let filesToDiscardCount = 0;
+                for (const file of status.changed) {
+                    if (file.workingDir == "U") {
+                        filesToDeleteCount++;
+                    } else {
+                        filesToDiscardCount++;
+                    }
+                }
+                if (filesToDeleteCount + filesToDiscardCount == 0) {
+                    return { status: "skipped", reason: "no-changes" };
+                }
+
+                const selection = await new DiscardModal({
+                    app: this.app,
+                    filesToDeleteCount,
+                    filesToDiscardCount,
+                    path: path ?? "",
+                }).openAndGetResult();
+                if (selection === false) {
+                    return { status: "cancelled" };
+                }
+
+                await this.gitManager.discardAll({ dir: path, status });
+                if (selection === "delete") {
+                    const untrackedPaths =
+                        await this.gitManager.getUntrackedPaths({
+                            path,
+                            status,
+                        });
+                    for (const file of untrackedPaths) {
+                        const vaultPath =
+                            this.gitManager.getRelativeVaultPath(file);
+                        const tFile =
+                            this.app.vault.getAbstractFileByPath(vaultPath);
+
+                        if (tFile) {
+                            await this.app.fileManager.trashFile(tFile);
+                        } else if (file.endsWith("/")) {
                             await this.app.vault.adapter.rmdir(vaultPath, true);
                         } else {
                             await this.app.vault.adapter.remove(vaultPath);
                         }
                     }
                 }
-                break;
+                this.app.workspace.trigger("obsidian-git:refresh");
+                return {
+                    status: "discarded",
+                    target: selection === "delete" ? "all" : "tracked",
+                };
             }
-            default:
-                assertNever(result);
+        );
+        if (actionResult.status === "success") {
+            this.reportDiscardResult(actionResult.value, path === undefined);
         }
-        this.app.workspace.trigger("obsidian-git:refresh");
-        return result;
+        return actionResult;
+    }
+
+    private reportDiscardResult(
+        result: DiscardActionResult,
+        showSuccess: boolean
+    ): void {
+        switch (result.status) {
+            case "discarded":
+                if (!showSuccess || result.target === "file") return;
+                this.displayMessage(
+                    result.target === "all"
+                        ? "Discarded all files."
+                        : "Discarded all changes in tracked files."
+                );
+                return;
+            case "cancelled":
+            case "skipped":
+                return;
+            default:
+                return assertNever(result);
+        }
     }
 
     handleConflict(conflictedFiles: readonly string[]): void {
@@ -1531,43 +2011,61 @@ export default class ObsidianGit extends Plugin {
         new MergeConflictModal(this).open();
     }
 
-    async editRemotes(): Promise<string | undefined> {
-        if (!(await this.isAllInitialized())) return undefined;
+    async editRemotes(): Promise<GitActionResult<EditRemoteResult>> {
+        const actionResult = await this.runReadyGitAction<EditRemoteResult>(
+            async () => {
+                return this.performEditRemotes();
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportEditRemoteResult(actionResult.value);
+        }
+        return actionResult;
+    }
 
+    private async performEditRemotes(): Promise<EditRemoteResult> {
         const remotes = await this.gitManager.getRemotes();
-
-        const nameModal = new GeneralModal(this, {
+        const remoteName = await new GeneralModal(this, {
             options: remotes,
             placeholder:
                 "Select or create a new remote by typing its name and selecting it",
-        });
-        const remoteName = await nameModal.openAndGetResult();
-
-        if (remoteName) {
-            const oldUrl = await this.gitManager.getRemoteUrl(remoteName);
-
-            const urlModal = new GeneralModal(this, {
-                initialValue: oldUrl,
-                placeholder: "Enter remote URL",
-            });
-            // urlModal.inputEl.setText(oldUrl ?? "");
-            const remoteURL = await urlModal.openAndGetResult();
-            if (remoteURL) {
-                await this.gitManager.setRemote(
-                    remoteName,
-                    formatRemoteUrl(remoteURL)
-                );
-                return remoteName;
-            }
+        }).openAndGetResult();
+        if (!remoteName) {
+            return { status: "cancelled" };
         }
-        return undefined;
+
+        const oldUrl = await this.gitManager.getRemoteUrl(remoteName);
+        const remoteURL = await new GeneralModal(this, {
+            initialValue: oldUrl,
+            placeholder: "Enter remote URL",
+        }).openAndGetResult();
+        if (!remoteURL) {
+            return { status: "cancelled" };
+        }
+
+        await this.gitManager.setRemote(remoteName, formatRemoteUrl(remoteURL));
+        return { status: "updated", remote: remoteName };
     }
 
-    async selectRemoteBranch(): Promise<string | undefined> {
+    private reportEditRemoteResult(result: EditRemoteResult): void {
+        switch (result.status) {
+            case "updated":
+            case "cancelled":
+            case "skipped":
+                return;
+            default:
+                return assertNever(result);
+        }
+    }
+
+    private async selectRemoteBranch(): Promise<string | undefined> {
         let remotes = await this.gitManager.getRemotes();
         let selectedRemote: string | undefined;
         if (remotes.length === 0) {
-            selectedRemote = await this.editRemotes();
+            const editResult = await this.performEditRemotes();
+            if (editResult.status === "updated") {
+                selectedRemote = editResult.remote;
+            }
             if (selectedRemote == undefined) {
                 remotes = await this.gitManager.getRemotes();
             }
@@ -1602,19 +2100,36 @@ export default class ObsidianGit extends Plugin {
         return undefined;
     }
 
-    async removeRemote() {
-        if (!(await this.isAllInitialized())) return;
+    async removeRemote(): Promise<GitActionResult<RemoveRemoteResult>> {
+        const actionResult = await this.runReadyGitAction<RemoveRemoteResult>(
+            async () => {
+                const remotes = await this.gitManager.getRemotes();
+                const remoteName = await new GeneralModal(this, {
+                    options: remotes,
+                    placeholder: "Select a remote",
+                }).openAndGetResult();
+                if (!remoteName) {
+                    return { status: "cancelled" };
+                }
 
-        const remotes = await this.gitManager.getRemotes();
+                await this.gitManager.removeRemote(remoteName);
+                return { status: "removed", remote: remoteName };
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportRemoveRemoteResult(actionResult.value);
+        }
+        return actionResult;
+    }
 
-        const nameModal = new GeneralModal(this, {
-            options: remotes,
-            placeholder: "Select a remote",
-        });
-        const remoteName = await nameModal.openAndGetResult();
-
-        if (remoteName) {
-            await this.gitManager.removeRemote(remoteName);
+    private reportRemoveRemoteResult(result: RemoveRemoteResult): void {
+        switch (result.status) {
+            case "removed":
+            case "cancelled":
+            case "skipped":
+                return;
+            default:
+                return assertNever(result);
         }
     }
 

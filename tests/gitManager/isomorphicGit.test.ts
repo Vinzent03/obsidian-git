@@ -82,3 +82,50 @@ describe("IsomorphicGit merge state", () => {
         expect(plugin.displayError).not.toHaveBeenCalled();
     });
 });
+
+describe("IsomorphicGit.push", () => {
+    it("returns explicit pushed and up-to-date results", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(git, "push").mockResolvedValue({
+            ok: true,
+            error: null,
+            refs: {},
+        });
+
+        await expect(manager.push()).resolves.toEqual({
+            status: "up-to-date",
+        });
+
+        await repo.appendAndCommit("note.md", "local\n", "local commit");
+
+        await expect(manager.push()).resolves.toEqual({
+            status: "pushed",
+            files: 1,
+        });
+    });
+
+    it("throws failures without displaying them", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        const error = new Error("push failed");
+        vi.spyOn(git, "push").mockRejectedValue(error);
+
+        await expect(manager.push()).rejects.toBe(error);
+
+        expect(plugin.displayError).not.toHaveBeenCalled();
+    });
+});
+
+describe("IsomorphicGit working-tree mutations", () => {
+    it("throws stage failures without displaying them", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        const error = new Error("stage failed");
+        vi.spyOn(git, "add").mockRejectedValue(error);
+
+        await expect(manager.stage("note.md", false)).rejects.toBe(error);
+
+        expect(plugin.displayError).not.toHaveBeenCalled();
+    });
+});
