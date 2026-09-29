@@ -49,6 +49,7 @@ export default class SplitDiffView extends ItemView {
     mergeView: MergeView | undefined;
     fileSaveDebouncer!: Debouncer<[string], void>;
     bIsEditable!: boolean;
+    private indexUnmerged = false;
 
     /**
      * Prevent to load text from file if the modification event was caused by this instance
@@ -63,7 +64,7 @@ export default class SplitDiffView extends ItemView {
         this.navigation = true;
         this.registerEvent(
             this.app.workspace.on("obsidian-git:status-changed", () => {
-                if (!this.mergeView) {
+                if (!this.mergeView || this.indexUnmerged) {
                     this.createMergeView().catch(console.error);
                 } else {
                     this.updateRefEditors().catch(console.error);
@@ -205,6 +206,33 @@ export default class SplitDiffView extends ItemView {
         } catch (error) {
             if (error instanceof GitError) {
                 if (
+                    commitHash === "" &&
+                    error.message.includes(
+                        "is in the index, but not at stage 0"
+                    )
+                ) {
+                    this.indexUnmerged = true;
+                    // An unmerged file has no stage 0 entry. Compare with our
+                    // side, or an empty file if our side deleted it.
+                    try {
+                        return await this.plugin.gitManager.show(
+                            ":2",
+                            file,
+                            false
+                        );
+                    } catch (stageError) {
+                        if (
+                            stageError instanceof GitError &&
+                            stageError.message.includes(
+                                "is in the index, but not at stage 2"
+                            )
+                        ) {
+                            return "";
+                        }
+                        throw stageError;
+                    }
+                }
+                if (
                     error.message.includes("does not exist") ||
                     error.message.includes("unknown revision or path") ||
                     error.message.includes("exists on disk, but not in") ||
@@ -271,6 +299,11 @@ export default class SplitDiffView extends ItemView {
         let bText: string | undefined;
         if (this.state.bRef != undefined) {
             bText = await this.gitShow(this.state.bRef, this.state.bFile);
+        }
+        if (this.indexUnmerged) {
+            this.refreshing = false;
+            await this.createMergeView();
+            return;
         }
         if (aText != aEditor.state.doc.toString()) {
             const aTransaction = aEditor.state.update({
@@ -400,6 +433,7 @@ export default class SplitDiffView extends ItemView {
 
             this.contentEl.addClass("git-split-diff-view", "git-diff");
             this.bIsEditable = await this.bShouldBeEditable();
+            this.indexUnmerged = false;
 
             const aText = await this.gitShow(this.state.aRef, this.state.aFile);
 
@@ -477,6 +511,7 @@ export default class SplitDiffView extends ItemView {
 
             const showButtons =
                 this.plugin.gitManager instanceof SimpleGit &&
+                !this.indexUnmerged &&
                 (this.state.bRef === undefined || this.state.bRef === "");
 
             this.mergeView = new MergeView({
