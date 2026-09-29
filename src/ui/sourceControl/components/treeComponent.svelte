@@ -48,15 +48,17 @@
 
     function stage(event: MouseEvent, path: string) {
         event.stopPropagation();
-        plugin.promiseQueue.addTask(() => plugin.stageAll(path));
+        plugin.promiseQueue.addTask(() => plugin.gitActions.stageAll(path));
     }
     function unstage(event: MouseEvent, path: string) {
         event.stopPropagation();
-        plugin.promiseQueue.addTask(() => plugin.unstageAll(path));
+        plugin.promiseQueue.addTask(() => plugin.gitActions.unstageAll(path));
     }
     function discard(event: MouseEvent, item: TreeItem) {
         event.stopPropagation();
-        plugin.promiseQueue.addTask(() => plugin.discardAll(item.vaultPath));
+        plugin.promiseQueue.addTask(() =>
+            plugin.gitActions.discardAll(item.vaultPath)
+        );
     }
     function fold(event: MouseEvent, item: TreeItem) {
         event.stopPropagation();

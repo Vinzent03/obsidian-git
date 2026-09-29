@@ -66,7 +66,7 @@
         event.stopPropagation();
 
         view.plugin.promiseQueue.addTask(() =>
-            view.plugin.unstage(change.path, false)
+            view.plugin.gitActions.unstage(change.path, false)
         );
     }
 </script>

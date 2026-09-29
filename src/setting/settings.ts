@@ -885,7 +885,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         (await plugin.gitManager.getConfig("user.name")) ?? ""
                     );
                     cb.onChange(async (value) => {
-                        await plugin.setGitConfig(
+                        await plugin.gitActions.setGitConfig(
                             "user.name",
                             value == "" ? undefined : value
                         );
@@ -900,7 +900,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         (await plugin.gitManager.getConfig("user.email")) ?? ""
                     );
                     cb.onChange(async (value) => {
-                        await plugin.setGitConfig(
+                        await plugin.gitActions.setGitConfig(
                             "user.email",
                             value == "" ? undefined : value
                         );

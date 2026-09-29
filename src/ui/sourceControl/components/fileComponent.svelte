@@ -56,7 +56,7 @@
     function stage(event: MouseEvent) {
         event.stopPropagation();
         view.plugin.promiseQueue.addTask(() =>
-            view.plugin.stage(change.path, false)
+            view.plugin.gitActions.stage(change.path, false)
         );
     }
 
@@ -71,7 +71,9 @@
 
     function discard(event: MouseEvent) {
         event.stopPropagation();
-        view.plugin.promiseQueue.addTask(() => view.plugin.discardFile(change));
+        view.plugin.promiseQueue.addTask(() =>
+            view.plugin.gitActions.discardFile(change)
+        );
     }
 </script>
 

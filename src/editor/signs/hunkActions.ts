@@ -73,7 +73,7 @@ export class HunkActions {
         const patch =
             Hunks.createPatch(filepath, [hunk], "100644", invert).join("\n") +
             "\n";
-        await this.plugin.applyPatch(patch);
+        await this.plugin.gitActions.applyPatch(patch);
     }
 
     goToHunk(direction: "first" | "last" | "next" | "prev"): void {

@@ -7,7 +7,9 @@ export class BranchStatusBar {
     ) {
         this.statusBarEl.addClass("mod-clickable");
         this.statusBarEl.onClickEvent((_) => {
-            this.plugin.promiseQueue.addTask(() => this.plugin.switchBranch());
+            this.plugin.promiseQueue.addTask(() =>
+                this.plugin.gitActions.switchBranch()
+            );
         });
     }
 

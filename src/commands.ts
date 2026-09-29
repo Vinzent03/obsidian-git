@@ -120,20 +120,25 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "pull",
         name: "Pull",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.pullChangesFromRemote()),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.pullChangesFromRemote()
+            ),
     });
 
     plugin.addCommand({
         id: "fetch",
         name: "Fetch",
-        callback: () => plugin.promiseQueue.addTask(() => plugin.fetch()),
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.fetch()),
     });
 
     plugin.addCommand({
         id: "switch-to-remote-branch",
         name: "Switch to remote branch",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.switchRemoteBranch()),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.switchRemoteBranch()
+            ),
     });
 
     plugin.addCommand({
@@ -145,7 +150,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 return file !== null;
             } else {
                 plugin.promiseQueue.addTask(() =>
-                    plugin.addFileToGitignore(
+                    plugin.gitActions.addFileToGitignore(
                         file!.path,
                         file instanceof TFolder
                     )
@@ -160,7 +165,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit-and-sync",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commitAndSync({ fromAutoBackup: false })
+                plugin.gitActions.commitAndSync({ fromAutoBackup: false })
             ),
     });
 
@@ -169,7 +174,9 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit-and-sync and then close Obsidian",
         callback: () =>
             plugin.promiseQueue.addTask(async () => {
-                await plugin.commitAndSync({ fromAutoBackup: false });
+                await plugin.gitActions.commitAndSync({
+                    fromAutoBackup: false,
+                });
                 window.close();
             }),
     });
@@ -179,7 +186,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit-and-sync with specific message",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commitAndSync({
+                plugin.gitActions.commitAndSync({
                     fromAutoBackup: false,
                     requestCustomMessage: true,
                 })
@@ -191,7 +198,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit all changes",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({ fromAuto: false, mode: "all" })
+                plugin.gitActions.commit({ fromAuto: false, mode: "all" })
             ),
     });
 
@@ -200,7 +207,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit all changes with specific message",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
                     mode: "all",
@@ -213,7 +220,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: false,
                     mode: "smart",
@@ -226,7 +233,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit staged",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: false,
                     mode: "staged",
@@ -239,7 +246,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Amend staged",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
                     mode: "staged",
@@ -253,7 +260,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit with specific message",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
                     mode: "smart",
@@ -266,7 +273,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Commit staged with specific message",
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
                     mode: "staged",
@@ -277,7 +284,8 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "push2",
         name: "Push",
-        callback: () => plugin.promiseQueue.addTask(() => plugin.push()),
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.push()),
     });
 
     plugin.addCommand({
@@ -288,7 +296,9 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                plugin.promiseQueue.addTask(() => plugin.stageFile(file!));
+                plugin.promiseQueue.addTask(() =>
+                    plugin.gitActions.stageFile(file!)
+                );
                 return true;
             }
         },
@@ -302,7 +312,9 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                plugin.promiseQueue.addTask(() => plugin.unstageFile(file!));
+                plugin.promiseQueue.addTask(() =>
+                    plugin.gitActions.unstageFile(file!)
+                );
                 return true;
             }
         },
@@ -311,75 +323,83 @@ export function addCommmands(plugin: ObsidianGit) {
     plugin.addCommand({
         id: "edit-remotes",
         name: "Edit remotes",
-        callback: () => plugin.promiseQueue.addTask(() => plugin.editRemotes()),
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.editRemotes()),
     });
 
     plugin.addCommand({
         id: "remove-remote",
         name: "Remove remote",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.removeRemote()),
+            plugin.promiseQueue.addTask(() => plugin.gitActions.removeRemote()),
     });
 
     plugin.addCommand({
         id: "set-upstream-branch",
         name: "Set upstream branch",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.setUpstreamBranch()),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.setUpstreamBranch()
+            ),
     });
 
     plugin.addCommand({
         id: "delete-repo",
         name: "CAUTION: Delete repository",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.deleteRepository()),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.deleteRepository()
+            ),
     });
 
     plugin.addCommand({
         id: "init-repo",
         name: "Initialize a new repo",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.createNewRepo()),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.createNewRepo()
+            ),
     });
 
     plugin.addCommand({
         id: "clone-repo",
         name: "Clone an existing remote repo",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.cloneNewRepo()),
+            plugin.promiseQueue.addTask(() => plugin.gitActions.cloneNewRepo()),
     });
 
     plugin.addCommand({
         id: "list-changed-files",
         name: "List changed files",
-        callback: () => plugin.listChangedFiles(),
+        callback: () => plugin.gitActions.listChangedFiles(),
     });
 
     plugin.addCommand({
         id: "switch-branch",
         name: "Switch branch",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.switchBranch()),
+            plugin.promiseQueue.addTask(() => plugin.gitActions.switchBranch()),
     });
 
     plugin.addCommand({
         id: "create-branch",
         name: "Create new branch",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.createBranch()),
+            plugin.promiseQueue.addTask(() => plugin.gitActions.createBranch()),
     });
 
     plugin.addCommand({
         id: "delete-branch",
         name: "Delete branch",
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.deleteBranch()),
+            plugin.promiseQueue.addTask(() => plugin.gitActions.deleteBranch()),
     });
 
     plugin.addCommand({
         id: "discard-all",
         name: "CAUTION: Discard all changes",
-        callback: () => plugin.promiseQueue.addTask(() => plugin.discardAll()),
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.discardAll()),
     });
 
     plugin.addCommand({

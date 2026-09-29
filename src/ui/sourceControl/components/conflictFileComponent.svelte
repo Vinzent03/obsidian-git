@@ -38,7 +38,9 @@
 
     function resolve(event: MouseEvent) {
         event.stopPropagation();
-        view.plugin.promiseQueue.addTask(() => view.plugin.stage(path, false));
+        view.plugin.promiseQueue.addTask(() =>
+            view.plugin.gitActions.stage(path, false)
+        );
     }
 </script>
 

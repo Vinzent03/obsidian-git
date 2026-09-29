@@ -174,7 +174,7 @@
         loading = true;
         if (status) {
             plugin.promiseQueue.addTask(() =>
-                plugin
+                plugin.gitActions
                     .commit({ fromAuto: false, commitMessage, mode })
                     .then(() => (commitMessage = plugin.settings.commitMessage))
                     .finally(triggerRefresh)
@@ -186,7 +186,7 @@
         if (!canCommit("staged")) return;
         loading = true;
         plugin.promiseQueue.addTask(() =>
-            plugin
+            plugin.gitActions
                 .commit({
                     fromAuto: false,
                     commitMessage,
@@ -203,7 +203,7 @@
         loading = true;
         if (status) {
             plugin.promiseQueue.addTask(() =>
-                plugin
+                plugin.gitActions
                     .commitAndSync({
                         fromAutoBackup: false,
                         commitMessage,
@@ -354,30 +354,30 @@
     function stageAll(event: MouseEvent) {
         event.stopPropagation();
         loading = true;
-        plugin.promiseQueue.addTask(() => plugin.stageAll());
+        plugin.promiseQueue.addTask(() => plugin.gitActions.stageAll());
     }
 
     function unstageAll(event: MouseEvent) {
         event.stopPropagation();
         loading = true;
-        plugin.promiseQueue.addTask(() => plugin.unstageAll());
+        plugin.promiseQueue.addTask(() => plugin.gitActions.unstageAll());
     }
 
     function push() {
         loading = true;
         plugin.promiseQueue.addTask(() =>
-            plugin.push().finally(triggerRefresh)
+            plugin.gitActions.push().finally(triggerRefresh)
         );
     }
     function pull() {
         loading = true;
         plugin.promiseQueue.addTask(() =>
-            plugin.pullChangesFromRemote().finally(triggerRefresh)
+            plugin.gitActions.pullChangesFromRemote().finally(triggerRefresh)
         );
     }
     function discard(event: Event) {
         event.stopPropagation();
-        plugin.promiseQueue.addTask(() => plugin.discardAll());
+        plugin.promiseQueue.addTask(() => plugin.gitActions.discardAll());
     }
 
     let rows = $derived((commitMessage.match(/\n/g) || []).length + 1 || 1);

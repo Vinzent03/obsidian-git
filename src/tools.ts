@@ -136,7 +136,7 @@ export default class Tools {
         if (command === undefined) return;
 
         this.plugin.promiseQueue.addTask(() =>
-            this.plugin.runRawCommand(command)
+            this.plugin.gitActions.runRawCommand(command)
         );
     }
 }
