@@ -254,6 +254,14 @@ export class StatusBar {
     }
 
     private displayFromNow(): void {
+        if (!this.plugin.gitReady) {
+            this.statusBarEl.ariaLabel = "Git is not ready";
+            setIcon(this.iconEl, "alert-triangle");
+            this.textEl.empty();
+            this.statusBarEl.addClass(this.base + "failed-init");
+            return;
+        }
+
         const timestamp = this.lastCommitTimestamp;
         const offlineMode = this.plugin.state.offlineMode;
         if (timestamp) {

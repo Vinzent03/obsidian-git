@@ -27,6 +27,8 @@
 
     let { plugin, view }: Props = $props();
     let loading: boolean = $state(false);
+    let repositoryMissing = $state(false);
+    let setupInProgress = $state(false);
     let mergeInProgress = $state(false);
     let status: Status | undefined = $state();
     let lastPulledFiles: FileStatusResult[] = $state([]);
@@ -76,6 +78,7 @@
 
     let showTree = $derived(plugin.settings.treeStructure);
     onMount(() => {
+        repositoryMissing = plugin.repositoryMissing;
         view.registerEvent(
             view.app.workspace.on(
                 "obsidian-git:loading-status",
@@ -86,6 +89,15 @@
             view.app.workspace.on(
                 "obsidian-git:status-changed",
                 () => void refresh().catch(console.error)
+            )
+        );
+        view.registerEvent(
+            view.app.workspace.on(
+                "obsidian-git:repository-state-changed",
+                () => {
+                    repositoryMissing = plugin.repositoryMissing;
+                    void refresh().catch(console.error);
+                }
             )
         );
         const modifyEvent = view.app.vault.on("modify", (file) => {
@@ -261,6 +273,7 @@
     async function refresh(): Promise<void> {
         if (!plugin.gitReady) {
             status = undefined;
+            loading = false;
             return;
         }
         unPushedCommits = await plugin.gitManager.getUnpushedCommits();
@@ -366,6 +379,14 @@
         view.app.workspace.trigger("obsidian-git:refresh");
     }
 
+    function runSetupAction(action: () => Promise<unknown>) {
+        if (setupInProgress) return;
+        setupInProgress = true;
+        plugin.promiseQueue.addTask(action, () => {
+            setupInProgress = false;
+        });
+    }
+
     function stageAll(event: MouseEvent) {
         event.stopPropagation();
         loading = true;
@@ -400,7 +421,31 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<main data-type={SOURCE_CONTROL_VIEW_CONFIG.type} class="git-view">
+<main
+    data-type={SOURCE_CONTROL_VIEW_CONFIG.type}
+    class="git-view"
+    class:repository-missing={repositoryMissing}
+>
+    {#if repositoryMissing}
+        <div class="repository-notice">
+            <p>No Git repository found.</p>
+            <div class="repository-actions">
+                <button
+                    class="mod-cta"
+                    disabled={setupInProgress}
+                    onclick={() =>
+                        runSetupAction(() => plugin.gitActions.createNewRepo())}
+                    >Initialize repository</button
+                >
+                <button
+                    disabled={setupInProgress}
+                    onclick={() =>
+                        runSetupAction(() => plugin.gitActions.cloneNewRepo())}
+                    >Clone repository</button
+                >
+            </div>
+        </div>
+    {/if}
     <div class="nav-header">
         <div class="nav-buttons-container">
             <div class="commit-action-group">
@@ -889,6 +934,37 @@
 </main>
 
 <style lang="scss">
+    .repository-missing {
+        > .nav-header,
+        > .git-commit-msg,
+        > .nav-files-container {
+            display: none;
+        }
+    }
+
+    .repository-notice {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--size-4-3);
+        padding: var(--size-4-6);
+        text-align: center;
+
+        p {
+            margin: 0;
+            color: var(--text-muted);
+        }
+    }
+
+    .repository-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--size-4-2);
+    }
+
     .commit-action-group {
         display: inline-flex;
         flex: 0 0 auto;

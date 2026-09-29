@@ -617,6 +617,14 @@ declare module "obsidian" {
             callback: (status: Status) => void,
             ctx?: unknown
         ): EventRef;
+        /**
+         * Emitted when the repository changes from being available or not.
+         */
+        on(
+            name: "obsidian-git:repository-state-changed",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
 
         on(
             name: "obsidian-git:menu",
@@ -634,6 +642,7 @@ declare module "obsidian" {
         trigger(name: "obsidian-git:loading-status"): void;
         trigger(name: "obsidian-git:head-change"): void;
         trigger(name: "obsidian-git:status-changed", status: Status): void;
+        trigger(name: "obsidian-git:repository-state-changed"): void;
         trigger(
             name: "obsidian-git:menu",
             menu: Menu,

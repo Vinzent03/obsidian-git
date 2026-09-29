@@ -66,6 +66,12 @@ export default class ObsidianGit extends Plugin {
     };
     lastPulledFiles!: FileStatusResult[];
     gitReady = false;
+    /**
+     * Whether the Git repository is missing.
+     *
+     * This is used to show a notice in the source control view
+     */
+    repositoryMissing = false;
     promiseQueue: PromiseQueue = new PromiseQueue();
 
     /**
@@ -466,6 +472,8 @@ export default class ObsidianGit extends Plugin {
 
     unloadPlugin() {
         this.gitReady = false;
+        this.repositoryMissing = false;
+        this.app.workspace.trigger("obsidian-git:repository-state-changed");
 
         this.editorIntegration.onUnloadPlugin();
         this.automaticsManager.unload();
@@ -515,6 +523,9 @@ export default class ObsidianGit extends Plugin {
             // avoid any issues if `init` is called directly.
             return;
         }
+        this.gitReady = false;
+        this.repositoryMissing = false;
+        this.app.workspace.trigger("obsidian-git:repository-state-changed");
         if (this.settings.showStatusBar && !this.statusBar) {
             const statusBarEl = this.addStatusBarItem();
             this.statusBar = new StatusBar(statusBarEl, this);
@@ -532,6 +543,9 @@ export default class ObsidianGit extends Plugin {
             }
 
             const result = await this.gitManager.checkRequirements();
+            this.repositoryMissing = result === "missing-repo";
+            if (result === "valid") this.gitReady = true;
+            this.app.workspace.trigger("obsidian-git:repository-state-changed");
             const pausedAutomatics = this.localStorage.getPausedAutomatics();
             switch (result) {
                 case "missing-git":
@@ -541,13 +555,11 @@ export default class ObsidianGit extends Plugin {
                     break;
                 case "missing-repo":
                     new Notice(
-                        "Can't find a valid git repository. Please create one via the given command or clone an existing repo.",
+                        "Cannot find a Git repository. Please create one via the given command, clone an existing repo or configure repo location.",
                         10000
                     );
                     break;
                 case "valid":
-                    this.gitReady = true;
-
                     if (
                         Platform.isDesktop &&
                         this.settings.showBranchStatusBar &&
