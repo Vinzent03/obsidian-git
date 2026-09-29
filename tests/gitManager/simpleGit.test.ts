@@ -48,6 +48,35 @@ async function createRemoteCommit(repo: {
     await remoteGit.push(["--quiet"]);
 }
 
+async function createPullConflict(repo: {
+    dir: string;
+    remotePath: string;
+    writeAndCommit(
+        file: string,
+        content: string,
+        message: string
+    ): Promise<void>;
+}): Promise<void> {
+    const remoteWorktreePath = path.join(repo.dir, "conflict-worktree");
+    await simpleGit(repo.dir).raw([
+        "clone",
+        repo.remotePath,
+        remoteWorktreePath,
+    ]);
+    const remoteGit = simpleGit({
+        baseDir: remoteWorktreePath,
+        config: ["core.quotepath=off"],
+    });
+    await remoteGit.addConfig("user.email", "test@example.com");
+    await remoteGit.addConfig("user.name", "Test User");
+
+    await repo.writeAndCommit("note.md", "local\n", "local conflict");
+    writeFileSync(path.join(remoteWorktreePath, "note.md"), "remote\n");
+    await remoteGit.add("note.md");
+    await remoteGit.commit("remote conflict");
+    await remoteGit.push(["--quiet"]);
+}
+
 describe("SimpleGit.commit", () => {
     it("returns the change count and triggers a head-change event", async () => {
         const { repo, plugin, manager } = withCleanup(
@@ -80,13 +109,16 @@ describe("SimpleGit.pull", () => {
 
         const changes = await manager.pull();
 
-        expect(changes).toEqual([
-            {
-                path: "remote.md",
-                workingDir: "P",
-                vaultPath: "remote.md",
-            },
-        ]);
+        expect(changes).toEqual({
+            status: "updated",
+            files: [
+                {
+                    path: "remote.md",
+                    workingDir: "P",
+                    vaultPath: "remote.md",
+                },
+            ],
+        });
         expect(await repo.headMessage()).toBe("remote commit");
         expect(await repo.show("HEAD:remote.md")).toBe("remote");
         expect(await repo.statusPorcelain()).toBe("");
@@ -99,7 +131,7 @@ describe("SimpleGit.pull", () => {
         );
     });
 
-    it("returns an empty change list when the branch is already up to date", async () => {
+    it("returns an explicit result when the branch is already up to date", async () => {
         const { plugin, manager } = withCleanup(
             await createSimpleGitTestContext()
         );
@@ -108,12 +140,50 @@ describe("SimpleGit.pull", () => {
 
         const changes = await manager.pull();
 
-        expect(changes).toEqual([]);
+        expect(changes).toEqual({ status: "up-to-date" });
         expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
         expect(plugin.setPluginState.mock.calls).toEqual([
             [{ operation: GitOperation.pull }],
             [{ operation: GitOperation.idle }],
         ]);
+    });
+
+    it("returns up-to-date when the local branch is ahead of upstream", async () => {
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.appendAndCommit("note.md", "local\n", "local commit");
+        const headBefore = await repo.head();
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.mergeStrategy = "none";
+
+        const changes = await manager.pull();
+
+        expect(changes).toEqual({ status: "up-to-date" });
+        expect(await repo.head()).toBe(headBefore);
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalledWith(
+            "obsidian-git:head-change"
+        );
+    });
+
+    it("throws a shared conflict error without displaying it", async () => {
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await createPullConflict(repo);
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.mergeStrategy = "none";
+
+        await expect(manager.pull()).rejects.toMatchObject({
+            name: "GitConflictError",
+            files: ["note.md"],
+        });
+
+        expect((await manager.status()).conflicted).toEqual(["note.md"]);
+        expect(plugin.displayError).not.toHaveBeenCalled();
+        expect(plugin.setPluginState).toHaveBeenLastCalledWith({
+            operation: GitOperation.idle,
+        });
     });
 
     it("autostashes local changes when rebasing with autostash enabled", async () => {
@@ -129,13 +199,16 @@ describe("SimpleGit.pull", () => {
 
         const changes = await manager.pull();
 
-        expect(changes).toEqual([
-            {
-                path: "remote.md",
-                workingDir: "P",
-                vaultPath: "remote.md",
-            },
-        ]);
+        expect(changes).toEqual({
+            status: "updated",
+            files: [
+                {
+                    path: "remote.md",
+                    workingDir: "P",
+                    vaultPath: "remote.md",
+                },
+            ],
+        });
         expect(await repo.show("HEAD:remote.md")).toBe("remote");
         expect(readFileSync(path.join(repo.repoPath, "note.md"), "utf8")).toBe(
             "local change\n"
@@ -155,16 +228,12 @@ describe("SimpleGit.pull", () => {
         plugin.settings.mergeStrategy = "none";
         plugin.settings.rebaseAutoStash = "disabled";
 
-        const changes = await manager.pull();
-
-        expect(changes).toBeUndefined();
+        await expect(manager.pull()).rejects.toThrow();
         expect(await repo.head()).toBe(headBefore);
         expect(readFileSync(path.join(repo.repoPath, "note.md"), "utf8")).toBe(
             "local change\n"
         );
-        expect(plugin.displayError).toHaveBeenCalledWith(
-            expect.stringContaining("Pull failed (rebase)")
-        );
+        expect(plugin.displayError).not.toHaveBeenCalled();
     });
 
     it("uses the Git autostash configuration when requested", async () => {
@@ -180,7 +249,10 @@ describe("SimpleGit.pull", () => {
 
         const changes = await manager.pull();
 
-        expect(changes).toHaveLength(1);
+        expect(changes).toMatchObject({
+            status: "updated",
+            files: [{ path: "remote.md" }],
+        });
         expect(await repo.show("HEAD:remote.md")).toBe("remote");
         expect(readFileSync(path.join(repo.repoPath, "note.md"), "utf8")).toBe(
             "local change\n"
@@ -211,13 +283,16 @@ describe("SimpleGit.pull", () => {
 
         const changes = await manager.pull();
 
-        expect(changes).toEqual([
-            {
-                path: "remote.md",
-                workingDir: "P",
-                vaultPath: "remote.md",
-            },
-        ]);
+        expect(changes).toEqual({
+            status: "updated",
+            files: [
+                {
+                    path: "remote.md",
+                    workingDir: "P",
+                    vaultPath: "remote.md",
+                },
+            ],
+        });
         expect(await repo.headMessage()).toBe("remote commit");
         expect(await repo.show("HEAD:remote.md")).toBe("remote");
         expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
@@ -239,12 +314,10 @@ describe("SimpleGit.pull", () => {
             await createSimpleGitTestContext({ gitClient: git })
         );
 
-        const changes = await manager.pull();
-
-        expect(changes).toBeUndefined();
-        expect(plugin.displayError).toHaveBeenCalledWith(
+        await expect(manager.pull()).rejects.toThrow(
             "No current branch found. Cannot pull."
         );
+        expect(plugin.displayError).not.toHaveBeenCalled();
         expect(fetch).not.toHaveBeenCalled();
         expect(plugin.setPluginState.mock.calls).toEqual([
             [{ operation: GitOperation.pull }],
@@ -262,7 +335,10 @@ describe("SimpleGit.pull", () => {
 
         const changes = await manager.pull();
 
-        expect(changes).toBeUndefined();
+        expect(changes).toEqual({
+            status: "skipped",
+            reason: "no-upstream",
+        });
         expect(await repo.head()).toBe(headBefore);
         expect(plugin.log).toHaveBeenCalledWith(
             "No tracking branch found. Ignoring pull of main repo and updated submodules only."
@@ -279,7 +355,10 @@ describe("SimpleGit.pull", () => {
 
         const changes = await manager.pull();
 
-        expect(changes).toBeUndefined();
+        expect(changes).toEqual({
+            status: "skipped",
+            reason: "no-upstream",
+        });
         expect(await repo.head()).toBe(headBefore);
         expect(plugin.log).toHaveBeenCalledWith(
             "No tracking branch found. Ignoring pull."

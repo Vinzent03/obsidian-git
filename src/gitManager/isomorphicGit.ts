@@ -19,11 +19,12 @@ import type {
     BranchInfo,
     FileStatusResult,
     LogEntry,
+    PullResult,
     Status,
     UnstagedFile,
     WalkDifference,
 } from "../types";
-import { GitOperation, type DiffFile } from "../types";
+import { GitConflictError, GitOperation, type DiffFile } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
@@ -225,7 +226,6 @@ export class IsomorphicGit extends GitManager {
         } catch (error) {
             window.clearTimeout(timeout);
             notice?.hide();
-            this.plugin.displayError(error);
             throw error;
         }
     }
@@ -241,15 +241,9 @@ export class IsomorphicGit extends GitManager {
         unstagedFiles?: UnstagedFile[];
         amend?: boolean;
     }): Promise<number> {
-        try {
-            await this.checkAuthorInfo();
-
-            await this.stageAll({ status, unstagedFiles });
-            return this.commit({ message, amend });
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        await this.checkAuthorInfo();
+        await this.stageAll({ status, unstagedFiles });
+        return this.commit({ message, amend });
     }
 
     async commit({
@@ -284,9 +278,8 @@ export class IsomorphicGit extends GitManager {
                 return committedFiles;
             } catch (error) {
                 if (error instanceof Errors.UnmergedPathsError) {
-                    await this.plugin.updateCachedStatus();
+                    throw new GitConflictError(error.data.filepaths, error);
                 }
-                this.plugin.displayError(error);
                 throw error;
             }
         });
@@ -325,27 +318,22 @@ export class IsomorphicGit extends GitManager {
         status?: Status;
         unstagedFiles?: UnstagedFile[];
     }): Promise<void> {
-        try {
-            if (status) {
-                await this.stageFiles(
-                    status.changed.map((file) => ({
-                        path: file.path,
-                        deleted: file.workingDir === "D",
-                    }))
-                );
-            } else {
-                const filesToStage =
-                    unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
-                await this.stageFiles(
-                    filesToStage.map(({ path, type }) => ({
-                        path,
-                        deleted: type === "D",
-                    }))
-                );
-            }
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
+        if (status) {
+            await this.stageFiles(
+                status.changed.map((file) => ({
+                    path: file.path,
+                    deleted: file.workingDir === "D",
+                }))
+            );
+        } else {
+            const filesToStage =
+                unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
+            await this.stageFiles(
+                filesToStage.map(({ path, type }) => ({
+                    path,
+                    deleted: type === "D",
+                }))
+            );
         }
     }
 
@@ -514,8 +502,7 @@ export class IsomorphicGit extends GitManager {
         return this.wrapFS(git.resolveRef({ ...this.getRepo(), ref }));
     }
 
-    async pull(): Promise<FileStatusResult[] | undefined> {
-        const progressNotice = this.showNotice("Initializing pull");
+    async pull(): Promise<PullResult> {
         return this.withGitOperation(GitOperation.pull, async () => {
             let mergeState:
                 | { ours: string; theirs: string; message: string }
@@ -528,19 +515,14 @@ export class IsomorphicGit extends GitManager {
                 }
                 const branchInfo = await this.branchInfo();
                 if (!branchInfo.current) {
-                    progressNotice?.hide();
-                    this.plugin.displayError(
-                        "No current branch found. Cannot pull."
-                    );
-                    return undefined;
+                    throw new Error("No current branch found. Cannot pull.");
                 }
 
                 const localCommit = await this.resolveRef(branchInfo.current);
 
                 if (!branchInfo.tracking) {
-                    progressNotice?.hide();
                     this.plugin.log("No tracking branch found. Ignoring pull.");
-                    return undefined;
+                    return { status: "skipped", reason: "no-upstream" };
                 }
 
                 await this.fetch();
@@ -605,46 +587,36 @@ export class IsomorphicGit extends GitManager {
                         git.checkout({
                             ...this.getRepo(),
                             ref: branchInfo.current,
-                            onProgress: (progress) => {
-                                if (progressNotice !== undefined) {
-                                    progressNotice.setMessage(
-                                        this.getProgressText(
-                                            "Checkout",
-                                            progress
-                                        )
-                                    );
-                                }
-                            },
                             remote: branchInfo.remote,
                         })
                     );
                 }
-                progressNotice?.hide();
-
                 const upstreamCommit = await this.resolveRef("HEAD");
                 const changedFiles = await this.getFileChangesCount(
                     localCommit,
                     upstreamCommit
                 );
 
-                this.showNotice("Finished pull", false);
+                if (mergeRes.alreadyMerged) {
+                    return { status: "up-to-date" };
+                }
 
-                return changedFiles.map<FileStatusResult>((file) => ({
-                    path: file.path,
-                    workingDir: "P",
-                    index: "P",
-                    vaultPath: this.getRelativeVaultPath(file.path),
-                }));
+                return {
+                    status: "updated",
+                    files: changedFiles.map<FileStatusResult>((file) => ({
+                        path: file.path,
+                        workingDir: "P",
+                        index: "P",
+                        vaultPath: this.getRelativeVaultPath(file.path),
+                    })),
+                };
             } catch (error) {
-                progressNotice?.hide();
                 if (error instanceof Errors.MergeConflictError) {
                     if (mergeState !== undefined) {
                         await this.writeMergeState(mergeState);
                     }
-                    await this.plugin.updateCachedStatus();
+                    throw new GitConflictError(error.data.filepaths, error);
                 }
-
-                this.plugin.displayError(error);
                 throw error;
             }
         });
@@ -749,36 +721,28 @@ export class IsomorphicGit extends GitManager {
     }
 
     async branchInfo(): Promise<BranchInfo & { remote: string }> {
-        try {
-            const current = await git.currentBranch(this.getRepo());
+        const current = await git.currentBranch(this.getRepo());
 
-            const branches = await git.listBranches(this.getRepo());
+        const branches = await git.listBranches(this.getRepo());
 
-            const remote =
-                (current &&
-                    (await this.getConfig(`branch.${current}.remote`))) ??
-                "origin";
+        const remote =
+            (current && (await this.getConfig(`branch.${current}.remote`))) ??
+            "origin";
 
-            const trackingBranch = current
-                ? (await this.getConfig(`branch.${current}.merge`))?.split(
-                      "refs/heads"
-                  )[1]
-                : undefined;
+        const trackingBranch = current
+            ? (await this.getConfig(`branch.${current}.merge`))?.split(
+                  "refs/heads"
+              )[1]
+            : undefined;
 
-            const tracking = trackingBranch
-                ? remote + trackingBranch
-                : undefined;
+        const tracking = trackingBranch ? remote + trackingBranch : undefined;
 
-            return {
-                current: current || undefined,
-                tracking: tracking,
-                branches: branches,
-                remote: remote,
-            };
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        return {
+            current: current || undefined,
+            tracking: tracking,
+            branches: branches,
+            remote: remote,
+        };
     }
 
     async getCurrentRemote(): Promise<string> {
@@ -885,17 +849,12 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getConfig(path: string): Promise<string> {
-        try {
-            return this.wrapFS(
-                git.getConfig({
-                    ...this.getRepo(),
-                    path: path,
-                }) as Promise<string>
-            );
-        } catch (error) {
-            this.plugin.displayError(error);
-            throw error;
-        }
+        return this.wrapFS(
+            git.getConfig({
+                ...this.getRepo(),
+                path: path,
+            }) as Promise<string>
+        );
     }
 
     async fetch(remote?: string): Promise<void> {
@@ -917,7 +876,6 @@ export class IsomorphicGit extends GitManager {
             await this.wrapFS(git.fetch(args));
             progressNotice?.hide();
         } catch (error) {
-            this.plugin.displayError(error);
             progressNotice?.hide();
             throw error;
         }
@@ -1350,7 +1308,6 @@ export class IsomorphicGit extends GitManager {
         } catch (error) {
             window.clearTimeout(timeout);
             notice?.hide();
-            this.plugin.displayError(error);
             throw error;
         }
     }

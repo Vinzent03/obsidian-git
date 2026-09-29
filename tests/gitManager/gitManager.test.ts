@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
-import type { FileStatusResult } from "../../src/types";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { GitConflictError, type FileStatusResult } from "../../src/types";
 import {
     gitManagerBackends,
     type GitManagerTestHarness,
@@ -159,6 +159,24 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect(await repo.statusPorcelain()).toBe("");
     });
 
+    it("amends while staging all changes", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        const headBefore = await repo.head();
+        repo.write("note.md", "base\namended all\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "amended all",
+            amend: true,
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.head()).not.toBe(headBefore);
+        expect(await repo.headMessage()).toBe("amended all");
+        expect(await repo.show("HEAD:note.md")).toBe("base\namended all");
+        expect(await repo.statusPorcelain()).toBe("");
+    });
+
     it("stages and commits tracked, untracked, and deleted files", async () => {
         context = await backend.create();
         const { manager, repo } = context;
@@ -194,10 +212,10 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect(branchInfo.current).toBeUndefined();
         expect(branchInfo.tracking).toBeUndefined();
         await expect(manager.canPush()).resolves.toBe(false);
-        await expect(manager.pull()).resolves.toBeUndefined();
-        expect(plugin.displayError).toHaveBeenCalledWith(
+        await expect(manager.pull()).rejects.toThrow(
             "No current branch found. Cannot pull."
         );
+        expect(plugin.displayError).not.toHaveBeenCalled();
         await expect(manager.push()).resolves.toBeUndefined();
         expect(plugin.displayError).toHaveBeenCalledWith(
             "No current branch found. Cannot push."
@@ -214,10 +232,22 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect(branchInfo.current).toBe("local-only");
         expect(branchInfo.tracking).toBeUndefined();
         await expect(manager.canPush()).resolves.toBe(false);
-        await expect(manager.pull()).resolves.toBeUndefined();
+        await expect(manager.pull()).resolves.toEqual({
+            status: "skipped",
+            reason: "no-upstream",
+        });
         expect(plugin.log).toHaveBeenCalledWith(
             "No tracking branch found. Ignoring pull."
         );
+    });
+
+    it("returns an explicit result when a pull is up to date", async () => {
+        context = await backend.create();
+        vi.spyOn(context.manager, "fetch").mockResolvedValue();
+
+        await expect(context.manager.pull()).resolves.toEqual({
+            status: "up-to-date",
+        });
     });
 
     it("removes a conflict after staging while keeping the merge active", async () => {
@@ -253,7 +283,9 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         repo.write("note.md", "resolved\n");
         await manager.stage("note.md", false);
 
-        await manager.commit({ message: "resolve merge" });
+        const committedFiles = await manager.commit({
+            message: "resolve merge",
+        });
 
         const [commit, ...parents] = (
             await repo.raw(["rev-list", "--parents", "-n", "1", "HEAD"])
@@ -263,5 +295,31 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect(await repo.headMessage()).toBe("resolve merge");
         expect(await repo.show("HEAD:note.md")).toBe("resolved");
         expect(await manager.isMergeInProgress()).toBe(false);
+        expect(committedFiles).toBe(1);
+    });
+
+    it("counts merge changes when committing all files", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, repo } = context;
+        repo.write("note.md", "resolved\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "resolve merge",
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.show("HEAD:note.md")).toBe("resolved");
+        expect(await manager.isMergeInProgress()).toBe(false);
+    });
+
+    it("normalizes an unmerged-paths commit failure without displaying it", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, plugin } = context;
+
+        await expect(
+            manager.commit({ message: "still conflicted" })
+        ).rejects.toBeInstanceOf(GitConflictError);
+
+        expect(plugin.displayError).not.toHaveBeenCalled();
     });
 });

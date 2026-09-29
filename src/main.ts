@@ -34,15 +34,23 @@ import { SimpleGit } from "./gitManager/simpleGit";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
 import Tools from "./tools";
 import type {
+    CommitAndSyncResult,
     CommitMode,
+    CommitResult,
     ElectronWindow,
     FileStatusResult,
     ObsidianGitSettings,
     PluginState,
+    PullResult,
     Status,
     UnstagedFile,
 } from "./types";
-import { GitOperation, mergeSettingsByPriority, NoNetworkError } from "./types";
+import {
+    GitConflictError,
+    GitOperation,
+    mergeSettingsByPriority,
+    NoNetworkError,
+} from "./types";
 import DiffView from "./ui/diff/diffView";
 import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
@@ -62,6 +70,22 @@ import {
 import { DiscardModal, type DiscardResult } from "./ui/modals/discardModal";
 import { HunkActions } from "./editor/signs/hunkActions";
 import { EditorIntegration } from "./editor/editorIntegration";
+import { runGitAction, type GitActionResult } from "./gitAction";
+
+type CommitOptions = {
+    fromAuto: boolean;
+    requestCustomMessage?: boolean;
+    mode?: CommitMode;
+    commitMessage?: string;
+    amend?: boolean;
+};
+
+type CommitAndSyncOptions = {
+    fromAutoBackup: boolean;
+    requestCustomMessage?: boolean;
+    commitMessage?: string;
+    mode?: CommitMode;
+};
 
 export default class ObsidianGit extends Plugin {
     gitManager!: GitManager;
@@ -106,9 +130,6 @@ export default class ObsidianGit extends Plugin {
         this.app.workspace.trigger("obsidian-git:loading-status");
         this.cachedStatus = await this.gitManager.status();
         const newMergeInProgress = await this.gitManager.isMergeInProgress();
-        if (newMergeInProgress && !this.state.mergeInProgress) {
-            this.handleConflict();
-        }
         this.setPluginState({
             mergeInProgress: newMergeInProgress,
         });
@@ -773,26 +794,43 @@ export default class ObsidianGit extends Plugin {
     async pullChangesFromRemote(): Promise<void> {
         if (!(await this.isAllInitialized())) return;
 
-        const filesUpdated = await this.pull();
-        if (filesUpdated === false) {
+        const actionResult = await this.pull();
+        if (actionResult.status !== "success") {
             return;
         }
-        if (!filesUpdated) {
-            this.displayMessage("Pull: Everything is up-to-date");
+        const pullResult = actionResult.value;
+        if (pullResult.status === "skipped") {
+            return;
         }
-
-        if (this.gitManager instanceof SimpleGit) {
-            const status = await this.updateCachedStatus();
-            if (status.conflicted.length > 0) {
-                this.displayError(
-                    `You have conflicts in ${status.conflicted.length} ${
-                        status.conflicted.length == 1 ? "file" : "files"
-                    }`
-                );
-            }
-        }
-
+        this.reportPullResult(pullResult);
         this.app.workspace.trigger("obsidian-git:refresh");
+    }
+
+    private reportPullResult(result: PullResult): void {
+        switch (result.status) {
+            case "updated":
+                this.displayMessage(
+                    `Pulled ${result.files.length} ${
+                        result.files.length == 1 ? "file" : "files"
+                    } from remote`
+                );
+                this.lastPulledFiles = result.files;
+                return;
+            case "up-to-date":
+                this.displayMessage("Pull: Everything is up-to-date");
+                return;
+            case "skipped": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "no-upstream":
+                        return;
+                    default:
+                        return assertNever(reason);
+                }
+            }
+            default:
+                return assertNever(result);
+        }
     }
 
     private resolveCommitMode(
@@ -805,276 +843,353 @@ export default class ObsidianGit extends Plugin {
         return this.settings.autoStageOnEmptyIndex ? "all" : "nothing";
     }
 
-    async commitAndSync({
+    async commitAndSync(
+        options: CommitAndSyncOptions
+    ): Promise<GitActionResult<CommitAndSyncResult>> {
+        return runGitAction<CommitAndSyncResult>(this, async () => {
+            if (!(await this.isAllInitialized())) {
+                return {
+                    status: "skipped",
+                    reason: "not-ready",
+                };
+            }
+            return this.performCommitAndSync(options);
+        });
+    }
+
+    private async performCommitAndSync({
         fromAutoBackup,
         requestCustomMessage = false,
         commitMessage,
         mode = "all",
-    }: {
-        fromAutoBackup: boolean;
-        requestCustomMessage?: boolean;
-        commitMessage?: string;
-        mode?: CommitMode;
-    }): Promise<void> {
-        if (!(await this.isAllInitialized())) return;
-
+    }: CommitAndSyncOptions): Promise<CommitAndSyncResult> {
         if (
             this.settings.syncMethod == "reset" &&
             this.settings.pullBeforePush
         ) {
-            await this.pull();
+            this.reportPullResult(await this.performPull());
         }
 
-        const commitSuccessful = await this.commit({
+        const commitResult = await this.performCommit({
             fromAuto: fromAutoBackup,
             requestCustomMessage,
             commitMessage,
             mode,
         });
-        if (!commitSuccessful) {
-            return;
+        this.reportCommitResult(commitResult);
+        switch (commitResult.status) {
+            case "committed":
+            case "nothing-to-commit":
+                break;
+            case "skipped":
+                return {
+                    status: "skipped",
+                    reason: "commit-skipped",
+                    commit: commitResult,
+                };
+            default:
+                return assertNever(commitResult);
         }
 
         if (
             this.settings.syncMethod != "reset" &&
             this.settings.pullBeforePush
         ) {
-            await this.pull();
+            this.reportPullResult(await this.performPull());
         }
 
-        if (!this.settings.disablePush) {
-            // Prevent trying to push every time. Only if unpushed commits are present
-            if (
-                (await this.isPushRemoteSet()) &&
-                (await this.gitManager.canPush())
-            ) {
-                await this.push();
-            } else {
-                this.displayMessage("No commits to push");
-            }
+        if (this.settings.disablePush) {
+            return {
+                status: "commit-only",
+                reason: "push-disabled",
+                commit: commitResult,
+            };
         }
+
+        if (!(await this.isPushRemoteSet())) {
+            return {
+                status: "skipped",
+                reason: "push-skipped",
+                commit: commitResult,
+            };
+        }
+
+        // Prevent trying to push every time. Only if unpushed commits are present
+        if (await this.gitManager.canPush()) {
+            const pushed = await this.push();
+            return pushed
+                ? { status: "synced", commit: commitResult }
+                : {
+                      status: "skipped",
+                      reason: "push-failed",
+                      commit: commitResult,
+                  };
+        }
+
+        this.displayMessage("No commits to push");
+        return { status: "nothing-to-push", commit: commitResult };
     }
 
-    // Returns true if commit was successfully
-    async commit({
+    async commit(
+        options: CommitOptions
+    ): Promise<GitActionResult<CommitResult>> {
+        const actionResult = await runGitAction<CommitResult>(
+            this,
+            async () => {
+                if (!(await this.isAllInitialized())) {
+                    return {
+                        status: "skipped",
+                        reason: "not-ready",
+                    };
+                }
+                return this.performCommit(options);
+            }
+        );
+        if (actionResult.status === "success") {
+            this.reportCommitResult(actionResult.value);
+        }
+        return actionResult;
+    }
+
+    private async performCommit({
         fromAuto,
         requestCustomMessage = false,
         mode = "all",
         commitMessage,
         amend = false,
-    }: {
-        fromAuto: boolean;
-        requestCustomMessage?: boolean;
-        mode?: CommitMode;
-        commitMessage?: string;
-        amend?: boolean;
-    }): Promise<boolean> {
-        if (!(await this.isAllInitialized())) return false;
-        try {
-            let stagedFiles: { vaultPath: string; path: string }[] = [];
-            let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
-            let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
-                mode === "smart" ? "nothing" : mode;
+    }: CommitOptions): Promise<CommitResult> {
+        let stagedFiles: { vaultPath: string; path: string }[] = [];
+        let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
+        let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
+            mode === "smart" ? "nothing" : mode;
 
-            const status = await this.updateCachedStatus();
-            const mergeInProgress = this.state.mergeInProgress;
-            if (this.gitManager instanceof SimpleGit) {
-                stagedFiles = status.staged;
+        const status = await this.updateCachedStatus();
+        const mergeInProgress = this.state.mergeInProgress;
+        if (this.gitManager instanceof SimpleGit) {
+            stagedFiles = status.staged;
 
-                // This typecast is only needed to hide the fact that `type` is missing, but that is only needed for isomorphic-git
-                unstagedFiles = status.changed as unknown as (UnstagedFile & {
-                    vaultPath: string;
-                })[];
-                resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
-            } else {
-                // isomorphic-git section
+            // This typecast is only needed to hide the fact that `type` is missing, but that is only needed for isomorphic-git
+            unstagedFiles = status.changed as unknown as (UnstagedFile & {
+                vaultPath: string;
+            })[];
+            resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
+        } else {
+            // isomorphic-git section
 
-                const gitManager = this.gitManager as IsomorphicGit;
-                stagedFiles = await gitManager.getStagedFiles();
-                resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
-                if (resolvedMode === "all") {
-                    const res = await gitManager.getUnstagedFiles();
-                    unstagedFiles = res.map(({ path, type }) => ({
-                        vaultPath: this.gitManager.getRelativeVaultPath(path),
-                        path,
-                        type,
-                    }));
-                }
+            const gitManager = this.gitManager as IsomorphicGit;
+            stagedFiles = await gitManager.getStagedFiles();
+            resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
+            if (resolvedMode === "all") {
+                const res = await gitManager.getUnstagedFiles();
+                unstagedFiles = res.map(({ path, type }) => ({
+                    vaultPath: this.gitManager.getRelativeVaultPath(path),
+                    path,
+                    type,
+                }));
             }
+        }
 
-            if (fromAuto && mergeInProgress) {
-                if (status.conflicted.length > 0) {
-                    this.displayError(
-                        `Did not commit, because you have conflicts in ${
-                            status.conflicted.length
-                        } ${
-                            status.conflicted.length == 1 ? "file" : "files"
-                        }. Please resolve them and commit per command.`
-                    );
-                } else {
-                    this.displayError(
-                        "Did not commit automatically because a merge is in progress. Commit it manually."
-                    );
-                }
-                return false;
-            }
-
-            if (resolvedMode === "nothing") {
-                this.displayMessage(
-                    "Nothing staged. Stage changes first or use Commit all changes."
+        if (fromAuto && mergeInProgress) {
+            if (status.conflicted.length > 0) {
+                throw new GitConflictError(
+                    status.conflicted,
+                    new Error(
+                        "Automatic commit stopped because of unresolved conflicts"
+                    )
                 );
-                return true;
             }
+            return { status: "skipped", reason: "merge-in-progress" };
+        }
 
-            const onlyStaged = resolvedMode === "staged";
+        if (resolvedMode === "nothing") {
+            return {
+                status: "nothing-to-commit",
+                reason: "nothing-staged",
+            };
+        }
 
+        const onlyStaged = resolvedMode === "staged";
+
+        if (
+            await this.tools.hasTooBigFiles(
+                onlyStaged ? stagedFiles : [...stagedFiles, ...unstagedFiles]
+            )
+        ) {
+            return { status: "skipped", reason: "files-too-large" };
+        }
+
+        const changesCountToCommit =
+            (onlyStaged ? 0 : unstagedFiles.length) + stagedFiles.length !== 0;
+        if (changesCountToCommit || mergeInProgress) {
+            // The commit message from settings or previously set in the
+            // source control view
+            let cmtMessage = (commitMessage ??= fromAuto
+                ? this.settings.autoCommitMessage
+                : this.settings.commitMessage);
+
+            // Optionally ask the user via a modal for a commit message
             if (
-                await this.tools.hasTooBigFiles(
-                    onlyStaged
-                        ? stagedFiles
-                        : [...stagedFiles, ...unstagedFiles]
-                )
+                (fromAuto && this.settings.customMessageOnAutoBackup) ||
+                requestCustomMessage
             ) {
-                return false;
-            }
+                if (!this.settings.disablePopups && fromAuto) {
+                    new Notice(
+                        "Auto backup: Please enter a custom commit message. Leave empty to abort"
+                    );
+                }
+                const modalMessage = await new CustomMessageModal(
+                    this
+                ).openAndGetResult();
 
-            const changesCountToCommit =
-                (onlyStaged ? 0 : unstagedFiles.length) + stagedFiles.length !==
-                0;
-            if (changesCountToCommit || mergeInProgress) {
-                // The commit message from settings or previously set in the
-                // source control view
-                let cmtMessage = (commitMessage ??= fromAuto
-                    ? this.settings.autoCommitMessage
-                    : this.settings.commitMessage);
-
-                // Optionally ask the user via a modal for a commit message
                 if (
-                    (fromAuto && this.settings.customMessageOnAutoBackup) ||
-                    requestCustomMessage
+                    modalMessage != undefined &&
+                    modalMessage != "" &&
+                    modalMessage != "..."
                 ) {
-                    if (!this.settings.disablePopups && fromAuto) {
-                        new Notice(
-                            "Auto backup: Please enter a custom commit message. Leave empty to abort"
-                        );
-                    }
-                    const modalMessage = await new CustomMessageModal(
-                        this
-                    ).openAndGetResult();
-
-                    if (
-                        modalMessage != undefined &&
-                        modalMessage != "" &&
-                        modalMessage != "..."
-                    ) {
-                        cmtMessage = modalMessage;
-                    } else {
-                        return false;
-                    }
-
-                    // On desktop may run a script to get the commit message
-                } else if (
-                    this.gitManager instanceof SimpleGit &&
-                    this.settings.commitMessageScript
-                ) {
-                    const templateScript = this.settings.commitMessageScript;
-                    const hostname = this.localStorage.getHostname() || "";
-                    let formattedScript = templateScript.replace(
-                        "{{hostname}}",
-                        hostname
-                    );
-
-                    formattedScript = formattedScript.replace(
-                        "{{date}}",
-                        moment().format(this.settings.commitDateFormat)
-                    );
-                    let shPath = "sh";
-                    if (Platform.isWin) {
-                        shPath =
-                            process.env.PROGRAMFILES + "\\Git\\bin\\sh.exe";
-                        let shExists = false;
-                        try {
-                            await fsPromises.access(
-                                shPath,
-                                fsPromises.constants.X_OK
-                            );
-                            shExists = true;
-                        } catch {
-                            shExists = false;
-                        }
-
-                        if (!shExists) {
-                            this.displayError(
-                                `Cannot find sh.exe at ${shPath}. Please make sure Git is properly installed.`
-                            );
-                            return false;
-                        }
-                    }
-
-                    const res = await spawnAsync(
-                        shPath,
-                        ["-c", formattedScript],
-                        { cwd: this.gitManager.absoluteRepoPath }
-                    );
-                    if (res.code != 0) {
-                        this.displayError(res.stderr);
-                    } else if (res.stdout.trim().length == 0) {
-                        this.displayMessage(
-                            "Stdout from commit message script is empty. Using default message."
-                        );
-                    } else {
-                        cmtMessage = res.stdout;
-                    }
-                }
-
-                // Check if commit message is empty after all processing
-                if (!cmtMessage || cmtMessage.trim() === "") {
-                    new Notice("Commit aborted: No commit message provided");
-                    return false;
-                }
-
-                let committedFiles: number;
-                if (onlyStaged) {
-                    committedFiles = await this.gitManager.commit({
-                        message: cmtMessage,
-                        amend,
-                    });
+                    cmtMessage = modalMessage;
                 } else {
-                    committedFiles = await this.gitManager.commitAll({
-                        message: cmtMessage,
-                        status,
-                        unstagedFiles,
-                        amend,
-                    });
+                    throw new Errors.UserCanceledError();
                 }
 
-                // Handle eventually resolved conflicts
-                if (this.gitManager instanceof SimpleGit) {
-                    await this.updateCachedStatus();
-                }
-
-                if (committedFiles === 0) {
-                    // simple-git resolves with { changes: 0 } instead of
-                    // throwing when there is nothing to commit (e.g. the
-                    // detected change was already committed by a previous run).
-                    // Report this honestly instead of "Committed 0 files".
-                    this.displayMessage("No changes to commit");
-                } else {
-                    this.displayMessage(
-                        `Committed ${committedFiles} ${
-                            committedFiles == 1 ? "file" : "files"
-                        }`
-                    );
-                }
-            } else {
-                this.displayMessage("No changes to commit");
+                // On desktop may run a script to get the commit message
+            } else if (
+                this.gitManager instanceof SimpleGit &&
+                this.settings.commitMessageScript
+            ) {
+                cmtMessage = await this.getMessageFromScript(cmtMessage);
             }
-            this.app.workspace.trigger("obsidian-git:refresh");
 
-            return true;
-        } catch (error) {
-            this.displayError(error);
-            return false;
+            // Check if commit message is empty after all processing
+            if (!cmtMessage || cmtMessage.trim() === "") {
+                throw new Errors.UserCanceledError();
+            }
+
+            let committedFiles: number;
+            if (onlyStaged) {
+                committedFiles = await this.gitManager.commit({
+                    message: cmtMessage,
+                    amend,
+                });
+            } else {
+                committedFiles = await this.gitManager.commitAll({
+                    message: cmtMessage,
+                    status,
+                    unstagedFiles,
+                    amend,
+                });
+            }
+
+            // Handle eventually resolved conflicts
+            if (this.gitManager instanceof SimpleGit) {
+                await this.updateCachedStatus();
+            }
+
+            this.app.workspace.trigger("obsidian-git:refresh");
+            if (committedFiles === 0) {
+                // simple-git resolves with { changes: 0 } instead of
+                // throwing when there is nothing to commit (e.g. the
+                // detected change was already committed by a previous run).
+                return {
+                    status: "nothing-to-commit",
+                    reason: "no-changes",
+                };
+            }
+            return { status: "committed", files: committedFiles };
+        } else {
+            this.app.workspace.trigger("obsidian-git:refresh");
+            return {
+                status: "nothing-to-commit",
+                reason: "no-changes",
+            };
+        }
+    }
+
+    private async getMessageFromScript(cmtMessage: string) {
+        const templateScript = this.settings.commitMessageScript;
+        const hostname = this.localStorage.getHostname() || "";
+        let formattedScript = templateScript.replace("{{hostname}}", hostname);
+
+        formattedScript = formattedScript.replace(
+            "{{date}}",
+            moment().format(this.settings.commitDateFormat)
+        );
+        let shPath = "sh";
+        if (Platform.isWin) {
+            shPath = process.env.PROGRAMFILES + "\\Git\\bin\\sh.exe";
+            let shExists = false;
+            try {
+                await fsPromises.access(shPath, fsPromises.constants.X_OK);
+                shExists = true;
+            } catch {
+                shExists = false;
+            }
+
+            if (!shExists) {
+                throw new Error(
+                    `Cannot find sh.exe at ${shPath}. Please make sure Git is properly installed.`
+                );
+            }
+        }
+
+        const res = await spawnAsync(shPath, ["-c", formattedScript], {
+            cwd: (this.gitManager as SimpleGit).absoluteRepoPath,
+        });
+        if (res.code != 0) {
+            throw new Error(
+                res.stderr ||
+                    `Commit message script exited with code ${res.code}`
+            );
+        } else if (res.stdout.trim().length == 0) {
+            this.displayMessage(
+                "Stdout from commit message script is empty. Using default message."
+            );
+        } else {
+            cmtMessage = res.stdout;
+        }
+        return cmtMessage;
+    }
+
+    private reportCommitResult(result: CommitResult): void {
+        switch (result.status) {
+            case "committed":
+                this.displayMessage(
+                    `Committed ${result.files} ${
+                        result.files == 1 ? "file" : "files"
+                    }`
+                );
+                return;
+            case "nothing-to-commit": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "nothing-staged":
+                        this.displayMessage(
+                            "Nothing staged. Stage changes first or use Commit all changes."
+                        );
+                        return;
+                    case "no-changes":
+                        this.displayMessage("No changes to commit");
+                        return;
+                    default:
+                        return assertNever(reason);
+                }
+            }
+            case "skipped": {
+                const reason = result.reason;
+                switch (reason) {
+                    case "merge-in-progress":
+                        this.displayError(
+                            "Did not commit automatically because a merge is in progress. Commit it manually."
+                        );
+                        return;
+                    case "not-ready":
+                    case "files-too-large":
+                        return;
+                    default:
+                        return assertNever(reason);
+                }
+            }
+            default:
+                return assertNever(result);
         }
     }
 
@@ -1140,34 +1255,18 @@ export default class ObsidianGit extends Plugin {
         }
     }
 
-    /** Used for internals
-     *  Returns whether the pull added a commit or not.
-     *
-     *  See {@link pullChangesFromRemote} for the command version.
-     */
-    async pull(): Promise<false | number> {
+    async pull(): Promise<GitActionResult<PullResult>> {
+        return runGitAction(this, () => this.performPull());
+    }
+
+    private async performPull(): Promise<PullResult> {
         if (!(await this.isPullRemoteSet())) {
-            return false;
+            return { status: "skipped", reason: "no-upstream" };
         }
-        try {
-            this.log("Pulling....");
-            const pulledFiles = (await this.gitManager.pull()) || [];
-            this.setPluginState({ offlineMode: false });
-
-            if (pulledFiles.length > 0) {
-                this.displayMessage(
-                    `Pulled ${pulledFiles.length} ${
-                        pulledFiles.length == 1 ? "file" : "files"
-                    } from remote`
-                );
-                this.lastPulledFiles = pulledFiles;
-            }
-            return pulledFiles.length;
-        } catch (e) {
-            this.displayError(e);
-
-            return false;
-        }
+        this.log("Pulling....");
+        const result = await this.gitManager.pull();
+        this.setPluginState({ offlineMode: false });
+        return result;
     }
 
     async fetch(): Promise<void> {
@@ -1417,8 +1516,15 @@ export default class ObsidianGit extends Plugin {
         return result;
     }
 
-    handleConflict(): void {
-        this.displayMessage("Resolve conflicts and commit manually");
+    handleConflict(conflictedFiles: readonly string[]): void {
+        const count = conflictedFiles.length;
+        this.displayError(
+            count > 0
+                ? `Merge conflict in ${count} ${
+                      count == 1 ? "file" : "files"
+                  }. Resolve conflicts and commit manually.`
+                : "Merge conflict. Resolve conflicts and commit manually."
+        );
     }
 
     openMergeConflictHelp(): void {

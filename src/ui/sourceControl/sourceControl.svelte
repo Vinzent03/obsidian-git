@@ -31,7 +31,7 @@
     let status: Status | undefined = $state();
     let lastPulledFiles: FileStatusResult[] = $state([]);
     let commitMessage = $derived(plugin.settings.commitMessage);
-    let buttons: HTMLElement[] = $state([]);
+    let buttons: (HTMLElement | null)[] = $state([]);
     let changeHierarchy: StatusRootTreeItem | undefined = $state();
     let stagedHierarchy: StatusRootTreeItem | undefined = $state();
     let conflictHierarchy: StatusRootTreeItem | undefined = $state();
@@ -105,7 +105,9 @@
         return () => view.app.vault.offref(modifyEvent);
     });
     $effect(() => {
-        buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
+        buttons.forEach((btn) => {
+            if (btn) setIcon(btn, btn.getAttr("data-icon")!);
+        });
     });
 
     $effect(() => {

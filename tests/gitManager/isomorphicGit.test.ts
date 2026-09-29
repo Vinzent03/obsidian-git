@@ -3,6 +3,7 @@ import path from "path";
 import git, { Errors } from "isomorphic-git";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { withCleanup } from "../helpers/cleanup";
+import { GitConflictError } from "../../src/types";
 import {
     createRepoWithMergeConflict,
     createRepoWithOrigin,
@@ -34,25 +35,24 @@ describe("IsomorphicGit merge state", () => {
         });
     });
 
-    it("refreshes conflict handling from an unmerged-paths commit error", async () => {
+    it("leaves commit conflict reporting to the action boundary", async () => {
         const repo = withCleanup(await createRepoWithMergeConflict());
-        const { manager, updateCachedStatus } = createIsomorphicGitManager(
-            repo.repoPath
-        );
+        const { manager, plugin, updateCachedStatus } =
+            createIsomorphicGitManager(repo.repoPath);
 
         await expect(
             manager.commit({ message: "still conflicted" })
-        ).rejects.toBeInstanceOf(Errors.UnmergedPathsError);
+        ).rejects.toBeInstanceOf(GitConflictError);
 
-        expect(updateCachedStatus).toHaveBeenCalledWith();
+        expect(updateCachedStatus).not.toHaveBeenCalled();
+        expect(plugin.displayError).not.toHaveBeenCalled();
         expect(await manager.isMergeInProgress()).toBe(true);
     });
 
     it("writes canonical merge metadata when an isomorphic merge conflicts", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
-        const { manager, updateCachedStatus } = createIsomorphicGitManager(
-            repo.repoPath
-        );
+        const { manager, plugin, updateCachedStatus } =
+            createIsomorphicGitManager(repo.repoPath);
         vi.spyOn(manager, "resolveRef")
             .mockResolvedValueOnce("a".repeat(40))
             .mockResolvedValueOnce("b".repeat(40));
@@ -67,9 +67,7 @@ describe("IsomorphicGit merge state", () => {
             new Errors.MergeConflictError(["note.md"], ["note.md"], [], [])
         );
 
-        await expect(manager.pull()).rejects.toBeInstanceOf(
-            Errors.MergeConflictError
-        );
+        await expect(manager.pull()).rejects.toBeInstanceOf(GitConflictError);
 
         await expect(
             readFile(path.join(repo.repoPath, ".git", "ORIG_HEAD"), "utf8")
@@ -80,6 +78,7 @@ describe("IsomorphicGit merge state", () => {
         await expect(
             readFile(path.join(repo.repoPath, ".git", "MERGE_MSG"), "utf8")
         ).resolves.toBe("Merge branch 'origin/main' into main\n");
-        expect(updateCachedStatus).toHaveBeenCalledWith();
+        expect(updateCachedStatus).not.toHaveBeenCalled();
+        expect(plugin.displayError).not.toHaveBeenCalled();
     });
 });

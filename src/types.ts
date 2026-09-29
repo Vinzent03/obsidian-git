@@ -248,6 +248,40 @@ export interface FileStatusResult {
     workingDir: string;
 }
 
+export type PullResult =
+    | { status: "updated"; files: FileStatusResult[] }
+    | { status: "up-to-date" }
+    | { status: "skipped"; reason: "no-upstream" };
+
+export type CommitResult =
+    | { status: "committed"; files: number }
+    | {
+          status: "nothing-to-commit";
+          reason: "no-changes" | "nothing-staged";
+      }
+    | {
+          status: "skipped";
+          reason: "not-ready" | "merge-in-progress" | "files-too-large";
+      };
+
+export type CommitAndSyncResult =
+    | { status: "synced"; commit: CommitResult }
+    | {
+          status: "commit-only";
+          reason: "push-disabled";
+          commit: CommitResult;
+      }
+    | { status: "nothing-to-push"; commit: CommitResult }
+    | {
+          status: "skipped";
+          reason:
+              | "not-ready"
+              | "commit-skipped"
+              | "push-skipped"
+              | "push-failed";
+          commit?: CommitResult;
+      };
+
 export interface PluginState {
     offlineMode: boolean;
     mergeInProgress: boolean;
@@ -389,6 +423,16 @@ export enum FileType {
 export class NoNetworkError extends Error {
     constructor(public readonly originalError: string) {
         super("No network connection available");
+    }
+}
+
+export class GitConflictError extends Error {
+    constructor(
+        public readonly files: string[],
+        public readonly cause: unknown
+    ) {
+        super("Git operation stopped because of merge conflicts");
+        this.name = "GitConflictError";
     }
 }
 

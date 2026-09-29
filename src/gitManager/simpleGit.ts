@@ -24,9 +24,10 @@ import type {
     FileStatusResult,
     GitProgress,
     LogEntry,
+    PullResult,
     Status,
 } from "../types";
-import { GitOperation, NoNetworkError } from "../types";
+import { GitConflictError, GitOperation, NoNetworkError } from "../types";
 import { impossibleBranch, spawnAsync, splitRemoteBranch } from "../utils";
 import { GitManager } from "./gitManager";
 
@@ -572,7 +573,13 @@ export class SimpleGit extends GitManager {
         return this.git.raw(args).then((x) => x.trim() !== "");
     }
 
-    async commitAll({ message }: { message: string }): Promise<number> {
+    async commitAll({
+        message,
+        amend,
+    }: {
+        message: string;
+        amend?: boolean;
+    }): Promise<number> {
         return this.withGitOperation(GitOperation.commit, async () => {
             if (this.plugin.settings.updateSubmodules) {
                 const submodulePaths = await this.getSubmodulePaths();
@@ -586,10 +593,11 @@ export class SimpleGit extends GitManager {
             await this.git.add("-A");
 
             const res = await this.git.commit(
-                await this.formatCommitMessage(message)
+                await this.formatCommitMessage(message),
+                amend ? ["--amend"] : []
             );
             this.app.workspace.trigger("obsidian-git:head-change");
-            return res.summary.changes;
+            return this.getCommittedFilesCount(res.summary.changes);
         });
     }
 
@@ -601,15 +609,26 @@ export class SimpleGit extends GitManager {
         amend?: boolean;
     }): Promise<number> {
         return this.withGitOperation(GitOperation.commit, async () => {
-            const res = (
-                await this.git.commit(
+            try {
+                const res = await this.git.commit(
                     await this.formatCommitMessage(message),
                     amend ? ["--amend"] : []
-                )
-            ).summary.changes;
-            this.app.workspace.trigger("obsidian-git:head-change");
-            return res;
+                );
+                this.app.workspace.trigger("obsidian-git:head-change");
+                return this.getCommittedFilesCount(res.summary.changes);
+            } catch (error) {
+                return this.throwConflictError(error);
+            }
         });
+    }
+
+    private async getCommittedFilesCount(
+        summaryChanges: number
+    ): Promise<number> {
+        if (summaryChanges !== 0) return summaryChanges;
+        // In case of a merge commit, the summary emitted by the commit command is empty.
+
+        return (await this.git.diffSummary(["HEAD^1", "HEAD"])).changed;
     }
 
     async stage(path: string, relativeToVault: boolean): Promise<void> {
@@ -681,7 +700,7 @@ export class SimpleGit extends GitManager {
         return this.discard(dir ?? ".");
     }
 
-    async pull(): Promise<FileStatusResult[] | undefined> {
+    async pull(): Promise<PullResult> {
         return this.withGitOperation(GitOperation.pull, async () => {
             try {
                 if (this.plugin.settings.updateSubmodules)
@@ -694,10 +713,7 @@ export class SimpleGit extends GitManager {
 
                 const branchInfo = await this.branchInfo();
                 if (!branchInfo.current) {
-                    this.plugin.displayError(
-                        "No current branch found. Cannot pull."
-                    );
-                    return undefined;
+                    throw new Error("No current branch found. Cannot pull.");
                 }
                 const localCommit = await this.git.revparse([
                     branchInfo.current,
@@ -709,7 +725,7 @@ export class SimpleGit extends GitManager {
                             ? "No tracking branch found. Ignoring pull of main repo and updated submodules only."
                             : "No tracking branch found. Ignoring pull."
                     );
-                    return;
+                    return { status: "skipped", reason: "no-upstream" };
                 }
 
                 await this.git.fetch();
@@ -751,54 +767,66 @@ export class SimpleGit extends GitManager {
                                     break;
                                 }
                             }
-                        } catch (err) {
-                            this.plugin.displayError(
-                                `Pull failed (${this.plugin.settings.syncMethod}): ${errorToString(err)}`
-                            );
-                            return;
+                        } catch (error) {
+                            await this.throwConflictError(error);
                         }
                     } else if (this.plugin.settings.syncMethod === "reset") {
-                        try {
-                            await this.git.raw([
-                                "update-ref",
-                                `refs/heads/${branchInfo.current}`,
-                                upstreamCommit,
-                            ]);
-                            await this.git.reset([]);
-                        } catch (err) {
-                            this.plugin.displayError(
-                                `Sync failed (${this.plugin.settings.syncMethod}): ${errorToString(err)}`
-                            );
-                        }
+                        await this.git.raw([
+                            "update-ref",
+                            `refs/heads/${branchInfo.current}`,
+                            upstreamCommit,
+                        ]);
+                        await this.git.reset([]);
                     }
-                    this.app.workspace.trigger("obsidian-git:head-change");
-
                     const afterMergeCommit = await this.git.revparse([
                         branchInfo.current,
                     ]);
+
+                    if (afterMergeCommit === localCommit) {
+                        return { status: "up-to-date" };
+                    }
+
+                    this.app.workspace.trigger("obsidian-git:head-change");
 
                     const filesChanged = await this.git.diff([
                         `${localCommit}..${afterMergeCommit}`,
                         "--name-only",
                     ]);
 
-                    return filesChanged
-                        .split(/\r\n|\r|\n/)
-                        .filter((value) => value.length > 0)
-                        .map((e) => {
-                            return <FileStatusResult>{
-                                path: e,
-                                workingDir: "P",
-                                vaultPath: this.getRelativeVaultPath(e),
-                            };
-                        });
+                    return {
+                        status: "updated",
+                        files: filesChanged
+                            .split(/\r\n|\r|\n/)
+                            .filter((value) => value.length > 0)
+                            .map((e) => {
+                                return <FileStatusResult>{
+                                    path: e,
+                                    workingDir: "P",
+                                    vaultPath: this.getRelativeVaultPath(e),
+                                };
+                            }),
+                    };
                 } else {
-                    return [];
+                    return { status: "up-to-date" };
                 }
             } catch (e) {
                 this.convertErrors(e);
             }
         });
+    }
+
+    private async throwConflictError(error: unknown): Promise<never> {
+        try {
+            const status = await this.git.status();
+            if (status.conflicted.length > 0) {
+                throw new GitConflictError(status.conflicted, error);
+            }
+        } catch (statusError) {
+            if (statusError instanceof GitConflictError) {
+                throw statusError;
+            }
+        }
+        throw error;
     }
 
     async push(): Promise<number | undefined | null> {
@@ -1657,8 +1685,4 @@ function removeEmailBrackets(gitEmail: string) {
     return prefixCleaned.endsWith(">")
         ? prefixCleaned.substring(0, prefixCleaned.length - 1)
         : prefixCleaned;
-}
-
-function errorToString(error: unknown): string {
-    return error instanceof Error ? error.message : String(error);
 }

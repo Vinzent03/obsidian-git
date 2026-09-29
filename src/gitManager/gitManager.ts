@@ -7,6 +7,7 @@ import type {
     DiffFile,
     FileStatusResult,
     LogEntry,
+    PullResult,
     Status,
     TreeItem,
     UnstagedFile,
@@ -70,7 +71,7 @@ export abstract class GitManager {
         status?: Status;
     }): Promise<string[]>;
 
-    abstract pull(): Promise<FileStatusResult[] | undefined>;
+    abstract pull(): Promise<PullResult>;
 
     /**
      * Pushes to the remote repository.
