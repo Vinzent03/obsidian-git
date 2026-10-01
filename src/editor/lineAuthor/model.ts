@@ -1,6 +1,5 @@
 import type { EditorState, Transaction } from "@codemirror/state";
 import { StateEffect, StateField } from "@codemirror/state";
-import type { Hasher } from "js-sha256";
 import { sha256 } from "js-sha256";
 import type { RGB } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
@@ -133,7 +132,7 @@ export const lineAuthorState: StateField<LineAuthoringWithChanges | undefined> =
 
 export function laStateDigest(
     laState: LineAuthoringWithChanges | undefined
-): Hasher {
+): ReturnType<typeof sha256.create> {
     const digest = sha256.create();
     if (!laState) return digest;
 
