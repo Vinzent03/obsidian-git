@@ -77,7 +77,7 @@ export class IsomorphicGit extends GitManager {
     } {
         return {
             fs: this.fs,
-            dir: this.plugin.settings.basePath,
+            dir: this.plugin.settings.basePath || "/",
             gitdir: this.plugin.settings.gitDir
                 ? this.getGitDirPath()
                 : undefined,
@@ -214,7 +214,11 @@ export class IsomorphicGit extends GitManager {
                 ) {
                     changed.push(file);
                 }
-                if (file.index !== " " && file.index !== "U") {
+                if (
+                    file.index !== " " &&
+                    file.index !== "U" &&
+                    !conflictedPaths.has(file.path)
+                ) {
                     staged.push(file);
                 }
                 if (file.index != " " || file.workingDir != " ") {

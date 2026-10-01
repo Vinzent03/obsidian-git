@@ -78,6 +78,8 @@ function createNodeVault(root: string) {
 
     return {
         adapter,
+        create: adapter.write,
+        createBinary: adapter.writeBinary,
         getAbstractFileByPath: () => null,
         getFolderByPath: () => null,
     };

@@ -15,6 +15,27 @@ afterEach(() => {
 });
 
 describe("IsomorphicGit merge state", () => {
+    it("lists an unresolved merge file only as conflicted", async () => {
+        const repo = withCleanup(await createRepoWithMergeConflict());
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+
+        const status = await manager.status();
+        expect(status.conflicted).toContain("note.md");
+        expect(status.staged.map((file) => file.path)).not.toContain("note.md");
+        expect(status.changed.map((file) => file.path)).not.toContain(
+            "note.md"
+        );
+
+        repo.write("note.md", "resolved\n");
+        await manager.stage("note.md", false);
+        const resolvedStatus = await manager.status();
+
+        expect(resolvedStatus.conflicted).not.toContain("note.md");
+        expect(resolvedStatus.staged.map((file) => file.path)).toContain(
+            "note.md"
+        );
+    });
+
     it("clears canonical merge metadata after committing", async () => {
         const repo = withCleanup(await createRepoWithMergeConflict());
         const { manager, setPluginState } = createIsomorphicGitManager(
@@ -80,6 +101,31 @@ describe("IsomorphicGit merge state", () => {
         ).resolves.toBe("Merge branch 'origin/main' into main\n");
         expect(updateCachedStatus).not.toHaveBeenCalled();
         expect(plugin.displayError).not.toHaveBeenCalled();
+    });
+
+    it("writes conflict markers for a conflicting pull with the none merge strategy", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.git.checkoutLocalBranch("theirs");
+        await repo.writeAndCommit("note.md", "theirs\n", "their change");
+        const theirCommit = await repo.head();
+        await repo.git.checkout("main");
+        await repo.writeAndCommit("note.md", "ours\n", "our change");
+        await repo.raw(["update-ref", "refs/remotes/origin/main", theirCommit]);
+
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        plugin.settings.mergeStrategy = "none";
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        await expect(manager.pull()).rejects.toBeInstanceOf(GitConflictError);
+
+        const content = await readFile(
+            path.join(repo.repoPath, "note.md"),
+            "utf8"
+        );
+        expect(content).toMatch(/<<<<<<<[^\n]*\nours\n/);
+        expect(content).toMatch(/=======\ntheirs\n/);
+        expect(content).toMatch(/>>>>>>>[^\n]*\n?/);
+        expect((await manager.status()).conflicted).toContain("note.md");
     });
 });
 
