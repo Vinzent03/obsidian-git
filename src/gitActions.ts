@@ -587,11 +587,21 @@ export class GitActions {
                     ? this.plugin.settings.autoCommitMessage
                     : this.plugin.settings.commitMessage);
 
-            // Optionally ask the user via a modal for a commit message
-            if (
+            const requestMessage =
                 (fromAuto && this.plugin.settings.customMessageOnAutoBackup) ||
-                requestCustomMessage
+                requestCustomMessage;
+
+            // On desktop may run a script to get the commit message
+            if (
+                !requestMessage &&
+                this.plugin.gitManager instanceof SimpleGit &&
+                this.plugin.settings.commitMessageScript
             ) {
+                cmtMessage = await this.getMessageFromScript(cmtMessage);
+            }
+
+            // An empty manual template means the user should enter a message.
+            if (requestMessage || (!fromAuto && !cmtMessage?.trim())) {
                 if (!this.plugin.settings.disablePopups && fromAuto) {
                     new Notice(
                         "Auto backup: Please enter a custom commit message. Leave empty to abort"
@@ -610,13 +620,6 @@ export class GitActions {
                 } else {
                     throw new Errors.UserCanceledError();
                 }
-
-                // On desktop may run a script to get the commit message
-            } else if (
-                this.plugin.gitManager instanceof SimpleGit &&
-                this.plugin.settings.commitMessageScript
-            ) {
-                cmtMessage = await this.getMessageFromScript(cmtMessage);
             }
 
             // Check if commit message is empty after all processing
