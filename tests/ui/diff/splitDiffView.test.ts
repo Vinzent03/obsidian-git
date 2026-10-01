@@ -1,8 +1,9 @@
 import { mkdirSync } from "fs";
 import path from "path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import SplitDiffView, { getSplitDiffTimeout } from "src/ui/diff/splitDiffView";
+import type { DiffViewState } from "src/types";
 import { withCleanup } from "../../helpers/cleanup";
 import {
     createRepoWithMergeConflict,
@@ -106,5 +107,86 @@ describe("SplitDiffView.gitShow", () => {
         }) as SplitDiffView;
 
         await expect(view.gitShow("", "note.md")).resolves.toBe("staged\n");
+    });
+});
+
+function editorWithText(text: string) {
+    return {
+        state: {
+            doc: { toString: () => text, length: text.length },
+            update: vi.fn(() => ({})),
+        },
+        dispatch: vi.fn(),
+    };
+}
+
+/**
+ * Creates a view in a vault whose repository lives in the `repo` subfolder,
+ * without running the constructor that registers workspace events.
+ */
+function createView(state: Partial<DiffViewState>) {
+    const view = Object.create(SplitDiffView.prototype) as SplitDiffView;
+    const read = vi.fn().mockResolvedValue("content");
+    Object.assign(view, {
+        refreshing: false,
+        state: { aRef: "HEAD", aFile: "note.md", bFile: "note.md", ...state },
+        mergeView: { a: editorWithText("a"), b: editorWithText("content") },
+        app: { vault: { adapter: { read } } },
+        plugin: {
+            gitManager: {
+                getRelativeVaultPath: (path: string) => `repo/${path}`,
+            },
+        },
+    });
+    return { view, read };
+}
+
+describe("SplitDiffView", () => {
+    it("matches the working tree file by its vault path", () => {
+        const { view } = createView({ bRef: undefined });
+
+        expect(view.isWorkingTreeBFile("repo/note.md")).toBe(true);
+        expect(view.isWorkingTreeBFile("note.md")).toBe(false);
+    });
+
+    it("doesn't match files when b shows a git ref", () => {
+        const { view } = createView({ bRef: "" });
+
+        expect(view.isWorkingTreeBFile("repo/note.md")).toBe(false);
+    });
+
+    it("reads the working tree file by its vault path", async () => {
+        const { view, read } = createView({ bRef: undefined });
+
+        await view.updateModifiableEditor();
+
+        expect(read).toHaveBeenCalledWith("repo/note.md");
+    });
+
+    it("keeps refreshing after reading the working tree file failed", async () => {
+        const { view, read } = createView({ bRef: undefined });
+        read.mockRejectedValueOnce(new Error("read failed"));
+
+        await expect(view.updateModifiableEditor()).rejects.toThrow(
+            "read failed"
+        );
+
+        expect(view.refreshing).toBe(false);
+        await view.updateModifiableEditor();
+        expect(read).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps refreshing after git show failed", async () => {
+        const { view } = createView({ bRef: "" });
+        const gitShow = vi
+            .spyOn(view, "gitShow")
+            .mockRejectedValueOnce(new Error("show failed"))
+            .mockResolvedValue("a");
+
+        await expect(view.updateRefEditors()).rejects.toThrow("show failed");
+
+        expect(view.refreshing).toBe(false);
+        await view.updateRefEditors();
+        expect(gitShow).toHaveBeenCalledTimes(3);
     });
 });
