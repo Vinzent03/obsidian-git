@@ -1,6 +1,32 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
+
+## [2.41.0](https://github.com/Vinzent03/obsidian-git/compare/2.40.0...2.41.0) (2026-10-01)
+
+### Features
+
+* limit Git file operations to the vault ([8a02589](https://github.com/Vinzent03/obsidian-git/commit/8a02589143839445576d2ddfea0585fcbf874296)), closes [#1172](https://github.com/Vinzent03/obsidian-git/issues/1172)
+* merge conflict in source control ([#1181](https://github.com/Vinzent03/obsidian-git/issues/1181)) ([705dd97](https://github.com/Vinzent03/obsidian-git/commit/705dd97e8cf31efce6b82ead68d9bb7650cd8a15))
+* merge conflict resolution UI in editor ([#1175](https://github.com/Vinzent03/obsidian-git/issues/1175)) ([6bed6fb](https://github.com/Vinzent03/obsidian-git/commit/6bed6fbef2c1204e69d7a3005b0b2a478e4022ab))
+* migrate to new declarative settings ([f484f40](https://github.com/Vinzent03/obsidian-git/commit/f484f40acb7ba3a0082207e6425356efbde15e39))
+* show buttons to initialize git repo in source control view ([a11ab85](https://github.com/Vinzent03/obsidian-git/commit/a11ab856c783539d742ede16c095a1c968e7bc99))
+* show file content at specific commit ([b49cd42](https://github.com/Vinzent03/obsidian-git/commit/b49cd42e135f2c08271084250ef25d743ba5da6b)), closes [#1183](https://github.com/Vinzent03/obsidian-git/issues/1183)
+* Use autostash for rebase pull ([3ab4836](https://github.com/Vinzent03/obsidian-git/commit/3ab483673ef7711ddc397313cd680b0a1333eea4)), closes [#1165](https://github.com/Vinzent03/obsidian-git/issues/1165)
+
+### Bug Fixes
+
+* enable commit button when merge in progress and no staged files ([19182f7](https://github.com/Vinzent03/obsidian-git/commit/19182f7dd4fc360cb9a71810f7c38d5165b5919f))
+* **lineAuthor:** normalize all CRLFs in blame output and digest settings ([#1190](https://github.com/Vinzent03/obsidian-git/issues/1190)) ([3bacf5a](https://github.com/Vinzent03/obsidian-git/commit/3bacf5ac10f9d1ca7953589474e84aec253e18ff))
+* **mobile:** adapt conflict marker ([a7ee702](https://github.com/Vinzent03/obsidian-git/commit/a7ee702c00a6d46bd8fa29dca1d907c03fdfcfbe))
+* **mobile:** add amend support and report accurate commit changes counts ([eb468ac](https://github.com/Vinzent03/obsidian-git/commit/eb468ac9b79b4e5c28dcb2e802c5d066eeb8dc5f))
+* **mobile:** write conflict markers to file ([b5047ef](https://github.com/Vinzent03/obsidian-git/commit/b5047ef77df65a9840b01c8bd920afed4bae08fe))
+* pull handles push.autoSetupRemote more gracefully ([0a154b3](https://github.com/Vinzent03/obsidian-git/commit/0a154b38d3868122c88dbd6ecf2af0b7a97de87d))
+* request message on empty manual commit message template ([76479cf](https://github.com/Vinzent03/obsidian-git/commit/76479cf3c8bab52b83f979dcb9d6f72281b38ab5))
+* show diff view for unmerged file ([41d5a56](https://github.com/Vinzent03/obsidian-git/commit/41d5a564b8f47ae48557b9639eb9e3d0f16aeedf))
+* **simpleGit:** apply textconv when fetching blob content for show() ([#1182](https://github.com/Vinzent03/obsidian-git/issues/1182)) ([51bd1f0](https://github.com/Vinzent03/obsidian-git/commit/51bd1f061830a2e175e0799893186549058fc33d))
+* **sourceControl:** auto-collapse large nested folders ([#1189](https://github.com/Vinzent03/obsidian-git/issues/1189)) ([983cdf4](https://github.com/Vinzent03/obsidian-git/commit/983cdf424d7c830be0c719985e4709f27e611ee3))
+* **splitDiffView:** keep updating after errors and use vault paths ([#1188](https://github.com/Vinzent03/obsidian-git/issues/1188)) ([af3cea2](https://github.com/Vinzent03/obsidian-git/commit/af3cea28760a613726b1465c91e1e4377dca87a3))
 
 ## [2.40.0](https://github.com/Vinzent03/obsidian-git/compare/2.39.0...2.40.0) (2026-09-17)
 
