@@ -1145,17 +1145,19 @@ export class SimpleGit extends GitManager {
         const [current, refs] = await Promise.all([
             this.getCurrentBranch(),
             this.git.raw([
-                "for-each-ref",
-                "--format=%(refname:lstrip=2)%00%(upstream:short)",
-                "refs/heads",
+                "branch",
+                "--list",
+                "--no-color",
+                "--format=%(refname)%00%(upstream:short)",
             ]),
         ]);
 
         let tracking: string | undefined;
         const branches: string[] = [];
         for (const line of refs.split("\n")) {
-            const [branch, upstream] = line.split("\0");
-            if (!branch) continue;
+            const [ref, upstream] = line.split("\0");
+            if (!ref?.startsWith("refs/heads/")) continue;
+            const branch = ref.slice("refs/heads/".length);
             branches.push(branch);
             if (branch === current) {
                 tracking = upstream || undefined;
