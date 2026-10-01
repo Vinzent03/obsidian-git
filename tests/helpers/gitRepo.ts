@@ -133,6 +133,21 @@ export async function createRepoWithOrigin(): Promise<TestRepo> {
     return createTestRepoFixture({ dir, remotePath, repoPath, git });
 }
 
+export async function createEmptyRepo(): Promise<TestRepo> {
+    const dir = createTempDirectory("obsidian-git-simple-git-test-");
+    const remotePath = path.join(dir, "remote.git");
+    const repoPath = path.join(dir, "worktree");
+
+    await simpleGit(dir).raw(["init", "--initial-branch=main", repoPath]);
+
+    const git = simpleGit({
+        baseDir: repoPath,
+        config: ["core.quotepath=off"],
+    });
+
+    return createTestRepoFixture({ dir, remotePath, repoPath, git });
+}
+
 export async function createRepoWithMergeConflict(): Promise<TestRepo> {
     const repo = await createRepoWithOrigin();
     await repo.git.checkoutLocalBranch("other");

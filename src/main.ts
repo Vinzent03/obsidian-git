@@ -91,12 +91,19 @@ export default class ObsidianGit extends Plugin {
      */
     debRefresh!: Debouncer<[], void>;
 
+    /**
+     * Unpushed commits count, shared by the status bar and the source control
+     * view until the next status update.
+     */
+    private unpushedCommits?: Promise<number>;
+
     setPluginState(state: Partial<PluginState>): void {
         this.state = Object.assign(this.state, state);
         this.statusBar?.display();
     }
 
     async updateCachedStatus(): Promise<Status> {
+        this.unpushedCommits = undefined;
         this.app.workspace.trigger("obsidian-git:loading-status");
         this.cachedStatus = await this.gitManager.status();
         const newMergeInProgress = await this.gitManager.isMergeInProgress();
@@ -112,6 +119,20 @@ export default class ObsidianGit extends Plugin {
         return this.cachedStatus;
     }
 
+    getUnpushedCommits(): Promise<number> {
+        if (!this.unpushedCommits) {
+            const unpushedCommits = this.gitManager.getUnpushedCommits();
+            this.unpushedCommits = unpushedCommits;
+            // Don't cache failures, so the next caller tries again.
+            unpushedCommits.catch(() => {
+                if (this.unpushedCommits === unpushedCommits) {
+                    this.unpushedCommits = undefined;
+                }
+            });
+        }
+        return this.unpushedCommits;
+    }
+
     /**
      * Refreshes the cached status and notifies listeners. Calls made while a
      * refresh is running are coalesced into a single follow-up refresh, so
@@ -121,6 +142,7 @@ export default class ObsidianGit extends Plugin {
 
     private async refreshNow(): Promise<void> {
         if (!this.gitReady) return;
+        this.unpushedCommits = undefined;
 
         const gitViews = this.app.workspace.getLeavesOfType(
             SOURCE_CONTROL_VIEW_CONFIG.type
