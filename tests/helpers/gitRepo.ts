@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
-import simpleGit, { type SimpleGit } from "simple-git";
+import { simpleGit, type SimpleGit } from "simple-git";
 
 export type TestRepo = {
     dir: string;
@@ -123,6 +123,7 @@ export async function createRepoWithOrigin(): Promise<TestRepo> {
     const git = simpleGit({
         baseDir: repoPath,
         config: ["core.quotepath=off"],
+        unsafe: { allowUnsafeConfigPaths: true },
     });
     await git.addConfig("user.email", "test@example.com");
     await git.addConfig("user.name", "Test User");
@@ -143,6 +144,7 @@ export async function createEmptyRepo(): Promise<TestRepo> {
     const git = simpleGit({
         baseDir: repoPath,
         config: ["core.quotepath=off"],
+        unsafe: { allowUnsafeConfigPaths: true },
     });
 
     return createTestRepoFixture({ dir, remotePath, repoPath, git });

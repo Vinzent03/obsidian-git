@@ -66,7 +66,7 @@
         "diff3": "^0.0.4",
         "isomorphic-git": "1.42.4",
         "js-sha256": "^1.0.0",
-        "simple-git": "^3.36.0",
+        "simple-git": "^4.0.2",
         "svelte": "^5.57.1"
     },
     "moduleFileExtensions": [

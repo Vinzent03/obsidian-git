@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
-import simpleGit, {
+import {
+    simpleGit,
     type SimpleGit as SimpleGitClient,
     type SimpleGitProgressEvent,
 } from "simple-git";

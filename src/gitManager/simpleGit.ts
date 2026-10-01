@@ -5,7 +5,7 @@ import { normalizePath, Notice, Platform } from "obsidian";
 import * as path from "path";
 import { resolve, sep } from "path";
 import type * as simple from "simple-git";
-import simpleGit, { GitError, CleanOptions } from "simple-git";
+import { simpleGit, GitError, CleanOptions } from "simple-git";
 import {
     ASK_PASS_INPUT_FILE,
     ASK_PASS_SCRIPT,
@@ -63,35 +63,6 @@ export class SimpleGit extends GitManager {
             }
             this.absoluteRepoPath = basePath;
 
-            this.git = simpleGit({
-                baseDir: basePath,
-                binary:
-                    this.plugin.localStorage.getGitPath() ||
-                    (this.useDefaultWindowsGitPath
-                        ? DEFAULT_WIN_GIT_PATH
-                        : undefined),
-                config: ["core.quotepath=off"],
-                progress: (progress) => {
-                    this.plugin.statusBar?.displayProgress(
-                        this.toGitProgress(progress)
-                    );
-                },
-                unsafe: {
-                    allowUnsafeCustomBinary: true,
-                    allowUnsafeEditor: true,
-                    allowUnsafeAskPass: true,
-                    allowUnsafeConfigEnvCount: true,
-                    allowUnsafeConfigPaths: true,
-                    allowUnsafeCredentialHelper: true,
-                    allowUnsafeGitProxy: true,
-                    allowUnsafeGpgProgram: true,
-                    allowUnsafeHooksPath: true,
-                    allowUnsafeMergeDriver: true,
-                    allowUnsafeSshCommand: true,
-                    allowUnsafePager: true,
-                    allowUnsafeDiffTextConv: true,
-                },
-            });
             const pathPaths = this.plugin.localStorage.getPATHPaths();
             const envVars = this.plugin.localStorage.getEnvVars();
             const gitDir = this.plugin.settings.gitDir;
@@ -112,6 +83,50 @@ export class SimpleGit extends GitManager {
                 if (key === undefined) continue;
                 envs[key] = value;
             }
+
+            this.git = simpleGit({
+                baseDir: basePath,
+                binary:
+                    this.plugin.localStorage.getGitPath() ||
+                    (this.useDefaultWindowsGitPath
+                        ? DEFAULT_WIN_GIT_PATH
+                        : undefined),
+                config: ["core.quotepath=off"],
+                // Preserve the inherited and user-configured environment
+                allowEnvironment: [
+                    ...Object.keys(envs),
+                    "SSH_ASKPASS",
+                    "SSH_ASKPASS_REQUIRE",
+                    "OBSIDIAN_GIT_CREDENTIALS_INPUT",
+                    "OBSIDIAN_GIT",
+                ],
+                progress: (progress) => {
+                    this.plugin.statusBar?.displayProgress(
+                        this.toGitProgress(progress)
+                    );
+                },
+                unsafe: {
+                    allowAbbreviatedOptions: true,
+                    allowUnsafeCustomBinary: true,
+                    allowUnsafeEditor: true,
+                    allowUnsafeAskPass: true,
+                    allowUnsafeConfigEnvCount: true,
+                    allowUnsafeConfigPaths: true,
+                    allowUnsafeCredentialHelper: true,
+                    allowUnsafeGitProxy: true,
+                    allowUnsafeGpgProgram: true,
+                    allowUnsafeHooksPath: true,
+                    allowUnsafeMergeDriver: true,
+                    allowUnsafeSshCommand: true,
+                    allowUnsafePager: true,
+                    allowUnsafeDiffTextConv: true,
+                    allowUnsafeCommandBinaries: true,
+                    allowUnsafeExec: true,
+                    allowUnsafeInclude: true,
+                    allowUnsafeSubmodule: true,
+                    allowUnsafeUrlRewrite: true,
+                },
+            });
 
             const SIMPLE_GIT_NAMESPACE = "simple-git";
             const NAMESPACE_SEPARATOR = ",";
@@ -1660,7 +1675,7 @@ function parseBlame(blameOutputUnnormalized: string): Blame {
     };
 
     let line = 1;
-    for (let bi = 0; bi < blameLines.length;) {
+    for (let bi = 0; bi < blameLines.length; ) {
         const blameLine = blameLines[bi];
         if (startsWithNonWhitespace(blameLine)) {
             const lineInfo = blameLine.split(" ");
