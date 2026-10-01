@@ -801,6 +801,19 @@ div:hover > .git-gutter-marker.git-changedelete {
     margin-inline-end: auto;
 }
 
+.is-mobile .git-conflict-panel {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.is-mobile .git-conflict-panel .git-conflict-actions-group {
+    flex-wrap: wrap;
+}
+
+.is-mobile .git-conflict-panel .nav-action-button {
+    flex: 1 1 auto;
+}
+
 .git-conflict-actions-group {
     display: inline-flex;
     gap: 0;
@@ -866,4 +879,25 @@ div:hover > .git-gutter-marker.git-changedelete {
 
 .cm-line.git-conflict-marker-line .git-conflict-actions-widget {
     order: 2;
+}
+
+.is-mobile .cm-line.git-conflict-marker-line {
+    flex-wrap: wrap;
+}
+
+.is-mobile .cm-line.git-conflict-marker-line::after {
+    display: none;
+}
+
+.is-mobile .cm-line.git-conflict-marker-line .git-conflict-actions-widget {
+    flex: 0 0 100%;
+    margin: var(--size-2-1) 0 0;
+}
+
+.is-mobile .git-conflict-actions-widget {
+    flex-wrap: wrap;
+}
+
+.is-mobile .git-conflict-actions-widget .nav-action-button {
+    flex: 1 1 auto;
 }

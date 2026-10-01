@@ -9,7 +9,7 @@ import {
     type PanelConstructor,
     type ViewUpdate,
 } from "@codemirror/view";
-import { ButtonComponent, editorLivePreviewField } from "obsidian";
+import { ButtonComponent, editorLivePreviewField, Platform } from "obsidian";
 import { resolveAllConflicts, resolveConflict } from "./actions";
 import {
     parseConflictBlocks,
@@ -93,6 +93,46 @@ class ConflictButtonsWidget extends WidgetType {
     }
 }
 
+function renderConflictSummary(root: HTMLElement, view: EditorView): void {
+    const blocks = view.state.field(conflictBlocksField, false) ?? [];
+    root.createSpan({
+        cls: "git-conflict-panel-label",
+        text: `${blocks.length} conflict${blocks.length === 1 ? "" : "s"} in file`,
+    });
+    const labels: Partial<Record<ConflictChoice, string>> = {
+        ours: "Keep all ours",
+        theirs: "Keep all theirs",
+        both: "Keep both",
+    };
+    if (blocks.every((block) => block.base !== undefined)) {
+        labels.base = "Keep all base";
+    }
+    addButtons(
+        root.createDiv({ cls: "git-conflict-actions-group" }),
+        labels,
+        (choice) => resolveAllConflicts(view, choice)
+    );
+}
+
+class ConflictSummaryWidget extends WidgetType {
+    constructor(
+        private readonly count: number,
+        private readonly hasBase: boolean
+    ) {
+        super();
+    }
+
+    eq(other: ConflictSummaryWidget): boolean {
+        return other.count === this.count && other.hasBase === this.hasBase;
+    }
+
+    toDOM(view: EditorView): HTMLElement {
+        const root = createDiv({ cls: "git-conflict-panel" });
+        renderConflictSummary(root, view);
+        return root;
+    }
+}
+
 function addSectionDecorations(
     decorations: Range<Decoration>[],
     state: EditorState,
@@ -114,6 +154,18 @@ function addSectionDecorations(
 function buildDecorations(state: EditorState): DecorationSet {
     const blocks = state.field(conflictBlocksField, false) ?? [];
     const decorations: Range<Decoration>[] = [];
+    if (Platform.isMobile && blocks.length > 0) {
+        decorations.push(
+            Decoration.widget({
+                widget: new ConflictSummaryWidget(
+                    blocks.length,
+                    blocks.every((block) => block.base !== undefined)
+                ),
+                block: true,
+                side: -1,
+            }).range(0)
+        );
+    }
     for (const block of blocks) {
         const headMarker = block.markers[0]!;
         for (const [index, marker] of block.markers.entries()) {
@@ -194,25 +246,7 @@ class ConflictPanel implements Panel {
         if (blocks.length === 0) {
             return;
         }
-        this.dom.createSpan({
-            cls: "git-conflict-panel-label",
-            text: `${blocks.length} conflict${
-                blocks.length === 1 ? "" : "s"
-            } in file`,
-        });
-        const labels: Partial<Record<ConflictChoice, string>> = {
-            ours: "Keep all ours",
-            theirs: "Keep all theirs",
-            both: "Keep both",
-        };
-        if (blocks.every((block) => block.base !== undefined)) {
-            labels.base = "Keep all base";
-        }
-        addButtons(
-            this.dom.createDiv({ cls: "git-conflict-actions-group" }),
-            labels,
-            (choice) => resolveAllConflicts(this.view, choice)
-        );
+        renderConflictSummary(this.dom, this.view);
     }
 }
 
@@ -220,7 +254,7 @@ const conflictPanelConstructor: PanelConstructor = (view) =>
     new ConflictPanel(view);
 
 const conflictPanel = showPanel.compute([conflictBlocksField], (state) =>
-    state.field(conflictBlocksField).length > 0
+    !Platform.isMobile && state.field(conflictBlocksField).length > 0
         ? conflictPanelConstructor
         : null
 );
