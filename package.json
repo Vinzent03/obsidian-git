@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "node esbuild.config.mjs dev",
         "build": "node esbuild.config.mjs production",
-        "release": "standard-version",
+        "release": "commit-and-tag-version",
         "lint": "eslint src tests vitest.config.ts",
         "format": "prettier --check src tests vitest.config.ts",
         "tsc": "tsc --noEmit",
@@ -20,8 +20,16 @@
     "author": "Vinzent03",
     "license": "MIT",
     "type": "module",
-    "standard-version": {
-        "t": ""
+    "commit-and-tag-version": {
+        "t": "",
+        "bumpFiles": [
+            "package.json",
+            "manifest.json",
+            {
+                "filename": "versions.json",
+                "updater": "./version-bump.cjs"
+            }
+        ]
     },
     "engines": {
         "node": ">=24",
@@ -34,6 +42,7 @@
         "@types/node": "^26.6.3",
         "@typescript-eslint/parser": "8.71.0",
         "@vitest/coverage-v8": "^5.0.3",
+        "commit-and-tag-version": "^13.2.1",
         "esbuild": "^0.28.2",
         "esbuild-svelte": "^0.9.5",
         "eslint": "^10.11.0",
@@ -42,7 +51,6 @@
         "prettier": "3.9.9",
         "prettier-plugin-svelte": "^4.1.1",
         "scss": "^0.2.4",
-        "standard-version": "^9.5.0",
         "svelte-check": "^4.7.6",
         "svelte-eslint-parser": "^1.8.1",
         "svelte-preprocess": "^6.0.5",
