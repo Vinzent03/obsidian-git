@@ -556,6 +556,10 @@ export class GitActions {
             return { status: "skipped", reason: "merge-in-progress" };
         }
 
+        if (resolvedMode === "nothing" && mergeInProgress && mode === "smart") {
+            resolvedMode = "staged";
+        }
+
         if (resolvedMode === "nothing") {
             return {
                 status: "nothing-to-commit",
@@ -648,7 +652,7 @@ export class GitActions {
             }
 
             this.plugin.app.workspace.trigger("obsidian-git:refresh");
-            if (committedFiles === 0) {
+            if (committedFiles === 0 && !mergeInProgress) {
                 // simple-git resolves with { changes: 0 } instead of
                 // throwing when there is nothing to commit (e.g. the
                 // detected change was already committed by a previous run).

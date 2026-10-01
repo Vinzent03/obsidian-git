@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GitActions } from "../../src/gitActions";
 import { GitConflictError, type FileStatusResult } from "../../src/types";
 import {
     gitManagerBackends,
@@ -297,6 +298,58 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect(await repo.show("HEAD:note.md")).toBe("resolved");
         expect(await manager.isMergeInProgress()).toBe(false);
         expect(committedFiles).toBe(1);
+    });
+
+    it("finishes a merge resolved to ours with no staged changes", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, repo } = context;
+        repo.write("note.md", "ours\n");
+        await manager.stage("note.md", false);
+
+        const status = await manager.status();
+        expect(status.conflicted).toEqual([]);
+        expect(status.staged).toEqual([]);
+        expect(status.changed).toEqual([]);
+        expect(await manager.isMergeInProgress()).toBe(true);
+
+        const committedFiles = await manager.commit({
+            message: "resolve merge",
+        });
+
+        expect(committedFiles).toBe(0);
+        expect(
+            (await repo.raw(["rev-list", "--parents", "-n", "1", "HEAD"]))
+                .split(" ")
+                .slice(1)
+        ).toHaveLength(2);
+        expect(await manager.isMergeInProgress()).toBe(false);
+    });
+
+    it("commits an empty resolved merge in smart mode without automatic staging", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, plugin, repo } = context;
+        repo.write("note.md", "ours\n");
+        await manager.stage("note.md", false);
+        plugin.state.mergeInProgress = true;
+        plugin.settings.autoStageOnEmptyIndex = false;
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+
+        const result = await new GitActions(plugin).commit({
+            fromAuto: false,
+            commitMessage: "resolve merge",
+            mode: "smart",
+        });
+
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "committed", files: 0 },
+        });
+        expect(await manager.isMergeInProgress()).toBe(false);
     });
 
     it("counts merge changes when committing all files", async () => {

@@ -155,6 +155,9 @@
         if (hasConflicts) {
             return "Resolve conflicts before committing";
         }
+        if (mergeInProgress && !hasChanges) {
+            return sync ? "Finish merge and sync" : "Finish merge";
+        }
         if (!hasChanges) {
             return sync
                 ? "Sync (no changes to commit)"
@@ -177,6 +180,7 @@
         if (mode === "staged") return stagedCount > 0;
         if (mode === "all") return hasChanges;
         return (
+            mergeInProgress ||
             stagedCount > 0 ||
             (plugin.settings.autoStageOnEmptyIndex && changedCount > 0)
         );
