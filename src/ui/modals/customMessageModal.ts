@@ -3,8 +3,8 @@ import type ObsidianGit from "src/main";
 
 export class CustomMessageModal extends SuggestModal<string> {
     resolve:
-        | ((value: string | PromiseLike<string> | undefined) => void)
-        | null = null;
+        ((value: string | PromiseLike<string> | undefined) => void) | null =
+        null;
     constructor(private readonly plugin: ObsidianGit) {
         super(plugin.app);
         this.setPlaceholder(

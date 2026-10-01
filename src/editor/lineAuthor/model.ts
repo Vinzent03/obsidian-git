@@ -165,28 +165,16 @@ export type LineAuthorSettings = {
 };
 
 export type LineAuthorFollowMovement =
-    | "inactive"
-    | "same-commit"
-    | "all-commits";
+    "inactive" | "same-commit" | "all-commits";
 
 export type LineAuthorDisplay =
-    | "hide"
-    | "full"
-    | "first name"
-    | "last name"
-    | "initials";
+    "hide" | "full" | "first name" | "last name" | "initials";
 
 export type LineAuthorDateTimeFormatOptions =
-    | "hide"
-    | "date"
-    | "datetime"
-    | "natural language"
-    | "custom";
+    "hide" | "date" | "datetime" | "natural language" | "custom";
 
 export type LineAuthorTimezoneOption =
-    | "viewer-local"
-    | "author-local"
-    | "utc0000";
+    "viewer-local" | "author-local" | "utc0000";
 
 // ===============================================================
 

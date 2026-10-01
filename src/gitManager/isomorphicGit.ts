@@ -488,8 +488,7 @@ export class IsomorphicGit extends GitManager {
     async pull(): Promise<PullResult> {
         return this.withGitOperation(GitOperation.pull, async () => {
             let mergeState:
-                | { ours: string; theirs: string; message: string }
-                | undefined;
+                { ours: string; theirs: string; message: string } | undefined;
             try {
                 if (await this.isMergeInProgress()) {
                     throw new Error(
@@ -1394,8 +1393,8 @@ export class IsomorphicGit extends GitManager {
         }
         // status will always be two characters
         return {
-            index: status[0] == "?" ? "U" : status[0] ?? " ",
-            workingDir: status[1] == "?" ? "U" : status[1] ?? " ",
+            index: status[0] == "?" ? "U" : (status[0] ?? " "),
+            workingDir: status[1] == "?" ? "U" : (status[1] ?? " "),
             path: row[this.FILE],
             vaultPath: this.getRelativeVaultPath(row[this.FILE]),
         };

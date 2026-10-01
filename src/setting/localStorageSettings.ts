@@ -34,8 +34,7 @@ export class LocalStorageSettings {
 
     getPassword(): string | null {
         return this.app.loadLocalStorage(this.prefix + "password") as
-            | string
-            | null;
+            string | null;
     }
 
     setPassword(value: string): void {
@@ -44,8 +43,7 @@ export class LocalStorageSettings {
 
     getUsername(): string | null {
         return this.app.loadLocalStorage(this.prefix + "username") as
-            | string
-            | null;
+            string | null;
     }
 
     setUsername(value: string): void {
@@ -54,8 +52,7 @@ export class LocalStorageSettings {
 
     getHostname(): string | null {
         return this.app.loadLocalStorage(this.prefix + "hostname") as
-            | string
-            | null;
+            string | null;
     }
 
     setHostname(value: string): void {
@@ -64,8 +61,7 @@ export class LocalStorageSettings {
 
     getLastAutoPull(): string | null {
         return this.app.loadLocalStorage(this.prefix + "lastAutoPull") as
-            | string
-            | null;
+            string | null;
     }
 
     setLastAutoPull(value: string): void {
@@ -74,8 +70,7 @@ export class LocalStorageSettings {
 
     getLastAutoBackup(): string | null {
         return this.app.loadLocalStorage(this.prefix + "lastAutoBackup") as
-            | string
-            | null;
+            string | null;
     }
 
     setLastAutoBackup(value: string): void {
@@ -84,8 +79,7 @@ export class LocalStorageSettings {
 
     getLastAutoPush(): string | null {
         return this.app.loadLocalStorage(this.prefix + "lastAutoPush") as
-            | string
-            | null;
+            string | null;
     }
 
     setLastAutoPush(value: string): void {
@@ -94,8 +88,7 @@ export class LocalStorageSettings {
 
     getGitPath(): string | null {
         return this.app.loadLocalStorage(this.prefix + "gitPath") as
-            | string
-            | null;
+            string | null;
     }
 
     setGitPath(value: string): void {
@@ -106,8 +99,7 @@ export class LocalStorageSettings {
         return (
             (
                 this.app.loadLocalStorage(this.prefix + "PATHPaths") as
-                    | string
-                    | null
+                    string | null
             )?.split(":") ?? []
         );
     }
@@ -122,8 +114,7 @@ export class LocalStorageSettings {
     getEnvVars(): string[] {
         return JSON.parse(
             (this.app.loadLocalStorage(this.prefix + "envVars") as
-                | string
-                | undefined) ?? "[]"
+                string | undefined) ?? "[]"
         ) as string[];
     }
 

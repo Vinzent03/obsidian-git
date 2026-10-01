@@ -15,10 +15,7 @@
         "forceConsistentCasingInFileNames": true,
         "allowSyntheticDefaultImports": true,
         "lib": ["ES2021", "DOM"],
-        "verbatimModuleSyntax": true,
+        "verbatimModuleSyntax": true
     },
-    "include": [
-        "**/*.ts",
-        "**/*.svelte"
-    ]
+    "include": ["**/*.ts", "**/*.svelte"]
 }

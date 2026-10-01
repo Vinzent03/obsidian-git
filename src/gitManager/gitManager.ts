@@ -213,13 +213,11 @@ export abstract class GitManager {
                 const singleChildIsDir =
                     node.children?.first()?.data == undefined;
 
-                if (
-                    !(
-                        node.children != undefined &&
-                        singleChild &&
-                        singleChildIsDir
-                    )
-                )
+                if (!(
+                    node.children != undefined &&
+                    singleChild &&
+                    singleChildIsDir
+                ))
                     break;
                 const child = node.children.first()!;
                 node.title += "/" + child.title;

@@ -321,9 +321,7 @@ export type DiscardActionResult =
 export type InitRepositoryResult = { status: "initialized" };
 
 export type DeleteRepositoryResult =
-    | { status: "deleted" }
-    | { status: "not-found" }
-    | { status: "cancelled" };
+    { status: "deleted" } | { status: "not-found" } | { status: "cancelled" };
 
 export type CloneRepositoryResult =
     | { status: "cloned" }

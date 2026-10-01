@@ -355,7 +355,7 @@
     }
 
     async function performConflictCountUpdate(path?: string): Promise<void> {
-        const targets = path ? [path] : status?.conflicted ?? [];
+        const targets = path ? [path] : (status?.conflicted ?? []);
         const counts = path ? { ...conflictCounts } : {};
         for (const conflict of targets) {
             counts[conflict] = 0;

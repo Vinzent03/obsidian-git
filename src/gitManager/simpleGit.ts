@@ -1658,7 +1658,7 @@ function parseBlame(blameOutputUnnormalized: string): Blame {
     };
 
     let line = 1;
-    for (let bi = 0; bi < blameLines.length; ) {
+    for (let bi = 0; bi < blameLines.length;) {
         const blameLine = blameLines[bi];
         if (startsWithNonWhitespace(blameLine)) {
             const lineInfo = blameLine.split(" ");
