@@ -510,10 +510,9 @@ export class GitActions {
         commitMessage,
         amend = false,
     }: CommitOptions): Promise<CommitResult> {
-        let stagedFiles: { vaultPath: string; path: string }[] = [];
+        let stagedFiles: { vaultPath: string; path: string }[];
         let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
-        let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
-            mode === "smart" ? "nothing" : mode;
+        let resolvedMode: Exclude<CommitMode, "smart"> | "nothing";
 
         const status = await this.plugin.updateCachedStatus();
         const mergeInProgress = this.plugin.state.mergeInProgress;
@@ -582,9 +581,11 @@ export class GitActions {
         if (changesCountToCommit || mergeInProgress) {
             // The commit message from settings or previously set in the
             // source control view
-            let cmtMessage = (commitMessage ??= fromAuto
-                ? this.plugin.settings.autoCommitMessage
-                : this.plugin.settings.commitMessage);
+            let cmtMessage =
+                commitMessage ??
+                (fromAuto
+                    ? this.plugin.settings.autoCommitMessage
+                    : this.plugin.settings.commitMessage);
 
             // Optionally ask the user via a modal for a commit message
             if (
@@ -675,7 +676,7 @@ export class GitActions {
         let shPath = "sh";
         if (Platform.isWin) {
             shPath = process.env.PROGRAMFILES + "\\Git\\bin\\sh.exe";
-            let shExists = false;
+            let shExists: boolean;
             try {
                 await fsPromises.access(shPath, fsPromises.constants.X_OK);
                 shExists = true;

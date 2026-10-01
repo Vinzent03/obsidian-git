@@ -410,7 +410,7 @@ export class IsomorphicGit extends GitManager {
         dir?: string;
         status?: Status;
     }): Promise<void> {
-        let files: string[] = [];
+        let files: string[];
         if (status) {
             if (dir != undefined) {
                 files = status.changed

@@ -350,7 +350,7 @@ export abstract class GitManager {
             status = status ?? (await this.status());
 
             const changeset: { [key: string]: string[] } = {};
-            let files = "";
+            let files: string;
             // If there are more than 100 files, we don't list them all
             if (status.staged.length + status.stagedOutsideVault < 100) {
                 status.staged.forEach((value: FileStatusResult) => {
@@ -383,7 +383,7 @@ export abstract class GitManager {
         );
         if (this.plugin.settings.listChangedFilesInMessageBody) {
             const status2 = status ?? (await this.status());
-            let files = "";
+            let files: string;
             // If there are more than 100 files, we don't list them all
             if (status2.staged.length + status2.stagedOutsideVault < 100) {
                 files = status2.staged.map((e) => e.path).join("\n");

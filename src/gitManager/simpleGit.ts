@@ -1632,6 +1632,8 @@ export class SimpleGit extends GitManager {
         } catch (error) {
             const errorMessage =
                 error instanceof Error ? error.message : String(error);
+            // Error.cause is unavailable with the project's ES2021 target.
+            // eslint-disable-next-line preserve-caught-error
             throw new Error(`Error checking LFS status: ${errorMessage}`);
         }
     }

@@ -28,16 +28,16 @@
         "pnpm": ">=11"
     },
     "devDependencies": {
-        "@eslint/js": "^9.39.5",
+        "@eslint/js": "^10.0.1",
         "@types/debug": "^4.1.13",
         "@types/diff3": "^0.0.2",
         "@types/node": "^26.6.3",
-        "@typescript-eslint/parser": "8.65.0",
+        "@typescript-eslint/parser": "8.71.0",
         "@vitest/coverage-v8": "^4.1.11",
         "esbuild": "^0.28.2",
         "esbuild-svelte": "^0.9.5",
-        "eslint": "^9.39.5",
-        "eslint-plugin-svelte": "^2.46.1",
+        "eslint": "^10.11.0",
+        "eslint-plugin-svelte": "^3.23.0",
         "obsidian": "^1.13.1",
         "prettier": "3.9.9",
         "prettier-plugin-svelte": "^4.1.1",
@@ -48,7 +48,7 @@
         "svelte-preprocess": "^6.0.5",
         "tslib": "^2.8.1",
         "typescript": "5.9.3",
-        "typescript-eslint": "^8.61.0",
+        "typescript-eslint": "^8.71.0",
         "vitest": "^4.1.11"
     },
     "dependencies": {
