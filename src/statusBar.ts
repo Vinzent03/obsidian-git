@@ -300,8 +300,7 @@ export class StatusBar {
     private async refreshCommitTimestamp() {
         this.lastCommitTimestamp =
             await this.plugin.gitManager.getLastCommitTime();
-        this.unPushedCommits =
-            await this.plugin.gitManager.getUnpushedCommits();
+        this.unPushedCommits = await this.plugin.getUnpushedCommits();
     }
 
     public remove() {

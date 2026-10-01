@@ -9,7 +9,7 @@ import { GitOperation, type GitProgress } from "../../src/types";
 import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { withCleanup } from "../helpers/cleanup";
 import { createFakePlugin, type FakePlugin } from "../helpers/createFakePlugin";
-import { createRepoWithOrigin } from "../helpers/gitRepo";
+import { createEmptyRepo, createRepoWithOrigin } from "../helpers/gitRepo";
 import { createSimpleGitTestContext } from "../helpers/simpleGit";
 
 function createManager(
@@ -536,18 +536,11 @@ describe("SimpleGit.pull", () => {
     });
 
     it("reports an error when no current branch is checked out", async () => {
-        const fetch = vi.fn().mockResolvedValue(undefined);
-        const git = {
-            status: vi.fn().mockResolvedValue({
-                current: undefined,
-                tracking: "origin/main",
-            }),
-            branch: vi.fn().mockResolvedValue({ all: ["main", "origin/main"] }),
-            fetch,
-        } as unknown as SimpleGitClient;
-        const { plugin, manager } = withCleanup(
-            await createSimpleGitTestContext({ gitClient: git })
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
         );
+        await repo.raw(["checkout", "--quiet", "--detach"]);
+        const fetch = vi.spyOn(manager.git, "fetch");
 
         await expect(manager.pull()).rejects.toThrow(
             "No current branch found. Cannot pull."
@@ -684,17 +677,11 @@ describe("SimpleGit.push", () => {
     });
 
     it("returns a blocked result when no current branch is checked out", async () => {
-        const push = vi.fn().mockResolvedValue(undefined);
-        const git = {
-            status: vi.fn().mockResolvedValue({
-                current: undefined,
-                tracking: "origin/main",
-            }),
-            push,
-        } as unknown as SimpleGitClient;
-        const { plugin, manager } = withCleanup(
-            await createSimpleGitTestContext({ gitClient: git })
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
         );
+        await repo.raw(["checkout", "--quiet", "--detach"]);
+        const push = vi.spyOn(manager.git, "push");
 
         const result = await manager.push();
 
@@ -727,6 +714,61 @@ describe("SimpleGit.push", () => {
         expect(plugin.log).toHaveBeenCalledWith(
             "No push target found. Ignoring push of main repo and updating submodules only."
         );
+    });
+});
+
+describe("SimpleGit.branchInfo", () => {
+    it("returns the current branch, its upstream and all local branches", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.raw(["branch", "feature"]);
+
+        expect(await manager.branchInfo()).toEqual({
+            current: "main",
+            tracking: "origin/main",
+            branches: ["feature", "main"],
+        });
+    });
+
+    it("returns no upstream for a branch without one", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.git.checkoutLocalBranch("local-only");
+
+        expect(await manager.branchInfo()).toEqual({
+            current: "local-only",
+            tracking: undefined,
+            branches: ["local-only", "main"],
+        });
+    });
+
+    it("returns no current branch when HEAD is detached", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.raw(["checkout", "--quiet", "--detach"]);
+
+        expect(await manager.branchInfo()).toEqual({
+            current: undefined,
+            tracking: undefined,
+            branches: ["main"],
+        });
+    });
+
+    it("returns the current branch before the first commit", async () => {
+        const { manager } = withCleanup(
+            await createSimpleGitTestContext({
+                fixture: createEmptyRepo,
+            })
+        );
+
+        expect(await manager.branchInfo()).toEqual({
+            current: "main",
+            tracking: undefined,
+            branches: [],
+        });
     });
 });
 

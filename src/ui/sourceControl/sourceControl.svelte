@@ -276,7 +276,7 @@
             loading = false;
             return;
         }
-        unPushedCommits = await plugin.gitManager.getUnpushedCommits();
+        unPushedCommits = await plugin.getUnpushedCommits();
 
         status = plugin.cachedStatus;
         mergeInProgress = plugin.state.mergeInProgress;

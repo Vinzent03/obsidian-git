@@ -937,10 +937,7 @@ export class SimpleGit extends GitManager {
                         }
                     }
                 }
-                const status = await this.git.status();
-                const currentBranch = status.detached
-                    ? undefined
-                    : status.current;
+                const currentBranch = await this.getCurrentBranch();
 
                 if (!currentBranch) {
                     return { status: "blocked", reason: "no-branch" };
@@ -1067,8 +1064,7 @@ export class SimpleGit extends GitManager {
     }
 
     async getUnpushedCommits(): Promise<number> {
-        const status = await this.git.status();
-        const currentBranch = status.detached ? undefined : status.current;
+        const currentBranch = await this.getCurrentBranch();
 
         if (currentBranch == null) {
             return 0;
@@ -1097,8 +1093,7 @@ export class SimpleGit extends GitManager {
         if (this.plugin.settings.updateSubmodules === true) {
             return true;
         }
-        const status = await this.git.status();
-        const currentBranch = status.detached ? undefined : status.current;
+        const currentBranch = await this.getCurrentBranch();
         if (!currentBranch) {
             this.plugin.log("During canPush check, no current branch found.");
             return false;
@@ -1132,15 +1127,42 @@ export class SimpleGit extends GitManager {
         return "valid";
     }
 
-    async branchInfo(): Promise<BranchInfo> {
-        const status = await this.git.status();
-        const branches = await this.git.branch(["--no-color"]);
+    /**
+     * Returns the checked out branch, or undefined if HEAD is detached. Unlike
+     * `git status`, this doesn't scan the working tree.
+     */
+    private async getCurrentBranch(): Promise<string | undefined> {
+        const branch = await this.git.raw([
+            "symbolic-ref",
+            "--quiet",
+            "--short",
+            "HEAD",
+        ]);
+        return branch.trim() || undefined;
+    }
 
-        return {
-            current: status.detached ? undefined : status.current || undefined,
-            tracking: status.tracking || undefined,
-            branches: branches.all,
-        };
+    async branchInfo(): Promise<BranchInfo> {
+        const [current, refs] = await Promise.all([
+            this.getCurrentBranch(),
+            this.git.raw([
+                "for-each-ref",
+                "--format=%(refname:lstrip=2)%00%(upstream:short)",
+                "refs/heads",
+            ]),
+        ]);
+
+        let tracking: string | undefined;
+        const branches: string[] = [];
+        for (const line of refs.split("\n")) {
+            const [branch, upstream] = line.split("\0");
+            if (!branch) continue;
+            branches.push(branch);
+            if (branch === current) {
+                tracking = upstream || undefined;
+            }
+        }
+
+        return { current, tracking, branches };
     }
 
     async getRemoteUrl(remote: string): Promise<string | undefined> {
