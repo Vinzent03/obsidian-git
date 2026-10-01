@@ -1621,7 +1621,7 @@ export const zeroCommit: BlameCommit = {
 
 // Parse git blame porcelain format: https://git-scm.com/docs/git-blame#_the_porcelain_format
 function parseBlame(blameOutputUnnormalized: string): Blame {
-    const blameOutput = blameOutputUnnormalized.replace("\r\n", "\n");
+    const blameOutput = blameOutputUnnormalized.replaceAll("\r\n", "\n");
 
     const blameLines = blameOutput.split("\n");
 
