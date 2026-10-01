@@ -41,7 +41,7 @@
     onMount(() => {
         for (const entity of hierarchy.children) {
             if ((entity.children?.length ?? 0) > 100)
-                closed[entity.title] = true;
+                closed[entity.path] = true;
         }
     });
     let side = $derived(getTooltipSide(view.leaf));
