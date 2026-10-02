@@ -390,6 +390,39 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect((await manager.status()).all).toEqual([]);
     });
 
+    it("lists staged files in the commit message", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.writeAndCommit("deleted.md", "deleted\n", "add deleted");
+        repo.write("note.md", "modified\n");
+        repo.write("added.md", "added\n");
+        repo.write("unstaged.md", "unstaged\n");
+        repo.remove("deleted.md");
+        await manager.stage("note.md", false);
+        await manager.stage("added.md", false);
+        await manager.stage("deleted.md", false);
+        plugin.settings.listChangedFilesInMessageBody = true;
+        const status = vi.spyOn(manager, "status");
+
+        const message = await manager.formatCommitMessage(
+            "{{numFiles}} files: {{files}}"
+        );
+
+        const [summary, body] = message.split("\n\nAffected files:\n");
+        expect(summary).toMatch(/^3 files: /);
+        expect(summary).toContain("A added.md");
+        expect(summary).toContain("D deleted.md");
+        expect(summary).toContain("M note.md");
+        expect(body?.split("\n").sort()).toEqual([
+            "added.md",
+            "deleted.md",
+            "note.md",
+        ]);
+        if (manager instanceof IsomorphicGit) {
+            expect(status).not.toHaveBeenCalled();
+        }
+    });
+
     it("counts merge changes when committing all files", async () => {
         context = await backend.create(createRepoWithMergeConflict);
         const { manager, repo } = context;
