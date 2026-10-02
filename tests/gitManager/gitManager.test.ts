@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GitActions } from "../../src/gitActions";
+import { IsomorphicGit } from "../../src/gitManager/isomorphicGit";
 import { GitConflictError, type FileStatusResult } from "../../src/types";
 import {
     gitManagerBackends,
@@ -350,6 +351,43 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
             value: { status: "committed", files: 0 },
         });
         expect(await manager.isMergeInProgress()).toBe(false);
+    });
+
+    it("commits all changes without extra working tree walks", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.writeAndCommit("deleted.md", "deleted\n", "add deleted");
+        repo.write("note.md", "modified\n");
+        repo.write("untracked.md", "untracked\n");
+        repo.remove("deleted.md");
+        const extraWalks =
+            manager instanceof IsomorphicGit
+                ? [
+                      vi.spyOn(manager, "getUnstagedFiles"),
+                      vi.spyOn(manager, "getStagedFiles"),
+                  ]
+                : [];
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+
+        const result = await new GitActions(plugin).commit({
+            fromAuto: false,
+            commitMessage: "commit all",
+            mode: "all",
+        });
+
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "committed", files: 3 },
+        });
+        for (const walk of extraWalks) {
+            expect(walk).not.toHaveBeenCalled();
+        }
+        expect((await manager.status()).all).toEqual([]);
     });
 
     it("counts merge changes when committing all files", async () => {

@@ -510,39 +510,19 @@ export class GitActions {
         commitMessage,
         amend = false,
     }: CommitOptions): Promise<CommitResult> {
-        let stagedFiles: { vaultPath: string; path: string }[];
-        let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
-        let resolvedMode: Exclude<CommitMode, "smart"> | "nothing";
-
         const status = await this.plugin.updateCachedStatus();
         const mergeInProgress = this.plugin.state.mergeInProgress;
-        if (this.plugin.gitManager instanceof SimpleGit) {
-            stagedFiles = status.staged;
-
-            // This typecast is only needed to hide the fact that `type` is missing, but that is only needed for isomorphic-git
-            unstagedFiles = status.changed as unknown as (UnstagedFile & {
-                vaultPath: string;
-            })[];
-            resolvedMode = this.resolveCommitMode(
+        // Reuse the fresh status instead of walking the working tree again.
+        const stagedFiles = status.staged;
+        // The cast hides the missing `type`, which nothing reads here.
+        const unstagedFiles = status.changed as unknown as (UnstagedFile & {
+            vaultPath: string;
+        })[];
+        let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
+            this.resolveCommitMode(
                 mode,
                 stagedFiles.length + status.stagedOutsideVault
             );
-        } else {
-            // isomorphic-git section
-
-            const gitManager = this.plugin.gitManager as IsomorphicGit;
-            stagedFiles = await gitManager.getStagedFiles();
-            resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
-            if (resolvedMode === "all") {
-                const res = await gitManager.getUnstagedFiles();
-                unstagedFiles = res.map(({ path, type }) => ({
-                    vaultPath:
-                        this.plugin.gitManager.getRelativeVaultPath(path),
-                    path,
-                    type,
-                }));
-            }
-        }
 
         if (fromAuto && mergeInProgress) {
             if (status.conflicted.length + status.conflictedOutsideVault > 0) {
