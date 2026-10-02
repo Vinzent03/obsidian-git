@@ -467,7 +467,8 @@ export class GitActions {
 
         // Prevent trying to push every time. Only if unpushed commits are present
         if (await this.plugin.gitManager.canPush()) {
-            const pushResult = await this.performPush();
+            // A conflicting pull throws before this point, so skip the status refresh.
+            const pushResult = await this.performPush({ refreshStatus: false });
             this.reportPushResult(pushResult);
             switch (pushResult.status) {
                 case "pushed":
@@ -745,21 +746,26 @@ export class GitActions {
         return actionResult;
     }
 
-    private async performPush(): Promise<PushResult> {
+    private async performPush({
+        refreshStatus = true,
+    }: { refreshStatus?: boolean } = {}): Promise<PushResult> {
         if (!(await this.isPushRemoteSet())) {
             return { status: "skipped", reason: "no-upstream" };
         }
-        // Refresh because of pull
-        const status = await this.plugin.updateCachedStatus();
-        const conflictCount =
-            status.conflicted.length + status.conflictedOutsideVault;
-        if (conflictCount > 0) {
-            return {
-                status: "blocked",
-                reason: "conflicts",
-                files: conflictCount,
-            };
-        } else if (this.plugin.state.mergeInProgress) {
+        if (refreshStatus) {
+            // Refresh because of pull
+            const status = await this.plugin.updateCachedStatus();
+            const conflictCount =
+                status.conflicted.length + status.conflictedOutsideVault;
+            if (conflictCount > 0) {
+                return {
+                    status: "blocked",
+                    reason: "conflicts",
+                    files: conflictCount,
+                };
+            }
+        }
+        if (this.plugin.state.mergeInProgress) {
             return { status: "blocked", reason: "merge-in-progress" };
         }
         // Squash local unpushed commits into one before pushing, so frequent

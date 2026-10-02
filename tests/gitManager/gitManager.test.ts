@@ -423,6 +423,45 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         }
     });
 
+    it("does not refresh the status between pull and push in commit-and-sync", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("note.md", "modified\n");
+        const events: string[] = [];
+        plugin.settings.pullBeforePush = true;
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.disablePush = false;
+        plugin.updateCachedStatus = vi.fn(() => {
+            events.push("status");
+            return manager.status();
+        });
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        vi.spyOn(manager, "pull").mockImplementation(() => {
+            events.push("pull");
+            return Promise.resolve({ status: "up-to-date" });
+        });
+        vi.spyOn(manager, "canPush").mockResolvedValue(true);
+        vi.spyOn(manager, "push").mockImplementation(() => {
+            events.push("push");
+            return Promise.resolve({ status: "pushed", files: 1 });
+        });
+
+        const result = await new GitActions(plugin).commitAndSync({
+            fromAutoBackup: false,
+            commitMessage: "sync",
+        });
+
+        expect(result).toMatchObject({
+            status: "success",
+            value: { status: "synced" },
+        });
+        expect(events.slice(events.indexOf("pull"))).toEqual(["pull", "push"]);
+    });
+
     it("counts merge changes when committing all files", async () => {
         context = await backend.create(createRepoWithMergeConflict);
         const { manager, repo } = context;
