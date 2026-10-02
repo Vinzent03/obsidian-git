@@ -118,8 +118,7 @@ export function arrayProxyWithNewLength<T>(array: T[], length: number): T[] {
             if (prop === "length") {
                 return Math.min(length, target.length);
             }
-            // Methods are called on the proxy, which supplies their receiver.
-            // eslint-disable-next-line @typescript-eslint/unbound-method
+            // eslint-disable-next-line @typescript-eslint/unbound-method -- Methods are called on the proxy, which supplies their receiver.
             return target[prop as keyof T[]];
         },
     });
