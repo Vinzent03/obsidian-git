@@ -1097,10 +1097,19 @@ export class IsomorphicGit extends GitManager {
                         return null;
                     }
 
-                    if (
-                        (await A?.type()) === "tree" ||
-                        (await B?.type()) === "tree"
-                    ) {
+                    const Atype = await A?.type();
+                    const Btype = await B?.type();
+                    if (Atype === "tree" || Btype === "tree") {
+                        // Skip identical subtrees; the root must stay so walk returns an array.
+                        if (filepath !== "." && Atype === Btype) {
+                            const Aoid = await A?.oid();
+                            if (
+                                Aoid !== undefined &&
+                                Aoid === (await B?.oid())
+                            ) {
+                                return null;
+                            }
+                        }
                         return;
                     }
 
