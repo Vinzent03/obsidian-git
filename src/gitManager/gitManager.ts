@@ -331,10 +331,17 @@ export abstract class GitManager {
         return res;
     }
 
+    /** Staged files for commit message templates; backends may override with a cheaper lookup. */
+    protected async getStagedForMessage(): Promise<
+        Pick<Status, "staged" | "stagedOutsideVault">
+    > {
+        return this.status();
+    }
+
     async formatCommitMessage(template: string): Promise<string> {
-        let status: Status | undefined;
+        let status: Pick<Status, "staged" | "stagedOutsideVault"> | undefined;
         if (template.includes("{{numFiles}}")) {
-            status = await this.status();
+            status = await this.getStagedForMessage();
             const numFiles = status.staged.length + status.stagedOutsideVault;
             template = template.replace("{{numFiles}}", String(numFiles));
         }
@@ -347,7 +354,7 @@ export abstract class GitManager {
         }
 
         if (template.includes("{{files}}")) {
-            status = status ?? (await this.status());
+            status = status ?? (await this.getStagedForMessage());
 
             const changeset: { [key: string]: string[] } = {};
             let files: string;
@@ -382,7 +389,7 @@ export abstract class GitManager {
             moment().format(this.plugin.settings.commitDateFormat)
         );
         if (this.plugin.settings.listChangedFilesInMessageBody) {
-            const status2 = status ?? (await this.status());
+            const status2 = status ?? (await this.getStagedForMessage());
             let files: string;
             // If there are more than 100 files, we don't list them all
             if (status2.staged.length + status2.stagedOutsideVault < 100) {
