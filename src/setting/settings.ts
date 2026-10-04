@@ -252,6 +252,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         "autoCommitOnlyStaged",
                         `Only staged files are committed on auto ${automatic}.`
                     ),
+                    {
+                        name: `Exclude paths from auto ${automatic}`,
+                        desc: `One vault file or folder path per line. Auto ${automatic} leaves changes in these paths unstaged, so you can commit them manually. Files you staged yourself are still committed.`,
+                        control: {
+                            type: "textarea",
+                            key: "autoCommitExcludedPaths",
+                            placeholder: "scripts\n.obsidian/workspace.json",
+                            disabled: () => this.settings.autoCommitOnlyStaged,
+                        },
+                    },
                     this.toggle(
                         `Specify custom commit message on auto ${automatic}`,
                         "customMessageOnAutoBackup",

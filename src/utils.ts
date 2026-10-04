@@ -31,6 +31,31 @@ export const worthWalking = (filepath: string, root?: string) => {
     }
 };
 
+/**
+ * Parses the "Exclude paths from auto commit" setting: one vault path per
+ * line. Blank lines are ignored and leading/trailing slashes are trimmed.
+ */
+export function parseExcludedPaths(setting: string): string[] {
+    return setting
+        .split("\n")
+        .map((line) => line.trim().replace(/^\/+|\/+$/g, ""))
+        .filter((line) => line.length > 0);
+}
+
+/**
+ * Whether `vaultPath` is one of `excludedPaths` or inside one of them.
+ * Works for collapsed untracked directories such as `folder/` as well.
+ */
+export function isPathExcluded(
+    vaultPath: string,
+    excludedPaths: string[]
+): boolean {
+    return excludedPaths.some(
+        (excluded) =>
+            vaultPath === excluded || vaultPath.startsWith(excluded + "/")
+    );
+}
+
 export function getNewLeaf(
     app: App,
     event?: MouseEvent

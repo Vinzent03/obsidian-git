@@ -204,6 +204,78 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         await expect(repo.show("HEAD:delete-me.md")).rejects.toThrow();
     });
 
+    it("leaves excluded files and folders unstaged when committing all files", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        await repo.writeAndCommit(
+            "scripts/tracked.js",
+            "base\n",
+            "add tracked script"
+        );
+        await repo.writeAndCommit(
+            "scripts/deleted.js",
+            "deleted\n",
+            "add deleted script"
+        );
+        repo.write("note.md", "base\nchanged\n");
+        repo.write("scripts/tracked.js", "staged\n");
+        await manager.stage("scripts/tracked.js", false);
+        repo.write("scripts/tracked.js", "unstaged\n");
+        repo.remove("scripts/deleted.js");
+        repo.write("scripts/new/created.js", "created\n");
+        repo.write("scripts-old/kept.js", "kept\n");
+        repo.write("drafts/new.md", "new\n");
+        repo.write("..drafts/dotted.md", "dotted\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "commit all but excluded",
+            excludedVaultPaths: [
+                manager.getRelativeVaultPath("scripts"),
+                manager.getRelativeVaultPath("drafts/new.md"),
+                manager.getRelativeVaultPath("..drafts"),
+                // Outside the repository, so it can never match.
+                "outside",
+            ],
+        });
+
+        expect(committedFiles).toBe(3);
+        expect(await repo.show("HEAD:note.md")).toBe("base\nchanged");
+        expect(await repo.show("HEAD:scripts-old/kept.js")).toBe("kept");
+        // Manually staged content is committed, newer edits are not.
+        expect(await repo.show("HEAD:scripts/tracked.js")).toBe("staged");
+        expect(await repo.show("HEAD:scripts/deleted.js")).toBe("deleted");
+        // statusPorcelain() trims the leading space of the first entry.
+        expect(await repo.statusPorcelain()).toBe(
+            [
+                "D scripts/deleted.js",
+                " M scripts/tracked.js",
+                "?? ..drafts/",
+                "?? drafts/",
+                "?? scripts/new/",
+            ].join("\n")
+        );
+    });
+
+    it("commits only the existing index when an exclusion contains the repository", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        repo.write("note.md", "staged\n");
+        await manager.stage("note.md", false);
+        repo.write("note.md", "unstaged\n");
+        repo.write("created.md", "created\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "commit index only",
+            excludedVaultPaths: [manager.getRelativeVaultPath("")],
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.show("HEAD:note.md")).toBe("staged");
+        expect(await repo.statusPorcelain()).toBe(
+            ["M note.md", "?? created.md"].join("\n")
+        );
+    });
+
     it("normalizes detached HEAD and handles operations without a current branch", async () => {
         context = await backend.create();
         const { manager, plugin, repo } = context;
@@ -460,6 +532,74 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
             value: { status: "synced" },
         });
         expect(events.slice(events.indexOf("pull"))).toEqual(["pull", "push"]);
+    });
+
+    it("applies excluded paths to auto commits only", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("scripts/run.js", "run\n");
+        plugin.settings.autoCommitExcludedPaths =
+            manager.getRelativeVaultPath("scripts") + "/\n\n";
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        const actions = new GitActions(plugin);
+        const headBefore = await repo.head();
+
+        const autoResult = await actions.commit({
+            fromAuto: true,
+            commitMessage: "auto",
+            mode: "all",
+        });
+
+        expect(autoResult).toEqual({
+            status: "success",
+            value: { status: "nothing-to-commit", reason: "no-changes" },
+        });
+        expect(await repo.head()).toBe(headBefore);
+
+        const manualResult = await actions.commit({
+            fromAuto: false,
+            commitMessage: "manual",
+            mode: "all",
+        });
+
+        expect(manualResult).toEqual({
+            status: "success",
+            value: { status: "committed", files: 1 },
+        });
+        expect(await repo.show("HEAD:scripts/run.js")).toBe("run");
+    });
+
+    it("does not commit when the only change is an excluded file in an untracked folder", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("drafts/new.md", "new\n");
+        plugin.settings.autoCommitExcludedPaths =
+            manager.getRelativeVaultPath("drafts/new.md");
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        const headBefore = await repo.head();
+
+        const result = await new GitActions(plugin).commit({
+            fromAuto: true,
+            commitMessage: "auto",
+            mode: "all",
+        });
+
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "nothing-to-commit", reason: "no-changes" },
+        });
+        expect(await repo.head()).toBe(headBefore);
+        expect(await repo.statusPorcelain()).toBe("?? drafts/");
     });
 
     it("counts merge changes when committing all files", async () => {

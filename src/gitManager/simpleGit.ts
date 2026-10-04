@@ -653,9 +653,11 @@ export class SimpleGit extends GitManager {
 
     async commitAll({
         message,
+        excludedVaultPaths = [],
         amend,
     }: {
         message: string;
+        excludedVaultPaths?: string[];
         amend?: boolean;
     }): Promise<number> {
         return this.withGitOperation(GitOperation.commit, async () => {
@@ -669,9 +671,29 @@ export class SimpleGit extends GitManager {
                 }
             }
             const vaultPath = this.getVaultPathspec();
-            await this.git.add(
-                vaultPath == undefined ? "-A" : ["-A", "--", vaultPath]
+            const excludedRepoPaths = excludedVaultPaths.map((path) =>
+                this.getRelativeRepoPath(path, true)
             );
+            // An excluded folder that contains the repository excludes every
+            // change, so only the existing index is committed.
+            const excludesRepository = excludedRepoPaths.some(
+                (path) =>
+                    path === "" ||
+                    path.split("/").every((segment) => segment === "..")
+            );
+            if (!excludesRepository) {
+                const pathspecs = [
+                    ...(vaultPath == undefined ? [] : [vaultPath]),
+                    ...excludedRepoPaths
+                        // Other paths outside the repository cannot match and
+                        // would make git fail.
+                        .filter((path) => !path.startsWith("../"))
+                        .map((path) => `:(exclude,literal)${path}`),
+                ];
+                await this.git.add(
+                    pathspecs.length == 0 ? "-A" : ["-A", "--", ...pathspecs]
+                );
+            }
 
             const res = await this.git.commit(
                 await this.formatCommitMessage(message),

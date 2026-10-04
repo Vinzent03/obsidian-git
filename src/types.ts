@@ -23,6 +23,11 @@ export interface ObsidianGitSettings {
     autoPullInterval: number;
     autoPullOnBoot: boolean;
     autoCommitOnlyStaged: boolean;
+    /**
+     * Vault paths (files or folders), one per line, that auto commits leave
+     * unstaged. Manual commits are unaffected.
+     */
+    autoCommitExcludedPaths: string;
     syncMethod: SyncMethod;
     rebaseAutoStash: RebaseAutoStash;
     mergeStrategy: MergeStrategy;

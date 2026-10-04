@@ -44,6 +44,8 @@ Another method is to enable "Auto commit-and-sync after stopping file edits". Th
 
 The last mode is the "Auto commit-and-sync after latest commit" setting. This sets the last commit-and-sync timestamp to the latest commit. By default, the plugin only compares with it's own latest run of commit-and-sync. So if you manually commit and want the commit-and-sync timer to reset, enable this setting.
 
+To keep some paths out of automatic commits without adding them to `.gitignore`, list them in "Exclude paths from auto commit-and-sync", one vault file or folder path per line with `/` as separator (e.g. `scripts` or `.obsidian/workspace.json`). A folder also excludes everything inside it. Changes in these paths stay unstaged until you commit them yourself, for example from the source control view. Files you staged manually are still committed. A file moved into or out of an excluded folder is committed only on the side that is not excluded. Submodules are not filtered.
+
 ## Commit message
 
 The plugin uses [momentjs](https://momentjs.com/) for formatting the date, so read through their documentation on how to construct your date placeholder.
