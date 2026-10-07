@@ -1,4 +1,4 @@
-import { readFile, stat } from "fs/promises";
+import { mkdir, readFile, stat } from "fs/promises";
 import path from "path";
 import git, { Errors } from "isomorphic-git";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -173,6 +173,36 @@ describe("IsomorphicGit working-tree mutations", () => {
         await expect(manager.stage("note.md", false)).rejects.toBe(error);
 
         expect(plugin.displayError).not.toHaveBeenCalled();
+    });
+});
+
+describe("IsomorphicGit.getFileChangesCount", () => {
+    it("does not descend into subtrees that are identical in both commits", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await mkdir(path.join(repo.repoPath, "same", "nested"), {
+            recursive: true,
+        });
+        await mkdir(path.join(repo.repoPath, "changed"));
+        await repo.writeAndCommit("same/nested/note.md", "same\n", "add same");
+        const first = await repo.head();
+        await repo.writeAndCommit("changed/note.md", "changed\n", "add");
+        const second = await repo.head();
+        const sameTree = (
+            await repo.raw(["rev-parse", "HEAD:same/nested"])
+        ).trim();
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        const readBinary = vi.spyOn(plugin.app.vault.adapter, "readBinary");
+
+        const changes = await manager.getFileChangesCount(first, second);
+
+        expect(changes).toEqual([{ path: "changed/note.md", type: "A" }]);
+        const sameTreePath = `objects/${sameTree.slice(0, 2)}/${sameTree.slice(2)}`;
+        expect(
+            readBinary.mock.calls.some(([p]) => p.endsWith(sameTreePath))
+        ).toBe(false);
+        await expect(
+            manager.getFileChangesCount(second, second)
+        ).resolves.toEqual([]);
     });
 });
 

@@ -467,7 +467,8 @@ export class GitActions {
 
         // Prevent trying to push every time. Only if unpushed commits are present
         if (await this.plugin.gitManager.canPush()) {
-            const pushResult = await this.performPush();
+            // A conflicting pull throws before this point, so skip the status refresh.
+            const pushResult = await this.performPush({ refreshStatus: false });
             this.reportPushResult(pushResult);
             switch (pushResult.status) {
                 case "pushed":
@@ -510,39 +511,19 @@ export class GitActions {
         commitMessage,
         amend = false,
     }: CommitOptions): Promise<CommitResult> {
-        let stagedFiles: { vaultPath: string; path: string }[];
-        let unstagedFiles: (UnstagedFile & { vaultPath: string })[] = [];
-        let resolvedMode: Exclude<CommitMode, "smart"> | "nothing";
-
         const status = await this.plugin.updateCachedStatus();
         const mergeInProgress = this.plugin.state.mergeInProgress;
-        if (this.plugin.gitManager instanceof SimpleGit) {
-            stagedFiles = status.staged;
-
-            // This typecast is only needed to hide the fact that `type` is missing, but that is only needed for isomorphic-git
-            unstagedFiles = status.changed as unknown as (UnstagedFile & {
-                vaultPath: string;
-            })[];
-            resolvedMode = this.resolveCommitMode(
+        // Reuse the fresh status instead of walking the working tree again.
+        const stagedFiles = status.staged;
+        // The cast hides the missing `type`, which nothing reads here.
+        const unstagedFiles = status.changed as unknown as (UnstagedFile & {
+            vaultPath: string;
+        })[];
+        let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
+            this.resolveCommitMode(
                 mode,
                 stagedFiles.length + status.stagedOutsideVault
             );
-        } else {
-            // isomorphic-git section
-
-            const gitManager = this.plugin.gitManager as IsomorphicGit;
-            stagedFiles = await gitManager.getStagedFiles();
-            resolvedMode = this.resolveCommitMode(mode, stagedFiles.length);
-            if (resolvedMode === "all") {
-                const res = await gitManager.getUnstagedFiles();
-                unstagedFiles = res.map(({ path, type }) => ({
-                    vaultPath:
-                        this.plugin.gitManager.getRelativeVaultPath(path),
-                    path,
-                    type,
-                }));
-            }
-        }
 
         if (fromAuto && mergeInProgress) {
             if (status.conflicted.length + status.conflictedOutsideVault > 0) {
@@ -765,21 +746,26 @@ export class GitActions {
         return actionResult;
     }
 
-    private async performPush(): Promise<PushResult> {
+    private async performPush({
+        refreshStatus = true,
+    }: { refreshStatus?: boolean } = {}): Promise<PushResult> {
         if (!(await this.isPushRemoteSet())) {
             return { status: "skipped", reason: "no-upstream" };
         }
-        // Refresh because of pull
-        const status = await this.plugin.updateCachedStatus();
-        const conflictCount =
-            status.conflicted.length + status.conflictedOutsideVault;
-        if (conflictCount > 0) {
-            return {
-                status: "blocked",
-                reason: "conflicts",
-                files: conflictCount,
-            };
-        } else if (this.plugin.state.mergeInProgress) {
+        if (refreshStatus) {
+            // Refresh because of pull
+            const status = await this.plugin.updateCachedStatus();
+            const conflictCount =
+                status.conflicted.length + status.conflictedOutsideVault;
+            if (conflictCount > 0) {
+                return {
+                    status: "blocked",
+                    reason: "conflicts",
+                    files: conflictCount,
+                };
+            }
+        }
+        if (this.plugin.state.mergeInProgress) {
             return { status: "blocked", reason: "merge-in-progress" };
         }
         // Squash local unpushed commits into one before pushing, so frequent

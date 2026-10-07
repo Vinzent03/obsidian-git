@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GitActions } from "../../src/gitActions";
+import { IsomorphicGit } from "../../src/gitManager/isomorphicGit";
 import { GitConflictError, type FileStatusResult } from "../../src/types";
 import {
     gitManagerBackends,
@@ -350,6 +351,115 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
             value: { status: "committed", files: 0 },
         });
         expect(await manager.isMergeInProgress()).toBe(false);
+    });
+
+    it("commits all changes without extra working tree walks", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.writeAndCommit("deleted.md", "deleted\n", "add deleted");
+        repo.write("note.md", "modified\n");
+        repo.write("untracked.md", "untracked\n");
+        repo.remove("deleted.md");
+        const extraWalks =
+            manager instanceof IsomorphicGit
+                ? [
+                      vi.spyOn(manager, "getUnstagedFiles"),
+                      vi.spyOn(manager, "getStagedFiles"),
+                  ]
+                : [];
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+
+        const result = await new GitActions(plugin).commit({
+            fromAuto: false,
+            commitMessage: "commit all",
+            mode: "all",
+        });
+
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "committed", files: 3 },
+        });
+        for (const walk of extraWalks) {
+            expect(walk).not.toHaveBeenCalled();
+        }
+        expect((await manager.status()).all).toEqual([]);
+    });
+
+    it("lists staged files in the commit message", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.writeAndCommit("deleted.md", "deleted\n", "add deleted");
+        repo.write("note.md", "modified\n");
+        repo.write("added.md", "added\n");
+        repo.write("unstaged.md", "unstaged\n");
+        repo.remove("deleted.md");
+        await manager.stage("note.md", false);
+        await manager.stage("added.md", false);
+        await manager.stage("deleted.md", false);
+        plugin.settings.listChangedFilesInMessageBody = true;
+        const status = vi.spyOn(manager, "status");
+
+        const message = await manager.formatCommitMessage(
+            "{{numFiles}} files: {{files}}"
+        );
+
+        const [summary, body] = message.split("\n\nAffected files:\n");
+        expect(summary).toMatch(/^3 files: /);
+        expect(summary).toContain("A added.md");
+        expect(summary).toContain("D deleted.md");
+        expect(summary).toContain("M note.md");
+        expect(body?.split("\n").sort()).toEqual([
+            "added.md",
+            "deleted.md",
+            "note.md",
+        ]);
+        if (manager instanceof IsomorphicGit) {
+            expect(status).not.toHaveBeenCalled();
+        }
+    });
+
+    it("does not refresh the status between pull and push in commit-and-sync", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("note.md", "modified\n");
+        const events: string[] = [];
+        plugin.settings.pullBeforePush = true;
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.disablePush = false;
+        plugin.updateCachedStatus = vi.fn(() => {
+            events.push("status");
+            return manager.status();
+        });
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        vi.spyOn(manager, "pull").mockImplementation(() => {
+            events.push("pull");
+            return Promise.resolve({ status: "up-to-date" });
+        });
+        vi.spyOn(manager, "canPush").mockResolvedValue(true);
+        vi.spyOn(manager, "push").mockImplementation(() => {
+            events.push("push");
+            return Promise.resolve({ status: "pushed", files: 1 });
+        });
+
+        const result = await new GitActions(plugin).commitAndSync({
+            fromAutoBackup: false,
+            commitMessage: "sync",
+        });
+
+        expect(result).toMatchObject({
+            status: "success",
+            value: { status: "synced" },
+        });
+        expect(events.slice(events.indexOf("pull"))).toEqual(["pull", "push"]);
     });
 
     it("counts merge changes when committing all files", async () => {

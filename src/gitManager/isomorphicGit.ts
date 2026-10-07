@@ -1097,10 +1097,19 @@ export class IsomorphicGit extends GitManager {
                         return null;
                     }
 
-                    if (
-                        (await A?.type()) === "tree" ||
-                        (await B?.type()) === "tree"
-                    ) {
+                    const Atype = await A?.type();
+                    const Btype = await B?.type();
+                    if (Atype === "tree" || Btype === "tree") {
+                        // Skip identical subtrees; the root must stay so walk returns an array.
+                        if (filepath !== "." && Atype === Btype) {
+                            const Aoid = await A?.oid();
+                            if (
+                                Aoid !== undefined &&
+                                Aoid === (await B?.oid())
+                            ) {
+                                return null;
+                            }
+                        }
                         return;
                     }
 
@@ -1138,9 +1147,34 @@ export class IsomorphicGit extends GitManager {
         );
     }
 
+    protected override async getStagedForMessage(): Promise<
+        Pick<Status, "staged" | "stagedOutsideVault">
+    > {
+        try {
+            await this.resolveRef("HEAD");
+        } catch (error) {
+            // Without HEAD (first commit) there is no tree to compare with.
+            if (error instanceof Errors.NotFoundError) {
+                return super.getStagedForMessage();
+            }
+            throw error;
+        }
+        // Compare HEAD with the index only, skipping the full working tree walk.
+        const staged = await this.getStagedFiles();
+        return {
+            staged: staged.map(({ path, vaultPath, type }) => ({
+                path,
+                vaultPath,
+                index: type,
+                workingDir: " ",
+            })),
+            stagedOutsideVault: 0,
+        };
+    }
+
     async getStagedFiles(
         dir = "."
-    ): Promise<{ vaultPath: string; path: string }[]> {
+    ): Promise<(WalkDifference & { vaultPath: string })[]> {
         const res = await this.walkDifference({
             walkers: [git.TREE({ ref: "HEAD" }), git.STAGE()],
             dir,
@@ -1149,6 +1183,7 @@ export class IsomorphicGit extends GitManager {
             return {
                 vaultPath: this.getRelativeVaultPath(file.path),
                 path: file.path,
+                type: file.type,
             };
         });
     }
