@@ -14,6 +14,7 @@ aliases:
 -   [[Features|Features]]
 -   [[Tips-and-Tricks|Tips-and-Tricks]]
 -   [[Common issues|Common Issues]]
+-   [[Conflict resolution|Conflict Resolution]]
 -   [[Line Authoring|Line Authoring]]
 
 > [!warning] Obsidian installation on Linux

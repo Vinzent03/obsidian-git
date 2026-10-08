@@ -6,6 +6,8 @@ A powerful community plugin for [Obsidian.md](https://obsidian.md) that brings G
 
 All setup instructions (including mobile), common issues, tips, and advanced configuration can be found in the 📖 [full documentation](https://publish.obsidian.md/git-doc).
 
+For a pull or sync stopped by conflicting changes, see [Conflict resolution](https://publish.obsidian.md/git-doc/Conflict+resolution).
+
 > Mobile users: The plugin is **highly unstable ⚠️ !** Please check the dedicated [Mobile](#-mobile-support-%EF%B8%8F--experimental) section below.
 
 ## Key Features

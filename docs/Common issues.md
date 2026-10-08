@@ -49,3 +49,7 @@ See [[Integration with other tools#GPG Signing]] on how to solve this.
 ## This repository is configured for Git LFS but 'git-lfs' was not found on your path.
 
 See [[Integration with other tools#Git Large File Storage]] on how to solve this.
+
+## Merge conflicts
+
+See [[Conflict resolution]] for why conflicts happen and how to finish a merge in Obsidian.
