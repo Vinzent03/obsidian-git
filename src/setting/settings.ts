@@ -9,6 +9,7 @@ import {
     Notice,
     Platform,
     PluginSettingTab,
+    SecretComponent,
     Setting,
     SettingPage,
 } from "obsidian";
@@ -658,17 +659,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     },
                     {
                         name: "Git server password or access token",
-                        desc: "Stored on this device. The saved value is not shown again.",
+                        desc: "Select or create a secret stored on this device for this vault.",
                         visible: mobile,
                         render: (setting) => {
-                            setting.addText((text) => {
-                                text.inputEl.autocapitalize = "off";
-                                text.inputEl.autocomplete = "off";
-                                text.inputEl.spellcheck = false;
-                                text.onChange((value) =>
-                                    this.plugin.localStorage.setPassword(value)
-                                );
-                            });
+                            setting.addComponent((el) =>
+                                new SecretComponent(this.app, el)
+                                    .setValue(
+                                        this.settings.gitServerPasswordSecret
+                                    )
+                                    .onChange(async (value) => {
+                                        this.settings.gitServerPasswordSecret =
+                                            value ?? "";
+                                        await this.plugin.saveSettings();
+                                    })
+                            );
                         },
                     },
                     {

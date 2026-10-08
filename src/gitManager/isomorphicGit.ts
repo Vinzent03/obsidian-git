@@ -85,8 +85,7 @@ export class IsomorphicGit extends GitManager {
                 return {
                     username:
                         this.plugin.localStorage.getUsername() ?? undefined,
-                    password:
-                        this.plugin.localStorage.getPassword() ?? undefined,
+                    password: this.plugin.gitServerPassword.get() ?? undefined,
                 };
             },
             onAuthFailure: async () => {
@@ -104,7 +103,7 @@ export class IsomorphicGit extends GitManager {
                     }).openAndGetResult();
                     if (password) {
                         this.plugin.localStorage.setUsername(username);
-                        this.plugin.localStorage.setPassword(password);
+                        await this.plugin.gitServerPassword.set(password);
                         return {
                             username,
                             password,

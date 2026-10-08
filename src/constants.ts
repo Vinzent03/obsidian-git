@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
     treeStructure: false,
+    gitServerPasswordSecret: "",
     refreshSourceControl: Platform.isDesktopApp,
     basePath: "",
     differentIntervalCommitAndPush: false,

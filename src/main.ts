@@ -28,6 +28,7 @@ import type { GitManager } from "./gitManager/gitManager";
 import { IsomorphicGit } from "./gitManager/isomorphicGit";
 import { SimpleGit } from "./gitManager/simpleGit";
 import { LocalStorageSettings } from "./setting/localStorageSettings";
+import { GitServerPassword } from "./setting/gitServerPassword";
 import Tools from "./tools";
 import type {
     ElectronWindow,
@@ -56,6 +57,7 @@ export default class ObsidianGit extends Plugin {
     automaticsManager = new AutomaticsManager(this);
     tools = new Tools(this);
     localStorage = new LocalStorageSettings(this);
+    gitServerPassword = new GitServerPassword(this);
     settings!: ObsidianGitSettings;
     settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
@@ -494,10 +496,11 @@ export default class ObsidianGit extends Plugin {
             await this.saveSettings();
         }
         if (this.settings.username != undefined) {
-            this.localStorage.setPassword(this.settings.username);
+            this.localStorage.setLegacyPassword(this.settings.username);
             this.settings.username = undefined;
             await this.saveSettings();
         }
+        await this.gitServerPassword.migrateLegacy();
     }
 
     unloadPlugin() {

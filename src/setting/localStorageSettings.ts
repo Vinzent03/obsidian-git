@@ -32,13 +32,18 @@ export class LocalStorageSettings {
         }
     }
 
-    getPassword(): string | null {
+    getLegacyPassword(): string | null {
         return this.app.loadLocalStorage(this.prefix + "password") as
             string | null;
     }
 
-    setPassword(value: string): void {
-        return this.app.saveLocalStorage(this.prefix + "password", value);
+    setLegacyPassword(value: string): void {
+        this.app.saveLocalStorage(this.prefix + "password", value);
+    }
+
+    clearLegacyPassword(): void {
+        this.app.saveLocalStorage(this.prefix + "password", null);
+        localStorage.removeItem(this.prefix + "password");
     }
 
     getUsername(): string | null {

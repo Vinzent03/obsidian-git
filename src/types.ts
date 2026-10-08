@@ -64,6 +64,8 @@ export interface ObsidianGitSettings {
      * @deprecated Using `localstorage` instead
      */
     username?: string;
+    /** ID of the mobile Git server password in Obsidian Secret Storage. */
+    gitServerPasswordSecret: string;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;
     /**
