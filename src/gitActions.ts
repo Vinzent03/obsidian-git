@@ -35,6 +35,8 @@ import { GeneralModal } from "./ui/modals/generalModal";
 import {
     convertPathToAbsoluteGitignoreRule,
     formatRemoteUrl,
+    isPathExcluded,
+    parseExcludedPaths,
     spawnAsync,
     splitRemoteBranch,
 } from "./utils";
@@ -516,7 +518,7 @@ export class GitActions {
         // Reuse the fresh status instead of walking the working tree again.
         const stagedFiles = status.staged;
         // The cast hides the missing `type`, which nothing reads here.
-        const unstagedFiles = status.changed as unknown as (UnstagedFile & {
+        let unstagedFiles = status.changed as unknown as (UnstagedFile & {
             vaultPath: string;
         })[];
         let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
@@ -549,6 +551,20 @@ export class GitActions {
         }
 
         const onlyStaged = resolvedMode === "staged";
+
+        // Paths excluded from auto commit stay unstaged, unless the user
+        // staged them manually.
+        const excludedVaultPaths =
+            fromAuto && !onlyStaged
+                ? parseExcludedPaths(
+                      this.plugin.settings.autoCommitExcludedPaths
+                  )
+                : [];
+        if (excludedVaultPaths.length > 0) {
+            unstagedFiles = unstagedFiles.filter(
+                (file) => !isPathExcluded(file.vaultPath, excludedVaultPaths)
+            );
+        }
 
         if (
             await this.plugin.tools.hasTooBigFiles(
@@ -623,6 +639,7 @@ export class GitActions {
                     message: cmtMessage,
                     status,
                     unstagedFiles,
+                    excludedVaultPaths,
                     amend,
                 });
             }

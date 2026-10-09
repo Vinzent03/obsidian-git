@@ -43,6 +43,8 @@ export abstract class GitManager {
         message: string;
         status?: Status;
         unstagedFiles?: UnstagedFile[];
+        /** Vault paths (files or folders) that must not be staged. */
+        excludedVaultPaths?: string[];
         amend?: boolean;
     }): Promise<number>;
 
