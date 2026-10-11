@@ -40,7 +40,7 @@
         "@types/debug": "^4.1.13",
         "@types/diff3": "^0.0.2",
         "@types/node": "^26.6.3",
-        "@typescript-eslint/parser": "8.71.0",
+        "@typescript-eslint/parser": "8.71.1",
         "@vitest/coverage-v8": "^5.0.3",
         "commit-and-tag-version": "^13.2.1",
         "esbuild": "^0.28.2",
