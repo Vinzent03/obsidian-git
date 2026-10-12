@@ -462,6 +462,42 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect(events.slice(events.indexOf("pull"))).toEqual(["pull", "push"]);
     });
 
+    it("commits but skips pull and push in commit-and-sync while offline", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("note.md", "modified\n");
+        plugin.settings.pullBeforePush = true;
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.disablePush = false;
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        plugin.handleNoNetworkError = vi.fn();
+        const pull = vi.spyOn(manager, "pull");
+        const push = vi.spyOn(manager, "push");
+        vi.stubGlobal("navigator", { onLine: false });
+
+        try {
+            const result = await new GitActions(plugin).commitAndSync({
+                fromAutoBackup: false,
+                commitMessage: "sync",
+            });
+
+            expect(result).toEqual({ status: "failed" });
+        } finally {
+            vi.unstubAllGlobals();
+        }
+        expect((await repo.git.log({ maxCount: 1 })).latest?.message).toBe(
+            "sync"
+        );
+        expect(pull).not.toHaveBeenCalled();
+        expect(push).not.toHaveBeenCalled();
+        expect(plugin.handleNoNetworkError).toHaveBeenCalledOnce();
+    });
+
     it("counts merge changes when committing all files", async () => {
         context = await backend.create(createRepoWithMergeConflict);
         const { manager, repo } = context;
