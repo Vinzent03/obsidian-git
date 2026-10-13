@@ -7,14 +7,12 @@ import { resolve, sep } from "path";
 import type * as simple from "simple-git";
 import { simpleGit, GitError, CleanOptions } from "simple-git";
 import {
-    ASK_PASS_INPUT_FILE,
     ASK_PASS_SCRIPT,
     ASK_PASS_SCRIPT_FILE,
     DEFAULT_WIN_GIT_PATH,
     GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
 } from "src/constants";
 import type { LineAuthorFollowMovement } from "src/editor/lineAuthor/model";
-import { GeneralModal } from "src/ui/modals/generalModal";
 import type ObsidianGit from "../main";
 import type {
     Blame,
@@ -30,19 +28,26 @@ import type {
 } from "../types";
 import { GitConflictError, GitOperation, NoNetworkError } from "../types";
 import { impossibleBranch, spawnAsync, splitRemoteBranch } from "../utils";
+import { AskpassServer } from "./askpassServer";
 import { GitManager } from "./gitManager";
 
 export class SimpleGit extends GitManager {
     git!: simple.SimpleGit;
     absoluteRepoPath!: string;
-    watchAbortController: AbortController | undefined;
+    private askpassServer: AskpassServer | undefined;
+    private unloaded = false;
     useDefaultWindowsGitPath: boolean = false;
     constructor(plugin: ObsidianGit) {
         super(plugin);
     }
 
     async setGitInstance(ignoreError = false): Promise<void> {
-        if (await this.isGitInstalled()) {
+        if (this.unloaded) return;
+        this.askpassServer?.stop();
+        this.askpassServer = undefined;
+        const gitInstalled = await this.isGitInstalled();
+        if (this.unloaded) return;
+        if (gitInstalled) {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const vaultBasePath = adapter.getBasePath();
             let basePath = vaultBasePath;
@@ -95,9 +100,11 @@ export class SimpleGit extends GitManager {
                 // Preserve the inherited and user-configured environment
                 allowEnvironment: [
                     ...Object.keys(envs),
+                    "GIT_ASKPASS",
                     "SSH_ASKPASS",
                     "SSH_ASKPASS_REQUIRE",
-                    "OBSIDIAN_GIT_CREDENTIALS_INPUT",
+                    "OBSIDIAN_GIT_ASKPASS_PORT",
+                    "OBSIDIAN_GIT_ASKPASS_TOKEN",
                     "OBSIDIAN_GIT",
                 ],
                 progress: (progress) => {
@@ -150,6 +157,7 @@ export class SimpleGit extends GitManager {
                 this.absoluteRepoPath = absoluteRoot;
                 await this.git.cwd(absoluteRoot);
             }
+            if (this.unloaded) return;
 
             const absolutePluginConfigPath = path.join(
                 vaultBasePath,
@@ -161,24 +169,27 @@ export class SimpleGit extends GitManager {
                 absolutePluginConfigPath,
                 ASK_PASS_SCRIPT_FILE
             );
+            // Remove any credential files left by the previous bridge.
+            const legacyInput = path.join(
+                absolutePluginConfigPath,
+                ".git_credentials_input"
+            );
+            await fsPromises.rm(legacyInput, { force: true });
+            await fsPromises.rm(`${legacyInput}.response`, { force: true });
+            if (this.unloaded) return;
 
             if (envs["SSH_ASKPASS"] == undefined) {
+                if (!(await this.startAskpass(askPassPath, envs))) return;
                 envs["SSH_ASKPASS"] = askPassPath;
-            }
+                if (envs["GIT_ASKPASS"] == undefined) {
+                    envs["GIT_ASKPASS"] = askPassPath;
+                }
 
-            // OpenSSH requires DISPLAY variable to be set for SSH_ASKPASS to
-            // detect a graphical environment. This is not the case for e.g.
-            // Windows. Setting SSH_ASKPASS_REQUIRE to "force" makes it use
-            // SSH_ASKPASS even without DISPLAY, which allows the askpass script
-            // to work on Windows as well.
-            envs["SSH_ASKPASS_REQUIRE"] = "force";
-            envs["OBSIDIAN_GIT_CREDENTIALS_INPUT"] = path.join(
-                absolutePluginConfigPath,
-                ASK_PASS_INPUT_FILE
-            );
-            if (envs["SSH_ASKPASS"] == askPassPath) {
-                this.askpass().catch((e) => this.plugin.displayError(e));
+                // OpenSSH uses the askpass program without DISPLAY when this
+                // is forced, including on Windows.
+                envs["SSH_ASKPASS_REQUIRE"] = "force";
             }
+            if (this.unloaded) return;
 
             envs["OBSIDIAN_GIT"] = "1";
 
@@ -278,101 +289,38 @@ export class SimpleGit extends GitManager {
             .length;
     }
 
-    private get absPluginConfigPath(): string {
-        const adapter = this.app.vault.adapter as FileSystemAdapter;
-        const vaultPath = adapter.getBasePath();
-        return path.join(
-            vaultPath,
-            this.app.vault.configDir,
-            "plugins",
-            "obsidian-git"
-        );
-    }
-
     private get relPluginConfigPath(): string {
         return path.join(this.app.vault.configDir, "plugins", "obsidian-git");
     }
-    async askpass(): Promise<void> {
-        const adapter = this.app.vault.adapter as FileSystemAdapter;
-        const relPluginConfigDir =
-            this.app.vault.configDir + "/plugins/obsidian-git/";
 
+    private async startAskpass(
+        askPassPath: string,
+        envs: NodeJS.ProcessEnv
+    ): Promise<boolean> {
         await this.addAskPassScriptToExclude();
+        if (this.unloaded) return false;
+        await fsPromises.writeFile(askPassPath, ASK_PASS_SCRIPT);
+        await fsPromises.chmod(askPassPath, 0o755);
+        if (this.unloaded) return false;
 
-        await fsPromises.writeFile(
-            path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
-            ASK_PASS_SCRIPT
-        );
-        await fsPromises.chmod(
-            path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
-            0o755
-        );
-        this.watchAbortController = new AbortController();
-        const { signal } = this.watchAbortController;
+        const server = new AskpassServer(this.plugin);
+        this.askpassServer?.stop();
+        this.askpassServer = server;
+        let port: number;
+        let token: string;
         try {
-            const watcher = fsPromises.watch(this.absPluginConfigPath, {
-                signal,
-            });
-
-            for await (const event of watcher) {
-                if (event.filename != ASK_PASS_INPUT_FILE) continue;
-                const triggerFilePath =
-                    relPluginConfigDir + ASK_PASS_INPUT_FILE;
-
-                // Wait a bit to ensure the file is fully removed
-                await new Promise((res) => window.setTimeout(res, 200));
-                if (!(await adapter.exists(triggerFilePath))) continue;
-
-                const data = await adapter.read(triggerFilePath);
-                let notice: Notice | undefined;
-                // The text is too long for the modal, so a notice is shown instead
-                if (data.length > 60) {
-                    notice = new Notice(data, 999_999);
-                }
-                let obscure = true;
-
-                // This does only work for English output.
-                // There is no general way detect the type of input asked for.
-                // We could enfore english output, but that is not beneficial
-                // for the user either.
-                if (data.contains("Username for")) {
-                    obscure = false;
-                }
-                const response = await new GeneralModal(this.plugin, {
-                    allowEmpty: true,
-                    obscure,
-                    placeholder:
-                        data.length > 60
-                            ? "Enter a response to the message."
-                            : data,
-                }).openAndGetResult();
-                notice?.hide();
-
-                // Just in case the trigger file was removed while the modal was open
-                if (await adapter.exists(triggerFilePath)) {
-                    await adapter.write(
-                        `${triggerFilePath}.response`,
-                        response ?? ""
-                    );
-                }
-            }
+            ({ port, token } = await server.start());
         } catch (error) {
-            this.plugin.displayError(error);
-            await fsPromises.rm(
-                path.join(this.absPluginConfigPath, ASK_PASS_SCRIPT_FILE),
-                { force: true }
-            );
-            await fsPromises.rm(
-                path.join(
-                    this.absPluginConfigPath,
-                    `${ASK_PASS_SCRIPT_FILE}.response`
-                ),
-                { force: true }
-            );
-            await new Promise((res) => window.setTimeout(res, 5000));
-            this.plugin.log("Retry watch for ask pass");
-            await this.askpass();
+            if (this.unloaded || this.askpassServer !== server) return false;
+            throw error;
         }
+        if (this.unloaded || this.askpassServer !== server) {
+            server.stop();
+            return false;
+        }
+        envs["OBSIDIAN_GIT_ASKPASS_PORT"] = `${port}`;
+        envs["OBSIDIAN_GIT_ASKPASS_TOKEN"] = token;
+        return true;
     }
 
     /**
@@ -429,7 +377,9 @@ export class SimpleGit extends GitManager {
     }
 
     unload(): void {
-        this.watchAbortController?.abort();
+        this.unloaded = true;
+        this.askpassServer?.stop();
+        this.askpassServer = undefined;
     }
 
     async status(opts?: { path?: string }): Promise<Status> {
