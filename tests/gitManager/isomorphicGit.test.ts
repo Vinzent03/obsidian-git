@@ -227,3 +227,80 @@ describe("IsomorphicGit.status", () => {
         expect(workTreeReads()).toBe(0);
     });
 });
+
+describe("IsomorphicGit.pull ref handling", () => {
+    it("leaves the repository untouched when the checkout after a fast-forward fails", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        // The desktop pushes a commit that adds a file and edits note.md.
+        await repo.writeAndCommit(
+            "new.md",
+            "from desktop\n",
+            "desktop adds new.md"
+        );
+        await repo.writeAndCommit(
+            "note.md",
+            "remote\n",
+            "desktop edits note.md"
+        );
+        await repo.git.push(["--quiet", "origin", "main"]);
+        const remoteCommit = await repo.head();
+        // The tablet is still two commits behind...
+        await repo.raw(["reset", "--hard", "HEAD~2"]);
+        const localCommit = await repo.head();
+        // ...and has an uncommitted edit to a file the desktop changed as well.
+        repo.write("note.md", "local uncommitted\n");
+        const before = await repo.statusPorcelain();
+
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        await expect(manager.pull()).rejects.toBeInstanceOf(
+            Errors.CheckoutConflictError
+        );
+
+        // The merge step already moved the branch ref. If it is not restored,
+        // the next auto commit-and-sync commits the stale working tree on top
+        // of the new HEAD and reverts everything the pull brought in.
+        expect(await repo.raw(["rev-parse", "refs/heads/main"])).toBe(
+            localCommit
+        );
+        expect(await repo.raw(["rev-parse", "refs/remotes/origin/main"])).toBe(
+            remoteCommit
+        );
+        expect(await repo.statusPorcelain()).toBe(before);
+    });
+
+    it("updates the working tree with the merge result after a real merge", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.writeAndCommit("note.md", "a\nb\nc\nd\ne\nf\n", "base");
+        await repo.git.push(["--quiet", "origin", "main"]);
+        // The desktop edits the first line.
+        await repo.writeAndCommit(
+            "note.md",
+            "A\nb\nc\nd\ne\nf\n",
+            "desktop edits line 1"
+        );
+        await repo.git.push(["--quiet", "origin", "main"]);
+        // The tablet goes back and edits the last line.
+        await repo.raw(["reset", "--hard", "HEAD~1"]);
+        await repo.writeAndCommit(
+            "note.md",
+            "a\nb\nc\nd\ne\nF\n",
+            "tablet edits line 6"
+        );
+
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        const result = await manager.pull();
+        expect(result.status).toBe("updated");
+
+        // Without the fix the merged content only reached the index, so the
+        // working tree kept the pre-merge local version.
+        expect(
+            await readFile(path.join(repo.repoPath, "note.md"), "utf8")
+        ).toBe("A\nb\nc\nd\ne\nF\n");
+        expect(await repo.statusPorcelain()).toBe("");
+        expect(await repo.mergeCommitCount("origin/main..HEAD")).toBe(1);
+    });
+});

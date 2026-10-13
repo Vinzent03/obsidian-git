@@ -488,6 +488,78 @@ export class IsomorphicGit extends GitManager {
         return this.wrapFS(git.resolveRef({ ...this.getRepo(), ref }));
     }
 
+    /**
+     * isomorphic-git performs a pull in two separate steps: first `merge`, which
+     * moves the branch ref, and then `checkout`, which updates the working tree.
+     * When the checkout step fails (for example with a CheckoutConflictError
+     * because a locally changed file is also changed upstream), the ref has
+     * already moved and is left ahead of the working tree. The queued automatic
+     * commit-and-sync would then commit the stale working tree on top of the new
+     * HEAD and push it, silently reverting everything the pull brought in.
+     *
+     * Restore the ref to the commit it pointed at before the merge, so a failed
+     * pull leaves the repository untouched, the way a real `git pull` refuses to
+     * move the ref at all.
+     */
+    private async restoreRefAfterFailedCheckout(
+        branch: string,
+        localCommit: string
+    ): Promise<void> {
+        try {
+            await this.wrapFS(
+                git.writeRef({
+                    ...this.getRepo(),
+                    ref: `refs/heads/${branch}`,
+                    value: localCommit,
+                    force: true,
+                })
+            );
+            this.plugin.log(
+                `Pull could not update the working tree. Restored branch "${branch}" to ${localCommit} so the incoming changes are not reverted.`
+            );
+        } catch (error) {
+            console.error(
+                `[obsidian-git] Failed to restore branch "${branch}" to ${localCommit} after a failed checkout.`,
+                error
+            );
+        }
+    }
+
+    /**
+     * After a real merge commit, `merge` writes the merged result into the index
+     * but does not update the files in the working tree. The subsequent
+     * `checkout` then sees index == HEAD and skips those files, so the working
+     * tree keeps the pre-merge content and a later automatic commit would revert
+     * the incoming changes without reporting any conflict. Force the paths that
+     * this merge changed so the working tree matches the merge result.
+     */
+    private async refreshWorkingTreeAfterMerge(
+        localCommit: string
+    ): Promise<void> {
+        try {
+            const mergedCommit = await this.resolveRef("HEAD");
+            const changed = await this.getFileChangesCount(
+                localCommit,
+                mergedCommit
+            );
+            if (changed.length === 0) {
+                return;
+            }
+            await this.wrapFS(
+                git.checkout({
+                    ...this.getRepo(),
+                    filepaths: changed.map((file) => file.path),
+                    force: true,
+                })
+            );
+        } catch (error) {
+            console.error(
+                "[obsidian-git] Failed to refresh the working tree after a merge.",
+                error
+            );
+        }
+    }
+
     async pull(): Promise<PullResult> {
         return this.withGitOperation(GitOperation.pull, async () => {
             let mergeState:
@@ -568,13 +640,24 @@ export class IsomorphicGit extends GitManager {
                     })
                 );
                 if (!mergeRes.alreadyMerged) {
-                    await this.wrapFS(
-                        git.checkout({
-                            ...this.getRepo(),
-                            ref: branchInfo.current,
-                            remote: branchInfo.remote,
-                        })
-                    );
+                    try {
+                        await this.wrapFS(
+                            git.checkout({
+                                ...this.getRepo(),
+                                ref: branchInfo.current,
+                                remote: branchInfo.remote,
+                            })
+                        );
+                    } catch (checkoutError) {
+                        await this.restoreRefAfterFailedCheckout(
+                            branchInfo.current,
+                            localCommit
+                        );
+                        throw checkoutError;
+                    }
+                    if (!mergeRes.fastForward) {
+                        await this.refreshWorkingTreeAfterMerge(localCommit);
+                    }
                 }
                 const upstreamCommit = await this.resolveRef("HEAD");
                 const changedFiles = await this.getFileChangesCount(
