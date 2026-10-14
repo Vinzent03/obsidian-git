@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GitActions } from "../../src/gitActions";
 import { IsomorphicGit } from "../../src/gitManager/isomorphicGit";
 import { GitConflictError, type FileStatusResult } from "../../src/types";
+import { CustomMessageModal } from "../../src/ui/modals/customMessageModal";
 import {
     gitManagerBackends,
     type GitManagerTestHarness,
@@ -574,12 +575,13 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         expect(await repo.show("HEAD:scripts/run.js")).toBe("run");
     });
 
-    it("does not commit when the only change is an excluded file in an untracked folder", async () => {
+    it("does not prompt when an untracked folder contains only an excluded file", async () => {
         context = await backend.create();
         const { manager, plugin, repo } = context;
         repo.write("drafts/new.md", "new\n");
         plugin.settings.autoCommitExcludedPaths =
             manager.getRelativeVaultPath("drafts/new.md");
+        plugin.settings.customMessageOnAutoBackup = true;
         plugin.updateCachedStatus = vi.fn(() => manager.status());
         plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
         plugin.tools = {
@@ -587,19 +589,29 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         } as unknown as typeof plugin.tools;
         plugin.displayMessage = vi.fn();
         const headBefore = await repo.head();
+        const prompt = vi
+            .spyOn(CustomMessageModal.prototype, "openAndGetResult")
+            .mockResolvedValue("unexpected prompt");
 
-        const result = await new GitActions(plugin).commit({
-            fromAuto: true,
-            commitMessage: "auto",
-            mode: "all",
-        });
+        try {
+            const result = await new GitActions(plugin).commit({
+                fromAuto: true,
+                mode: "all",
+            });
 
-        expect(result).toEqual({
-            status: "success",
-            value: { status: "nothing-to-commit", reason: "no-changes" },
-        });
-        expect(await repo.head()).toBe(headBefore);
-        expect(await repo.statusPorcelain()).toBe("?? drafts/");
+            expect(result).toEqual({
+                status: "success",
+                value: {
+                    status: "nothing-to-commit",
+                    reason: "no-changes",
+                },
+            });
+            expect(prompt).not.toHaveBeenCalled();
+            expect(await repo.head()).toBe(headBefore);
+            expect(await repo.statusPorcelain()).toBe("?? drafts/");
+        } finally {
+            prompt.mockRestore();
+        }
     });
 
     it("counts merge changes when committing all files", async () => {

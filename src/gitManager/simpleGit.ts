@@ -787,6 +787,19 @@ export class SimpleGit extends GitManager {
         return untrackedFiles.paths;
     }
 
+    /** List individual untracked files when status collapses them into a folder. */
+    async getUntrackedFilesInDirectory(dir: string): Promise<string[]> {
+        const output = await this.git.raw([
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            "--",
+            `:(literal)${dir}`,
+        ]);
+        return output.split("\0").filter((file) => file.length > 0);
+    }
+
     async hashObject(filepath: string): Promise<string> {
         // Need to use raw command here to ensure filenames are literally used.
         // Perhaps we could file a PR? https://github.com/steveukx/git-js/blob/main/simple-git/src/lib/tasks/hash-object.ts

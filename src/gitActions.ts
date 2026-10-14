@@ -518,9 +518,8 @@ export class GitActions {
         // Reuse the fresh status instead of walking the working tree again.
         const stagedFiles = status.staged;
         // The cast hides the missing `type`, which nothing reads here.
-        let unstagedFiles = status.changed as unknown as (UnstagedFile & {
-            vaultPath: string;
-        })[];
+        let unstagedFiles = status.changed as (FileStatusResult &
+            UnstagedFile)[];
         let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
             this.resolveCommitMode(
                 mode,
@@ -560,6 +559,36 @@ export class GitActions {
                       this.plugin.settings.autoCommitExcludedPaths
                   )
                 : [];
+        const gitManager = this.plugin.gitManager;
+        if (excludedVaultPaths.length > 0 && gitManager instanceof SimpleGit) {
+            // Native Git reports a wholly untracked folder as one status
+            // entry. Expand it when a rule names a file inside the folder,
+            // so the commit decision can see which files remain eligible.
+            const expandedFiles = await Promise.all(
+                unstagedFiles.map(async (file) => {
+                    if (
+                        file.index !== "U" ||
+                        file.workingDir !== "U" ||
+                        !file.path.endsWith("/") ||
+                        !excludedVaultPaths.some((excluded) =>
+                            excluded.startsWith(file.vaultPath)
+                        )
+                    ) {
+                        return [file];
+                    }
+
+                    const paths = await gitManager.getUntrackedFilesInDirectory(
+                        file.path
+                    );
+                    return paths.map((path) => ({
+                        ...file,
+                        path,
+                        vaultPath: gitManager.getRelativeVaultPath(path),
+                    }));
+                })
+            );
+            unstagedFiles = expandedFiles.flat();
+        }
         if (excludedVaultPaths.length > 0) {
             unstagedFiles = unstagedFiles.filter(
                 (file) => !isPathExcluded(file.vaultPath, excludedVaultPaths)
