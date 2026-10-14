@@ -303,4 +303,46 @@ describe("IsomorphicGit.pull ref handling", () => {
         expect(await repo.statusPorcelain()).toBe("");
         expect(await repo.mergeCommitCount("origin/main..HEAD")).toBe(1);
     });
+
+    it("does not discard an uncommitted edit in a file a real merge changes", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.writeAndCommit("note.md", "a\nb\nc\nd\ne\nf\n", "base");
+        await repo.git.push(["--quiet", "origin", "main"]);
+        // The desktop edits the first line and pushes it.
+        await repo.writeAndCommit(
+            "note.md",
+            "A\nb\nc\nd\ne\nf\n",
+            "desktop edits line 1"
+        );
+        await repo.git.push(["--quiet", "origin", "main"]);
+        // The tablet goes back and commits an edit to the last line...
+        await repo.raw(["reset", "--hard", "HEAD~1"]);
+        await repo.writeAndCommit(
+            "note.md",
+            "a\nb\nc\nd\ne\nF\n",
+            "tablet edits line 6"
+        );
+        // ...and then leaves an uncommitted edit on the third line.
+        const uncommitted = "a\nb\nC-UNCOMMITTED\nd\ne\nF\n";
+        repo.write("note.md", uncommitted);
+        const localCommit = await repo.head();
+        const before = await repo.statusPorcelain();
+
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        // Refreshing the working tree after the merge must not force a checkout
+        // over an uncommitted edit. The pull has to be refused instead.
+        await expect(manager.pull()).rejects.toBeInstanceOf(
+            Errors.CheckoutConflictError
+        );
+
+        expect(
+            await readFile(path.join(repo.repoPath, "note.md"), "utf8")
+        ).toBe(uncommitted);
+        expect(await repo.raw(["rev-parse", "refs/heads/main"])).toBe(
+            localCommit
+        );
+        expect(await repo.statusPorcelain()).toBe(before);
+    });
 });

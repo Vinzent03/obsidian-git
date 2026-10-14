@@ -532,23 +532,55 @@ export class IsomorphicGit extends GitManager {
      * tree keeps the pre-merge content and a later automatic commit would revert
      * the incoming changes without reporting any conflict. Force the paths that
      * this merge changed so the working tree matches the merge result.
+     *
+     * A forced checkout would also overwrite uncommitted local edits in those
+     * paths without warning, because the checkout above did not notice them. Only
+     * force the paths whose working tree content still matches the pre-merge
+     * commit. If any changed path carries uncommitted changes, abort the pull and
+     * restore the branch ref, the way a real `git pull` refuses to run when it
+     * would overwrite local changes.
      */
     private async refreshWorkingTreeAfterMerge(
+        branch: string,
         localCommit: string
     ): Promise<void> {
+        let changedPaths: string[];
         try {
             const mergedCommit = await this.resolveRef("HEAD");
-            const changed = await this.getFileChangesCount(
-                localCommit,
-                mergedCommit
+            changedPaths = (
+                await this.getFileChangesCount(localCommit, mergedCommit)
+            ).map((file) => file.path);
+        } catch (error) {
+            console.error(
+                "[obsidian-git] Failed to list the files to refresh after a merge.",
+                error
             );
-            if (changed.length === 0) {
-                return;
+            return;
+        }
+        if (changedPaths.length === 0) {
+            return;
+        }
+
+        const dirtyPaths: string[] = [];
+        for (const filepath of changedPaths) {
+            if (!(await this.workingTreeMatchesCommit(filepath, localCommit))) {
+                dirtyPaths.push(filepath);
             }
+        }
+        if (dirtyPaths.length > 0) {
+            // `merge` already moved the branch ref and staged the merge result.
+            // Restore both so the aborted pull leaves the repository untouched
+            // instead of overwriting the uncommitted local edits.
+            await this.restoreRefAfterFailedCheckout(branch, localCommit);
+            await this.resetIndexToCommit(changedPaths);
+            throw new Errors.CheckoutConflictError(dirtyPaths);
+        }
+
+        try {
             await this.wrapFS(
                 git.checkout({
                     ...this.getRepo(),
-                    filepaths: changed.map((file) => file.path),
+                    filepaths: changedPaths,
                     force: true,
                 })
             );
@@ -557,6 +589,86 @@ export class IsomorphicGit extends GitManager {
                 "[obsidian-git] Failed to refresh the working tree after a merge.",
                 error
             );
+        }
+    }
+
+    /**
+     * Whether the working tree copy of `filepath` still matches the version
+     * committed at `commit`. A path that is missing on one side only matches a
+     * path that is missing on the other side, so files the merge adds or removes
+     * are compared correctly too. Any unreadable path is reported as changed, so
+     * the caller refuses to overwrite it rather than risking data loss.
+     */
+    private async workingTreeMatchesCommit(
+        filepath: string,
+        commit: string
+    ): Promise<boolean> {
+        let working: Uint8Array | undefined;
+        try {
+            const vaultPath = this.getRelativeVaultPath(filepath);
+            if (await this.app.vault.adapter.exists(vaultPath)) {
+                working = new Uint8Array(
+                    await this.app.vault.adapter.readBinary(vaultPath)
+                );
+            }
+        } catch (error) {
+            console.error(
+                `[obsidian-git] Could not read the working tree file "${filepath}".`,
+                error
+            );
+            return false;
+        }
+
+        let committed: Uint8Array | undefined;
+        try {
+            committed = (
+                await this.wrapFS(
+                    readBlob({ ...this.getRepo(), filepath, oid: commit })
+                )
+            ).blob;
+        } catch (error) {
+            if (error instanceof Errors.NotFoundError) {
+                committed = undefined;
+            } else {
+                console.error(
+                    `[obsidian-git] Could not read "${filepath}" at ${commit}.`,
+                    error
+                );
+                return false;
+            }
+        }
+
+        if (working === undefined || committed === undefined) {
+            return working === undefined && committed === undefined;
+        }
+        if (working.length !== committed.length) {
+            return false;
+        }
+        for (let index = 0; index < working.length; index++) {
+            if (working[index] !== committed[index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Point the index entries of `filepaths` back at HEAD after an aborted
+     * merge. `merge` staged the merge result there, which would otherwise linger
+     * as staged changes once the branch ref has been restored.
+     */
+    private async resetIndexToCommit(filepaths: string[]): Promise<void> {
+        for (const filepath of filepaths) {
+            try {
+                await this.wrapFS(
+                    git.resetIndex({ ...this.getRepo(), filepath })
+                );
+            } catch (error) {
+                console.error(
+                    `[obsidian-git] Could not reset the index entry for "${filepath}" after an aborted merge.`,
+                    error
+                );
+            }
         }
     }
 
@@ -656,7 +768,10 @@ export class IsomorphicGit extends GitManager {
                         throw checkoutError;
                     }
                     if (!mergeRes.fastForward) {
-                        await this.refreshWorkingTreeAfterMerge(localCommit);
+                        await this.refreshWorkingTreeAfterMerge(
+                            branchInfo.current,
+                            localCommit
+                        );
                     }
                 }
                 const upstreamCommit = await this.resolveRef("HEAD");
