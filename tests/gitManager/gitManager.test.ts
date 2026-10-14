@@ -801,6 +801,51 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         await expect(repo.show("HEAD:other/new.md")).rejects.toThrow();
     });
 
+    it("uses the staged commit path for an empty auto include list", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("unstaged.md", "unstaged\n");
+        plugin.settings.autoCommitGlobMode = "include";
+        plugin.settings.autoCommitGlobs = "";
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        const commit = vi.spyOn(manager, "commit");
+        const commitAll = vi.spyOn(manager, "commitAll");
+        const actions = new GitActions(plugin);
+
+        expect(
+            await actions.commit({
+                fromAuto: true,
+                mode: "all",
+                commitMessage: "staged only",
+            })
+        ).toEqual({
+            status: "success",
+            value: { status: "nothing-to-commit", reason: "nothing-staged" },
+        });
+        repo.write("staged.md", "staged\n");
+        await repo.git.add("staged.md");
+
+        expect(
+            await actions.commit({
+                fromAuto: true,
+                mode: "all",
+                commitMessage: "staged only",
+            })
+        ).toEqual({
+            status: "success",
+            value: { status: "committed", files: 1 },
+        });
+        expect(commit).toHaveBeenCalledTimes(1);
+        expect(commitAll).not.toHaveBeenCalled();
+        expect(await repo.show("HEAD:staged.md")).toBe("staged");
+        await expect(repo.show("HEAD:unstaged.md")).rejects.toThrow();
+    });
+
     it("counts merge changes when committing all files", async () => {
         context = await backend.create(createRepoWithMergeConflict);
         const { manager, repo } = context;

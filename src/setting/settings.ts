@@ -247,14 +247,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             validate: validateInteger,
                         },
                     },
-                    this.toggle(
-                        `Auto ${automatic} only staged files`,
-                        "autoCommitOnlyStaged",
-                        `Only staged files are committed on auto ${automatic}.`
-                    ),
                     {
                         name: `Auto ${automatic} glob mode`,
-                        desc: "Exclude leaves matching files unstaged. Include stages only matching files. Configured globs override the vault limit for auto staging. Files you staged yourself are still committed.",
+                        desc: "Exclude leaves matching files unstaged. Include stages only matching files; an empty include list commits staged files only. Configured globs override the vault limit for auto staging.",
                         control: {
                             type: "dropdown",
                             key: "autoCommitGlobMode",
@@ -262,7 +257,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 exclude: "Exclude matches",
                                 include: "Include matches",
                             },
-                            disabled: () => this.settings.autoCommitOnlyStaged,
                         },
                     },
                     {
@@ -272,7 +266,6 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             type: "textarea",
                             key: "autoCommitGlobs",
                             placeholder: "scripts/**\n**/*.tmp",
-                            disabled: () => this.settings.autoCommitOnlyStaged,
                         },
                     },
                     this.toggle(

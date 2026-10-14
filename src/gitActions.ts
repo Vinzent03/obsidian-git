@@ -516,6 +516,16 @@ export class GitActions {
     }: CommitOptions): Promise<CommitResult> {
         const status = await this.plugin.updateCachedStatus();
         const mergeInProgress = this.plugin.state.mergeInProgress;
+        const autoGlobs = fromAuto
+            ? parseAutoCommitGlobs(this.plugin.settings.autoCommitGlobs)
+            : [];
+        if (
+            fromAuto &&
+            this.plugin.settings.autoCommitGlobMode === "include" &&
+            autoGlobs.length === 0
+        ) {
+            mode = "staged";
+        }
         // Reuse the fresh status instead of walking the working tree again.
         const stagedFiles = status.staged;
         let unstagedFiles = status.changed;
@@ -555,9 +565,7 @@ export class GitActions {
             fromAuto && !onlyStaged
                 ? {
                       mode: this.plugin.settings.autoCommitGlobMode,
-                      globs: parseAutoCommitGlobs(
-                          this.plugin.settings.autoCommitGlobs
-                      ),
+                      globs: autoGlobs,
                   }
                 : undefined;
         if (selection) {
