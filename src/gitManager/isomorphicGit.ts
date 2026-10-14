@@ -6,6 +6,7 @@ import type {
     GitHttpResponse,
     GitProgressEvent,
     HttpClient,
+    MergeDriverParams,
     StatusRow,
     Walker,
     WalkerEntry,
@@ -512,79 +513,96 @@ export class IsomorphicGit extends GitManager {
 
                 await this.fetch();
 
+                const theirs = await this.resolveRef(branchInfo.tracking);
+                if (localCommit === theirs) {
+                    return { status: "up-to-date" };
+                }
+
                 await this.checkAuthorInfo();
 
-                const theirs = await this.resolveRef(branchInfo.tracking);
                 mergeState = {
                     ours: localCommit,
                     theirs,
                     message: `Merge branch '${branchInfo.tracking}' into ${branchInfo.current}`,
                 };
 
-                const mergeRes = await this.wrapFS(
-                    git.merge({
-                        ...this.getRepo(),
-                        ours: branchInfo.current,
-                        theirs: branchInfo.tracking,
-                        message: mergeState.message,
-                        abortOnConflict: false,
-                        mergeDriver:
-                            this.plugin.settings.mergeStrategy !== "none"
-                                ? ({ contents }) => {
-                                      const baseContent = contents[0]!;
-                                      const ourContent = contents[1]!;
-                                      const theirContent = contents[2]!;
-
-                                      const LINEBREAKS = /^.*(\r?\n|$)/gm;
-                                      const ours =
-                                          ourContent.match(LINEBREAKS) ?? [];
-                                      const base =
-                                          baseContent.match(LINEBREAKS) ?? [];
-                                      const theirs =
-                                          theirContent.match(LINEBREAKS) ?? [];
-                                      const result = diff3Merge(
-                                          ours,
-                                          base,
-                                          theirs
-                                      );
-                                      let mergedText = "";
-                                      for (const item of result) {
-                                          if (item.ok) {
-                                              mergedText += item.ok.join("");
-                                          }
-                                          if (item.conflict) {
-                                              mergedText +=
-                                                  this.plugin.settings
-                                                      .mergeStrategy === "ours"
-                                                      ? item.conflict.a.join("")
-                                                      : item.conflict.b.join(
-                                                            ""
-                                                        );
-                                          }
-                                      }
-                                      return { cleanMerge: true, mergedText };
-                                  }
-                                : undefined,
-                    })
-                );
-                if (!mergeRes.alreadyMerged) {
-                    await this.wrapFS(
-                        git.checkout({
-                            ...this.getRepo(),
-                            ref: branchInfo.current,
-                            remote: branchInfo.remote,
-                        })
+                const mergeOptions: Parameters<typeof git.merge>[0] = {
+                    ...this.getRepo(),
+                    ours: branchInfo.current,
+                    theirs: branchInfo.tracking,
+                    message: mergeState.message,
+                    // Keep HEAD at the old commit until checkout succeeds.
+                    noUpdateBranch: true,
+                    mergeDriver:
+                        this.plugin.settings.mergeStrategy !== "none"
+                            ? this.mergeDriver.bind(this)
+                            : undefined,
+                };
+                let mergeRes;
+                try {
+                    // This leaves the index and worktree untouched on conflict.
+                    mergeRes = await this.wrapFS(
+                        git.merge({ ...mergeOptions, abortOnConflict: true })
                     );
-                }
-                const upstreamCommit = await this.resolveRef("HEAD");
-                const changedFiles = await this.getFileChangesCount(
-                    localCommit,
-                    upstreamCommit
-                );
+                } catch (error) {
+                    if (!(error instanceof Errors.MergeConflictError)) {
+                        throw error;
+                    }
+                    // Conflict materialization writes the whole tentative tree,
+                    // so it can only run when no local work would be lost.
+                    await this.ensureCleanPullWorktree(localCommit, true);
+                    await this.ensureNoIncomingFileCollisions(
+                        await this.getFileChangesCount(localCommit, theirs)
+                    );
 
+                    // A `Errors.MergeConflictError` is expected here
+                    await this.wrapFS(
+                        git.merge({ ...mergeOptions, abortOnConflict: false })
+                    );
+                    // eslint-disable-next-line preserve-caught-error -- Error.cause is unavailable with the project's ES2021 target.
+                    throw new Error("Merge conflict was not reproduced.");
+                }
                 if (mergeRes.alreadyMerged) {
                     return { status: "up-to-date" };
                 }
+                if (!mergeRes.oid) {
+                    throw new Error(
+                        "Pull did not produce a commit to check out."
+                    );
+                }
+
+                const changedFiles = await this.getFileChangesCount(
+                    localCommit,
+                    mergeRes.oid
+                );
+                if (changedFiles.length > 0) {
+                    const filepaths = changedFiles.map((file) => file.path);
+                    await this.ensureNoIncomingFileCollisions(changedFiles);
+                    // A merge commit exists, but its result has not yet been
+                    // installed in the index or working tree.
+                    await this.ensureCleanPullWorktree(
+                        localCommit,
+                        true,
+                        filepaths
+                    );
+                    await this.wrapFS(
+                        git.checkout({
+                            ...this.getRepo(),
+                            ref: mergeRes.oid,
+                            noUpdateHead: true,
+                            force: !!mergeRes.mergeCommit,
+                            filepaths,
+                        })
+                    );
+                }
+                await this.wrapFS(
+                    git.writeRef({
+                        ...this.getRepo(),
+                        ref: `refs/heads/${branchInfo.current}`,
+                        value: mergeRes.oid,
+                        force: true,
+                    })
+                );
 
                 return {
                     status: "updated",
@@ -606,6 +624,73 @@ export class IsomorphicGit extends GitManager {
                 throw error;
             }
         });
+    }
+
+    private mergeDriver({ contents }: MergeDriverParams): {
+        cleanMerge: boolean;
+        mergedText: string;
+    } {
+        const baseContent = contents[0]!;
+        const ourContent = contents[1]!;
+        const theirContent = contents[2]!;
+
+        const LINEBREAKS = /^.*(\r?\n|$)/gm;
+        const ours = ourContent.match(LINEBREAKS) ?? [];
+        const base = baseContent.match(LINEBREAKS) ?? [];
+        const theirs = theirContent.match(LINEBREAKS) ?? [];
+        const result = diff3Merge(ours, base, theirs);
+        let mergedText = "";
+        for (const item of result) {
+            if (item.ok) {
+                mergedText += item.ok.join("");
+            }
+            if (item.conflict) {
+                mergedText +=
+                    this.plugin.settings.mergeStrategy === "ours"
+                        ? item.conflict.a.join("")
+                        : item.conflict.b.join("");
+            }
+        }
+        return { cleanMerge: true, mergedText };
+    }
+
+    private async ensureCleanPullWorktree(
+        ref: string,
+        checkIndex = false,
+        filepaths?: string[]
+    ): Promise<void> {
+        const status = await this.wrapFS(
+            git.statusMatrix({ ...this.getRepo(), ref, filepaths })
+        );
+        const changed = status
+            .filter(
+                ([, head, workdir, stage]) =>
+                    head !== workdir || (checkIndex && head !== stage)
+            )
+            .map(([filepath]) => filepath);
+        if (changed.length > 0) {
+            throw new Error(
+                `Cannot pull with uncommitted working tree changes: ${changed.join(", ")}`
+            );
+        }
+    }
+
+    private async ensureNoIncomingFileCollisions(
+        files: WalkDifference[]
+    ): Promise<void> {
+        // Ignored untracked files may be absent from statusMatrix.
+        for (const file of files) {
+            if (
+                file.type === "A" &&
+                (await this.app.vault.adapter.exists(
+                    this.getRelativeVaultPath(file.path)
+                ))
+            ) {
+                throw new Error(
+                    `Cannot pull because an untracked file would be overwritten: ${file.path}`
+                );
+            }
+        }
     }
 
     async push(): Promise<PushResult> {
@@ -1113,12 +1198,16 @@ export class IsomorphicGit extends GitManager {
                     }
 
                     // generate ids
-                    const Aoid = await A?.oid();
-                    const Boid = await B?.oid();
+                    const [Aoid, Boid, Amode, Bmode] = await Promise.all([
+                        A?.oid(),
+                        B?.oid(),
+                        A?.mode(),
+                        B?.mode(),
+                    ]);
 
                     // determine modification type
                     let type: WalkDifference["type"] | "equal" = "equal";
-                    if (Aoid !== Boid) {
+                    if (Aoid !== Boid || Amode !== Bmode) {
                         type = "M";
                     }
                     if (Aoid === undefined) {
