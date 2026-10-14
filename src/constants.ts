@@ -104,32 +104,20 @@ export const DIFF_VIEW_CONFIG = {
 };
 
 export const DEFAULT_WIN_GIT_PATH = "C:\\Program Files\\Git\\cmd\\git.exe";
-export const ASK_PASS_INPUT_FILE = ".git_credentials_input";
 export const ASK_PASS_SCRIPT_FILE = "obsidian_askpass.sh";
 
 export const ASK_PASS_SCRIPT = `#!/bin/sh
 
-PROMPT="$1"
-TEMP_FILE="$OBSIDIAN_GIT_CREDENTIALS_INPUT"
+if ! command -v curl >/dev/null 2>&1; then
+    echo "Obsidian Git authentication requires curl" >&2
+    exit 1
+fi
 
-cleanup() {
-    rm -f "$TEMP_FILE" "$TEMP_FILE.response"
-}
-trap cleanup EXIT
-
-echo "$PROMPT" > "$TEMP_FILE"
-
-while [ ! -e "$TEMP_FILE.response" ]; do
-    if [ ! -e "$TEMP_FILE" ]; then
-        echo "Trigger file got removed: Abort" >&2
-        exit 1
-    fi
-    sleep 0.1
-done
-
-RESPONSE=$(cat "$TEMP_FILE.response")
-
-echo "$RESPONSE"
+printf '%s\\n%s' "$OBSIDIAN_GIT_ASKPASS_TOKEN" "$1" | curl -q \\
+    --silent --show-error --fail --noproxy '*' --proto '=http' \\
+    --max-time 600 --data-binary @- \\
+    --header 'Content-Type: application/octet-stream' \\
+    "http://127.0.0.1:$OBSIDIAN_GIT_ASKPASS_PORT/askpass"
 `;
 
 /**

@@ -72,6 +72,32 @@ describe("runGitAction", () => {
         expect(displayError).not.toHaveBeenCalled();
     });
 
+    it("explains a rejected push without suggesting a force push", async () => {
+        const { displayError, host } = createHost();
+        const error = new Errors.PushRejectedError("not-fast-forward");
+
+        const result = await runGitAction(host, () => Promise.reject(error));
+
+        expect(result).toEqual({ status: "failed" });
+        expect(host.log).toHaveBeenCalledWith("Push rejected:", error);
+        expect(displayError).toHaveBeenCalledOnce();
+        expect(displayError).toHaveBeenCalledWith(
+            "Push rejected. Pull changes from the remote, resolve any conflicts, then push again."
+        );
+    });
+
+    it("explains when a pushed tag already exists", async () => {
+        const { displayError, host } = createHost();
+        const error = new Errors.PushRejectedError("tag-exists");
+
+        const result = await runGitAction(host, () => Promise.reject(error));
+
+        expect(result).toEqual({ status: "failed" });
+        expect(displayError).toHaveBeenCalledWith(
+            "Push rejected because the tag already exists on the remote."
+        );
+    });
+
     it("displays an unknown error once", async () => {
         const { displayError, handleConflict, host } = createHost();
         const error = new Error("commit failed");
