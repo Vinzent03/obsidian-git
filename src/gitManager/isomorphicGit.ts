@@ -488,6 +488,77 @@ export class IsomorphicGit extends GitManager {
         return this.wrapFS(git.resolveRef({ ...this.getRepo(), ref }));
     }
 
+    // Paths the incoming commits change relative to the merge base, i.e. the
+    // paths a pull has to update in the working tree. Using the merge base
+    // (not the local commit) keeps files that only changed locally out of the
+    // set, so uncommitted edits to them do not block the pull.
+    private async getIncomingPaths(
+        localCommit: string,
+        theirs: string
+    ): Promise<string[]> {
+        const bases = await this.wrapFS(
+            git.findMergeBase({
+                ...this.getRepo(),
+                oids: [localCommit, theirs],
+            })
+        );
+        // More or fewer than one base means unrelated or criss-cross histories;
+        // merge will reject those, so fall back to the local commit.
+        const base = bases.length === 1 ? (bases[0] as string) : localCommit;
+        return (await this.getFileChangesCount(base, theirs)).map(
+            (change) => change.path
+        );
+    }
+
+    // Refuse the pull before it moves the branch when the working tree has
+    // changes to a file the pull would overwrite, the way a real `git pull`
+    // does. Throwing here keeps the ref at the local commit, so the next auto
+    // commit cannot push the stale tree over the upstream commits.
+    private async assertNoOverwrittenChanges(paths: string[]): Promise<void> {
+        if (paths.length === 0) {
+            return;
+        }
+        const statusOpts = {
+            ...this.getRepo(),
+            filepaths: paths,
+        } as Parameters<typeof git.statusMatrix>[0];
+        const matrix = await this.wrapFS(git.statusMatrix(statusOpts));
+        const conflicts = matrix
+            .filter(
+                ([, head, workdir, stage]) =>
+                    head !== 1 || workdir !== 1 || stage !== 1
+            )
+            .map(([filepath]) => filepath);
+        if (conflicts.length > 0) {
+            throw new Errors.CheckoutConflictError(conflicts);
+        }
+    }
+
+    // Restore the branch ref and index after the working-tree update failed.
+    // merge has already moved the ref and may have staged the merge result, so
+    // both are reset to the local commit without touching the working tree.
+    private async restoreBranchAfterFailedCheckout(
+        branch: string,
+        localCommit: string,
+        changedPaths: string[]
+    ): Promise<void> {
+        await this.wrapFS(
+            git.writeRef({
+                ...this.getRepo(),
+                ref: `refs/heads/${branch}`,
+                value: localCommit,
+                force: true,
+            })
+        );
+        await this.wrapFS(
+            Promise.all(
+                changedPaths.map((filepath) =>
+                    git.resetIndex({ ...this.getRepo(), filepath })
+                )
+            )
+        );
+    }
+
     async pull(): Promise<PullResult> {
         return this.withGitOperation(GitOperation.pull, async () => {
             let mergeState:
@@ -520,6 +591,16 @@ export class IsomorphicGit extends GitManager {
                     theirs,
                     message: `Merge branch '${branchInfo.tracking}' into ${branchInfo.current}`,
                 };
+
+                // Paths the pull would update in the working tree. Check them
+                // before merging: isomorphic-git's merge moves the branch ref,
+                // and if the following checkout fails the ref would be left at
+                // the upstream commit.
+                const changedPaths = await this.getIncomingPaths(
+                    localCommit,
+                    theirs
+                );
+                await this.assertNoOverwrittenChanges(changedPaths);
 
                 const mergeRes = await this.wrapFS(
                     git.merge({
@@ -568,13 +649,42 @@ export class IsomorphicGit extends GitManager {
                     })
                 );
                 if (!mergeRes.alreadyMerged) {
-                    await this.wrapFS(
-                        git.checkout({
-                            ...this.getRepo(),
-                            ref: branchInfo.current,
-                            remote: branchInfo.remote,
-                        })
-                    );
+                    try {
+                        if (mergeRes.fastForward) {
+                            await this.wrapFS(
+                                git.checkout({
+                                    ...this.getRepo(),
+                                    ref: branchInfo.current,
+                                    remote: branchInfo.remote,
+                                })
+                            );
+                        } else {
+                            // merge wrote the merged result into the index but
+                            // left the working-tree file untouched; a plain
+                            // checkout sees index == HEAD and skips it, so the
+                            // working tree would keep the pre-merge content.
+                            // These paths are clean (checked above), so force
+                            // only the paths the pull actually changed.
+                            await this.wrapFS(
+                                git.checkout({
+                                    ...this.getRepo(),
+                                    ref: branchInfo.current,
+                                    filepaths: changedPaths,
+                                    force: true,
+                                })
+                            );
+                        }
+                    } catch (error) {
+                        // merge already moved the branch ref, so put the ref
+                        // (and any staged merge result) back to leave the
+                        // repository as it was before the pull.
+                        await this.restoreBranchAfterFailedCheckout(
+                            branchInfo.current,
+                            localCommit,
+                            changedPaths
+                        );
+                        throw error;
+                    }
                 }
                 const upstreamCommit = await this.resolveRef("HEAD");
                 const changedFiles = await this.getFileChangesCount(

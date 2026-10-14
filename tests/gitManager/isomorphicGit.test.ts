@@ -87,6 +87,10 @@ describe("IsomorphicGit merge state", () => {
         vi.spyOn(git, "merge").mockRejectedValue(
             new Errors.MergeConflictError(["note.md"], ["note.md"], [], [])
         );
+        // The synthetic oids above do not exist in the repository, so stub the
+        // pre-merge change check and let the merge itself produce the conflict.
+        vi.spyOn(git, "findMergeBase").mockResolvedValue([]);
+        vi.spyOn(manager, "getFileChangesCount").mockResolvedValue([]);
 
         await expect(manager.pull()).rejects.toBeInstanceOf(GitConflictError);
 
@@ -225,5 +229,146 @@ describe("IsomorphicGit.status", () => {
         readBinary.mockClear();
         await manager.status();
         expect(workTreeReads()).toBe(0);
+    });
+});
+
+describe("IsomorphicGit.pull", () => {
+    it("refuses a fast-forward that would overwrite an uncommitted change", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const local = await repo.head();
+
+        // The remote advances: it edits note.md and adds a new file.
+        await repo.writeAndCommit("note.md", "remote\n", "remote edit");
+        await repo.writeAndCommit("new.md", "from desktop\n", "remote add");
+        const remote = await repo.head();
+        await repo.git.push(["--quiet", "origin", "main"]);
+
+        // The local side is back at the shared commit with an uncommitted edit
+        // to a file the incoming commits also change.
+        await repo.raw(["reset", "--hard", local]);
+        repo.write("note.md", "local uncommitted\n");
+        const before = await repo.statusPorcelain();
+
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        await expect(manager.pull()).rejects.toBeInstanceOf(
+            Errors.CheckoutConflictError
+        );
+
+        // The branch did not move, so the queued auto commit cannot push the
+        // stale tree over the upstream commits.
+        expect(await repo.raw(["rev-parse", "main"])).toBe(local);
+        expect(await repo.raw(["rev-parse", "origin/main"])).toBe(remote);
+        // Nothing was checked out and the uncommitted edit survives.
+        expect(
+            await readFile(path.join(repo.repoPath, "note.md"), "utf8")
+        ).toBe("local uncommitted\n");
+        await expect(
+            stat(path.join(repo.repoPath, "new.md"))
+        ).rejects.toThrow();
+        expect(await repo.statusPorcelain()).toBe(before);
+    });
+
+    it("updates the working tree with the merge result after a real merge", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.writeAndCommit("note.md", "a\nb\nc\n", "base lines");
+        const base = await repo.head();
+        await repo.git.push(["--quiet", "origin", "main"]);
+
+        // The remote edits the first line.
+        await repo.writeAndCommit("note.md", "A\nb\nc\n", "remote edit");
+        await repo.git.push(["--quiet", "origin", "main"]);
+
+        // The local side edits the last line of the same file.
+        await repo.raw(["reset", "--hard", base]);
+        await repo.writeAndCommit("note.md", "a\nb\nC\n", "local edit");
+
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        const result = await manager.pull();
+
+        expect(result.status).toBe("updated");
+        // The working tree must hold the merge result, not the pre-merge local
+        // content that the following auto commit would otherwise push back.
+        expect(
+            await readFile(path.join(repo.repoPath, "note.md"), "utf8")
+        ).toBe("A\nb\nC\n");
+        expect(await repo.statusPorcelain()).toBe("");
+    });
+
+    it("does not discard an uncommitted edit in a file a real merge changes", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.writeAndCommit("note.md", "a\nb\nc\nd\ne\nf\n", "base");
+        const base = await repo.head();
+        await repo.git.push(["--quiet", "origin", "main"]);
+
+        // The remote edits the first line.
+        await repo.writeAndCommit(
+            "note.md",
+            "A\nb\nc\nd\ne\nf\n",
+            "remote edit"
+        );
+        await repo.git.push(["--quiet", "origin", "main"]);
+
+        // The local side commits an edit to the last line, then edits another
+        // line without committing.
+        await repo.raw(["reset", "--hard", base]);
+        await repo.writeAndCommit(
+            "note.md",
+            "a\nb\nc\nd\ne\nF\n",
+            "local edit"
+        );
+        const uncommitted = "a\nb\nC-UNCOMMITTED\nd\ne\nF\n";
+        repo.write("note.md", uncommitted);
+        const before = await repo.statusPorcelain();
+
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        await expect(manager.pull()).rejects.toBeInstanceOf(
+            Errors.CheckoutConflictError
+        );
+
+        // The uncommitted edit survives and the branch did not move.
+        expect(
+            await readFile(path.join(repo.repoPath, "note.md"), "utf8")
+        ).toBe(uncommitted);
+        expect(await repo.raw(["rev-parse", "main"])).toBe(
+            await repo.raw(["rev-parse", "HEAD"])
+        );
+        expect(await repo.statusPorcelain()).toBe(before);
+    });
+
+    it("still pulls when the uncommitted edit is in a file only changed locally", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const base = await repo.head();
+
+        // The remote only adds an unrelated file.
+        await repo.writeAndCommit("remote.md", "remote\n", "remote add");
+        await repo.git.push(["--quiet", "origin", "main"]);
+
+        // The local side commits an edit to note.md and then edits it again
+        // without committing. The remote did not touch note.md.
+        await repo.raw(["reset", "--hard", base]);
+        await repo.writeAndCommit("note.md", "local committed\n", "local edit");
+        const uncommitted = "local uncommitted\n";
+        repo.write("note.md", uncommitted);
+
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        const result = await manager.pull();
+
+        expect(result.status).toBe("updated");
+        // The uncommitted edit to the locally-changed file must survive.
+        expect(
+            await readFile(path.join(repo.repoPath, "note.md"), "utf8")
+        ).toBe(uncommitted);
+        // The remote file must arrive.
+        expect(
+            await readFile(path.join(repo.repoPath, "remote.md"), "utf8")
+        ).toBe("remote\n");
     });
 });
