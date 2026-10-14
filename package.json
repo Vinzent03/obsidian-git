@@ -45,7 +45,7 @@
         "commit-and-tag-version": "^13.2.1",
         "esbuild": "^0.28.2",
         "esbuild-svelte": "^0.9.5",
-        "eslint": "^10.11.0",
+        "eslint": "^10.12.0",
         "eslint-plugin-svelte": "^3.23.0",
         "obsidian": "^1.13.1",
         "prettier": "3.9.9",
