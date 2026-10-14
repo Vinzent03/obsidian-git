@@ -28,7 +28,7 @@ import type {
     UnstagedFile,
     FileStateMutationResult,
 } from "./types";
-import { GitConflictError } from "./types";
+import { GitConflictError, NoNetworkError } from "./types";
 import { BranchModal } from "./ui/modals/branchModal";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
@@ -752,6 +752,7 @@ export class GitActions {
         if (!(await this.isPushRemoteSet())) {
             return { status: "skipped", reason: "no-upstream" };
         }
+        this.assertConnectivity();
         if (refreshStatus) {
             // Refresh because of pull
             const status = await this.plugin.updateCachedStatus();
@@ -842,10 +843,23 @@ export class GitActions {
         if (!(await this.isPullRemoteSet())) {
             return { status: "skipped", reason: "no-upstream" };
         }
+        this.assertConnectivity();
         this.plugin.log("Pulling....");
         const result = await this.plugin.gitManager.pull();
         this.plugin.setPluginState({ offlineMode: false });
         return result;
+    }
+
+    /**
+     * Fails fast when the OS reports no network, instead of waiting for git
+     * to time out. Routed through the regular offline mode handling.
+     * `onLine` is undefined outside the browser (e.g. tests), so only an
+     * explicit `false` counts as offline.
+     */
+    private assertConnectivity(): void {
+        if (navigator.onLine === false) {
+            throw new NoNetworkError("navigator.onLine is false");
+        }
     }
 
     async fetch(): Promise<GitActionResult<FetchResult>> {
@@ -854,6 +868,7 @@ export class GitActions {
                 if (!(await this.isPushRemoteSet())) {
                     return { status: "skipped", reason: "no-upstream" };
                 }
+                this.assertConnectivity();
                 await this.plugin.gitManager.fetch();
                 this.plugin.setPluginState({ offlineMode: false });
                 this.plugin.app.workspace.trigger("obsidian-git:refresh");
