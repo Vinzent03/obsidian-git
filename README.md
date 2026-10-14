@@ -126,7 +126,7 @@ One such alternative is [GitSync](https://github.com/ViscousPot/GitSync), which 
 
 ### Tips for Mobile Use:
 
-If you have a large repo/vault I recommend to stage individual files and only commit staged files.
+If you have a large repo/vault I recommend staging individual files and setting automatic commit globs to Include matches with an empty list, so automatic commits use only staged files.
 
 ## 🙋 Contact & Credits
 

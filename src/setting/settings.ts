@@ -247,11 +247,27 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             validate: validateInteger,
                         },
                     },
-                    this.toggle(
-                        `Auto ${automatic} only staged files`,
-                        "autoCommitOnlyStaged",
-                        `Only staged files are committed on auto ${automatic}.`
-                    ),
+                    {
+                        name: `Auto ${automatic} glob mode`,
+                        desc: "Exclude leaves matching files unstaged. Include stages only matching files; an empty include list commits staged files only. Configured globs override the vault limit for auto staging.",
+                        control: {
+                            type: "dropdown",
+                            key: "autoCommitGlobMode",
+                            options: {
+                                exclude: "Exclude matches",
+                                include: "Include matches",
+                            },
+                        },
+                    },
+                    {
+                        name: `Globs for auto ${automatic}`,
+                        desc: `One repository-relative Git glob per line, with / as the separator. For example, scripts/** matches a folder and **/*.tmp matches files anywhere. An empty include list stages no unstaged files.`,
+                        control: {
+                            type: "textarea",
+                            key: "autoCommitGlobs",
+                            placeholder: "scripts/**\n**/*.tmp",
+                        },
+                    },
                     this.toggle(
                         `Specify custom commit message on auto ${automatic}`,
                         "customMessageOnAutoBackup",
@@ -722,7 +738,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     this.toggle(
                         "Limit file operations to the vault",
                         "limitToVault",
-                        "Limit status, staging, unstaging, discarding, and submodule updates to the vault where possible. Repository history and remote actions remain repository-wide."
+                        "Limit status, staging, unstaging, discarding, and submodule updates to the vault where possible. Configured auto commit globs take precedence for automatic staging. Repository history and remote actions remain repository-wide."
                     ),
                     {
                         name: "Custom Git binary path",

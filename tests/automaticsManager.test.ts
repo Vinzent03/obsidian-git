@@ -20,7 +20,6 @@ describe("AutomaticsManager auto commit-and-sync after file edits", () => {
                 autoSaveInterval: 5,
                 autoBackupAfterFileChange: true,
                 setLastSaveToLastCommit: false,
-                autoCommitOnlyStaged: false,
                 differentIntervalCommitAndPush: false,
                 autoPushInterval: 0,
                 autoPullInterval: 0,

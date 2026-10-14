@@ -181,18 +181,15 @@ export default class AutomaticsManager {
                         }
                     }
                 }
-                const mode = this.plugin.settings.autoCommitOnlyStaged
-                    ? "staged"
-                    : "all";
                 if (this.plugin.settings.differentIntervalCommitAndPush) {
                     await this.plugin.gitActions.commit({
                         fromAuto: true,
-                        mode,
+                        mode: "all",
                     });
                 } else {
                     await this.plugin.gitActions.commitAndSync({
                         fromAutoBackup: true,
-                        mode,
+                        mode: "all",
                     });
                 }
                 return true;

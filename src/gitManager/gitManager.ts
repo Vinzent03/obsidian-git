@@ -1,6 +1,10 @@
 import { hostname as osHostname } from "os";
 import { type App, moment, Platform } from "obsidian";
 import type ObsidianGit from "../main";
+import type {
+    AutoCommitGlobSelection,
+    AutoCommitSelectedFiles,
+} from "../autoCommitGlobs";
 import { GitOperation } from "../types";
 import type {
     BranchInfo,
@@ -11,7 +15,6 @@ import type {
     PushResult,
     Status,
     TreeItem,
-    UnstagedFile,
 } from "../types";
 
 export abstract class GitManager {
@@ -37,12 +40,19 @@ export abstract class GitManager {
 
     abstract status(opts?: { path?: string }): Promise<Status>;
 
+    abstract selectAutoCommitFiles(
+        status: Status,
+        selection: AutoCommitGlobSelection
+    ): Promise<AutoCommitSelectedFiles>;
+
     abstract isMergeInProgress(): Promise<boolean>;
 
     abstract commitAll(_: {
         message: string;
         status?: Status;
-        unstagedFiles?: UnstagedFile[];
+        unstagedFiles?: FileStatusResult[];
+        /** Repository-relative globs applied only to automatic staging. */
+        selection?: AutoCommitGlobSelection;
         amend?: boolean;
     }): Promise<number>;
 

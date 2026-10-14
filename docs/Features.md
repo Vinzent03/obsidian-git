@@ -25,7 +25,7 @@ On desktop, the actions menu also provides `Amend staged`. It adds the staged ch
 
 The main `Commit-and-sync` command and button always stage and commit all changes before synchronizing. The source control actions menu also provides `Commit staged and sync` when only the current index should be committed.
 
-Automatic commits use their separate `Auto commit-and-sync only staged files` setting and are not affected by `Stage all changes when nothing is staged`.
+Automatic commits use their glob selection and are not affected by `Stage all changes when nothing is staged`. An empty Include list commits only staged changes.
 
 ## History View
 
@@ -43,6 +43,10 @@ There are multiple ways to trigger an automatic commit-and-sync. The default is 
 Another method is to enable "Auto commit-and-sync after stopping file edits". This waits X minutes after your latest change for the commit-and-sync. This is useful if you don't want to get interrupted by a commit while typing. 
 
 The last mode is the "Auto commit-and-sync after latest commit" setting. This sets the last commit-and-sync timestamp to the latest commit. By default, the plugin only compares with it's own latest run of commit-and-sync. So if you manually commit and want the commit-and-sync timer to reset, enable this setting.
+
+Automatic commit-and-sync can stage files using a repository-relative glob list. Choose **Exclude matches** to stage everything except matching files, or **Include matches** to stage only matching files. Enter one [Git pathspec glob](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-glob) per line, without the `:(glob)` prefix, using `/` as the separator. For example, `scripts/**` matches everything in that folder, `**/*.tmp` matches temporary files at any depth, and `.obsidian/workspace.json` matches one file when the vault is at the repository root. An empty Exclude list uses the normal staging scope; an empty Include list commits only staged changes. Matching also covers hidden files.
+
+The list affects automatic staging only. Files you staged manually are still committed, and manual commits are unaffected. A file moved across the selection boundary is committed only on the selected side. Glob rules do not filter submodule contents; an empty Include list uses the staged-only action and does not stage submodule updates. On desktop, Git applies these pathspecs directly; on mobile, the plugin matches the same common glob forms before staging with isomorphic-git. Configured globs take precedence over "Limit file operations to the vault" for automatic staging on desktop. With an empty Exclude list, that vault limit still applies.
 
 ## Commit message
 

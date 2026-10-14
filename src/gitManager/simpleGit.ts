@@ -13,6 +13,10 @@ import {
     GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
 } from "src/constants";
 import type { LineAuthorFollowMovement } from "src/editor/lineAuthor/model";
+import type {
+    AutoCommitGlobSelection,
+    AutoCommitSelectedFiles,
+} from "../autoCommitGlobs";
 import type ObsidianGit from "../main";
 import type {
     Blame,
@@ -432,6 +436,69 @@ export class SimpleGit extends GitManager {
         };
     }
 
+    async selectAutoCommitFiles(
+        status: Status,
+        selection: AutoCommitGlobSelection
+    ): Promise<AutoCommitSelectedFiles> {
+        if (selection.mode === "exclude" && selection.globs.length === 0) {
+            return { files: status.changed, selection };
+        }
+        if (selection.mode === "include" && selection.globs.length === 0) {
+            return { files: [], selection };
+        }
+
+        const selectedStatus = async (pathspecs: string[]) => {
+            const result = await this.git.status([
+                "--untracked-files=all",
+                "--",
+                ...pathspecs,
+            ]);
+            const conflictedPaths = new Set(
+                result.conflicted.map((path) => this.formatPath({ path }).path)
+            );
+            return result.files
+                .map<FileStatusResult>((file) => {
+                    const formatted = this.formatPath(file);
+                    return {
+                        path: formatted.path,
+                        from: formatted.from,
+                        vaultPath: this.getRelativeVaultPath(formatted.path),
+                        index: file.index === "?" ? "U" : file.index,
+                        workingDir:
+                            file.working_dir === "?" ? "U" : file.working_dir,
+                    };
+                })
+                .filter(
+                    (file) =>
+                        file.workingDir !== " " &&
+                        !conflictedPaths.has(file.path)
+                );
+        };
+
+        if (selection.mode === "exclude") {
+            const files = await selectedStatus([
+                ".",
+                ...selection.globs.map((glob) => `:(exclude,glob)${glob}`),
+            ]);
+            return { files, selection };
+        }
+
+        // Git add rejects include pathspecs that match no files. Keep only
+        // patterns with eligible changes, and use Git itself to match them.
+        const files = new Map<string, FileStatusResult>();
+        const activeGlobs: string[] = [];
+        for (const glob of selection.globs) {
+            const matches = await selectedStatus([`:(glob)${glob}`]);
+            if (matches.length === 0) continue;
+            activeGlobs.push(glob);
+            for (const file of matches) files.set(file.path, file);
+        }
+        return {
+            files: [...files.values()],
+            selection: { mode: "include", globs: activeGlobs },
+        };
+    }
+
     async isMergeInProgress(): Promise<boolean> {
         const mergeHead = await this.git.revparse(["--git-path", "MERGE_HEAD"]);
         const mergeHeadPath = path.resolve(
@@ -603,9 +670,15 @@ export class SimpleGit extends GitManager {
 
     async commitAll({
         message,
+        status,
+        unstagedFiles,
+        selection,
         amend,
     }: {
         message: string;
+        status?: Status;
+        unstagedFiles?: FileStatusResult[];
+        selection?: AutoCommitGlobSelection;
         amend?: boolean;
     }): Promise<number> {
         return this.withGitOperation(GitOperation.commit, async () => {
@@ -618,10 +691,35 @@ export class SimpleGit extends GitManager {
                         .commit(await this.formatCommitMessage(message));
                 }
             }
-            const vaultPath = this.getVaultPathspec();
-            await this.git.add(
-                vaultPath == undefined ? "-A" : ["-A", "--", vaultPath]
-            );
+            if (selection?.mode === "include") {
+                if (unstagedFiles == undefined) {
+                    selection = (
+                        await this.selectAutoCommitFiles(
+                            status ?? (await this.status()),
+                            selection
+                        )
+                    ).selection;
+                }
+                if (selection.globs.length > 0) {
+                    await this.git.add([
+                        "-A",
+                        "--",
+                        ...selection.globs.map((glob) => `:(glob)${glob}`),
+                    ]);
+                }
+            } else if (selection?.globs.length) {
+                await this.git.add([
+                    "-A",
+                    "--",
+                    ".",
+                    ...selection.globs.map((glob) => `:(exclude,glob)${glob}`),
+                ]);
+            } else {
+                const vaultPath = this.getVaultPathspec();
+                await this.git.add(
+                    vaultPath == undefined ? "-A" : ["-A", "--", vaultPath]
+                );
+            }
 
             const res = await this.git.commit(
                 await this.formatCommitMessage(message),
