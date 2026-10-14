@@ -27,7 +27,12 @@ import type {
 } from "../types";
 import { GitConflictError, GitOperation, type DiffFile } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
-import { isPathExcluded, splitRemoteBranch, worthWalking } from "../utils";
+import {
+    createAutoCommitPathSelector,
+    type AutoCommitGlobSelection,
+    type AutoCommitSelectedFiles,
+} from "../autoCommitGlobs";
+import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
 import { MyAdapter } from "./myAdapter";
 import diff3Merge from "diff3";
@@ -245,18 +250,29 @@ export class IsomorphicGit extends GitManager {
         message,
         status,
         unstagedFiles,
-        excludedVaultPaths,
+        selection,
         amend,
     }: {
         message: string;
         status?: Status;
-        unstagedFiles?: UnstagedFile[];
-        excludedVaultPaths?: string[];
+        unstagedFiles?: FileStatusResult[];
+        selection?: AutoCommitGlobSelection;
         amend?: boolean;
     }): Promise<number> {
         await this.checkAuthorInfo();
-        await this.stageAll({ status, unstagedFiles, excludedVaultPaths });
+        await this.stageAll({ status, unstagedFiles, selection });
         return this.commit({ message, amend });
+    }
+
+    selectAutoCommitFiles(
+        status: Status,
+        selection: AutoCommitGlobSelection
+    ): Promise<AutoCommitSelectedFiles> {
+        const isSelected = createAutoCommitPathSelector(selection);
+        return Promise.resolve({
+            files: status.changed.filter((file) => isSelected(file.path)),
+            selection,
+        });
     }
 
     async commit({
@@ -321,30 +337,26 @@ export class IsomorphicGit extends GitManager {
         dir,
         status,
         unstagedFiles,
-        excludedVaultPaths = [],
+        selection,
     }: {
         dir?: string;
         status?: Status;
-        unstagedFiles?: UnstagedFile[];
-        excludedVaultPaths?: string[];
+        unstagedFiles?: FileStatusResult[];
+        selection?: AutoCommitGlobSelection;
     }): Promise<void> {
-        const files = status
-            ? status.changed.map((file) => ({
+        const statusFiles = unstagedFiles ?? status?.changed;
+        const files = statusFiles
+            ? statusFiles.map((file) => ({
                   path: file.path,
                   deleted: file.workingDir === "D",
               }))
-            : (unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."))).map(
+            : (await this.getUnstagedFiles(dir ?? ".")).map(
                   ({ path, type }) => ({ path, deleted: type === "D" })
               );
-        await this.stageFiles(
-            files.filter(
-                (file) =>
-                    !isPathExcluded(
-                        this.getRelativeVaultPath(file.path),
-                        excludedVaultPaths
-                    )
-            )
-        );
+        const isSelected = selection
+            ? createAutoCommitPathSelector(selection)
+            : () => true;
+        await this.stageFiles(files.filter((file) => isSelected(file.path)));
     }
 
     private async stageFiles(

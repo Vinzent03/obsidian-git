@@ -25,7 +25,6 @@ import type {
     RemoveRemoteResult,
     SetUpstreamResult,
     SwitchBranchResult,
-    UnstagedFile,
     FileStateMutationResult,
 } from "./types";
 import { GitConflictError } from "./types";
@@ -35,13 +34,15 @@ import { GeneralModal } from "./ui/modals/generalModal";
 import {
     convertPathToAbsoluteGitignoreRule,
     formatRemoteUrl,
-    isPathExcluded,
-    parseExcludedPaths,
     spawnAsync,
     splitRemoteBranch,
 } from "./utils";
 import { DiscardModal } from "./ui/modals/discardModal";
 import { runGitAction, type GitActionResult } from "./gitAction";
+import {
+    parseAutoCommitGlobs,
+    type AutoCommitGlobSelection,
+} from "./autoCommitGlobs";
 
 import type ObsidianGit from "./main";
 
@@ -517,9 +518,7 @@ export class GitActions {
         const mergeInProgress = this.plugin.state.mergeInProgress;
         // Reuse the fresh status instead of walking the working tree again.
         const stagedFiles = status.staged;
-        // The cast hides the missing `type`, which nothing reads here.
-        let unstagedFiles = status.changed as (FileStatusResult &
-            UnstagedFile)[];
+        let unstagedFiles = status.changed;
         let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
             this.resolveCommitMode(
                 mode,
@@ -551,48 +550,23 @@ export class GitActions {
 
         const onlyStaged = resolvedMode === "staged";
 
-        // Paths excluded from auto commit stay unstaged, unless the user
-        // staged them manually.
-        const excludedVaultPaths =
+        // The selection controls automatic staging, not files already staged.
+        let selection: AutoCommitGlobSelection | undefined =
             fromAuto && !onlyStaged
-                ? parseExcludedPaths(
-                      this.plugin.settings.autoCommitExcludedPaths
-                  )
-                : [];
-        const gitManager = this.plugin.gitManager;
-        if (excludedVaultPaths.length > 0 && gitManager instanceof SimpleGit) {
-            // Native Git reports a wholly untracked folder as one status
-            // entry. Expand it when a rule names a file inside the folder,
-            // so the commit decision can see which files remain eligible.
-            const expandedFiles = await Promise.all(
-                unstagedFiles.map(async (file) => {
-                    if (
-                        file.index !== "U" ||
-                        file.workingDir !== "U" ||
-                        !file.path.endsWith("/") ||
-                        !excludedVaultPaths.some((excluded) =>
-                            excluded.startsWith(file.vaultPath)
-                        )
-                    ) {
-                        return [file];
-                    }
-
-                    const paths = await gitManager.getUntrackedFilesInDirectory(
-                        file.path
-                    );
-                    return paths.map((path) => ({
-                        ...file,
-                        path,
-                        vaultPath: gitManager.getRelativeVaultPath(path),
-                    }));
-                })
+                ? {
+                      mode: this.plugin.settings.autoCommitGlobMode,
+                      globs: parseAutoCommitGlobs(
+                          this.plugin.settings.autoCommitGlobs
+                      ),
+                  }
+                : undefined;
+        if (selection) {
+            const selected = await this.plugin.gitManager.selectAutoCommitFiles(
+                status,
+                selection
             );
-            unstagedFiles = expandedFiles.flat();
-        }
-        if (excludedVaultPaths.length > 0) {
-            unstagedFiles = unstagedFiles.filter(
-                (file) => !isPathExcluded(file.vaultPath, excludedVaultPaths)
-            );
+            unstagedFiles = selected.files;
+            selection = selected.selection;
         }
 
         if (
@@ -668,7 +642,7 @@ export class GitActions {
                     message: cmtMessage,
                     status,
                     unstagedFiles,
-                    excludedVaultPaths,
+                    selection,
                     amend,
                 });
             }

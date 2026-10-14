@@ -1,4 +1,5 @@
 import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
+import type { AutoCommitGlobMode } from "./autoCommitGlobs";
 import type {
     Editor,
     EventRef,
@@ -23,11 +24,10 @@ export interface ObsidianGitSettings {
     autoPullInterval: number;
     autoPullOnBoot: boolean;
     autoCommitOnlyStaged: boolean;
-    /**
-     * Vault paths (files or folders), one per line, that auto commits leave
-     * unstaged. Manual commits are unaffected.
-     */
-    autoCommitExcludedPaths: string;
+    /** How repository-relative globs select files for automatic staging. */
+    autoCommitGlobMode: AutoCommitGlobMode;
+    /** Repository-relative Git globs, one per line. Manual commits are unaffected. */
+    autoCommitGlobs: string;
     syncMethod: SyncMethod;
     rebaseAutoStash: RebaseAutoStash;
     mergeStrategy: MergeStrategy;
