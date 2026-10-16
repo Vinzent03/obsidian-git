@@ -29,6 +29,7 @@ import type {
     FileStateMutationResult,
 } from "./types";
 import { GitConflictError } from "./types";
+import { resolveConflictsWithAi } from "./conflictAI/run";
 import { BranchModal } from "./ui/modals/branchModal";
 import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
 import { GeneralModal } from "./ui/modals/generalModal";
@@ -378,6 +379,9 @@ export class GitActions {
                 this.plugin.lastPulledFiles = result.files;
                 return;
             }
+            case "resolved":
+                this.plugin.app.workspace.trigger("obsidian-git:refresh");
+                return;
             case "up-to-date":
                 this.plugin.displayMessage("Pull: Everything is up-to-date");
                 return;
@@ -843,7 +847,15 @@ export class GitActions {
             return { status: "skipped", reason: "no-upstream" };
         }
         this.plugin.log("Pulling....");
-        const result = await this.plugin.gitManager.pull();
+        let result: PullResult;
+        try {
+            result = await this.plugin.gitManager.pull();
+        } catch (error) {
+            if (!(error instanceof GitConflictError)) throw error;
+            const resolved = await resolveConflictsWithAi(this.plugin);
+            if (resolved === null) throw error;
+            result = { status: "resolved", files: resolved };
+        }
         this.plugin.setPluginState({ offlineMode: false });
         return result;
     }

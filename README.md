@@ -19,6 +19,7 @@ For a pull or sync stopped by conflicting changes, see [Conflict resolution](htt
 - 📜 **History View** for browsing commit logs and changed files - Open it with the `Open history view` command.
 - 🔍 **Diff View** for viewing changes in a file - Open it with the `Open diff view` command.
 - 📝 **Signs in the editor** to indicate added, modified, and deleted lines/hunks (desktop only).
+- 🤖 **AI conflict resolution** (optional, off by default): resolves merge conflicts with the Claude API, then lists what it changed and flags large or risky edits for review.
 - GitHub integration to open files and history in your browser
 
 > For detailed file history, consider pairing this plugin with the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin.
@@ -91,6 +92,16 @@ View line-by-line changes directly in the editor with added, modified, and delet
 ### 🔐 Authentication
 
 Some Git services may require further setup for HTTPS/SSH authentication. Refer to the [Authentication Guide](https://publish.obsidian.md/git-doc/Authentication)
+
+### 🤖 AI conflict resolution (optional)
+
+Off by default. When enabled, merge conflicts during sync are resolved by Claude, committed and pushed with the rest of the sync. Every resolved conflict is listed in a notice; resolutions that change a lot (large deletions, edits to the same numbers, links or code on both sides, low model confidence) are flagged so you can review or revert them with Git.
+
+1. Create an API key in the [Anthropic Console](https://console.anthropic.com/) and make sure the account has credit.
+2. Go to **Settings → Git → AI conflict resolution**, enable it, then in **Anthropic API key** click the secret picker and choose **Create new secret** (paste the key and name it). The key is kept in Obsidian's secret storage, never in your vault or repository.
+3. Pick a model (a Sonnet-class model is the default; a Haiku-class model is cheaper, an Opus-class model is stronger for hard conflicts) and press **Test connection**.
+
+Each resolution uses API tokens billed to your Anthropic account. Only the conflicted file contents are sent to the Anthropic API. If the key is missing or rejected, credit runs out, you are offline, or the result fails validation, nothing is guessed: the conflict is left for you to resolve manually and the feature pauses until you re-enable it. Works on desktop and mobile.
 
 ### Obsidian on Linux
 
