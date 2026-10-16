@@ -28,7 +28,8 @@ async function attempt(
     model: string,
     system: string,
     prompt: string,
-    maxTokens: number
+    maxTokens: number,
+    allowTruncated: boolean
 ): Promise<string> {
     let response;
     try {
@@ -61,7 +62,7 @@ async function attempt(
         stop_reason?: string;
         content?: { type: string; text?: string }[];
     };
-    if (json.stop_reason === "max_tokens") {
+    if (json.stop_reason === "max_tokens" && !allowTruncated) {
         throw new ClaudeError("other", "Reply was cut off (file too large)");
     }
     return (json.content ?? []).map((c) => c.text ?? "").join("");
@@ -73,11 +74,19 @@ export async function complete(
     model: string,
     system: string,
     prompt: string,
-    maxTokens: number
+    maxTokens: number,
+    allowTruncated = false
 ): Promise<string> {
     for (let i = 0; ; i++) {
         try {
-            return await attempt(apiKey, model, system, prompt, maxTokens);
+            return await attempt(
+                apiKey,
+                model,
+                system,
+                prompt,
+                maxTokens,
+                allowTruncated
+            );
         } catch (error) {
             const delay = RETRY_DELAYS_MS[i];
             if (
@@ -98,5 +107,6 @@ export async function testConnection(
     apiKey: string,
     model: string
 ): Promise<void> {
-    await complete(apiKey, model, "Reply with ok.", "ping", 8);
+    // A short reply is expected to be cut off; any 200 means key and model work.
+    await complete(apiKey, model, "Reply with ok.", "ping", 8, true);
 }
