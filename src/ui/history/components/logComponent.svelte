@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { moment } from "obsidian";
+    import { moment, setTooltip } from "obsidian";
     import type ObsidianGit from "src/main";
     import type { LogEntry } from "src/types";
     import { getTooltipSide } from "src/utils";
@@ -24,6 +24,20 @@
     });
 
     let side = $derived(getTooltipSide(view.leaf));
+    let tooltip = $derived.by(() => {
+        const lines: string[] = [];
+        if (log.refs.length > 0) {
+            lines.push(log.refs.join(", "));
+        }
+        lines.push(log.author?.name);
+        lines.push(moment(log.date).format(plugin.settings.commitDateFormat));
+        lines.push(log.message);
+        const body = log.body?.trim();
+        if (plugin.settings.commitBodyInHistoryView && body) {
+            lines.push("", body);
+        }
+        return lines.join("\n");
+    });
     let isCollapsed = $state(true);
     let closed = $state<Record<string, boolean>>({});
 
@@ -46,10 +60,17 @@
     <div class="tree-item nav-folder" class:is-collapsed={isCollapsed}>
         <div
             class="tree-item-self is-clickable nav-folder-title"
-            aria-label={`${log.refs.length > 0 ? log.refs.join(", ") + "\n" : ""}${log.author?.name}
-${moment(log.date).format(plugin.settings.commitDateFormat)}
-${log.message}`}
-            data-tooltip-position={side}
+            {@attach (el: HTMLElement) => {
+                // Obsidian turns an empty class list into an invalid empty
+                // class token, so remove the attribute instead.
+                el.removeAttribute("data-tooltip-classes");
+                setTooltip(el, tooltip, {
+                    placement: side,
+                    classes: plugin.settings.commitBodyInHistoryView
+                        ? ["git-commit-tooltip"]
+                        : undefined,
+                });
+            }}
             onclick={() => (isCollapsed = !isCollapsed)}
         >
             <div
