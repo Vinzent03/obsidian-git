@@ -95,13 +95,13 @@ Some Git services may require further setup for HTTPS/SSH authentication. Refer 
 
 ### 🤖 AI conflict resolution (optional)
 
-Off by default. When enabled, merge conflicts during sync are resolved by Claude, committed and pushed with the rest of the sync. Every resolved conflict is listed in a notice; resolutions that change a lot (large deletions, edits to the same numbers, links or code on both sides, low model confidence) are flagged so you can review or revert them with Git.
+Off by default. When enabled, merge and rebase conflicts during sync are resolved by Claude file by file, committed and pushed with the rest of the sync. This includes files one side edited while the other moved or deleted them, and files too large to send whole (those are resolved one conflict at a time). Every resolved file is listed in a notice; resolutions that change a lot (large deletions, edits to the same numbers, links or code on both sides, low model confidence) are flagged so you can review or revert them with Git.
 
 1. Create an API key in the [Anthropic Console](https://console.anthropic.com/) and make sure the account has credit.
 2. Go to **Settings → Git → AI conflict resolution**, enable it, then in **Anthropic API key** click the secret picker and choose **Create new secret** (paste the key and name it). The key is kept in Obsidian's secret storage, never in your vault or repository.
 3. Pick a model (a Sonnet-class model is the default; a Haiku-class model is cheaper, an Opus-class model is stronger for hard conflicts) and press **Test connection**.
 
-Each resolution uses API tokens billed to your Anthropic account. Only the conflicted file contents are sent to the Anthropic API. If the key is missing or rejected, credit runs out, you are offline, or the result fails validation, nothing is guessed: the conflict is left for you to resolve manually and the feature pauses until you re-enable it. Works on desktop and mobile.
+Each resolution uses API tokens billed to your Anthropic account. Only the conflicted file contents are sent to the Anthropic API. If the key is missing or rejected, credit runs out, you are offline, or the result fails validation, nothing is guessed: the affected files are left for you to resolve manually, and the feature turns itself off (until you re-enable it) when the key is rejected or credit runs out. Files that can't be resolved are left for you, while the rest are still resolved. Moved/deleted-file conflicts and rebases need the desktop app; text conflicts in a merge also work on mobile.
 
 ### Obsidian on Linux
 

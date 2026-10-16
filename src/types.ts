@@ -71,8 +71,6 @@ export interface ObsidianGitSettings {
     /** ID of the Anthropic API key in Obsidian Secret Storage. */
     aiConflictApiKeySecret: string;
     aiConflictModel: string;
-    /** Larger conflicted files are not sent to the API. */
-    aiConflictMaxFileKb: number;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;
     /**

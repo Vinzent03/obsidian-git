@@ -115,7 +115,7 @@ function differs(a: string, b: string, re: RegExp): boolean {
     return [...x].some((t) => !y.has(t)) || [...y].some((t) => !x.has(t));
 }
 
-const lineSet = (s: string) =>
+const lines = (s: string) =>
     new Set(
         s
             .split("\n")
@@ -152,8 +152,8 @@ export function reviewFlags(
             flags.push(`both sides changed ${kind}`);
         }
     }
-    const input = lineSet(blocks.map((b) => b.ours + b.theirs).join(""));
-    const output = lineSet(reply.resolved);
+    const input = lines(blocks.map((b) => b.ours + b.theirs).join(""));
+    const output = lines(reply.resolved);
     const dropped = [...input].filter((l) => !output.has(l)).length;
     if (dropped >= 5 && dropped > input.size / 2) {
         flags.push(`dropped ${dropped} of ${input.size} conflicting lines`);
@@ -162,6 +162,10 @@ export function reviewFlags(
         flags.push(`model confidence: ${reply.confidence}`);
     }
     return flags;
+}
+
+export function hasMarkers(text: string): boolean {
+    return markerCount(text) > 0;
 }
 
 export const SYSTEM_PROMPT = `You resolve git merge conflicts in a user's Obsidian notes vault.
@@ -174,12 +178,52 @@ Reply in exactly this format and nothing else:
 <summary>one short sentence on what you decided</summary>
 <confidence>high, medium or low</confidence>
 <resolved>
-the complete resolved file
+the resolved text
 </resolved>
-Put the file between <resolved> and </resolved> on their own lines. Use "high" only when the resolution is routine and cannot lose meaningful content.`;
+Put the text between <resolved> and </resolved> on their own lines. Use "high" only when the resolution is routine and cannot lose meaningful content.`;
+
+export const MOVE_SYSTEM_PROMPT = `You merge edits into a moved file in a user's Obsidian notes vault.
+Never invent content and never drop content that the moved file has.
+Reply in exactly this format and nothing else:
+<summary>one short sentence on what you did</summary>
+<confidence>high, medium or low</confidence>
+<resolved>
+the complete merged file
+</resolved>
+Put the file between <resolved> and </resolved> on their own lines.`;
 
 export function buildPrompt(path: string, text: string): string {
-    return `File: ${path}\n\n${text}`;
+    return `File: ${path}\n\nResolve the whole file and return the complete file.\n\n${text}`;
+}
+
+const CONTEXT_CHARS = 4000;
+
+/** For files too large to send whole: one conflict plus surrounding text. */
+export function buildBlockPrompt(
+    path: string,
+    before: string,
+    block: ConflictBlock,
+    after: string
+): string {
+    return `File: ${path}\n\nThe file is large, so only one conflict is shown with the text around it. Return only the resolved replacement for the conflict section (everything from the <<<<<<< line to the >>>>>>> line), not the surrounding text.\n\n--- text before ---\n${before.slice(-CONTEXT_CHARS)}\n--- conflict ---\n<<<<<<< ours\n${block.ours}=======\n${block.theirs}>>>>>>> theirs\n--- text after ---\n${after.slice(0, CONTEXT_CHARS)}`;
+}
+
+/** Share of the original's non-blank lines that a candidate still contains. */
+export function coverage(original: string, candidate: string): number {
+    const x = lines(original);
+    const y = lines(candidate);
+    return [...x].filter((l) => y.has(l)).length / (x.size || 1);
+}
+
+/** One side moved or renamed a file that the other side edited. */
+export function buildMovePrompt(
+    oldPath: string,
+    newPath: string,
+    base: string,
+    edited: string,
+    moved: string
+): string {
+    return `One side edited "${oldPath}", the other side moved it to "${newPath}". Apply the edits made since the original to the moved file, and return the complete merged moved file. Keep everything else in the moved file as it is.\n\n--- original ---\n${base}\n--- edited version ---\n${edited}\n--- moved file ---\n${moved}`;
 }
 
 export function parseReply(reply: string): AiReply | null {

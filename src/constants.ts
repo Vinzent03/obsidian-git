@@ -35,7 +35,6 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     aiConflictResolution: false,
     aiConflictApiKeySecret: "",
     aiConflictModel: "claude-sonnet-5-5",
-    aiConflictMaxFileKb: 50,
     refreshSourceControl: Platform.isDesktopApp,
     basePath: "",
     differentIntervalCommitAndPush: false,
