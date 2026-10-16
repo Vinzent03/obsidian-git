@@ -160,6 +160,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         } else if (
             storedKey === "authorInHistoryView" ||
             storedKey === "dateInHistoryView" ||
+            storedKey === "commitBodyInHistoryView" ||
             storedKey === "limitToVault"
         ) {
             await this.plugin.refresh();
@@ -585,6 +586,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 "Show date",
                                 "dateInHistoryView",
                                 "Uses the {{date}} placeholder format."
+                            ),
+                            this.toggle(
+                                "Show full commit message",
+                                "commitBodyInHistoryView",
+                                "Show the full commit message, not only the first line, in the commit tooltip."
                             ),
                         ],
                     },

@@ -89,6 +89,7 @@ export interface ObsidianGitSettings {
     showFileMenu: boolean;
     authorInHistoryView: ShowAuthorInHistoryView;
     dateInHistoryView: boolean;
+    commitBodyInHistoryView: boolean;
     diffStyle: "git_unified" | "split";
     /**
      * Time in milliseconds available to compute an editable split diff.

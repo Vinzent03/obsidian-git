@@ -46,6 +46,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     showFileMenu: true,
     authorInHistoryView: "hide",
     dateInHistoryView: false,
+    commitBodyInHistoryView: false,
     diffStyle: "split",
     diffTimeout: 50,
     autoStageOnEmptyIndex: true,
