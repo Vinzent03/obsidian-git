@@ -21,6 +21,13 @@ export function parseAutoCommitGlobs(setting: string): string[] {
         .filter((line) => line.length > 0);
 }
 
+/** Git treats parentheses literally. Preserve existing escape sequences. */
+function escapeGlobParentheses(glob: string): string {
+    return glob.replace(/\\.|[()]/g, (token) =>
+        token.length === 1 ? `\\${token}` : token
+    );
+}
+
 /** Match Git's ordinary glob syntax for the mobile backend. */
 export function createAutoCommitGlobMatcher(
     globs: string[]
@@ -28,13 +35,16 @@ export function createAutoCommitGlobMatcher(
     const matchers = globs.map((glob) => ({
         // Ancestor paths have no trailing slash; keep directory-only matching
         // separate so a pattern like "note.md/" never selects a regular file.
-        matches: picomatch(glob.replace(/\/+$/, "") || glob, {
-            dot: true,
-            nobrace: true,
-            noext: true,
-            nonegate: true,
-            posix: true,
-        }),
+        matches: picomatch(
+            escapeGlobParentheses(glob.replace(/\/+$/, "") || glob),
+            {
+                dot: true,
+                nobrace: true,
+                noext: true,
+                nonegate: true,
+                posix: true,
+            }
+        ),
         directoryOnly: glob.endsWith("/"),
         // A literal directory pathspec selects its descendants. A wildcard
         // matching a directory does not acquire that recursive behavior.

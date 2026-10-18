@@ -301,6 +301,51 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         }
     );
 
+    it.each(["exclude", "include"] as const)(
+        "treats parentheses literally in %s globs",
+        async (mode) => {
+            context = await backend.create();
+            const { manager, repo } = context;
+            const matchingFiles = [
+                "(a).md",
+                "notes/(draft)/note.md",
+                "(escaped).md",
+            ];
+            const otherFiles = ["a.md", "notes/draft/note.md", "escaped.md"];
+            for (const file of [...matchingFiles, ...otherFiles]) {
+                repo.write(file, "content\n");
+            }
+            const selection = {
+                mode,
+                globs: ["(a).md", "notes/(draft)/*.md", "\\(escaped\\).md"],
+            };
+            const selected = await manager.selectAutoCommitFiles(
+                await manager.status(),
+                selection
+            );
+            const expectedFiles =
+                mode === "include" ? matchingFiles : otherFiles;
+            expect(selected.files.map((file) => file.path).sort()).toEqual(
+                [...expectedFiles].sort()
+            );
+
+            expect(
+                await manager.commitAll({
+                    message: "literal parentheses",
+                    selection,
+                })
+            ).toBe(expectedFiles.length);
+            for (const file of expectedFiles) {
+                expect(await repo.show(`HEAD:${file}`)).toBe("content");
+            }
+            const unselectedFiles =
+                mode === "include" ? otherFiles : matchingFiles;
+            for (const file of unselectedFiles) {
+                await expect(repo.show(`HEAD:${file}`)).rejects.toThrow();
+            }
+        }
+    );
+
     it("commits only the existing index when a glob excludes every file", async () => {
         context = await backend.create();
         const { manager, repo } = context;
