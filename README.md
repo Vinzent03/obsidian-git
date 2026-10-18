@@ -100,6 +100,10 @@ After reviewing the result, mark the file as resolved in Source Control, then co
 
 ## Desktop Notes
 
+### Community scorecard
+
+The [Obsidian community scorecard](https://community.obsidian.md/plugins/obsidian-git#scorecard) reports automated code checks, including warnings about shell execution and direct filesystem access. On desktop, this plugin needs those capabilities to run your installed Git and work with repository metadata and Git configuration beyond Obsidian's vault API. These requirements contribute to the Review rating, so read it alongside the individual findings and in the context of native Git integration.
+
 ### Authentication
 
 Some Git services may require further setup for HTTPS/SSH authentication. Refer to the [Authentication Guide](https://publish.obsidian.md/git-doc/Authentication)
