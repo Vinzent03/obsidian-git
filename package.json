@@ -77,7 +77,7 @@
         "js-sha256": "^1.0.0",
         "picomatch": "^4.0.7",
         "simple-git": "^4.0.2",
-        "svelte": "^5.57.1"
+        "svelte": "^5.57.2"
     },
     "moduleFileExtensions": [
         "js",
