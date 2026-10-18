@@ -64,6 +64,12 @@
     overflow-wrap: break-word;
 }
 
+.tooltip.obsidian-git-commit-tooltip {
+    text-align: start;
+    white-space: pre-wrap;
+    max-width: min(480px, 90vw);
+}
+
 /* Limits the scrollbar to the view body */
 .git-view {
     display: flex;
