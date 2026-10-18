@@ -28,6 +28,11 @@ import type {
 } from "../types";
 import { GitConflictError, GitOperation, type DiffFile } from "../types";
 import { GeneralModal } from "../ui/modals/generalModal";
+import {
+    createAutoCommitPathSelector,
+    type AutoCommitGlobSelection,
+    type AutoCommitSelectedFiles,
+} from "../autoCommitGlobs";
 import { splitRemoteBranch, worthWalking } from "../utils";
 import { GitManager } from "./gitManager";
 import { MyAdapter } from "./myAdapter";
@@ -246,16 +251,29 @@ export class IsomorphicGit extends GitManager {
         message,
         status,
         unstagedFiles,
+        selection,
         amend,
     }: {
         message: string;
         status?: Status;
-        unstagedFiles?: UnstagedFile[];
+        unstagedFiles?: FileStatusResult[];
+        selection?: AutoCommitGlobSelection;
         amend?: boolean;
     }): Promise<number> {
         await this.checkAuthorInfo();
-        await this.stageAll({ status, unstagedFiles });
+        await this.stageAll({ status, unstagedFiles, selection });
         return this.commit({ message, amend });
+    }
+
+    selectAutoCommitFiles(
+        status: Status,
+        selection: AutoCommitGlobSelection
+    ): Promise<AutoCommitSelectedFiles> {
+        const isSelected = createAutoCommitPathSelector(selection);
+        return Promise.resolve({
+            files: status.changed.filter((file) => isSelected(file.path)),
+            selection,
+        });
     }
 
     async commit({
@@ -320,28 +338,26 @@ export class IsomorphicGit extends GitManager {
         dir,
         status,
         unstagedFiles,
+        selection,
     }: {
         dir?: string;
         status?: Status;
-        unstagedFiles?: UnstagedFile[];
+        unstagedFiles?: FileStatusResult[];
+        selection?: AutoCommitGlobSelection;
     }): Promise<void> {
-        if (status) {
-            await this.stageFiles(
-                status.changed.map((file) => ({
-                    path: file.path,
-                    deleted: file.workingDir === "D",
-                }))
-            );
-        } else {
-            const filesToStage =
-                unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
-            await this.stageFiles(
-                filesToStage.map(({ path, type }) => ({
-                    path,
-                    deleted: type === "D",
-                }))
-            );
-        }
+        const statusFiles = unstagedFiles ?? status?.changed;
+        const files = statusFiles
+            ? statusFiles.map((file) => ({
+                  path: file.path,
+                  deleted: file.workingDir === "D",
+              }))
+            : (await this.getUnstagedFiles(dir ?? ".")).map(
+                  ({ path, type }) => ({ path, deleted: type === "D" })
+              );
+        const isSelected = selection
+            ? createAutoCommitPathSelector(selection)
+            : () => true;
+        await this.stageFiles(files.filter((file) => isSelected(file.path)));
     }
 
     private async stageFiles(

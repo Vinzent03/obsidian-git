@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
 import { simpleGit, type SimpleGit } from "simple-git";
@@ -44,7 +44,9 @@ async function gitRaw(git: SimpleGit, args: string[]): Promise<string> {
 }
 
 function write(repoPath: string, filePath: string, content: string): void {
-    writeFileSync(path.join(repoPath, filePath), content);
+    const fullPath = path.join(repoPath, filePath);
+    mkdirSync(path.dirname(fullPath), { recursive: true });
+    writeFileSync(fullPath, content);
 }
 
 async function writeAndCommit(
