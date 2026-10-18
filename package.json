@@ -47,7 +47,7 @@
         "esbuild": "^0.28.2",
         "esbuild-svelte": "^0.9.5",
         "eslint": "^10.11.0",
-        "eslint-plugin-svelte": "^3.23.0",
+        "eslint-plugin-svelte": "^3.23.1",
         "obsidian": "^1.13.1",
         "prettier": "3.9.9",
         "prettier-plugin-svelte": "^4.1.1",
