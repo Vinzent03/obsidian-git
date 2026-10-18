@@ -26,13 +26,16 @@ export function createAutoCommitGlobMatcher(
     globs: string[]
 ): (repoPath: string) => boolean {
     const matchers = globs.map((glob) => ({
-        matches: picomatch(glob, {
+        // Ancestor paths have no trailing slash; keep directory-only matching
+        // separate so a pattern like "note.md/" never selects a regular file.
+        matches: picomatch(glob.replace(/\/+$/, "") || glob, {
             dot: true,
             nobrace: true,
             noext: true,
             nonegate: true,
             posix: true,
         }),
+        directoryOnly: glob.endsWith("/"),
         // A literal directory pathspec selects its descendants. A wildcard
         // matching a directory does not acquire that recursive behavior.
         literalDirectory:
@@ -41,8 +44,8 @@ export function createAutoCommitGlobMatcher(
     return (repoPath) => {
         // Git pathspecs also select the descendants of a matching directory.
         const segments = repoPath.split("/");
-        return matchers.some(({ matches, literalDirectory }) => {
-            if (matches(repoPath)) return true;
+        return matchers.some(({ matches, directoryOnly, literalDirectory }) => {
+            if (!directoryOnly && matches(repoPath)) return true;
             if (!literalDirectory) return false;
             for (let i = 1; i < segments.length; i++) {
                 if (matches(segments.slice(0, i).join("/"))) return true;

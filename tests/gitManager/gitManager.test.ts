@@ -260,6 +260,47 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         );
     });
 
+    it.each(["exclude", "include"] as const)(
+        "handles trailing-slash directory paths in %s mode",
+        async (mode) => {
+            context = await backend.create();
+            const { manager, repo } = context;
+            const directoryFiles = [
+                "private/secret.md",
+                "private/nested/note.md",
+            ];
+            const otherFiles = ["private-old/note.md", "public.md"];
+            for (const file of [...directoryFiles, ...otherFiles]) {
+                repo.write(file, "content\n");
+            }
+            const selection = { mode, globs: ["private/", "public.md/"] };
+            const selected = await manager.selectAutoCommitFiles(
+                await manager.status(),
+                selection
+            );
+            const expectedFiles =
+                mode === "include" ? directoryFiles : otherFiles;
+            expect(selected.files.map((file) => file.path).sort()).toEqual(
+                [...expectedFiles].sort()
+            );
+
+            expect(
+                await manager.commitAll({
+                    message: "directory selection",
+                    selection,
+                })
+            ).toBe(expectedFiles.length);
+            for (const file of expectedFiles) {
+                expect(await repo.show(`HEAD:${file}`)).toBe("content");
+            }
+            const unselectedFiles =
+                mode === "include" ? otherFiles : directoryFiles;
+            for (const file of unselectedFiles) {
+                await expect(repo.show(`HEAD:${file}`)).rejects.toThrow();
+            }
+        }
+    );
+
     it("commits only the existing index when a glob excludes every file", async () => {
         context = await backend.create();
         const { manager, repo } = context;
