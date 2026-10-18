@@ -1379,10 +1379,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             ? `abcdef Author Name ${today}`
             : "invalid color";
 
-        descEl.createEl("div", {
+        descEl.createDiv({
             text: text,
+            cls: "line-author-settings-preview",
             attr: {
-                class: "line-author-settings-preview",
                 style: `background-color: ${rgbStr}; width: 30ch;`,
             },
         });
