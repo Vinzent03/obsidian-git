@@ -17,6 +17,7 @@ import {
     DATE_TIME_FORMAT_SECONDS,
     DEFAULT_SETTINGS,
     GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
+    HISTORY_VIEW_CONFIG,
 } from "src/constants";
 import { IsomorphicGit } from "src/gitManager/isomorphicGit";
 import { SimpleGit } from "src/gitManager/simpleGit";
@@ -30,6 +31,7 @@ import type {
 } from "src/editor/lineAuthor/model";
 import type ObsidianGit from "src/main";
 import type { ObsidianGitSettings } from "src/types";
+import type HistoryView from "src/ui/history/historyView";
 import { convertToRgb, rgbToString } from "src/utils";
 
 const FORMAT_STRING_REFERENCE_URL =
@@ -160,8 +162,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         } else if (
             storedKey === "authorInHistoryView" ||
             storedKey === "dateInHistoryView" ||
-            storedKey === "limitToVault"
+            storedKey === "commitDateFormat"
         ) {
+            for (const leaf of this.app.workspace.getLeavesOfType(
+                HISTORY_VIEW_CONFIG.type
+            )) {
+                if (!(leaf.isDeferred ?? false)) {
+                    await (leaf.view as HistoryView).reload();
+                }
+            }
+        } else if (storedKey === "limitToVault") {
             await this.plugin.refresh();
         } else if (storedKey === "refreshSourceControlTimer") {
             this.plugin.setRefreshDebouncer();
@@ -323,8 +333,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     )
                                     .setValue(this.settings.commitDateFormat)
                                     .onChange(async (value) => {
-                                        this.settings.commitDateFormat = value;
-                                        await this.plugin.saveSettings();
+                                        await this.setControlValue(
+                                            "commitDateFormat",
+                                            value
+                                        );
                                     })
                             );
                             setting.descEl.createSpan({
