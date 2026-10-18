@@ -1189,10 +1189,10 @@ export class IsomorphicGit extends GitManager {
             typedWalk<WalkDifference>({
                 ...this.getRepo(),
                 trees: walkers,
-                map: async function (
+                map: async (
                     filepath,
                     [A, B]
-                ): Promise<WalkDifference | null | undefined> {
+                ): Promise<WalkDifference | null | undefined> => {
                     if (!worthWalking(filepath, base)) {
                         return null;
                     }
@@ -1234,9 +1234,10 @@ export class IsomorphicGit extends GitManager {
                     }
 
                     if (Aoid === undefined && Boid === undefined) {
-                        console.log("Something weird happened:");
-                        console.log(A);
-                        console.log(B);
+                        this.plugin.warn(
+                            "Missing object IDs in both Git trees while comparing file:",
+                            filepath
+                        );
                     }
                     if (type === "equal") {
                         return;

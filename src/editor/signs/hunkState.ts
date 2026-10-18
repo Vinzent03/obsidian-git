@@ -179,11 +179,10 @@ export const hunksState: StateField<HunksData | undefined> = StateField.define<
             const changeDescsAreComposable =
                 !hunksData.changeDesc ||
                 hunksData.changeDesc.newLength === transaction.changes.length;
-            console.assert(
-                changeDescsAreComposable,
-                "Git: Hunk changes belong to different document histories."
-            );
             if (!changeDescsAreComposable) {
+                pluginRef.plugin?.warn(
+                    "Hunk changes belong to different document histories. Recomputing the full diff."
+                );
                 // Do not let an invariant violation break editing in production.
                 // Discard the incremental cache and perform a full diff instead.
                 hunksData.chunks = undefined;
