@@ -45,9 +45,8 @@ export class GeneralModal extends SuggestModal<string> {
             promptContainer.addClass("git-obscure-prompt");
             promptContainer.setAttr("git-is-obscured", "true");
             const obscureSwitchButton = promptContainer?.createDiv({
-                cls: "search-input-clear-button",
+                cls: "search-input-clear-button git-show-password",
             });
-            obscureSwitchButton.style.marginRight = "32px";
             obscureSwitchButton.id = "git-show-password";
             obscureSwitchButton.addEventListener("click", () => {
                 const isObscured = promptContainer.getAttr("git-is-obscured");

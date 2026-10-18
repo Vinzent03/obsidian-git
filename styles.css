@@ -70,6 +70,26 @@
     max-width: min(480px, 90vw);
 }
 
+.obsidian-git-statusbar-conflict-indicator,
+.obsidian-git-statusbar-paused-indicator,
+.obsidian-git-statusbar-icon {
+    float: left;
+}
+
+.obsidian-git-statusbar-text {
+    float: right;
+    margin-left: 5px;
+}
+
+.obsidian-git-statusbar-conflict {
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.obsidian-git-statusbar-paused {
+    margin-right: 5px;
+}
+
 /* Limits the scrollbar to the view body */
 .git-view {
     display: flex;
@@ -603,6 +623,10 @@ which itself is adapted from the diff2html library with the following original l
 
 /* ====================== Line Authoring Information ====================== */
 
+.markdown-source-view.mod-cm6 .cm-gutters.obsidian-git-line-author-gutters {
+    margin-left: unset;
+}
+
 .cm-gutterElement.obs-git-blame-gutter {
     /* Add background color to spacing inbetween and around the gutter for better aesthetics */
     border-width: 0px 2px 0.2px;
@@ -637,6 +661,10 @@ which itself is adapted from the diff2html library with the following original l
 .git-unified-diff-view,
 .git-split-diff-view .cm-insertedLine .cm-changedText {
     background-color: #22bb2230;
+}
+
+.git-obscure-prompt .git-show-password {
+    margin-right: 32px;
 }
 
 .git-obscure-prompt[git-is-obscured="true"] #git-show-password:after {
