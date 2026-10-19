@@ -53,5 +53,14 @@ async function reportGitError(
         host.handleNoNetworkError(error);
         return;
     }
+    if (error instanceof Errors.PushRejectedError) {
+        host.log("Push rejected:", error);
+        host.displayError(
+            error.data.reason === "tag-exists"
+                ? "Push rejected because the tag already exists on the remote."
+                : "Push rejected. Pull changes from the remote, resolve any conflicts, then push again."
+        );
+        return;
+    }
     host.displayError(error);
 }

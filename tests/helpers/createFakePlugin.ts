@@ -10,6 +10,7 @@ export type FakePlugin = ObsidianGit & {
     };
     setPluginState: ReturnType<typeof vi.fn>;
     log: ReturnType<typeof vi.fn>;
+    warn: ReturnType<typeof vi.fn>;
     displayError: ReturnType<typeof vi.fn>;
 };
 
@@ -29,6 +30,7 @@ export function createFakePlugin(): FakePlugin {
         },
         setPluginState: vi.fn(),
         log: vi.fn(),
+        warn: vi.fn(),
         displayError: vi.fn(),
     } as unknown as FakePlugin;
 }

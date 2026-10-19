@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { moment } from "obsidian";
+    import { moment, setTooltip } from "obsidian";
     import type ObsidianGit from "src/main";
     import type { LogEntry } from "src/types";
     import { getTooltipSide } from "src/utils";
@@ -24,6 +24,10 @@
     });
 
     let side = $derived(getTooltipSide(view.leaf));
+    let tooltip = $derived(`${log.author?.name}
+${moment(log.date).format(plugin.settings.commitDateFormat)}
+${log.message}
+${log.body ? "\n" + log.body : ""}`);
     let isCollapsed = $state(true);
     let closed = $state<Record<string, boolean>>({});
 
@@ -46,10 +50,13 @@
     <div class="tree-item nav-folder" class:is-collapsed={isCollapsed}>
         <div
             class="tree-item-self is-clickable nav-folder-title"
-            aria-label={`${log.refs.length > 0 ? log.refs.join(", ") + "\n" : ""}${log.author?.name}
-${moment(log.date).format(plugin.settings.commitDateFormat)}
-${log.message}`}
-            data-tooltip-position={side}
+            aria-label={tooltip}
+            {@attach (element: HTMLElement) => {
+                setTooltip(element, tooltip, {
+                    placement: side,
+                    classes: ["obsidian-git-commit-tooltip"],
+                });
+            }}
             onclick={() => (isCollapsed = !isCollapsed)}
         >
             <div

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.42.0](https://github.com/Vinzent03/obsidian-git/compare/2.41.1...2.42.0) (2026-10-18)
+
+### Features
+
+* **desktop:** use local socket for askpass ([7ec4d51](https://github.com/Vinzent03/obsidian-git/commit/7ec4d51f5400535d11118dff712406e2d3f2a772))
+* exclude/include paths from automatic commits ([#1196](https://github.com/Vinzent03/obsidian-git/issues/1196)) ([a0e0503](https://github.com/Vinzent03/obsidian-git/commit/a0e050381669a03d796b7bf10324980c3ef8e3d3))
+* **mobile:** migrate to Obsidian secrets for git server password ([ee49866](https://github.com/Vinzent03/obsidian-git/commit/ee498661f6062550a6f2c6110b169e38d8cd334d))
+
+### Bug Fixes
+
+* keep auto commit debouncer across runs ([#1195](https://github.com/Vinzent03/obsidian-git/issues/1195)) ([fd31c50](https://github.com/Vinzent03/obsidian-git/commit/fd31c502283003ea6ca74f9c7b53430a71151978)), closes [#1024](https://github.com/Vinzent03/obsidian-git/issues/1024)
+* **mobile:** display better error message for rejected push ([4792a7e](https://github.com/Vinzent03/obsidian-git/commit/4792a7e0b27e5392441e2f5b9e6a8bae85a370c4))
+* **mobile:** keep isomorphic-git index stat cache effective ([#1192](https://github.com/Vinzent03/obsidian-git/issues/1192)) ([3a692e1](https://github.com/Vinzent03/obsidian-git/commit/3a692e1227de141d2bc0e87a303abc31d43e45c2))
+* **mobile:** keep pull ref unchanged until checkout succeeds ([af0a934](https://github.com/Vinzent03/obsidian-git/commit/af0a934c24d5b57bb0996c917a2d77849ac7136d)), closes [#1191](https://github.com/Vinzent03/obsidian-git/issues/1191), references [#593](https://github.com/Vinzent03/obsidian-git/issues/593) [#558](https://github.com/Vinzent03/obsidian-git/issues/558)
+* reflect history view settings in loaded views ([2a1f82c](https://github.com/Vinzent03/obsidian-git/commit/2a1f82c83d355ccb80e012879fe6e7488e7e01be))
+* show full commit message in history view tooltip ([4053dd2](https://github.com/Vinzent03/obsidian-git/commit/4053dd2b686a9647e2050e7d8109d6e4318849f6))
+
 ## [2.41.1](https://github.com/Vinzent03/obsidian-git/compare/2.41.0...2.41.1) (2026-10-02)
 
 ## [2.41.0](https://github.com/Vinzent03/obsidian-git/compare/2.40.0...2.41.0) (2026-10-01)

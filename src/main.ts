@@ -171,13 +171,6 @@ export default class ObsidianGit extends Plugin {
     refreshUpdatedHead() {}
 
     async onload() {
-        console.log(
-            "loading " +
-                this.manifest.name +
-                " plugin: v" +
-                this.manifest.version
-        );
-
         pluginRef.plugin = this;
 
         this.localStorage.migrate();
@@ -536,8 +529,6 @@ export default class ObsidianGit extends Plugin {
 
     onunload() {
         this.unloadPlugin();
-
-        console.log("unloading " + this.manifest.name + " plugin");
     }
 
     async loadSettings() {
@@ -650,8 +641,8 @@ export default class ObsidianGit extends Plugin {
 
                     break;
                 default:
-                    this.log(
-                        "Something weird happened. The 'checkRequirements' result is " +
+                    this.warn(
+                        "Unexpected 'checkRequirements' result: " +
                             String(result)
                     );
             }
@@ -814,6 +805,10 @@ export default class ObsidianGit extends Plugin {
     }
 
     log(...data: unknown[]) {
-        console.log(`${this.manifest.id}:`, ...data);
+        console.debug(`${this.manifest.id}:`, ...data);
+    }
+
+    warn(...data: unknown[]) {
+        console.warn(`${this.manifest.id}:`, ...data);
     }
 }

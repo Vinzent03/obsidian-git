@@ -1,3 +1,4 @@
 allowBuilds:
+  '@parcel/watcher': false
   esbuild: true
   svelte-preprocess: true
