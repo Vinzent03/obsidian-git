@@ -70,6 +70,11 @@ export interface ObsidianGitSettings {
     username?: string;
     /** ID of the mobile Git server password in Obsidian Secret Storage. */
     gitServerPasswordSecret: string;
+    /** Resolve merge conflicts during sync with the Claude API. */
+    aiConflictResolution: boolean;
+    /** ID of the Anthropic API key in Obsidian Secret Storage. */
+    aiConflictApiKeySecret: string;
+    aiConflictModel: string;
     differentIntervalCommitAndPush: boolean;
     changedFilesInStatusBar: boolean;
     /**
@@ -284,6 +289,7 @@ export type NotReadyResult = {
 
 export type PullResult =
     | { status: "updated"; files: FileStatusResult[]; outsideVault: number }
+    | { status: "resolved"; files: number }
     | { status: "up-to-date" }
     | { status: "skipped"; reason: "no-upstream" }
     | NotReadyResult;

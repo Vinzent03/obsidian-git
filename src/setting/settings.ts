@@ -19,6 +19,7 @@ import {
     GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
     HISTORY_VIEW_CONFIG,
 } from "src/constants";
+import { testConnection } from "src/conflictAI/claude";
 import { IsomorphicGit } from "src/gitManager/isomorphicGit";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import { previewColor } from "src/editor/lineAuthor/lineAuthorProvider";
@@ -660,6 +661,85 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         "Show the count of modified files in the status bar",
                         "changedFilesInStatusBar"
                     ),
+                ],
+            },
+            {
+                type: "page",
+                name: "AI conflict resolution",
+                desc: "Resolve merge conflicts during sync with the Claude API. Each resolution uses tokens billed to your Anthropic account.",
+                items: [
+                    this.toggle(
+                        "Resolve conflicts with Claude",
+                        "aiConflictResolution",
+                        "Resolved conflicts are committed and pushed with the sync, and risky ones are flagged in a notice. Turns itself off if the key is rejected or credit runs out."
+                    ),
+                    {
+                        name: "Anthropic API key",
+                        desc: "Select or create a secret stored on this device for this vault.",
+                        render: (setting) => {
+                            setting.addComponent((el) =>
+                                new SecretComponent(this.app, el)
+                                    .setValue(
+                                        this.settings.aiConflictApiKeySecret
+                                    )
+                                    .onChange(async (value) => {
+                                        this.settings.aiConflictApiKeySecret =
+                                            value ?? "";
+                                        await this.plugin.saveSettings();
+                                    })
+                            );
+                        },
+                    },
+                    this.dropdown(
+                        "Model",
+                        "aiConflictModel",
+                        {
+                            "claude-sonnet-5-5": "Claude Sonnet 5.5 (default)",
+                            "claude-haiku-5-5": "Claude Haiku 5.5 (cheaper)",
+                            "claude-opus-5-5": "Claude Opus 5.5 (strongest)",
+                        },
+                        "Sonnet suits most conflicts."
+                    ),
+                    {
+                        name: "Test connection",
+                        desc: "Sends a one-word request to check the key, the model and your credit.",
+                        render: (setting) => {
+                            setting.addButton((button) =>
+                                button
+                                    .setButtonText("Test")
+                                    .onClick(async () => {
+                                        const id =
+                                            this.settings
+                                                .aiConflictApiKeySecret;
+                                        const key = id
+                                            ? this.app.secretStorage.getSecret(
+                                                  id
+                                              )
+                                            : null;
+                                        if (!key) {
+                                            new Notice(
+                                                "Select an API key first."
+                                            );
+                                            return;
+                                        }
+                                        try {
+                                            await testConnection(
+                                                key,
+                                                this.settings.aiConflictModel
+                                            );
+                                            new Notice("Connected to Claude.");
+                                        } catch (error) {
+                                            new Notice(
+                                                error instanceof Error
+                                                    ? error.message
+                                                    : String(error),
+                                                10 * 1000
+                                            );
+                                        }
+                                    })
+                            );
+                        },
+                    },
                 ],
             },
             {
