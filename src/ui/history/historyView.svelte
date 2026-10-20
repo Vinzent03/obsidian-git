@@ -27,12 +27,11 @@
     });
 
     onMount(() => {
-        view.registerEvent(
-            view.app.workspace.on(
-                "obsidian-git:head-change",
-                () => void refresh().catch(console.error)
-            )
+        const event = view.app.workspace.on(
+            "obsidian-git:head-change",
+            () => void refresh().catch(console.error)
         );
+        return () => view.app.workspace.offref(event);
     });
 
     $effect(() => {

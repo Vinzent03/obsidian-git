@@ -39,7 +39,7 @@ export class MergeConflictModal extends Modal {
             resolved.createEl("strong", {
                 text: "All conflicts have been marked as resolved.",
             });
-            resolved.createEl("div", {
+            resolved.createDiv({
                 text: "The merge is still active until you commit the staged changes.",
             });
         }

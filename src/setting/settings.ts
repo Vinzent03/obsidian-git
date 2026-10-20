@@ -17,6 +17,7 @@ import {
     DATE_TIME_FORMAT_SECONDS,
     DEFAULT_SETTINGS,
     GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
+    HISTORY_VIEW_CONFIG,
 } from "src/constants";
 import { testConnection } from "src/conflictAI/claude";
 import { IsomorphicGit } from "src/gitManager/isomorphicGit";
@@ -31,6 +32,7 @@ import type {
 } from "src/editor/lineAuthor/model";
 import type ObsidianGit from "src/main";
 import type { ObsidianGitSettings } from "src/types";
+import type HistoryView from "src/ui/history/historyView";
 import { convertToRgb, rgbToString } from "src/utils";
 
 const FORMAT_STRING_REFERENCE_URL =
@@ -161,8 +163,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         } else if (
             storedKey === "authorInHistoryView" ||
             storedKey === "dateInHistoryView" ||
-            storedKey === "limitToVault"
+            storedKey === "commitDateFormat"
         ) {
+            for (const leaf of this.app.workspace.getLeavesOfType(
+                HISTORY_VIEW_CONFIG.type
+            )) {
+                if (!(leaf.isDeferred ?? false)) {
+                    await (leaf.view as HistoryView).reload();
+                }
+            }
+        } else if (storedKey === "limitToVault") {
             await this.plugin.refresh();
         } else if (storedKey === "refreshSourceControlTimer") {
             this.plugin.setRefreshDebouncer();
@@ -248,11 +258,27 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             validate: validateInteger,
                         },
                     },
-                    this.toggle(
-                        `Auto ${automatic} only staged files`,
-                        "autoCommitOnlyStaged",
-                        `Only staged files are committed on auto ${automatic}.`
-                    ),
+                    {
+                        name: `Auto ${automatic} glob mode`,
+                        desc: "Exclude leaves matching files unstaged. Include stages only matching files; an empty include list commits staged files only. Configured globs override the vault limit for auto staging.",
+                        control: {
+                            type: "dropdown",
+                            key: "autoCommitGlobMode",
+                            options: {
+                                exclude: "Exclude matches",
+                                include: "Include matches",
+                            },
+                        },
+                    },
+                    {
+                        name: `Globs for auto ${automatic}`,
+                        desc: `One repository-relative Git glob per line, with / as the separator. For example, scripts/** matches a folder and **/*.tmp matches files anywhere. An empty include list stages no unstaged files.`,
+                        control: {
+                            type: "textarea",
+                            key: "autoCommitGlobs",
+                            placeholder: "scripts/**\n**/*.tmp",
+                        },
+                    },
                     this.toggle(
                         `Specify custom commit message on auto ${automatic}`,
                         "customMessageOnAutoBackup",
@@ -324,8 +350,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     )
                                     .setValue(this.settings.commitDateFormat)
                                     .onChange(async (value) => {
-                                        this.settings.commitDateFormat = value;
-                                        await this.plugin.saveSettings();
+                                        await this.setControlValue(
+                                            "commitDateFormat",
+                                            value
+                                        );
                                     })
                             );
                             setting.descEl.createSpan({
@@ -802,7 +830,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     this.toggle(
                         "Limit file operations to the vault",
                         "limitToVault",
-                        "Limit status, staging, unstaging, discarding, and submodule updates to the vault where possible. Repository history and remote actions remain repository-wide."
+                        "Limit status, staging, unstaging, discarding, and submodule updates to the vault where possible. Configured auto commit globs take precedence for automatic staging. Repository history and remote actions remain repository-wide."
                     ),
                     {
                         name: "Custom Git binary path",
@@ -1431,10 +1459,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             ? `abcdef Author Name ${today}`
             : "invalid color";
 
-        descEl.createEl("div", {
+        descEl.createDiv({
             text: text,
+            cls: "line-author-settings-preview",
             attr: {
-                class: "line-author-settings-preview",
                 style: `background-color: ${rgbStr}; width: 30ch;`,
             },
         });

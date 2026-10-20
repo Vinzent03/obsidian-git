@@ -1,4 +1,5 @@
 import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
+import type { AutoCommitGlobMode } from "./autoCommitGlobs";
 import type {
     Editor,
     EventRef,
@@ -22,7 +23,10 @@ export interface ObsidianGitSettings {
     autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
-    autoCommitOnlyStaged: boolean;
+    /** How repository-relative globs select files for automatic staging. */
+    autoCommitGlobMode: AutoCommitGlobMode;
+    /** Repository-relative Git globs, one per line. Manual commits are unaffected. */
+    autoCommitGlobs: string;
     syncMethod: SyncMethod;
     rebaseAutoStash: RebaseAutoStash;
     mergeStrategy: MergeStrategy;
@@ -116,10 +120,16 @@ export interface ObsidianGitSettings {
  */
 export function mergeSettingsByPriority(
     low: Omit<ObsidianGitSettings, "autoCommitMessage">,
-    high: ObsidianGitSettings
+    high: ObsidianGitSettings & { autoCommitOnlyStaged?: boolean }
 ): ObsidianGitSettings {
+    const { autoCommitOnlyStaged, ...storedSettings } = high;
     const lineAuthor = Object.assign({}, low.lineAuthor, high.lineAuthor);
-    return Object.assign({}, low, high, { lineAuthor });
+    const settings = Object.assign({}, low, storedSettings, { lineAuthor });
+    if (autoCommitOnlyStaged) {
+        settings.autoCommitGlobMode = "include";
+        settings.autoCommitGlobs = "";
+    }
+    return settings;
 }
 
 export type SyncMethod = "rebase" | "merge" | "reset";

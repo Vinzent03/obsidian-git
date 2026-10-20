@@ -6,6 +6,7 @@ import {
     type SimpleGitProgressEvent,
 } from "simple-git";
 import { describe, expect, it, vi } from "vitest";
+import { GitActions } from "../../src/gitActions";
 import { GitOperation, type GitProgress } from "../../src/types";
 import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { withCleanup } from "../helpers/cleanup";
@@ -172,6 +173,30 @@ describe("SimpleGit.commit", () => {
         expect(await repo.show("HEAD:note.md")).toBe("base");
         expect(await repo.statusPorcelain()).toBe("M note.md");
     });
+
+    it("stages many eligible files with Git exclusion pathspecs", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        for (let i = 0; i < 105; i++) {
+            repo.write(`batch/file-${i}.md`, "content\n");
+        }
+        const add = vi.spyOn(manager.git, "add");
+
+        const changes = await manager.commitAll({
+            message: "batch commit",
+            selection: { mode: "exclude", globs: ["**/*.tmp"] },
+        });
+
+        expect(changes).toBe(105);
+        expect(add).toHaveBeenCalledExactlyOnceWith([
+            "-A",
+            "--",
+            ".",
+            ":(exclude,glob)**/*.tmp",
+        ]);
+        expect(await repo.show("HEAD:batch/file-104.md")).toBe("content");
+    });
 });
 
 describe("SimpleGit vault scope", () => {
@@ -196,6 +221,144 @@ describe("SimpleGit vault scope", () => {
             "note.md",
         ]);
         expect(status.stagedOutsideVault).toBe(0);
+    });
+
+    it("interprets auto commit globs relative to the repository", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        repo.write("docs/vault.md", "vault changed\n");
+        repo.write("note.md", "outside changed\n");
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = false;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+        const add = vi.spyOn(manager.git, "add");
+
+        const changes = await manager.commitAll({
+            message: "outside included",
+            selection: { mode: "include", globs: ["note.md"] },
+        });
+
+        expect(changes).toBe(1);
+        expect(add).toHaveBeenCalledExactlyOnceWith([
+            "-A",
+            "--",
+            ":(glob)note.md",
+        ]);
+        expect(await repo.show("HEAD:note.md")).toBe("outside changed");
+        expect(await repo.show("HEAD:docs/vault.md")).toBe("vault base");
+    });
+
+    it("lets include globs override the vault scope", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        repo.write("docs/vault.md", "vault changed\n");
+        repo.write("note.md", "outside changed\n");
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = true;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+        const selection = { mode: "include" as const, globs: ["**/*.md"] };
+        const selected = await manager.selectAutoCommitFiles(
+            await manager.status(),
+            selection
+        );
+        const add = vi.spyOn(manager.git, "add");
+
+        expect(selected.files.map((file) => file.path).sort()).toEqual([
+            "docs/vault.md",
+            "note.md",
+        ]);
+
+        const changes = await manager.commitAll({
+            message: "repository included",
+            selection,
+        });
+
+        expect(changes).toBe(2);
+        expect(add).toHaveBeenCalledExactlyOnceWith([
+            "-A",
+            "--",
+            ":(glob)**/*.md",
+        ]);
+        expect(await repo.show("HEAD:docs/vault.md")).toBe("vault changed");
+        expect(await repo.show("HEAD:note.md")).toBe("outside changed");
+    });
+
+    it("lets exclude globs override the vault scope", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        repo.write("docs/vault.md", "vault changed\n");
+        repo.write("note.md", "outside changed\n");
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = true;
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+        const selection = { mode: "exclude" as const, globs: ["docs/**"] };
+        const selected = await manager.selectAutoCommitFiles(
+            await manager.status(),
+            selection
+        );
+
+        expect(selected.files.map((file) => file.path)).toEqual(["note.md"]);
+
+        const changes = await manager.commitAll({
+            message: "repository except vault",
+            selection,
+        });
+
+        expect(changes).toBe(1);
+        expect(await repo.show("HEAD:docs/vault.md")).toBe("vault base");
+        expect(await repo.show("HEAD:note.md")).toBe("outside changed");
+    });
+
+    it("applies repository-wide include rules in an automatic commit", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const vaultPath = await addVaultDirectory(repo);
+        repo.write("docs/vault.md", "vault changed\n");
+        repo.write("note.md", "outside changed\n");
+        const plugin = createFakePlugin();
+        plugin.settings.limitToVault = true;
+        plugin.settings.autoCommitGlobMode = "include";
+        plugin.settings.autoCommitGlobs = "note.md";
+        const manager = createManager(
+            repo.repoPath,
+            repo.git,
+            plugin,
+            vaultPath
+        );
+        plugin.gitManager = manager;
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+
+        const result = await new GitActions(plugin).commit({
+            fromAuto: true,
+            mode: "all",
+            commitMessage: "outside included",
+        });
+
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "committed", files: 1 },
+        });
+        expect(await repo.show("HEAD:note.md")).toBe("outside changed");
+        expect(await repo.show("HEAD:docs/vault.md")).toBe("vault base");
     });
 
     it("limits status data while counting staged files outside the vault", async () => {

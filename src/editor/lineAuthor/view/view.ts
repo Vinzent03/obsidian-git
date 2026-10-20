@@ -273,7 +273,7 @@ function temporaryWorkaroundGutterSpacingForRenderedLineAuthoring(
     guttersContainers.forEach((cont) => {
         if (!cont?.style) return;
         if (!cont.style.marginLeft) {
-            cont.style.marginLeft = "unset";
+            cont.addClass("obsidian-git-line-author-gutters");
         }
     });
 }

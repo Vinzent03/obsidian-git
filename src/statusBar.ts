@@ -80,9 +80,10 @@ export class StatusBar {
         ) {
             this.statusBarEl.empty();
 
-            this.conflictEl = this.statusBarEl.createDiv();
+            this.conflictEl = this.statusBarEl.createDiv({
+                cls: this.base + "conflict-indicator",
+            });
             this.conflictEl.setAttribute("data-tooltip-position", "top");
-            this.conflictEl.style.float = "left";
             this.conflictEl.setAttribute("role", "button");
             this.conflictEl.onclick = () => this.plugin.openMergeConflictHelp();
             this.conflictEl.onkeydown = (event) => {
@@ -92,16 +93,18 @@ export class StatusBar {
                 }
             };
 
-            this.pausedEl = this.statusBarEl.createDiv();
+            this.pausedEl = this.statusBarEl.createDiv({
+                cls: this.base + "paused-indicator",
+            });
             this.pausedEl.setAttribute("data-tooltip-position", "top");
-            this.pausedEl.style.float = "left";
 
-            this.iconEl = this.statusBarEl.createDiv();
-            this.iconEl.style.float = "left";
+            this.iconEl = this.statusBarEl.createDiv({
+                cls: this.base + "icon",
+            });
 
-            this.textEl = this.statusBarEl.createDiv();
-            this.textEl.style.float = "right";
-            this.textEl.style.marginLeft = "5px";
+            this.textEl = this.statusBarEl.createDiv({
+                cls: this.base + "text",
+            });
         }
 
         if (this.plugin.state.mergeInProgress) {
@@ -109,25 +112,21 @@ export class StatusBar {
             this.conflictEl.ariaLabel =
                 "Merge in progress. Select for help resolving and finishing the merge.";
             this.conflictEl.tabIndex = 0;
-            this.conflictEl.style.cursor = "pointer";
-            this.conflictEl.style.marginRight = "5px";
             this.conflictEl.addClass(this.base + "conflict");
         } else {
             this.conflictEl.empty();
             this.conflictEl.tabIndex = -1;
-            this.conflictEl.style.cursor = "";
-            this.conflictEl.style.marginRight = "";
+            this.conflictEl.removeClass(this.base + "conflict");
         }
 
         if (this.plugin.localStorage.getPausedAutomatics()) {
             setIcon(this.pausedEl, "pause-circle");
             this.pausedEl.ariaLabel =
                 "Automatic routines are currently paused.";
-            this.pausedEl.style.marginRight = "5px";
             this.pausedEl.addClass(this.base + "paused");
         } else {
             this.pausedEl.empty();
-            this.pausedEl.style.marginRight = "";
+            this.pausedEl.removeClass(this.base + "paused");
         }
 
         if (this.progress) {

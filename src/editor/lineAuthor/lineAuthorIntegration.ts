@@ -61,10 +61,8 @@ export class LineAuthoringFeature {
             this.createEventHandlers();
 
             this.activateCodeMirrorExtensions();
-
-            console.log(this.plg.manifest.name + ": Enabled line authoring.");
         } catch (e) {
-            console.warn("Git: Error while loading line authoring feature.", e);
+            this.plg.warn("Error while loading line authoring feature.", e);
             this.deactivateFeature();
         }
     }
@@ -80,8 +78,6 @@ export class LineAuthoringFeature {
 
         this.lineAuthorInfoProvider?.destroy();
         this.lineAuthorInfoProvider = undefined;
-
-        console.log(this.plg.manifest.name + ": Disabled line authoring.");
     }
 
     public isAvailableOnCurrentPlatform(): {
@@ -161,8 +157,8 @@ export class LineAuthoringFeature {
 
     private handleWorkspaceLeaf = (leaf: WorkspaceLeaf | null) => {
         if (!this.lineAuthorInfoProvider) {
-            console.warn(
-                "Git: undefined lineAuthorInfoProvider. Unexpected situation."
+            this.plg.warn(
+                "undefined lineAuthorInfoProvider. Unexpected situation."
             );
             return;
         }

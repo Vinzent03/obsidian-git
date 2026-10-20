@@ -25,7 +25,6 @@ import type {
     RemoveRemoteResult,
     SetUpstreamResult,
     SwitchBranchResult,
-    UnstagedFile,
     FileStateMutationResult,
 } from "./types";
 import { GitConflictError } from "./types";
@@ -41,6 +40,10 @@ import {
 } from "./utils";
 import { DiscardModal } from "./ui/modals/discardModal";
 import { runGitAction, type GitActionResult } from "./gitAction";
+import {
+    parseAutoCommitGlobs,
+    type AutoCommitGlobSelection,
+} from "./autoCommitGlobs";
 
 import type ObsidianGit from "./main";
 
@@ -517,12 +520,19 @@ export class GitActions {
     }: CommitOptions): Promise<CommitResult> {
         const status = await this.plugin.updateCachedStatus();
         const mergeInProgress = this.plugin.state.mergeInProgress;
+        const autoGlobs = fromAuto
+            ? parseAutoCommitGlobs(this.plugin.settings.autoCommitGlobs)
+            : [];
+        if (
+            fromAuto &&
+            this.plugin.settings.autoCommitGlobMode === "include" &&
+            autoGlobs.length === 0
+        ) {
+            mode = "staged";
+        }
         // Reuse the fresh status instead of walking the working tree again.
         const stagedFiles = status.staged;
-        // The cast hides the missing `type`, which nothing reads here.
-        const unstagedFiles = status.changed as unknown as (UnstagedFile & {
-            vaultPath: string;
-        })[];
+        let unstagedFiles = status.changed;
         let resolvedMode: Exclude<CommitMode, "smart"> | "nothing" =
             this.resolveCommitMode(
                 mode,
@@ -553,6 +563,23 @@ export class GitActions {
         }
 
         const onlyStaged = resolvedMode === "staged";
+
+        // The selection controls automatic staging, not files already staged.
+        let selection: AutoCommitGlobSelection | undefined =
+            fromAuto && !onlyStaged
+                ? {
+                      mode: this.plugin.settings.autoCommitGlobMode,
+                      globs: autoGlobs,
+                  }
+                : undefined;
+        if (selection) {
+            const selected = await this.plugin.gitManager.selectAutoCommitFiles(
+                status,
+                selection
+            );
+            unstagedFiles = selected.files;
+            selection = selected.selection;
+        }
 
         if (
             await this.plugin.tools.hasTooBigFiles(
@@ -627,6 +654,7 @@ export class GitActions {
                     message: cmtMessage,
                     status,
                     unstagedFiles,
+                    selection,
                     amend,
                 });
             }
