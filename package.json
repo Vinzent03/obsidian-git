@@ -49,7 +49,7 @@
         "eslint": "^10.13.0",
         "eslint-plugin-svelte": "^3.23.1",
         "obsidian": "^1.14.4",
-        "prettier": "3.9.9",
+        "prettier": "3.9.10",
         "prettier-plugin-svelte": "^4.1.1",
         "sass": "^1.105.2",
         "svelte-check": "^4.7.7",
