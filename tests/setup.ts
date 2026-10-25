@@ -18,12 +18,22 @@ const fallbackDocument = {
 
 declare global {
     interface Array<T> {
+        first(): T | undefined;
         last(): T | undefined;
     }
 
     interface Math {
         clamp(value: number, min: number, max: number): number;
     }
+}
+
+if (!Array.prototype.first) {
+    Object.defineProperty(Array.prototype, "first", {
+        configurable: true,
+        value: function first<T>(this: T[]): T | undefined {
+            return this[0];
+        },
+    });
 }
 
 if (!Array.prototype.last) {
