@@ -12,8 +12,8 @@ importers:
         specifier: ^6.11.1
         version: 6.11.1
       '@codemirror/merge':
-        specifier: ^6.12.2
-        version: 6.12.2
+        specifier: ^6.12.3
+        version: 6.12.3
       '@codemirror/search':
         specifier: ^6.7.2
         version: 6.7.2
@@ -171,8 +171,8 @@ packages:
   '@codemirror/lint@6.9.7':
     resolution: {integrity: sha512-28/+iWLYxKxsvGYhSYL7zaCZqLz5+FFFDq9tVsvGv9kv8RY4fFAchJ5WX9M3YrrRlTIsECjsXPqeNgnSmNP2dg==}
 
-  '@codemirror/merge@6.12.2':
-    resolution: {integrity: sha512-V8JvyAPjHbPupqP7BeMcsdsYCbyPij74jxIbaIJDORI+VZzW44zFmon8bF+oxGWvOKhcRmkiUMXd8MxHr3YA2w==}
+  '@codemirror/merge@6.12.3':
+    resolution: {integrity: sha512-Wq9wXrp41cW/nIpi1CQPyNwD+36kg8KIX676ym0Hyfn3Dpr+XQHNAIsZYVNlaivuVB4SAASbreG3V0VXinbqZA==}
 
   '@codemirror/search@6.7.2':
     resolution: {integrity: sha512-gUYkYhT2+n/+VGZ+8EzE5WFkYZUZYm1VOKDudIsNqh42uRVQJ0a6Yss9sdKT3MeOYfuL1N6AZA57oza0Oyr0LA==}
@@ -2120,7 +2120,7 @@ snapshots:
       '@codemirror/view': 6.43.14
       crelt: 1.0.7
 
-  '@codemirror/merge@6.12.2':
+  '@codemirror/merge@6.12.3':
     dependencies:
       '@codemirror/language': 6.13.1
       '@codemirror/state': 6.7.6
