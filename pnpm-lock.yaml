@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  diff3@0.0.4: 6d363005de3ccb0d80c9695438748015c85eb375fa32af259d9ca976134c82e6
+
 importers:
 
   .:
@@ -43,7 +46,7 @@ importers:
         version: 3.4.56
       diff3:
         specifier: ^0.0.4
-        version: 0.0.4
+        version: 0.0.4(patch_hash=6d363005de3ccb0d80c9695438748015c85eb375fa32af259d9ca976134c82e6)
       isomorphic-git:
         specifier: ^1.44.3
         version: 1.44.3
@@ -2930,7 +2933,7 @@ snapshots:
 
   diff3@0.0.3: {}
 
-  diff3@0.0.4: {}
+  diff3@0.0.4(patch_hash=6d363005de3ccb0d80c9695438748015c85eb375fa32af259d9ca976134c82e6): {}
 
   diff@8.0.4: {}
 
