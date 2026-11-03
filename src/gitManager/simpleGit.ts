@@ -726,6 +726,7 @@ export class SimpleGit extends GitManager {
                 amend ? ["--amend"] : []
             );
             this.app.workspace.trigger("obsidian-git:head-change");
+            this.app.workspace.trigger("obsidian-git:refs-changed");
             return this.getCommittedFilesCount(res.summary.changes);
         });
     }
@@ -744,6 +745,7 @@ export class SimpleGit extends GitManager {
                     amend ? ["--amend"] : []
                 );
                 this.app.workspace.trigger("obsidian-git:head-change");
+                this.app.workspace.trigger("obsidian-git:refs-changed");
                 return this.getCommittedFilesCount(res.summary.changes);
             } catch (error) {
                 return this.throwConflictError(error);
@@ -868,6 +870,7 @@ export class SimpleGit extends GitManager {
                 }
 
                 await this.git.fetch();
+                this.app.workspace.trigger("obsidian-git:refs-changed");
                 const upstreamCommit = await this.git.revparse([
                     branchInfo.tracking,
                 ]);
@@ -926,6 +929,7 @@ export class SimpleGit extends GitManager {
                     }
 
                     this.app.workspace.trigger("obsidian-git:head-change");
+                    this.app.workspace.trigger("obsidian-git:refs-changed");
 
                     const filesChanged = await this.git.diff([
                         `${localCommit}..${afterMergeCommit}`,
@@ -1026,6 +1030,7 @@ export class SimpleGit extends GitManager {
                 }
 
                 await this.git.push();
+                this.app.workspace.trigger("obsidian-git:refs-changed");
 
                 return remoteChangedFiles === 0
                     ? { status: "up-to-date" }
@@ -1123,6 +1128,7 @@ export class SimpleGit extends GitManager {
             await this.git.reset(["--soft", pushTarget.ref]);
             await this.git.raw(["commit", "-C", oldHead]);
             this.app.workspace.trigger("obsidian-git:head-change");
+            this.app.workspace.trigger("obsidian-git:refs-changed");
         });
     }
 
@@ -1410,15 +1416,18 @@ export class SimpleGit extends GitManager {
                     }
                 }
             }
+            this.app.workspace.trigger("obsidian-git:refs-changed");
         });
     }
 
     async createBranch(branch: string): Promise<void> {
         await this.git.checkout(["-b", branch]);
+        this.app.workspace.trigger("obsidian-git:refs-changed");
     }
 
     async deleteBranch(branch: string, force: boolean): Promise<void> {
         await this.git.branch([force ? "-D" : "-d", branch]);
+        this.app.workspace.trigger("obsidian-git:refs-changed");
     }
 
     async branchIsMerged(branch: string): Promise<boolean> {
@@ -1468,6 +1477,7 @@ export class SimpleGit extends GitManager {
     async fetch(remote?: string): Promise<void> {
         return this.withGitOperation(GitOperation.fetch, async () => {
             await this.git.fetch(remote != undefined ? [remote] : []);
+            this.app.workspace.trigger("obsidian-git:refs-changed");
         });
     }
 
@@ -1500,6 +1510,7 @@ export class SimpleGit extends GitManager {
 
     async removeRemote(remoteName: string) {
         await this.git.removeRemote(remoteName);
+        this.app.workspace.trigger("obsidian-git:refs-changed");
     }
 
     /**
@@ -1523,6 +1534,7 @@ export class SimpleGit extends GitManager {
                     remote,
                     `${branchInfo.current}:${remoteBranchName}`,
                 ]);
+                this.app.workspace.trigger("obsidian-git:refs-changed");
             }
         }
     }
@@ -1559,6 +1571,7 @@ export class SimpleGit extends GitManager {
         const firstPart = parts[0];
         if (firstPart === undefined) return "";
         const res = await this.git.raw(firstPart, ...parts.slice(1));
+        this.app.workspace.trigger("obsidian-git:refs-changed");
         return res;
     }
 

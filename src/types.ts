@@ -620,6 +620,16 @@ declare module "obsidian" {
             ctx?: unknown
         ): EventRef;
         /**
+         * Emitted after repository references may have changed, including
+         * remote-tracking refs and branch switches that leave the HEAD commit unchanged.
+         * Successful operations may emit this even when refs did not move.
+         */
+        on(
+            name: "obsidian-git:refs-changed",
+            callback: () => void,
+            ctx?: unknown
+        ): EventRef;
+        /**
          * Emitted when a new cached status is available.
          */
         on(
@@ -651,6 +661,7 @@ declare module "obsidian" {
         trigger(name: "obsidian-git:refresh"): void;
         trigger(name: "obsidian-git:loading-status"): void;
         trigger(name: "obsidian-git:head-change"): void;
+        trigger(name: "obsidian-git:refs-changed"): void;
         trigger(name: "obsidian-git:status-changed", status: Status): void;
         trigger(name: "obsidian-git:repository-state-changed"): void;
         trigger(

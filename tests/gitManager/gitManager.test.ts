@@ -23,6 +23,42 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         context = undefined;
     });
 
+    it("notifies ref listeners after committing and changing branches", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        const trigger = plugin.app.workspace.trigger;
+        repo.write("note.md", "changed\n");
+        await manager.commitAll({ message: "new tip" });
+        expect(trigger).toHaveBeenCalledWith("obsidian-git:refs-changed");
+
+        const head = await repo.head();
+        trigger.mockClear();
+        await manager.createBranch("feature");
+        expect((await manager.branchInfo()).current).toBe("feature");
+        expect(await repo.head()).toBe(head);
+        expect(trigger).toHaveBeenCalledWith("obsidian-git:refs-changed");
+
+        trigger.mockClear();
+        await manager.checkout("main");
+        expect((await manager.branchInfo()).current).toBe("main");
+        expect(await repo.head()).toBe(head);
+        expect(trigger).toHaveBeenCalledWith("obsidian-git:refs-changed");
+
+        trigger.mockClear();
+        await manager.deleteBranch("feature", false);
+        expect((await manager.branchInfo()).branches).not.toContain("feature");
+        expect(trigger).toHaveBeenCalledWith("obsidian-git:refs-changed");
+    });
+
+    it("does not notify ref listeners when checkout fails", async () => {
+        context = await backend.create();
+        const { manager, plugin } = context;
+        await expect(manager.checkout("missing-branch")).rejects.toThrow();
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalledWith(
+            "obsidian-git:refs-changed"
+        );
+    });
+
     it("reports repository-relative paths and consistent file states", async () => {
         context = await backend.create();
         const { manager, repo } = context;

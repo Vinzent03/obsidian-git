@@ -538,7 +538,12 @@ describe("SimpleGit.pull", () => {
         const changes = await manager.pull();
 
         expect(changes).toEqual({ status: "up-to-date" });
-        expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
+        expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
+            "obsidian-git:refs-changed"
+        );
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalledWith(
+            "obsidian-git:head-change"
+        );
         expect(plugin.setPluginState.mock.calls).toEqual([
             [{ operation: GitOperation.pull }],
             [{ operation: GitOperation.idle }],
@@ -761,6 +766,33 @@ describe("SimpleGit.pull", () => {
 });
 
 describe("SimpleGit.push", () => {
+    it("notifies history after push updates remote refs without changing HEAD", async () => {
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.appendAndCommit("note.md", "local\n", "local commit");
+        const head = await repo.head();
+        const before = await manager.log(undefined, false, 50);
+        expect(before[0]!.refs).not.toContain("origin/main");
+
+        const snapshots: ReturnType<typeof manager.log>[] = [];
+        plugin.app.workspace.trigger.mockImplementation((event) => {
+            if (event === "obsidian-git:refs-changed") {
+                snapshots.push(manager.log(undefined, false, 50));
+            }
+        });
+        await manager.push();
+
+        expect(snapshots).toHaveLength(1);
+        const refreshed = await snapshots[0]!;
+        expect(refreshed[0]!.refs).toContain("origin/main");
+        expect(await repo.head()).toBe(head);
+        expect(await repo.unpushedCount()).toBe(0);
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalledWith(
+            "obsidian-git:head-change"
+        );
+    });
+
     it("pushes local commits and returns the changed file count", async () => {
         const { repo, plugin, manager } = withCleanup(
             await createSimpleGitTestContext()
@@ -945,6 +977,9 @@ describe("SimpleGit.fetch", () => {
 
         await manager.fetch();
 
+        expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
+            "obsidian-git:refs-changed"
+        );
         expect(statusBar.displayProgress).not.toHaveBeenCalled();
         expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
         expect(plugin.setPluginState.mock.calls).toEqual([

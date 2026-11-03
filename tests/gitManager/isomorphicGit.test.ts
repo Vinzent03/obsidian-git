@@ -14,6 +14,70 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 
+describe("IsomorphicGit ref notifications", () => {
+    it("notifies after a push completes without emitting a HEAD change", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.appendAndCommit("note.md", "local\n", "local commit");
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        const head = await repo.head();
+        let completePush!: () => void;
+        const pendingPush = new Promise<void>((resolve) => {
+            completePush = resolve;
+        });
+        let startPush!: () => void;
+        const started = new Promise<void>((resolve) => {
+            startPush = resolve;
+        });
+        vi.spyOn(git, "push").mockImplementation(async () => {
+            startPush();
+            await pendingPush;
+            await repo.raw(["update-ref", "refs/remotes/origin/main", head]);
+            return { ok: true, error: null, refs: {} };
+        });
+
+        const push = manager.push();
+        await started;
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalled();
+        completePush();
+        await expect(push).resolves.toEqual({ status: "pushed", files: 1 });
+        expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
+            "obsidian-git:refs-changed"
+        );
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalledWith(
+            "obsidian-git:head-change"
+        );
+    });
+
+    it("notifies after a successful fetch", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(git, "fetch").mockResolvedValue({
+            defaultBranch: "main",
+            fetchHead: await repo.head(),
+            fetchHeadDescription: "main",
+        });
+        await manager.fetch();
+        expect(plugin.app.workspace.trigger).toHaveBeenCalledWith(
+            "obsidian-git:refs-changed"
+        );
+    });
+
+    it.each(["push", "fetch"] as const)(
+        "does not emit a successful ref notification when %s fails",
+        async (operation) => {
+            const repo = withCleanup(await createRepoWithOrigin());
+            const { manager, plugin } = createIsomorphicGitManager(
+                repo.repoPath
+            );
+            vi.spyOn(git, operation).mockRejectedValue(new Error("offline"));
+            await expect(manager[operation]()).rejects.toThrow("offline");
+            expect(plugin.app.workspace.trigger).not.toHaveBeenCalledWith(
+                "obsidian-git:refs-changed"
+            );
+        }
+    );
+});
+
 describe("IsomorphicGit merge state", () => {
     it("leaves HEAD and the worktree alone when a fast-forward overlaps a local edit", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
