@@ -1,4 +1,9 @@
-import { StateField, type EditorState, type Range } from "@codemirror/state";
+import {
+    Facet,
+    StateField,
+    type EditorState,
+    type Range,
+} from "@codemirror/state";
 import {
     Decoration,
     EditorView,
@@ -10,6 +15,7 @@ import {
     type ViewUpdate,
 } from "@codemirror/view";
 import { ButtonComponent, editorLivePreviewField, Platform } from "obsidian";
+import type { ConflictResolutionMode } from "src/types";
 import { resolveAllConflicts, resolveConflict } from "./actions";
 import {
     parseConflictBlocks,
@@ -19,8 +25,21 @@ import {
 
 const CHOICES = ["ours", "base", "theirs", "both"] as const;
 
+export const conflictResolutionMode = Facet.define<
+    ConflictResolutionMode,
+    ConflictResolutionMode
+>({
+    combine: (values) => values[0] ?? "both",
+});
+
 function computeBlocks(state: EditorState): readonly ConflictBlock[] {
-    if (!state.field(editorLivePreviewField, false)) {
+    const mode = state.facet(conflictResolutionMode);
+    const livePreview = state.field(editorLivePreviewField, false) ?? false;
+    if (
+        mode === "disabled" ||
+        (mode === "source" && livePreview) ||
+        (mode === "live-preview" && !livePreview)
+    ) {
         return [];
     }
     const text = state.doc.toString();
@@ -30,7 +49,10 @@ function computeBlocks(state: EditorState): readonly ConflictBlock[] {
 export const conflictBlocksField = StateField.define<readonly ConflictBlock[]>({
     create: computeBlocks,
     update: (value, transaction) =>
-        transaction.docChanged || transaction.reconfigured
+        transaction.docChanged ||
+        transaction.reconfigured ||
+        transaction.startState.field(editorLivePreviewField, false) !==
+            transaction.state.field(editorLivePreviewField, false)
             ? computeBlocks(transaction.state)
             : value,
 });
@@ -217,7 +239,10 @@ function buildDecorations(state: EditorState): DecorationSet {
 export const conflictMarkersField = StateField.define<DecorationSet>({
     create: (state) => buildDecorations(state),
     update: (value, transaction) =>
-        transaction.docChanged || transaction.reconfigured
+        transaction.docChanged ||
+        transaction.reconfigured ||
+        transaction.startState.field(conflictBlocksField) !==
+            transaction.state.field(conflictBlocksField)
             ? buildDecorations(transaction.state)
             : value,
     provide: (field) => EditorView.decorations.from(field),
@@ -234,7 +259,9 @@ class ConflictPanel implements Panel {
     update(update: ViewUpdate): void {
         if (
             update.docChanged ||
-            update.transactions.some((t) => t.reconfigured)
+            update.transactions.some((t) => t.reconfigured) ||
+            update.startState.field(conflictBlocksField) !==
+                update.state.field(conflictBlocksField)
         ) {
             this.render();
         }

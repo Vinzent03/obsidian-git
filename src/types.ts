@@ -11,6 +11,9 @@ import type {
 
 export type CommitMode = "smart" | "staged" | "all";
 
+export type ConflictResolutionMode =
+    "both" | "live-preview" | "source" | "disabled";
+
 export interface ObsidianGitSettings {
     commitMessage: string;
     autoCommitMessage: string;
@@ -87,6 +90,7 @@ export interface ObsidianGitSettings {
     showedMobileNotice: boolean;
     refreshSourceControlTimer: number;
     showBranchStatusBar: boolean;
+    conflictResolutionMode: ConflictResolutionMode;
     lineAuthor: LineAuthorSettings;
     setLastSaveToLastCommit: boolean;
     gitDir: string;
