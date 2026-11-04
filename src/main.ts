@@ -609,8 +609,9 @@ export default class ObsidianGit extends Plugin {
                     this.editorIntegration.onReady();
 
                     this.app.workspace.trigger("obsidian-git:refresh");
-                    /// Among other things, this notifies the history view that git is ready
                     this.app.workspace.trigger("obsidian-git:head-change");
+                    // Notify the history view that Git is ready.
+                    this.app.workspace.trigger("obsidian-git:refs-changed");
 
                     if (
                         !fromReload &&

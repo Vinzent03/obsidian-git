@@ -305,6 +305,7 @@ export class IsomorphicGit extends GitManager {
                 const committedFiles = await this.getCommittedFilesCount(oid);
                 await this.clearMergeState();
                 this.plugin.setPluginState({ mergeInProgress: false });
+                this.app.workspace.trigger("obsidian-git:refs-changed");
                 return committedFiles;
             } catch (error) {
                 if (error instanceof Errors.UnmergedPathsError) {
@@ -620,6 +621,7 @@ export class IsomorphicGit extends GitManager {
                     })
                 );
 
+                this.app.workspace.trigger("obsidian-git:refs-changed");
                 return {
                     status: "updated",
                     outsideVault: 0,
@@ -746,6 +748,7 @@ export class IsomorphicGit extends GitManager {
                     })
                 );
                 progressNotice?.hide();
+                this.app.workspace.trigger("obsidian-git:refs-changed");
                 return numChangedFiles === 0
                     ? { status: "up-to-date" }
                     : { status: "pushed", files: numChangedFiles };
@@ -837,26 +840,29 @@ export class IsomorphicGit extends GitManager {
     }
 
     async checkout(branch: string, remote?: string): Promise<void> {
-        return this.withGitOperation(GitOperation.checkout, () =>
-            this.wrapFS(
+        return this.withGitOperation(GitOperation.checkout, async () => {
+            await this.wrapFS(
                 git.checkout({
                     ...this.getRepo(),
                     ref: branch,
                     force: !!remote,
                     remote,
                 })
-            )
-        );
+            );
+            this.app.workspace.trigger("obsidian-git:refs-changed");
+        });
     }
 
     async createBranch(branch: string): Promise<void> {
         await this.wrapFS(
             git.branch({ ...this.getRepo(), ref: branch, checkout: true })
         );
+        this.app.workspace.trigger("obsidian-git:refs-changed");
     }
 
     async deleteBranch(branch: string): Promise<void> {
         await this.wrapFS(git.deleteBranch({ ...this.getRepo(), ref: branch }));
+        this.app.workspace.trigger("obsidian-git:refs-changed");
     }
 
     branchIsMerged(_: string): Promise<boolean> {
@@ -929,6 +935,7 @@ export class IsomorphicGit extends GitManager {
             };
 
             await this.wrapFS(git.fetch(args));
+            this.app.workspace.trigger("obsidian-git:refs-changed");
             progressNotice?.hide();
         } catch (error) {
             progressNotice?.hide();
@@ -972,6 +979,7 @@ export class IsomorphicGit extends GitManager {
         await this.wrapFS(
             git.deleteRemote({ ...this.getRepo(), remote: remoteName })
         );
+        this.app.workspace.trigger("obsidian-git:refs-changed");
     }
 
     async getRemoteUrl(remote: string): Promise<string | undefined> {
@@ -1138,6 +1146,7 @@ export class IsomorphicGit extends GitManager {
             })
         );
 
+        this.app.workspace.trigger("obsidian-git:refs-changed");
         await this.setConfig(
             `branch.${branchInfo.current}.merge`,
             `refs/heads/${branch}`

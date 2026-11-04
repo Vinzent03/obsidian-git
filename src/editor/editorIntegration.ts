@@ -1,12 +1,15 @@
 import type ObsidianGit from "src/main";
+import type { Extension } from "@codemirror/state";
 import { LineAuthoringFeature } from "./lineAuthor/lineAuthorIntegration";
 import { SignsFeature } from "./signs/signsIntegration";
-import { conflictExtensions } from "./conflicts/view";
+import { conflictExtensions, conflictResolutionMode } from "./conflicts/view";
 import { subscribeNewEditor } from "./control";
 import { eventsPerFilePathSingleton } from "./eventsPerFilepath";
 
 export class EditorIntegration {
     constructor(private plg: ObsidianGit) {}
+
+    private conflictEditorExtensions: Extension[] = [];
 
     lineAuthoringFeature: LineAuthoringFeature = new LineAuthoringFeature(
         this.plg
@@ -22,7 +25,8 @@ export class EditorIntegration {
     onLoadPlugin() {
         eventsPerFilePathSingleton.init();
         this.plg.registerEditorExtension(subscribeNewEditor);
-        this.plg.registerEditorExtension(conflictExtensions);
+        this.conflictEditorExtensions = this.getConflictExtensions();
+        this.plg.registerEditorExtension(this.conflictEditorExtensions);
         this.lineAuthoringFeature.onLoadPlugin();
         this.signsFeature.onLoadPlugin();
     }
@@ -51,5 +55,21 @@ export class EditorIntegration {
         } else {
             this.signsFeature.deactivateFeature();
         }
+    }
+
+    refreshConflictSettings() {
+        this.conflictEditorExtensions.splice(
+            0,
+            this.conflictEditorExtensions.length,
+            ...this.getConflictExtensions()
+        );
+        this.plg.app.workspace.updateOptions();
+    }
+
+    private getConflictExtensions(): Extension[] {
+        const mode = this.plg.settings.conflictResolutionMode;
+        return mode === "disabled"
+            ? []
+            : [conflictResolutionMode.of(mode), conflictExtensions];
     }
 }

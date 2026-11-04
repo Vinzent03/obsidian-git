@@ -159,6 +159,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (storedKey === "differentIntervalCommitAndPush") this.update();
         if (storedKey.startsWith("hunks.")) {
             this.plugin.editorIntegration.refreshSignsSettings();
+        } else if (storedKey === "conflictResolutionMode") {
+            this.plugin.editorIntegration.refreshConflictSettings();
         } else if (
             storedKey === "authorInHistoryView" ||
             storedKey === "dateInHistoryView" ||
@@ -505,12 +507,24 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             {
                 type: "page",
                 name: "Editor",
-                desc: "Hunk controls and line author information.",
-                visible: () => ready() && desktop(),
+                desc: "Merge conflict resolution, hunk controls, and line author information.",
+                visible: ready,
                 items: [
+                    this.dropdown(
+                        "Show merge conflict resolution",
+                        "conflictResolutionMode",
+                        {
+                            both: "Both editing modes",
+                            "live-preview": "Live Preview only",
+                            source: "Source mode only",
+                            disabled: "Disabled",
+                        },
+                        "Choose where conflict highlights and resolution buttons appear."
+                    ),
                     {
                         type: "group",
                         heading: "Hunk management",
+                        visible: desktop,
                         items: [
                             this.toggle(
                                 "Signs",
@@ -537,6 +551,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         type: "page",
                         name: "Line author information",
                         desc: "Commit hash, author, date, and age coloring next to each line.",
+                        visible: desktop,
                         page: () => new LineAuthorSettingsPage(this),
                     },
                 ],

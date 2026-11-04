@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     showedMobileNotice: false,
     refreshSourceControlTimer: 7000,
     showBranchStatusBar: true,
+    conflictResolutionMode: "both",
     setLastSaveToLastCommit: false,
     submoduleRecurseCheckout: false,
     gitDir: "",
