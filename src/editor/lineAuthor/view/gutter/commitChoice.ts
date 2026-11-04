@@ -14,6 +14,7 @@ export function chooseNewestCommit(
 
     for (let line = startLine; line <= endLine; line++) {
         const currentHash = lineAuthoring.hashPerLine[line];
+        if (currentHash === undefined) continue;
         const currentCommit = lineAuthoring.commits.get(currentHash)!;
 
         if (

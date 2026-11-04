@@ -11,10 +11,10 @@ const REMOVE_STALES_FREQUENCY = 60 * SECONDS;
  */
 class EventsPerFilePath {
     private eventsPerFilepath: Map<string, FileSubscribers> = new Map();
-    private removeStalesSubscribersTimer: number;
+    private removeStalesSubscribersTimer: number | undefined;
 
     constructor() {
-        this.startRemoveStalesSubscribersInterval();
+        this.init();
     }
 
     /**
@@ -40,6 +40,12 @@ class EventsPerFilePath {
             this.eventsPerFilepath.set(filepath, new Set());
     }
 
+    public init() {
+        if (this.removeStalesSubscribersTimer === undefined) {
+            this.startRemoveStalesSubscribersInterval();
+        }
+    }
+
     private startRemoveStalesSubscribersInterval() {
         this.removeStalesSubscribersTimer = window.setInterval(
             () => this?.forEachSubscriber((las) => las?.removeIfStale()),
@@ -48,7 +54,10 @@ class EventsPerFilePath {
     }
 
     public clear() {
-        window.clearInterval(this.removeStalesSubscribersTimer);
+        if (this.removeStalesSubscribersTimer !== undefined) {
+            window.clearInterval(this.removeStalesSubscribersTimer);
+            this.removeStalesSubscribersTimer = undefined;
+        }
         this.eventsPerFilepath.clear();
     }
 }

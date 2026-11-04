@@ -4,10 +4,9 @@ import type { App, ItemView, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
 
-export function assertNever(x: never): never {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    throw new Error(`Unexpected object: ${x}`);
-}
+type WorkspaceRootWithSide = {
+    readonly side?: "left" | "right";
+};
 
 export function plural(
     count: number,
@@ -48,6 +47,11 @@ export function getNewLeaf(
     return leaf;
 }
 
+export function getTooltipSide(leaf: WorkspaceLeaf): "left" | "right" {
+    const root = leaf.getRoot() as unknown as WorkspaceRootWithSide;
+    return root.side === "left" ? "right" : "left";
+}
+
 export function mayTriggerFileMenu(
     app: App,
     event: MouseEvent,
@@ -83,8 +87,7 @@ export function mayTriggerFileMenu(
  * During runtime, an error will be thrown, if executed.
  */
 export function impossibleBranch(x: never): never {
-    /* eslint-disable-next-line @typescript-eslint/restrict-plus-operands */
-    throw new Error("Impossible branch: " + x);
+    throw new Error(`Impossible branch: ${String(x)}`);
 }
 
 export function rgbToString(rgb: RGB): string {
@@ -115,6 +118,7 @@ export function arrayProxyWithNewLength<T>(array: T[], length: number): T[] {
             if (prop === "length") {
                 return Math.min(length, target.length);
             }
+            // eslint-disable-next-line @typescript-eslint/unbound-method -- Methods are called on the proxy, which supplies their receiver.
             return target[prop as keyof T[]];
         },
     });
@@ -158,7 +162,7 @@ export function splitRemoteBranch(
     remoteBranch: string
 ): readonly [string, string | undefined] {
     const [remote, ...branch] = remoteBranch.split("/");
-    return [remote, branch.length === 0 ? undefined : branch.join("/")];
+    return [remote ?? "", branch.length === 0 ? undefined : branch.join("/")];
 }
 
 export function getDisplayPath(path: string): string {
@@ -304,7 +308,7 @@ export function spawnAsync(
             resolve({
                 error: new Error(err.message),
                 stdout: stdoutBuffer,
-                stderr: stdoutBuffer,
+                stderr: stderrBuffer,
                 code: 1,
             });
         });

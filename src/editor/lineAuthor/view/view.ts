@@ -94,7 +94,7 @@ function lineAuthoringGutterMarkersRangeSet(
     }
 
     const laSettings = latestSettings.get();
-    digest.update("s" + Object.values(latestSettings).join(","));
+    digest.update("s" + JSON.stringify(laSettings));
 
     const cacheKey = digest.hex();
 
@@ -273,7 +273,7 @@ function temporaryWorkaroundGutterSpacingForRenderedLineAuthoring(
     guttersContainers.forEach((cont) => {
         if (!cont?.style) return;
         if (!cont.style.marginLeft) {
-            cont.style.marginLeft = "unset";
+            cont.addClass("obsidian-git-line-author-gutters");
         }
     });
 }

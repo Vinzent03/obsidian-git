@@ -5,8 +5,6 @@
  * License: MIT
  * Original Copyright (c) 2020 Lewis Russell
  */
-import type { GitCompareResult } from "./hunkState";
-
 export type HunkType = "add" | "change" | "delete";
 
 export interface HunkNode {
@@ -18,7 +16,6 @@ export interface HunkNode {
 
 export interface Hunk {
     type: HunkType;
-    head: string;
     added: HunkNode;
     removed: HunkNode;
     vend: number;
@@ -49,12 +46,17 @@ export abstract class Hunks {
         return {
             removed: { start: oldStart, count: oldCount, lines: [] },
             added: { start: newStart, count: newCount, lines: [] },
-            head:
-                `@@ -${oldStart}${oldCount > 0 ? `,${oldCount}` : ""} ` +
-                `+${newStart}${newCount > 0 ? `,${newCount}` : ""} @@`,
             vend: newStart + Math.max(newCount - 1, 0),
             type: newCount === 0 ? "delete" : oldCount === 0 ? "add" : "change",
         };
+    }
+
+    static getHunkHeader(hunk: Hunk): string {
+        return `@@ -${hunk.removed.start}${
+            hunk.removed.count > 0 ? `,${hunk.removed.count}` : ""
+        } +${hunk.added.start}${
+            hunk.added.count > 0 ? `,${hunk.added.count}` : ""
+        } @@`;
     }
 
     static createPartialHunk(
@@ -113,7 +115,7 @@ export abstract class Hunks {
         return this.createHunk(pretop, precount, top, bot - top + 1);
     }
 
-    patchLines(hunk: Hunk, stripCr: boolean = false): string[] {
+    static patchLines(hunk: Hunk, stripCr: boolean = false): string[] {
         const lines: string[] = [];
 
         for (const l of hunk.removed.lines) {
@@ -131,12 +133,18 @@ export abstract class Hunks {
 
     static parseDiffLine(line: string): Hunk {
         const parts = line.split("@@");
-        const diffkey = parts[1].trim();
+        const diffkey = parts[1]?.trim();
+        if (!diffkey) {
+            throw Error(`Invalid diff line: ${line}`);
+        }
 
         // diffkey: "-xx,n +yy,m"
         const tokens = diffkey.split(" ");
-        const pre = tokens[0].substring(1).split(",");
-        const now = tokens[1].substring(1).split(",");
+        const pre = tokens[0]?.substring(1).split(",");
+        const now = tokens[1]?.substring(1).split(",");
+        if (!pre || !now || pre[0] === undefined || now[0] === undefined) {
+            throw Error(`Invalid diff hunk range: ${line}`);
+        }
 
         const hunk = this.createHunk(
             parseInt(pre[0]),
@@ -145,7 +153,6 @@ export abstract class Hunks {
             parseInt(now[1] || "1")
         );
 
-        hunk.head = line;
         return hunk;
     }
 
@@ -173,7 +180,7 @@ export abstract class Hunks {
     ): Sign[] {
         if (untracked && hunk.type !== "add") {
             console.error(
-                `Invalid hunk with untracked=${untracked} hunk="${hunk.head}"`
+                `Invalid hunk with untracked=${untracked} hunk="${Hunks.getHunkHeader(hunk)}"`
             );
             return [];
         }
@@ -313,7 +320,7 @@ export abstract class Hunks {
         return results;
     }
 
-    getSummary(hunks: Hunk[]): StatusObj {
+    static getSummary(hunks: Hunk[]): StatusObj {
         const status: StatusObj = { added: 0, changed: 0, removed: 0 };
 
         for (const hunk of hunks) {
@@ -341,7 +348,7 @@ export abstract class Hunks {
         if (!hunks) return [undefined, undefined];
 
         for (let i = 0; i < hunks.length; i++) {
-            const hunk = hunks[i];
+            const hunk = hunks[i]!;
             if (lnum === 1 && hunk.added.start === 0 && hunk.vend === 0) {
                 return [hunk, i];
             }
@@ -367,14 +374,15 @@ export abstract class Hunks {
         } else if (direction === "last") {
             return hunks.length - 1;
         } else if (direction === "next") {
-            if (hunks[0].added.start > lnum) {
+            if (hunks[0]!.added.start > lnum) {
                 return 0;
             }
             for (let i = hunks.length - 1; i >= 0; i--) {
-                if (hunks[i].added.start <= lnum) {
+                const hunk = hunks[i]!;
+                if (hunk.added.start <= lnum) {
                     if (
                         i + 1 < hunks.length &&
-                        hunks[i + 1].added.start > lnum
+                        hunks[i + 1]!.added.start > lnum
                     ) {
                         return i + 1;
                     } else if (wrap) {
@@ -383,12 +391,13 @@ export abstract class Hunks {
                 }
             }
         } else if (direction === "prev") {
-            if (Math.max(hunks[hunks.length - 1].vend) < lnum) {
+            if (Math.max(hunks[hunks.length - 1]!.vend) < lnum) {
                 return hunks.length - 1;
             }
             for (let i = 0; i < hunks.length; i++) {
-                if (lnum <= Math.max(hunks[i].vend, 1)) {
-                    if (i > 0 && Math.max(hunks[i - 1].vend, 1) < lnum) {
+                const hunk = hunks[i]!;
+                if (lnum <= Math.max(hunk.vend, 1)) {
+                    if (i > 0 && Math.max(hunks[i - 1]!.vend, 1) < lnum) {
                         return i - 1;
                     } else if (wrap) {
                         return hunks.length - 1;
@@ -397,20 +406,6 @@ export abstract class Hunks {
             }
         }
         return undefined;
-    }
-
-    compareHeads(a?: Hunk[], b?: Hunk[]): boolean {
-        if ((a === undefined) !== (b === undefined)) {
-            return true;
-        } else if (a && b && a.length !== b.length) {
-            return true;
-        }
-        for (let i = 0; i < (a || []).length; i++) {
-            if (b![i].head !== a![i].head) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static compare(a: Hunk, b: Hunk): boolean {
@@ -456,7 +451,7 @@ export abstract class Hunks {
             // End of b and add remaining a
             if (!bH) {
                 for (let i = aI; i < a.length; i++) {
-                    ret.push(a[i]);
+                    ret.push(a[i]!);
                 }
                 break;
             }
@@ -514,44 +509,44 @@ export abstract class Hunks {
         return ret;
     }
 
-    static computeStagedHunks(
-        headHunks: Hunk[],
-        hunks: Hunk[],
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        compare: GitCompareResult
-    ): Hunk[] {
-        const filteredHunks = Hunks.filterCommon(headHunks, hunks)!;
-        //
-        // // Update staged hunk added lines to match compareText and not
-        // // include unstaged changes
-        // const compareTextLines = compare.compareText!.split("\n");
-        // for (const hunk of filteredHunks) {
-        //     for (let i = 0; i < hunk.added.lines.length; i++) {
-        //         hunk.added.lines[i] =
-        //             compareTextLines[Math.max(0, hunk.removed.start - 1) + i];
-        //     }
-        //     let offset = 0;
-        //     for (
-        //         let i = 0;
-        //         i <
-        //         Math.min(hunk.added.lines.length, hunk.removed.lines.length);
-        //         i++
-        //     ) {
-        //         if (hunk.added.lines[i] != hunk.removed.lines[i]) {
-        //             break;
-        //         } else {
-        //             offset++;
-        //         }
-        //     }
-        //     if (offset > 0) {
-        //         hunk.added.lines = hunk.added.lines.slice(offset);
-        //         hunk.removed.lines = hunk.removed.lines.slice(offset);
-        //         hunk.added.start += offset;
-        //         hunk.removed.start += offset;
-        //         hunk.added.count -= offset;
-        //         hunk.removed.count -= offset;
-        //     }
-        // }
-        return filteredHunks;
-    }
+    // static computeStagedHunks(
+    //     headHunks: Hunk[],
+    //     hunks: Hunk[],
+    //     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Keep the comparison context in the staged-hunk API.
+    //     compare: GitCompareResult
+    // ): Hunk[] {
+    //     const filteredHunks = Hunks.filterCommon(headHunks, hunks)!;
+    //
+    // // Update staged hunk added lines to match compareText and not
+    // // include unstaged changes
+    // const compareTextLines = compare.compareText!.split("\n");
+    // for (const hunk of filteredHunks) {
+    //     for (let i = 0; i < hunk.added.lines.length; i++) {
+    //         hunk.added.lines[i] =
+    //             compareTextLines[Math.max(0, hunk.removed.start - 1) + i];
+    //     }
+    //     let offset = 0;
+    //     for (
+    //         let i = 0;
+    //         i <
+    //         Math.min(hunk.added.lines.length, hunk.removed.lines.length);
+    //         i++
+    //     ) {
+    //         if (hunk.added.lines[i] != hunk.removed.lines[i]) {
+    //             break;
+    //         } else {
+    //             offset++;
+    //         }
+    //     }
+    //     if (offset > 0) {
+    //         hunk.added.lines = hunk.added.lines.slice(offset);
+    //         hunk.removed.lines = hunk.removed.lines.slice(offset);
+    //         hunk.added.start += offset;
+    //         hunk.removed.start += offset;
+    //         hunk.added.count -= offset;
+    //         hunk.removed.count -= offset;
+    //     }
+    // }
+    //     return filteredHunks;
+    // }
 }

@@ -7,9 +7,7 @@ import type { BlameCommit } from "src/types";
 import { impossibleBranch } from "src/utils";
 
 type ContextMenuConfigurableSettingsKeys =
-    | "showCommitHash"
-    | "authorDisplay"
-    | "dateTimeFormatOptions";
+    "showCommitHash" | "authorDisplay" | "dateTimeFormatOptions";
 
 type CtxMenuCommitInfo = Pick<BlameCommit, "hash" | "isZeroCommit"> & {
     isWaitingGutter: boolean;

@@ -2,14 +2,13 @@
     import { t } from "src/i18n";
     import { setIcon, TFile } from "obsidian";
     import { hoverPreview } from "src/utils";
-    import type { GitManager } from "src/gitManager/gitManager";
     import type { FileStatusResult } from "src/types";
-    import { DiscardModal } from "src/ui/modals/discardModal";
     import {
         fileIsBinary,
         fileOpenableInObsidian,
         getDisplayPath,
         getNewLeaf,
+        getTooltipSide,
         mayTriggerFileMenu,
     } from "src/utils";
     import type GitView from "../sourceControl";
@@ -17,16 +16,12 @@
     interface Props {
         change: FileStatusResult;
         view: GitView;
-        manager: GitManager;
     }
 
-    let { change, view, manager }: Props = $props();
+    let { change, view }: Props = $props();
     let buttons: HTMLElement[] = $state([]);
 
-    let side = $derived(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
-    );
+    let side = $derived(getTooltipSide(view.leaf));
 
     $effect(() => {
         for (const b of buttons) if (b) setIcon(b, b.getAttr("data-icon")!);
@@ -61,12 +56,9 @@
 
     function stage(event: MouseEvent) {
         event.stopPropagation();
-        manager
-            .stage(change.path, false)
-            .catch((e) => view.plugin.displayError(e))
-            .finally(() => {
-                view.app.workspace.trigger("obsidian-git:refresh");
-            });
+        view.plugin.promiseQueue.addTask(() =>
+            view.plugin.gitActions.stage(change.path, false)
+        );
     }
 
     function showDiff(event: MouseEvent) {
@@ -80,37 +72,9 @@
 
     function discard(event: MouseEvent) {
         event.stopPropagation();
-        const deleteFile = change.workingDir == "U";
-        new DiscardModal({
-            app: view.app,
-            filesToDeleteCount: deleteFile ? 1 : 0,
-            filesToDiscardCount: deleteFile ? 0 : 1,
-            path: change.vaultPath,
-        })
-            .openAndGetResult()
-            .then(
-                async (result) => {
-                    if (result == "delete") {
-                        const tFile = view.app.vault.getAbstractFileByPath(
-                            change.vaultPath
-                        );
-                        if (tFile instanceof TFile) {
-                            await view.app.fileManager.trashFile(tFile);
-                        } else {
-                            await view.app.vault.adapter.remove(
-                                change.vaultPath
-                            );
-                        }
-                    } else if (result == "discard") {
-                        await manager.discard(change.path).finally(() => {
-                            view.app.workspace.trigger("obsidian-git:refresh");
-                        });
-                    }
-
-                    view.app.workspace.trigger("obsidian-git:refresh");
-                },
-                (e) => view.plugin.displayError(e)
-            );
+        view.plugin.promiseQueue.addTask(() =>
+            view.plugin.gitActions.discardFile(change)
+        );
     }
 </script>
 

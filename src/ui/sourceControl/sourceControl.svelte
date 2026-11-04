@@ -1,9 +1,10 @@
 <script lang="ts">
     import { t } from "src/i18n";
-    import { Platform, Scope, setIcon } from "obsidian";
+    import { Menu, Platform, Scope, setIcon } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import type ObsidianGit from "src/main";
     import type {
+        CommitMode,
         FileStatusResult,
         Status,
         StatusRootTreeItem,
@@ -11,6 +12,7 @@
     import { FileType } from "src/types";
     import { arrayProxyWithNewLength, getDisplayPath } from "src/utils";
     import { slide } from "svelte/transition";
+    import ConflictFileComponent from "./components/conflictFileComponent.svelte";
     import FileComponent from "./components/fileComponent.svelte";
     import PulledFileComponent from "./components/pulledFileComponent.svelte";
     import StagedFileComponent from "./components/stagedFileComponent.svelte";
@@ -26,23 +28,58 @@
 
     let { plugin, view }: Props = $props();
     let loading: boolean = $state(false);
+    let repositoryMissing = $state(false);
+    let setupInProgress = $state(false);
+    let mergeInProgress = $state(false);
     let status: Status | undefined = $state();
     let lastPulledFiles: FileStatusResult[] = $state([]);
     let commitMessage = $derived(plugin.settings.commitMessage);
-    let buttons: HTMLElement[] = $state([]);
+    let buttons: (HTMLElement | null)[] = $state([]);
     let changeHierarchy: StatusRootTreeItem | undefined = $state();
     let stagedHierarchy: StatusRootTreeItem | undefined = $state();
+    let conflictHierarchy: StatusRootTreeItem | undefined = $state();
     let lastPulledFilesHierarchy: StatusRootTreeItem | undefined = $state();
     let changesOpen = $state(true);
     let stagedOpen = $state(true);
     let lastPulledFilesOpen = $state(true);
+    let conflictsOpen = $state(true);
+    let conflictCounts: Record<string, number> = $state({});
+    let conflictCountUpdate: Promise<void> = Promise.resolve();
+    let sortedConflicts = $derived(
+        [...(status?.conflicted ?? [])].sort((a, b) => {
+            const aResolved = conflictCounts[a] === 0 ? 0 : 1;
+            const bResolved = conflictCounts[b] === 0 ? 0 : 1;
+            if (aResolved !== bResolved) return aResolved - bResolved;
+            return a.localeCompare(b);
+        })
+    );
     let unPushedCommits = $state(0);
     let stagedClosed: Record<string, boolean> = $state({});
     let unstagedClosed: Record<string, boolean> = $state({});
+    let conflictsClosed: Record<string, boolean> = $state({});
     let pulledClosed: Record<string, boolean> = $state({});
+
+    let stagedCount = $derived(
+        (status?.staged.length ?? 0) + (status?.stagedOutsideVault ?? 0)
+    );
+    let changedCount = $derived(status?.changed.length ?? 0);
+    let hasConflicts = $derived(
+        (status?.conflicted.length ?? 0) +
+            (status?.conflictedOutsideVault ?? 0) >
+            0
+    );
+    let hasChanges = $derived(stagedCount + changedCount > 0);
+    let commitDisabled = $derived(!canCommit("smart"));
+    let commitAndSyncDisabled = $derived(!canCommitAndSync("all"));
+
+    let commitActionDescription = $derived(getCommitActionDescription(false));
+    let commitAndSyncActionDescription = $derived(
+        getCommitActionDescription(true)
+    );
 
     let showTree = $derived(plugin.settings.treeStructure);
     onMount(() => {
+        repositoryMissing = plugin.repositoryMissing;
         view.registerEvent(
             view.app.workspace.on(
                 "obsidian-git:loading-status",
@@ -55,6 +92,24 @@
                 () => void refresh().catch(console.error)
             )
         );
+        view.registerEvent(
+            view.app.workspace.on(
+                "obsidian-git:repository-state-changed",
+                () => {
+                    repositoryMissing = plugin.repositoryMissing;
+                    void refresh().catch(console.error);
+                }
+            )
+        );
+        const modifyEvent = view.app.vault.on("modify", (file) => {
+            if (!status?.conflicted) {
+                return;
+            }
+            const path = plugin.gitManager.getRelativeRepoPath(file.path);
+            if (status?.conflicted.includes(path)) {
+                void updateConflictCounts(path);
+            }
+        });
         if (view.plugin.cachedStatus == undefined) {
             view.plugin.refresh().catch(console.error);
         } else {
@@ -65,9 +120,13 @@
         view.scope.register(["Ctrl"], "Enter", (_: KeyboardEvent) =>
             commitAndSync()
         );
+
+        return () => view.app.vault.offref(modifyEvent);
     });
     $effect(() => {
-        buttons.forEach((btn) => setIcon(btn, btn.getAttr("data-icon")!));
+        buttons.forEach((btn) => {
+            if (btn) setIcon(btn, btn.getAttr("data-icon")!);
+        });
     });
 
     $effect(() => {
@@ -92,31 +151,86 @@
         });
     });
 
-    function commit() {
+    function getCommitActionDescription(sync: boolean): string {
+        const suffix = sync ? " and sync" : "";
+        if (hasConflicts) {
+            return "Resolve conflicts before committing";
+        }
+        if (mergeInProgress && !hasChanges) {
+            return sync ? "Finish merge and sync" : "Finish merge";
+        }
+        if (!hasChanges) {
+            return sync
+                ? "Sync (no changes to commit)"
+                : "No changes to commit";
+        }
+        if (sync) {
+            return "Commit all changes and sync";
+        }
+        if (stagedCount > 0) {
+            return `Commit ${stagedCount} staged ${stagedCount === 1 ? "file" : "files"}${suffix}`;
+        }
+        if (!plugin.settings.autoStageOnEmptyIndex) {
+            return "Nothing staged — stage changes before committing";
+        }
+        return `Stage and commit all ${changedCount} changed ${changedCount === 1 ? "file" : "files"}${suffix}`;
+    }
+
+    function canCommit(mode: CommitMode): boolean {
+        if (hasConflicts) return false;
+        if (mode === "staged") return stagedCount > 0;
+        if (mode === "all") return hasChanges;
+        return (
+            mergeInProgress ||
+            stagedCount > 0 ||
+            (plugin.settings.autoStageOnEmptyIndex && changedCount > 0)
+        );
+    }
+
+    function canCommitAndSync(mode: "staged" | "all"): boolean {
+        if (hasConflicts) return false;
+        return mode === "all" || stagedCount > 0;
+    }
+
+    function commit(mode: CommitMode = "smart") {
+        if (!canCommit(mode)) return;
         loading = true;
         if (status) {
-            const onlyStaged = status.staged.length > 0;
             plugin.promiseQueue.addTask(() =>
-                plugin
-                    .commit({ fromAuto: false, commitMessage, onlyStaged })
+                plugin.gitActions
+                    .commit({ fromAuto: false, commitMessage, mode })
                     .then(() => (commitMessage = plugin.settings.commitMessage))
                     .finally(triggerRefresh)
             );
         }
     }
 
-    function commitAndSync() {
+    function amendStaged() {
+        if (!canCommit("staged")) return;
+        loading = true;
+        plugin.promiseQueue.addTask(() =>
+            plugin.gitActions
+                .commit({
+                    fromAuto: false,
+                    commitMessage,
+                    mode: "staged",
+                    amend: true,
+                })
+                .then(() => (commitMessage = plugin.settings.commitMessage))
+                .finally(triggerRefresh)
+        );
+    }
+
+    function commitAndSync(mode: "staged" | "all" = "all") {
+        if (!canCommitAndSync(mode)) return;
         loading = true;
         if (status) {
-            // If staged files exist only commit them, but if not, commit all.
-            // I hope this is the most intuitive way.
-            const onlyStaged = status.staged.length > 0;
             plugin.promiseQueue.addTask(() =>
-                plugin
+                plugin.gitActions
                     .commitAndSync({
                         fromAutoBackup: false,
                         commitMessage,
-                        onlyStaged,
+                        mode,
                     })
                     .then(() => {
                         commitMessage = plugin.settings.commitMessage;
@@ -126,14 +240,51 @@
         }
     }
 
+    function showCommitMenu(event: MouseEvent) {
+        event.stopPropagation();
+        const menu = Menu.forEvent(event);
+        menu.addItem((item) =>
+            item
+                .setTitle("Commit staged")
+                .setIcon("git-commit")
+                .setDisabled(!canCommit("staged"))
+                .onClick(() => commit("staged"))
+        );
+        menu.addItem((item) =>
+            item
+                .setTitle("Stage all and commit")
+                .setIcon("list-plus")
+                .setDisabled(!canCommit("all"))
+                .onClick(() => commit("all"))
+        );
+        menu.addItem((item) =>
+            item
+                .setTitle("Amend staged")
+                .setIcon("git-commit")
+                .setDisabled(!canCommit("staged"))
+                .onClick(amendStaged)
+        );
+        menu.addSeparator();
+        menu.addItem((item) =>
+            item
+                .setTitle("Commit staged and sync")
+                .setIcon("arrow-up-circle")
+                .setDisabled(!canCommit("staged"))
+                .onClick(() => commitAndSync("staged"))
+        );
+        menu.showAtMouseEvent(event);
+    }
+
     async function refresh(): Promise<void> {
         if (!plugin.gitReady) {
             status = undefined;
+            loading = false;
             return;
         }
-        unPushedCommits = await plugin.gitManager.getUnpushedCommits();
+        unPushedCommits = await plugin.getUnpushedCommits();
 
         status = plugin.cachedStatus;
+        mergeInProgress = plugin.state.mergeInProgress;
         loading = false;
         if (
             plugin.lastPulledFiles &&
@@ -145,7 +296,10 @@
                 title: "",
                 path: "",
                 vaultPath: "",
-                children: plugin.gitManager.getTreeStructure(lastPulledFiles),
+                children: plugin.gitManager.getTreeStructure(
+                    lastPulledFiles,
+                    plugin.settings.limitToVault ? "vault" : "repository"
+                ),
             };
         }
         if (status) {
@@ -161,59 +315,110 @@
                 title: "",
                 path: "",
                 vaultPath: "",
-                children: plugin.gitManager.getTreeStructure(status.changed),
+                children: plugin.gitManager.getTreeStructure(
+                    status.changed,
+                    plugin.settings.limitToVault ? "vault" : "repository"
+                ),
             };
             stagedHierarchy = {
                 title: "",
                 path: "",
                 vaultPath: "",
-                children: plugin.gitManager.getTreeStructure(status.staged),
+                children: plugin.gitManager.getTreeStructure(
+                    status.staged,
+                    plugin.settings.limitToVault ? "vault" : "repository"
+                ),
+            };
+            conflictHierarchy = {
+                title: "",
+                path: "",
+                vaultPath: "",
+                children: plugin.gitManager.getTreeStructure(
+                    status.conflicted.map((path) => ({
+                        path,
+                        vaultPath: plugin.gitManager.getRelativeVaultPath(path),
+                        index: "U",
+                        workingDir: "U",
+                    }))
+                ),
             };
         } else {
             changeHierarchy = undefined;
             stagedHierarchy = undefined;
+            conflictHierarchy = undefined;
         }
+        await updateConflictCounts();
+    }
+
+    // Serialize updates so concurrent file saves cannot overwrite newer counts.
+    function updateConflictCounts(path?: string): Promise<void> {
+        const update = conflictCountUpdate.then(() =>
+            performConflictCountUpdate(path)
+        );
+        conflictCountUpdate = update.catch(() => undefined);
+        return update;
+    }
+
+    async function performConflictCountUpdate(path?: string): Promise<void> {
+        const targets = path ? [path] : status?.conflicted ?? [];
+        const counts = path ? { ...conflictCounts } : {};
+        for (const conflict of targets) {
+            counts[conflict] = 0;
+            try {
+                const content = await view.app.vault.adapter.read(
+                    plugin.gitManager.getRelativeVaultPath(conflict)
+                );
+                counts[conflict] = countConflictSections(content);
+            } catch {
+                // The file may be deleted on one side; nothing to resolve.
+            }
+        }
+        conflictCounts = counts;
+    }
+
+    function countConflictSections(content: string): number {
+        return (content.match(/^<{7}/gm) ?? []).length;
     }
 
     function triggerRefresh() {
         view.app.workspace.trigger("obsidian-git:refresh");
     }
 
+    function runSetupAction(action: () => Promise<unknown>) {
+        if (setupInProgress) return;
+        setupInProgress = true;
+        plugin.promiseQueue.addTask(action, () => {
+            setupInProgress = false;
+        });
+    }
+
     function stageAll(event: MouseEvent) {
         event.stopPropagation();
         loading = true;
-        plugin.promiseQueue.addTask(() =>
-            plugin.gitManager
-                .stageAll({ status: status })
-                .finally(triggerRefresh)
-        );
+        plugin.promiseQueue.addTask(() => plugin.gitActions.stageAll());
     }
 
     function unstageAll(event: MouseEvent) {
         event.stopPropagation();
         loading = true;
-        plugin.promiseQueue.addTask(() =>
-            plugin.gitManager
-                .unstageAll({ status: status })
-                .finally(triggerRefresh)
-        );
+        plugin.promiseQueue.addTask(() => plugin.gitActions.unstageAll());
     }
 
     function push() {
         loading = true;
         plugin.promiseQueue.addTask(() =>
-            plugin.push().finally(triggerRefresh)
+            plugin.gitActions.push().finally(triggerRefresh)
         );
     }
     function pull() {
         loading = true;
         plugin.promiseQueue.addTask(() =>
-            plugin.pullChangesFromRemote().finally(triggerRefresh)
+            plugin.gitActions.pullChangesFromRemote().finally(triggerRefresh)
         );
     }
     function discard(event: Event) {
         event.stopPropagation();
-        void plugin.discardAll();
+        plugin.promiseQueue.addTask(() => plugin.gitActions.discardAll());
     }
 
     let rows = $derived((commitMessage.match(/\n/g) || []).length + 1 || 1);
@@ -221,25 +426,63 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<main data-type={SOURCE_CONTROL_VIEW_CONFIG.type} class="git-view">
+<main
+    data-type={SOURCE_CONTROL_VIEW_CONFIG.type}
+    class="git-view"
+    class:repository-missing={repositoryMissing}
+>
+    {#if repositoryMissing}
+        <div class="repository-notice">
+            <p>No Git repository found.</p>
+            <div class="repository-actions">
+                <button
+                    class="mod-cta"
+                    disabled={setupInProgress}
+                    onclick={() =>
+                        runSetupAction(() => plugin.gitActions.createNewRepo())}
+                    >Initialize repository</button
+                >
+                <button
+                    disabled={setupInProgress}
+                    onclick={() =>
+                        runSetupAction(() => plugin.gitActions.cloneNewRepo())}
+                    >Clone repository</button
+                >
+            </div>
+        </div>
+    {/if}
     <div class="nav-header">
         <div class="nav-buttons-container">
-            <div
-                id="backup-btn"
-                data-icon="arrow-up-circle"
-                class="clickable-icon nav-action-button"
-                aria-label={t("Commit-and-sync")}
-                bind:this={buttons[0]}
-                onclick={commitAndSync}
-            ></div>
-            <div
-                id="commit-btn"
-                data-icon="check"
-                class="clickable-icon nav-action-button"
-                aria-label={t("Commit")}
-                bind:this={buttons[1]}
-                onclick={commit}
-            ></div>
+            <div class="commit-action-group">
+                <div
+                    id="backup-btn"
+                    data-icon="arrow-up-circle"
+                    class="clickable-icon nav-action-button"
+                    class:is-disabled={commitAndSyncDisabled}
+                    aria-label={t(commitAndSyncActionDescription)}
+                    aria-disabled={commitAndSyncDisabled}
+                    bind:this={buttons[0]}
+                    onclick={() => commitAndSync()}
+                ></div>
+                <div
+                    id="commit-btn"
+                    data-icon="check"
+                    class="clickable-icon nav-action-button"
+                    class:is-disabled={commitDisabled}
+                    aria-label={t(commitActionDescription)}
+                    aria-disabled={commitDisabled}
+                    bind:this={buttons[1]}
+                    onclick={() => commit()}
+                ></div>
+                <div
+                    id="commit-menu"
+                    data-icon="chevron-down"
+                    class="clickable-icon nav-action-button"
+                    aria-label={t("More commit actions")}
+                    bind:this={buttons[10]}
+                    onclick={showCommitMenu}
+                ></div>
+            </div>
             <div
                 id="stage-all"
                 class="clickable-icon nav-action-button"
@@ -280,7 +523,7 @@
                 bind:this={buttons[6]}
                 onclick={() => {
                     showTree = !showTree;
-                    setIcon(buttons[6], showTree ? "list" : "folder");
+                    setIcon(buttons[6]!, showTree ? "list" : "folder");
                     plugin.settings.treeStructure = showTree;
                     void plugin.saveSettings();
                 }}
@@ -294,6 +537,16 @@
                 bind:this={buttons[7]}
                 onclick={triggerRefresh}
             ></div>
+            {#if mergeInProgress}
+                <div
+                    id="merge-status"
+                    class="clickable-icon nav-action-button merge-status"
+                    data-icon="git-merge"
+                    aria-label="Merge in progress — select for help"
+                    bind:this={buttons[11]}
+                    onclick={() => plugin.openMergeConflictHelp()}
+                ></div>
+            {/if}
         </div>
     </div>
     <div class="git-commit-msg">
@@ -314,6 +567,72 @@
     </div>
 
     <div class="nav-files-container" style="position: relative;">
+        {#if status && status.conflicted.length > 0}
+            <div
+                class="conflicts tree-item nav-folder"
+                class:is-collapsed={!conflictsOpen}
+            >
+                <div
+                    class="tree-item-self is-clickable nav-folder-title"
+                    onclick={() => (conflictsOpen = !conflictsOpen)}
+                >
+                    <div
+                        class="tree-item-icon nav-folder-collapse-indicator collapse-icon"
+                        class:is-collapsed={!conflictsOpen}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="svg-icon right-triangle"
+                            ><path d="M3 8L12 17L21 8" /></svg
+                        >
+                    </div>
+                    <div class="tree-item-inner nav-folder-title-content">
+                        Conflicts
+                    </div>
+                    <div class="git-tools">
+                        <div class="files-count">
+                            {status.conflicted.length}
+                        </div>
+                    </div>
+                </div>
+                {#if conflictsOpen}
+                    <div
+                        class="tree-item-children nav-folder-children"
+                        transition:slide|local={{ duration: 150 }}
+                    >
+                        {#if showTree && conflictHierarchy}
+                            <TreeComponent
+                                hierarchy={conflictHierarchy}
+                                {plugin}
+                                {view}
+                                fileType={FileType.conflicted}
+                                {conflictCounts}
+                                topLevel={true}
+                                bind:closed={conflictsClosed}
+                            />
+                        {:else}
+                            {#each sortedConflicts as conflict}
+                                <ConflictFileComponent
+                                    path={conflict}
+                                    count={conflictCounts[conflict]}
+                                    {view}
+                                    manager={plugin.gitManager}
+                                />
+                            {/each}
+                        {/if}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+
         {#if status && stagedHierarchy && changeHierarchy}
             <div class="tree-item nav-folder mod-root">
                 <div
@@ -398,7 +717,6 @@
                                     <StagedFileComponent
                                         change={stagedFile}
                                         {view}
-                                        manager={plugin.gitManager}
                                     />
                                 {/each}
                                 <TooManyFilesComponent files={status.staged} />
@@ -406,6 +724,38 @@
                         </div>
                     {/if}
                 </div>
+                {#if status.stagedOutsideVault > 0}
+                    <div class="staged tree-item nav-folder">
+                        <div class="tree-item-self nav-folder-title">
+                            <div
+                                class="tree-item-inner nav-folder-title-content"
+                            >
+                                Staged outside vault
+                            </div>
+                            <div class="git-tools">
+                                <div class="files-count">
+                                    {status.stagedOutsideVault}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
+                {#if status.conflictedOutsideVault > 0}
+                    <div class="changes tree-item nav-folder">
+                        <div class="tree-item-self nav-folder-title">
+                            <div
+                                class="tree-item-inner nav-folder-title-content"
+                            >
+                                Conflicts outside vault
+                            </div>
+                            <div class="git-tools">
+                                <div class="files-count">
+                                    {status.conflictedOutsideVault}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
                 <div
                     class="changes tree-item nav-folder"
                     class:is-collapsed={!changesOpen}
@@ -513,11 +863,7 @@
                                 />
                             {:else}
                                 {#each arrayProxyWithNewLength(status.changed, 500) as change}
-                                    <FileComponent
-                                        {change}
-                                        {view}
-                                        manager={plugin.gitManager}
-                                    />
+                                    <FileComponent {change} {view} />
                                 {/each}
                                 <TooManyFilesComponent files={status.changed} />
                             {/if}
@@ -594,6 +940,65 @@
 </main>
 
 <style lang="scss">
+    .repository-missing {
+        > .nav-header,
+        > .git-commit-msg,
+        > .nav-files-container {
+            display: none;
+        }
+    }
+
+    .repository-notice {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--size-4-3);
+        padding: var(--size-4-6);
+        text-align: center;
+
+        p {
+            margin: 0;
+            color: var(--text-muted);
+        }
+    }
+
+    .repository-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--size-4-2);
+    }
+
+    .commit-action-group {
+        display: inline-flex;
+        flex: 0 0 auto;
+        gap: 0;
+        overflow: hidden;
+        border: 1px solid var(--background-modifier-border);
+        border-radius: var(--radius-s);
+
+        .nav-action-button {
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .nav-action-button + .nav-action-button {
+            border-left: 1px solid var(--background-modifier-border);
+        }
+
+        #commit-menu {
+            width: var(--size-4-5);
+            padding-right: 0;
+            padding-left: 0;
+        }
+    }
+
+    .merge-status {
+        color: var(--text-warning);
+    }
+
     .commit-msg-input {
         width: 100%;
         overflow: hidden;
@@ -607,6 +1012,36 @@
         padding: 0;
         width: calc(100% - var(--size-4-8));
         margin: 4px auto;
+    }
+
+    .conflicts {
+        --nav-indentation-guide-color: var(--text-warning);
+        --collapse-icon-color: var(--text-warning);
+        --collapse-icon-color-collapsed: var(--text-warning);
+
+        > .nav-folder-title {
+            color: var(--text-warning);
+        }
+
+        .nav-folder-collapse-indicator {
+            color: var(--text-warning);
+
+            svg {
+                color: var(--text-warning);
+            }
+        }
+
+        :global(.topLevel .nav-folder-collapse-indicator) {
+            color: var(--text-warning);
+        }
+
+        :global(.topLevel .nav-folder-collapse-indicator svg) {
+            color: var(--text-warning);
+        }
+
+        .tree-item-children {
+            border-inline-start-color: var(--text-warning);
+        }
     }
     main {
         .git-tools {

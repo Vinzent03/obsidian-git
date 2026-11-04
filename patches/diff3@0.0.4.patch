@@ -1,0 +1,13 @@
+diff --git a/onp.js b/onp.js
+index 142dd4ce50d73405bb7f30267f5b4e760061bbbb..37113da3f826faee401692cf447b97370ed9e3ce 100644
+--- a/onp.js
++++ b/onp.js
+@@ -111,8 +111,6 @@ module.exports = function (a_, b_) {
+                 fp[delta+offset] = snake(delta, fp[delta-1+offset]+1, fp[delta+1+offset]);
+             } while (fp[delta+offset] !== n);
+ 
+-            ed = delta + 2 * p;
+-
+             r = path[delta+offset];
+             lastStartX = m;
+             lastStartY = n;

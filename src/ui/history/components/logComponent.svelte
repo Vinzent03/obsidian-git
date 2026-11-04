@@ -1,7 +1,8 @@
 <script lang="ts">
-    import { moment } from "obsidian";
+    import { moment, setTooltip } from "obsidian";
     import type ObsidianGit from "src/main";
     import type { LogEntry } from "src/types";
+    import { getTooltipSide } from "src/utils";
     import { slide } from "svelte/transition";
     import type HistoryView from "../historyView";
     import LogFileComponent from "./logFileComponent.svelte";
@@ -22,10 +23,11 @@
         children: plugin.gitManager.getTreeStructure(log.diff.files),
     });
 
-    let side = $derived(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
-    );
+    let side = $derived(getTooltipSide(view.leaf));
+    let tooltip = $derived(`${log.author?.name}
+${moment(log.date).format(plugin.settings.commitDateFormat)}
+${log.message}
+${log.body ? "\n" + log.body : ""}`);
     let isCollapsed = $state(true);
     let closed = $state<Record<string, boolean>>({});
 
@@ -36,8 +38,9 @@
         } else if (plugin.settings.authorInHistoryView == "initials") {
             const words = name.split(" ").filter((word) => word.length > 0);
 
-            return words.map((word) => word[0].toUpperCase()).join("");
+            return words.map((word) => word[0]!.toUpperCase()).join("");
         }
+        return "";
     }
 </script>
 
@@ -47,10 +50,13 @@
     <div class="tree-item nav-folder" class:is-collapsed={isCollapsed}>
         <div
             class="tree-item-self is-clickable nav-folder-title"
-            aria-label={`${log.refs.length > 0 ? log.refs.join(", ") + "\n" : ""}${log.author?.name}
-${moment(log.date).format(plugin.settings.commitDateFormat)}
-${log.message}`}
-            data-tooltip-position={side}
+            aria-label={tooltip}
+            {@attach (element: HTMLElement) => {
+                setTooltip(element, tooltip, {
+                    placement: side,
+                    classes: ["obsidian-git-commit-tooltip"],
+                });
+            }}
             onclick={() => (isCollapsed = !isCollapsed)}
         >
             <div

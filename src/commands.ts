@@ -1,12 +1,9 @@
-import { Notice, Platform, TFolder, WorkspaceLeaf } from "obsidian";
+import { Notice, TFolder, WorkspaceLeaf } from "obsidian";
 import { HISTORY_VIEW_CONFIG, SOURCE_CONTROL_VIEW_CONFIG } from "./constants";
 import { SimpleGit } from "./gitManager/simpleGit";
 import ObsidianGit from "./main";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
-import { ChangedFilesModal } from "./ui/modals/changedFilesModal";
-import { GeneralModal } from "./ui/modals/generalModal";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
-import { assertNever } from "./utils";
 import { togglePreviewHunk } from "./editor/signs/tooltip";
 import { t } from "./i18n";
 
@@ -97,6 +94,7 @@ export function addCommmands(plugin: ObsidianGit) {
                     aFile: filePath,
                     aRef: "",
                 });
+                return true;
             }
         },
     });
@@ -106,6 +104,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: t("Open file on GitHub"),
         editorCallback: (editor, { file }) => {
             if (file) return openLineInGitHub(editor, file, plugin.gitManager);
+            return undefined;
         },
     });
 
@@ -114,6 +113,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: t("Open file history on GitHub"),
         editorCallback: (_, { file }) => {
             if (file) return openHistoryInGitHub(file, plugin.gitManager);
+            return undefined;
         },
     });
 
@@ -121,20 +121,25 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "pull",
         name: t("Pull"),
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.pullChangesFromRemote()),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.pullChangesFromRemote()
+            ),
     });
 
     plugin.addCommand({
         id: "fetch",
         name: t("Fetch"),
-        callback: () => plugin.promiseQueue.addTask(() => plugin.fetch()),
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.fetch()),
     });
 
     plugin.addCommand({
         id: "switch-to-remote-branch",
         name: t("Switch to remote branch"),
         callback: () =>
-            plugin.promiseQueue.addTask(() => plugin.switchRemoteBranch()),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.switchRemoteBranch()
+            ),
     });
 
     plugin.addCommand({
@@ -145,9 +150,13 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                plugin
-                    .addFileToGitignore(file!.path, file instanceof TFolder)
-                    .catch((e) => plugin.displayError(e));
+                plugin.promiseQueue.addTask(() =>
+                    plugin.gitActions.addFileToGitignore(
+                        file!.path,
+                        file instanceof TFolder
+                    )
+                );
+                return true;
             }
         },
     });
@@ -157,7 +166,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: t("Commit-and-sync"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commitAndSync({ fromAutoBackup: false })
+                plugin.gitActions.commitAndSync({ fromAutoBackup: false })
             ),
     });
 
@@ -166,7 +175,9 @@ export function addCommmands(plugin: ObsidianGit) {
         name: t("Commit-and-sync and then close Obsidian"),
         callback: () =>
             plugin.promiseQueue.addTask(async () => {
-                await plugin.commitAndSync({ fromAutoBackup: false });
+                await plugin.gitActions.commitAndSync({
+                    fromAutoBackup: false,
+                });
                 window.close();
             }),
     });
@@ -176,7 +187,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: t("Commit-and-sync with specific message"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commitAndSync({
+                plugin.gitActions.commitAndSync({
                     fromAutoBackup: false,
                     requestCustomMessage: true,
                 })
@@ -188,7 +199,7 @@ export function addCommmands(plugin: ObsidianGit) {
         name: t("Commit all changes"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({ fromAuto: false })
+                plugin.gitActions.commit({ fromAuto: false, mode: "all" })
             ),
     });
 
@@ -197,9 +208,10 @@ export function addCommmands(plugin: ObsidianGit) {
         name: t("Commit all changes with specific message"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
+                    mode: "all",
                 })
             ),
     });
@@ -208,86 +220,73 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "commit-smart",
         name: t("Commit"),
         callback: () =>
-            plugin.promiseQueue.addTask(async () => {
-                const status = await plugin.updateCachedStatus();
-                const onlyStaged = status.staged.length > 0;
-                return plugin.commit({
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: false,
-                    onlyStaged: onlyStaged,
-                });
-            }),
+                    mode: "smart",
+                })
+            ),
     });
 
     plugin.addCommand({
         id: "commit-staged",
         name: t("Commit staged"),
-        checkCallback: function (checking) {
-            // Don't show this command in command palette, because the
-            // commit-smart command is more useful. Still provide this command
-            // for hotkeys and automation.
-            if (checking) return false;
-
-            plugin.promiseQueue.addTask(async () => {
-                return plugin.commit({
+        callback: () =>
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: false,
-                });
-            });
-        },
+                    mode: "staged",
+                })
+            ),
     });
 
-    if (Platform.isDesktopApp) {
-        plugin.addCommand({
-            id: "commit-amend-staged-specified-message",
-            name: t("Amend staged"),
-            callback: () =>
-                plugin.promiseQueue.addTask(() =>
-                    plugin.commit({
-                        fromAuto: false,
-                        requestCustomMessage: true,
-                        onlyStaged: true,
-                        amend: true,
-                    })
-                ),
-        });
-    }
+    plugin.addCommand({
+        id: "commit-amend-staged-specified-message",
+        name: t("Amend staged"),
+        callback: () =>
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.commit({
+                    fromAuto: false,
+                    requestCustomMessage: true,
+                    mode: "staged",
+                    amend: true,
+                })
+            ),
+    });
 
     plugin.addCommand({
         id: "commit-smart-specified-message",
         name: t("Commit with specific message"),
         callback: () =>
-            plugin.promiseQueue.addTask(async () => {
-                const status = await plugin.updateCachedStatus();
-                const onlyStaged = status.staged.length > 0;
-                return plugin.commit({
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
-                    onlyStaged: onlyStaged,
-                });
-            }),
+                    mode: "smart",
+                })
+            ),
     });
 
     plugin.addCommand({
         id: "commit-staged-specified-message",
         name: t("Commit staged with specific message"),
-        checkCallback: function (checking) {
-            // Same reason as for commit-staged
-            if (checking) return false;
-            return plugin.promiseQueue.addTask(() =>
-                plugin.commit({
+        callback: () =>
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.commit({
                     fromAuto: false,
                     requestCustomMessage: true,
-                    onlyStaged: true,
+                    mode: "staged",
                 })
-            );
-        },
+            ),
     });
 
     plugin.addCommand({
         id: "push2",
         name: t("Push"),
-        callback: () => plugin.promiseQueue.addTask(() => plugin.push()),
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.push()),
     });
 
     plugin.addCommand({
@@ -298,7 +297,10 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                plugin.promiseQueue.addTask(() => plugin.stageFile(file!));
+                plugin.promiseQueue.addTask(() =>
+                    plugin.gitActions.stageFile(file!)
+                );
+                return true;
             }
         },
     });
@@ -311,7 +313,10 @@ export function addCommmands(plugin: ObsidianGit) {
             if (checking) {
                 return file !== null;
             } else {
-                plugin.promiseQueue.addTask(() => plugin.unstageFile(file!));
+                plugin.promiseQueue.addTask(() =>
+                    plugin.gitActions.unstageFile(file!)
+                );
+                return true;
             }
         },
     });
@@ -320,134 +325,82 @@ export function addCommmands(plugin: ObsidianGit) {
         id: "edit-remotes",
         name: t("Edit remotes"),
         callback: () =>
-            plugin.editRemotes().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() => plugin.gitActions.editRemotes()),
     });
 
     plugin.addCommand({
         id: "remove-remote",
         name: t("Remove remote"),
         callback: () =>
-            plugin.removeRemote().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() => plugin.gitActions.removeRemote()),
     });
 
     plugin.addCommand({
         id: "set-upstream-branch",
         name: t("Set upstream branch"),
         callback: () =>
-            plugin.setUpstreamBranch().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.setUpstreamBranch()
+            ),
     });
 
     plugin.addCommand({
         id: "delete-repo",
         name: t("CAUTION: Delete repository"),
-        callback: async () => {
-            const repoExists = await app.vault.adapter.exists(
-                `${plugin.settings.basePath}/.git`
-            );
-            if (repoExists) {
-                const modal = new GeneralModal(plugin, {
-                    options: ["NO", "YES"],
-                    placeholder: t(
-                        "Do you really want to delete the repository (.git directory)? plugin action cannot be undone."
-                    ),
-                    onlySelection: true,
-                });
-                const shouldDelete = (await modal.openAndGetResult()) === "YES";
-                if (shouldDelete) {
-                    await app.vault.adapter.rmdir(
-                        `${plugin.settings.basePath}/.git`,
-                        true
-                    );
-                    new Notice(
-                        t(
-                            "Successfully deleted repository. Reloading plugin..."
-                        )
-                    );
-                    plugin.unloadPlugin();
-                    await plugin.init({ fromReload: true });
-                }
-            } else {
-                new Notice(t("No repository found"));
-            }
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.deleteRepository()
+            ),
     });
 
     plugin.addCommand({
         id: "init-repo",
         name: t("Initialize a new repo"),
         callback: () =>
-            plugin.createNewRepo().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() =>
+                plugin.gitActions.createNewRepo()
+            ),
     });
 
     plugin.addCommand({
         id: "clone-repo",
         name: t("Clone an existing remote repo"),
         callback: () =>
-            plugin.cloneNewRepo().catch((e) => plugin.displayError(e)),
+            plugin.promiseQueue.addTask(() => plugin.gitActions.cloneNewRepo()),
     });
 
     plugin.addCommand({
         id: "list-changed-files",
         name: t("List changed files"),
-        callback: async () => {
-            if (!(await plugin.isAllInitialized())) return;
-
-            try {
-                const status = await plugin.updateCachedStatus();
-                if (status.changed.length + status.staged.length > 500) {
-                    plugin.displayError(t("Too many changes to display"));
-                    return;
-                }
-
-                new ChangedFilesModal(plugin, status.all).open();
-            } catch (e) {
-                plugin.displayError(e);
-            }
-        },
+        callback: () => plugin.gitActions.listChangedFiles(),
     });
 
     plugin.addCommand({
         id: "switch-branch",
         name: t("Switch branch"),
-        callback: () => {
-            plugin.switchBranch().catch((e) => plugin.displayError(e));
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.switchBranch()),
     });
 
     plugin.addCommand({
         id: "create-branch",
         name: t("Create new branch"),
-        callback: () => {
-            plugin.createBranch().catch((e) => plugin.displayError(e));
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.createBranch()),
     });
 
     plugin.addCommand({
         id: "delete-branch",
         name: t("Delete branch"),
-        callback: () => {
-            plugin.deleteBranch().catch((e) => plugin.displayError(e));
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.deleteBranch()),
     });
 
     plugin.addCommand({
         id: "discard-all",
         name: t("CAUTION: Discard all changes"),
-        callback: async () => {
-            const res = await plugin.discardAll();
-            switch (res) {
-                case "discard":
-                    new Notice(t("Discarded all changes in tracked files."));
-                    break;
-                case "delete":
-                    new Notice(t("Discarded all files."));
-                    break;
-                case false:
-                    break;
-                default:
-                    assertNever(res);
-            }
-        },
+        callback: () =>
+            plugin.promiseQueue.addTask(() => plugin.gitActions.discardAll()),
     });
 
     plugin.addCommand({
@@ -475,9 +428,8 @@ export function addCommmands(plugin: ObsidianGit) {
                 // only available on desktop
                 return gitManager instanceof SimpleGit;
             } else {
-                plugin.tools
-                    .runRawCommand()
-                    .catch((e) => plugin.displayError(e));
+                void plugin.tools.runRawCommand();
+                return true;
             }
         },
     });
@@ -503,6 +455,7 @@ export function addCommmands(plugin: ObsidianGit) {
             }
 
             plugin.hunkActions.resetHunk();
+            return true;
         },
     });
 
@@ -517,6 +470,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 );
             }
             plugin.promiseQueue.addTask(() => plugin.hunkActions.stageHunk());
+            return true;
         },
     });
 
@@ -532,6 +486,7 @@ export function addCommmands(plugin: ObsidianGit) {
             }
             const editor = plugin.hunkActions.editor!.editor;
             togglePreviewHunk(editor);
+            return true;
         },
     });
 
@@ -546,6 +501,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 );
             }
             plugin.hunkActions.goToHunk("next");
+            return true;
         },
     });
 
@@ -560,6 +516,7 @@ export function addCommmands(plugin: ObsidianGit) {
                 );
             }
             plugin.hunkActions.goToHunk("prev");
+            return true;
         },
     });
 }

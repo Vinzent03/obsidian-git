@@ -248,7 +248,7 @@ export class LineAuthoringGutter extends GutterMarker {
         let rendered;
         switch (authorDisplay) {
             case "initials": // take every words first letter captitalized
-                rendered = words.map((word) => word[0].toUpperCase()).join("");
+                rendered = words.map((word) => word[0]!.toUpperCase()).join("");
                 break;
             case "first name":
                 rendered = words.first() ?? VALUE_NOT_FOUND_FALLBACK;

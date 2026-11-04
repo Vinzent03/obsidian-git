@@ -1,0 +1,995 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { GitActions } from "../../src/gitActions";
+import { IsomorphicGit } from "../../src/gitManager/isomorphicGit";
+import { GitConflictError, type FileStatusResult } from "../../src/types";
+import { CustomMessageModal } from "../../src/ui/modals/customMessageModal";
+import {
+    gitManagerBackends,
+    type GitManagerTestHarness,
+} from "../helpers/gitManagerHarness";
+import { createRepoWithMergeConflict } from "../helpers/gitRepo";
+
+function statusByPath(
+    files: FileStatusResult[]
+): Map<string, FileStatusResult> {
+    return new Map(files.map((file) => [file.path, file]));
+}
+
+describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
+    let context: GitManagerTestHarness | undefined;
+
+    afterEach(() => {
+        context?.cleanup();
+        context = undefined;
+    });
+
+    it("notifies ref listeners after committing and changing branches", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        const trigger = plugin.app.workspace.trigger;
+        repo.write("note.md", "changed\n");
+        await manager.commitAll({ message: "new tip" });
+        expect(trigger).toHaveBeenCalledWith("obsidian-git:refs-changed");
+
+        const head = await repo.head();
+        trigger.mockClear();
+        await manager.createBranch("feature");
+        expect((await manager.branchInfo()).current).toBe("feature");
+        expect(await repo.head()).toBe(head);
+        expect(trigger).toHaveBeenCalledWith("obsidian-git:refs-changed");
+
+        trigger.mockClear();
+        await manager.checkout("main");
+        expect((await manager.branchInfo()).current).toBe("main");
+        expect(await repo.head()).toBe(head);
+        expect(trigger).toHaveBeenCalledWith("obsidian-git:refs-changed");
+
+        trigger.mockClear();
+        await manager.deleteBranch("feature", false);
+        expect((await manager.branchInfo()).branches).not.toContain("feature");
+        expect(trigger).toHaveBeenCalledWith("obsidian-git:refs-changed");
+    });
+
+    it("does not notify ref listeners when checkout fails", async () => {
+        context = await backend.create();
+        const { manager, plugin } = context;
+        await expect(manager.checkout("missing-branch")).rejects.toThrow();
+        expect(plugin.app.workspace.trigger).not.toHaveBeenCalledWith(
+            "obsidian-git:refs-changed"
+        );
+    });
+
+    it("reports repository-relative paths and consistent file states", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        await repo.writeAndCommit(
+            "deleted.md",
+            "deleted\n",
+            "add deleted file"
+        );
+        repo.write("note.md", "modified\n");
+        repo.write("staged.md", "staged\n");
+        repo.write("untracked.md", "untracked\n");
+        await repo.git.add("staged.md");
+        repo.remove("deleted.md");
+
+        const status = await manager.status();
+        const files = statusByPath(status.all);
+        const basePath = context.plugin.settings.basePath;
+
+        expect([...files.keys()].sort()).toEqual([
+            "deleted.md",
+            "note.md",
+            "staged.md",
+            "untracked.md",
+        ]);
+        expect(files.get("note.md")).toMatchObject({
+            path: "note.md",
+            vaultPath: `${basePath}/note.md`,
+            index: " ",
+            workingDir: "M",
+        });
+        expect(files.get("staged.md")).toMatchObject({
+            path: "staged.md",
+            vaultPath: `${basePath}/staged.md`,
+            index: "A",
+            workingDir: " ",
+        });
+        expect(files.get("untracked.md")).toMatchObject({
+            path: "untracked.md",
+            vaultPath: `${basePath}/untracked.md`,
+            index: "U",
+            workingDir: "U",
+        });
+        expect(files.get("deleted.md")).toMatchObject({
+            path: "deleted.md",
+            vaultPath: `${basePath}/deleted.md`,
+            index: " ",
+            workingDir: "D",
+        });
+        expect(status.changed.map((file) => file.path).sort()).toEqual([
+            "deleted.md",
+            "note.md",
+            "untracked.md",
+        ]);
+        expect(status.staged.map((file) => file.path)).toEqual(["staged.md"]);
+    });
+
+    it("reads a file snapshot from a commit without changing the working tree", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        const commit = await repo.head();
+        repo.write("note.md", "working tree\n");
+
+        await expect(
+            manager.show(commit, `${plugin.settings.basePath}/note.md`)
+        ).resolves.toBe("base\n");
+        await expect(manager.show(commit, "note.md", false)).resolves.toBe(
+            "base\n"
+        );
+        await expect(repo.statusPorcelain()).resolves.toBe("M note.md");
+    });
+
+    it("updates status after staging and unstaging a vault-relative path", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("note.md", "changed\n");
+        const vaultPath = `${plugin.settings.basePath}/note.md`;
+
+        await manager.stage(vaultPath, true);
+
+        let status = await manager.status();
+        expect(status.changed).toEqual([]);
+        expect(status.staged).toHaveLength(1);
+        expect(status.staged[0]).toMatchObject({
+            path: "note.md",
+            vaultPath,
+            index: "M",
+            workingDir: " ",
+        });
+
+        await manager.unstage(vaultPath, true);
+
+        status = await manager.status();
+        expect(status.staged).toEqual([]);
+        expect(status.changed).toHaveLength(1);
+        expect(status.changed[0]).toMatchObject({
+            path: "note.md",
+            vaultPath,
+            index: " ",
+            workingDir: "M",
+        });
+    });
+
+    it("commits staged changes without staging unstaged changes", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        repo.write("staged.md", "staged\n");
+        repo.write("unstaged.md", "unstaged\n");
+        await repo.git.add("staged.md");
+
+        const committedFiles = await manager.commit({
+            message: "commit staged",
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.headMessage()).toBe("commit staged");
+        expect(await repo.show("HEAD:staged.md")).toBe("staged");
+        expect(await repo.statusPorcelain()).toBe("?? unstaged.md");
+    });
+
+    it("amends the previous commit and returns the committed file count", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        const headBefore = await repo.head();
+        repo.write("note.md", "base\namended\n");
+        await repo.git.add("note.md");
+
+        const committedFiles = await manager.commit({
+            message: "amended base",
+            amend: true,
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.head()).not.toBe(headBefore);
+        expect(await repo.headMessage()).toBe("amended base");
+        expect(await repo.unpushedCount()).toBe(1);
+        expect(await repo.show("HEAD:note.md")).toBe("base\namended");
+        expect(await repo.statusPorcelain()).toBe("");
+    });
+
+    it("amends while staging all changes", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        const headBefore = await repo.head();
+        repo.write("note.md", "base\namended all\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "amended all",
+            amend: true,
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.head()).not.toBe(headBefore);
+        expect(await repo.headMessage()).toBe("amended all");
+        expect(await repo.show("HEAD:note.md")).toBe("base\namended all");
+        expect(await repo.statusPorcelain()).toBe("");
+    });
+
+    it("stages and commits tracked, untracked, and deleted files", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        await repo.writeAndCommit(
+            "delete-me.md",
+            "delete me\n",
+            "add deleted file"
+        );
+        await repo.git.push(["--quiet"]);
+        repo.write("note.md", "base\nchanged\n");
+        repo.write("created.md", "created\n");
+        repo.remove("delete-me.md");
+
+        const committedFiles = await manager.commitAll({
+            message: "commit all",
+        });
+
+        expect(committedFiles).toBe(3);
+        expect(await repo.headMessage()).toBe("commit all");
+        expect(await repo.show("HEAD:note.md")).toBe("base\nchanged");
+        expect(await repo.show("HEAD:created.md")).toBe("created");
+        expect(await repo.statusPorcelain()).toBe("");
+        await expect(repo.show("HEAD:delete-me.md")).rejects.toThrow();
+    });
+
+    it("leaves excluded files and folders unstaged when committing all files", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        await repo.writeAndCommit(
+            "scripts/tracked.js",
+            "base\n",
+            "add tracked script"
+        );
+        await repo.writeAndCommit(
+            "scripts/deleted.js",
+            "deleted\n",
+            "add deleted script"
+        );
+        repo.write("note.md", "base\nchanged\n");
+        repo.write("scripts/tracked.js", "staged\n");
+        await manager.stage("scripts/tracked.js", false);
+        repo.write("scripts/tracked.js", "unstaged\n");
+        repo.remove("scripts/deleted.js");
+        repo.write("scripts/new/created.js", "created\n");
+        repo.write("scripts-old/kept.js", "kept\n");
+        repo.write("drafts/new.md", "new\n");
+        repo.write("..drafts/dotted.md", "dotted\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "commit all but excluded",
+            selection: {
+                mode: "exclude",
+                globs: [
+                    "scripts/**",
+                    "drafts/new.md",
+                    "..drafts/**",
+                    // This repository-relative glob has no matching file.
+                    "outside",
+                ],
+            },
+        });
+
+        expect(committedFiles).toBe(3);
+        expect(await repo.show("HEAD:note.md")).toBe("base\nchanged");
+        expect(await repo.show("HEAD:scripts-old/kept.js")).toBe("kept");
+        // Manually staged content is committed, newer edits are not.
+        expect(await repo.show("HEAD:scripts/tracked.js")).toBe("staged");
+        expect(await repo.show("HEAD:scripts/deleted.js")).toBe("deleted");
+        // statusPorcelain() trims the leading space of the first entry.
+        expect(await repo.statusPorcelain()).toBe(
+            [
+                "D scripts/deleted.js",
+                " M scripts/tracked.js",
+                "?? ..drafts/",
+                "?? drafts/",
+                "?? scripts/new/",
+            ].join("\n")
+        );
+    });
+
+    it.each(["exclude", "include"] as const)(
+        "handles trailing-slash directory paths in %s mode",
+        async (mode) => {
+            context = await backend.create();
+            const { manager, repo } = context;
+            const directoryFiles = [
+                "private/secret.md",
+                "private/nested/note.md",
+            ];
+            const otherFiles = ["private-old/note.md", "public.md"];
+            for (const file of [...directoryFiles, ...otherFiles]) {
+                repo.write(file, "content\n");
+            }
+            const selection = { mode, globs: ["private/", "public.md/"] };
+            const selected = await manager.selectAutoCommitFiles(
+                await manager.status(),
+                selection
+            );
+            const expectedFiles =
+                mode === "include" ? directoryFiles : otherFiles;
+            expect(selected.files.map((file) => file.path).sort()).toEqual(
+                [...expectedFiles].sort()
+            );
+
+            expect(
+                await manager.commitAll({
+                    message: "directory selection",
+                    selection,
+                })
+            ).toBe(expectedFiles.length);
+            for (const file of expectedFiles) {
+                expect(await repo.show(`HEAD:${file}`)).toBe("content");
+            }
+            const unselectedFiles =
+                mode === "include" ? otherFiles : directoryFiles;
+            for (const file of unselectedFiles) {
+                await expect(repo.show(`HEAD:${file}`)).rejects.toThrow();
+            }
+        }
+    );
+
+    it.each(["exclude", "include"] as const)(
+        "treats parentheses literally in %s globs",
+        async (mode) => {
+            context = await backend.create();
+            const { manager, repo } = context;
+            const matchingFiles = [
+                "(a).md",
+                "notes/(draft)/note.md",
+                "(escaped).md",
+            ];
+            const otherFiles = ["a.md", "notes/draft/note.md", "escaped.md"];
+            for (const file of [...matchingFiles, ...otherFiles]) {
+                repo.write(file, "content\n");
+            }
+            const selection = {
+                mode,
+                globs: ["(a).md", "notes/(draft)/*.md", "\\(escaped\\).md"],
+            };
+            const selected = await manager.selectAutoCommitFiles(
+                await manager.status(),
+                selection
+            );
+            const expectedFiles =
+                mode === "include" ? matchingFiles : otherFiles;
+            expect(selected.files.map((file) => file.path).sort()).toEqual(
+                [...expectedFiles].sort()
+            );
+
+            expect(
+                await manager.commitAll({
+                    message: "literal parentheses",
+                    selection,
+                })
+            ).toBe(expectedFiles.length);
+            for (const file of expectedFiles) {
+                expect(await repo.show(`HEAD:${file}`)).toBe("content");
+            }
+            const unselectedFiles =
+                mode === "include" ? otherFiles : matchingFiles;
+            for (const file of unselectedFiles) {
+                await expect(repo.show(`HEAD:${file}`)).rejects.toThrow();
+            }
+        }
+    );
+
+    it("commits only the existing index when a glob excludes every file", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        repo.write("note.md", "staged\n");
+        await manager.stage("note.md", false);
+        repo.write("note.md", "unstaged\n");
+        repo.write("created.md", "created\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "commit index only",
+            selection: { mode: "exclude", globs: ["**/*"] },
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.show("HEAD:note.md")).toBe("staged");
+        expect(await repo.statusPorcelain()).toBe(
+            ["M note.md", "?? created.md"].join("\n")
+        );
+    });
+
+    it("matches globs against individual files, including hidden files", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        await repo.writeAndCommit(
+            "cache/tracked.tmp",
+            "base\n",
+            "add tracked temporary file"
+        );
+        await repo.writeAndCommit(
+            "notes/removed.md",
+            "remove me\n",
+            "add file to remove"
+        );
+        repo.write("cache/tracked.tmp", "changed\n");
+        repo.remove("notes/removed.md");
+        repo.write("root.tmp", "root\n");
+        repo.write("notes/draft.tmp", "draft\n");
+        repo.write(".obsidian/workspace.tmp", "hidden\n");
+        repo.write("notes/keep.md", "keep\n");
+        repo.write("scripts/run.js", "run\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "commit files outside glob",
+            selection: {
+                mode: "exclude",
+                globs: ["**/*.tmp", "scripts"],
+            },
+        });
+
+        expect(committedFiles).toBe(2);
+        expect(await repo.show("HEAD:cache/tracked.tmp")).toBe("base");
+        expect(await repo.show("HEAD:notes/keep.md")).toBe("keep");
+        await expect(repo.show("HEAD:scripts/run.js")).rejects.toThrow();
+        await expect(repo.show("HEAD:notes/removed.md")).rejects.toThrow();
+        await expect(repo.show("HEAD:root.tmp")).rejects.toThrow();
+        await expect(repo.show("HEAD:notes/draft.tmp")).rejects.toThrow();
+        await expect(
+            repo.show("HEAD:.obsidian/workspace.tmp")
+        ).rejects.toThrow();
+    });
+
+    it("stages only included files and keeps manually staged files", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        await repo.writeAndCommit("notes/removed.md", "remove\n", "add note");
+        repo.remove("notes/removed.md");
+        repo.write("notes/new.md", "new\n");
+        repo.write("other/new.md", "other\n");
+        repo.write("already-staged.md", "staged\n");
+        await repo.git.add("already-staged.md");
+
+        const committedFiles = await manager.commitAll({
+            message: "included files",
+            selection: {
+                mode: "include",
+                globs: ["notes/**", "missing/**"],
+            },
+        });
+
+        expect(committedFiles).toBe(3);
+        expect(await repo.show("HEAD:notes/new.md")).toBe("new");
+        expect(await repo.show("HEAD:already-staged.md")).toBe("staged");
+        await expect(repo.show("HEAD:notes/removed.md")).rejects.toThrow();
+        await expect(repo.show("HEAD:other/new.md")).rejects.toThrow();
+        expect(await repo.statusPorcelain()).toBe("?? other/");
+    });
+
+    it("stages no unstaged files with an empty include list", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        repo.write("already-staged.md", "staged\n");
+        await repo.git.add("already-staged.md");
+        repo.write("unstaged.md", "unstaged\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "index only",
+            selection: { mode: "include", globs: [] },
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.show("HEAD:already-staged.md")).toBe("staged");
+        await expect(repo.show("HEAD:unstaged.md")).rejects.toThrow();
+    });
+
+    it("keeps single-star include globs within one directory level", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        repo.write("root.md", "root\n");
+        repo.write("nested/child.md", "child\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "root files",
+            selection: { mode: "include", globs: ["*"] },
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.show("HEAD:root.md")).toBe("root");
+        await expect(repo.show("HEAD:nested/child.md")).rejects.toThrow();
+    });
+
+    it("matches POSIX character classes in Git globs", async () => {
+        context = await backend.create();
+        const { manager, repo } = context;
+        repo.write("file1.md", "digit\n");
+        repo.write("filea.md", "letter\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "digit file",
+            selection: {
+                mode: "include",
+                globs: ["file[[:digit:]].md"],
+            },
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.show("HEAD:file1.md")).toBe("digit");
+        await expect(repo.show("HEAD:filea.md")).rejects.toThrow();
+    });
+
+    it("normalizes detached HEAD and handles operations without a current branch", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.raw(["checkout", "--quiet", "--detach", "HEAD"]);
+
+        const branchInfo = await manager.branchInfo();
+
+        expect(branchInfo.current).toBeUndefined();
+        expect(branchInfo.tracking).toBeUndefined();
+        await expect(manager.canPush()).resolves.toBe(false);
+        await expect(manager.pull()).rejects.toThrow(
+            "No current branch found. Cannot pull."
+        );
+        expect(plugin.displayError).not.toHaveBeenCalled();
+        await expect(manager.push()).resolves.toEqual({
+            status: "blocked",
+            reason: "no-branch",
+        });
+        expect(plugin.displayError).not.toHaveBeenCalled();
+    });
+
+    it("normalizes a missing tracking branch and skips pulling", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.git.checkoutLocalBranch("local-only");
+
+        const branchInfo = await manager.branchInfo();
+
+        expect(branchInfo.current).toBe("local-only");
+        expect(branchInfo.tracking).toBeUndefined();
+        await expect(manager.canPush()).resolves.toBe(false);
+        await expect(manager.pull()).resolves.toEqual({
+            status: "skipped",
+            reason: "no-upstream",
+        });
+        expect(plugin.log).toHaveBeenCalledWith(
+            "No tracking branch found. Ignoring pull."
+        );
+    });
+
+    it("returns an explicit result when a pull is up to date", async () => {
+        context = await backend.create();
+        vi.spyOn(context.manager, "fetch").mockResolvedValue();
+
+        await expect(context.manager.pull()).resolves.toEqual({
+            status: "up-to-date",
+        });
+    });
+
+    it("removes a conflict after staging while keeping the merge active", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, repo } = context;
+        repo.write("untracked.md", "untracked\n");
+
+        const status = await manager.status();
+        expect(status.conflicted).toEqual(["note.md"]);
+        expect(status.all.map((file) => file.path)).toContain("note.md");
+        expect(status.changed.map((file) => file.path)).not.toContain(
+            "note.md"
+        );
+        expect(status.changed).toContainEqual(
+            expect.objectContaining({
+                path: "untracked.md",
+                index: "U",
+                workingDir: "U",
+            })
+        );
+        expect(await manager.isMergeInProgress()).toBe(true);
+
+        repo.write("note.md", "resolved\n");
+        await manager.stage("note.md", false);
+
+        expect((await manager.status()).conflicted).toEqual([]);
+        expect(await manager.isMergeInProgress()).toBe(true);
+    });
+
+    it("creates a two-parent merge commit and clears the merge state", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, repo } = context;
+        repo.write("note.md", "resolved\n");
+        await manager.stage("note.md", false);
+
+        const committedFiles = await manager.commit({
+            message: "resolve merge",
+        });
+
+        const [commit, ...parents] = (
+            await repo.raw(["rev-list", "--parents", "-n", "1", "HEAD"])
+        ).split(" ");
+        expect(commit).toBe(await repo.head());
+        expect(parents).toHaveLength(2);
+        expect(await repo.headMessage()).toBe("resolve merge");
+        expect(await repo.show("HEAD:note.md")).toBe("resolved");
+        expect(await manager.isMergeInProgress()).toBe(false);
+        expect(committedFiles).toBe(1);
+    });
+
+    it("finishes a merge resolved to ours with no staged changes", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, repo } = context;
+        repo.write("note.md", "ours\n");
+        await manager.stage("note.md", false);
+
+        const status = await manager.status();
+        expect(status.conflicted).toEqual([]);
+        expect(status.staged).toEqual([]);
+        expect(status.changed).toEqual([]);
+        expect(await manager.isMergeInProgress()).toBe(true);
+
+        const committedFiles = await manager.commit({
+            message: "resolve merge",
+        });
+
+        expect(committedFiles).toBe(0);
+        expect(
+            (await repo.raw(["rev-list", "--parents", "-n", "1", "HEAD"]))
+                .split(" ")
+                .slice(1)
+        ).toHaveLength(2);
+        expect(await manager.isMergeInProgress()).toBe(false);
+    });
+
+    it("commits an empty resolved merge in smart mode without automatic staging", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, plugin, repo } = context;
+        repo.write("note.md", "ours\n");
+        await manager.stage("note.md", false);
+        plugin.state.mergeInProgress = true;
+        plugin.settings.autoStageOnEmptyIndex = false;
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+
+        const result = await new GitActions(plugin).commit({
+            fromAuto: false,
+            commitMessage: "resolve merge",
+            mode: "smart",
+        });
+
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "committed", files: 0 },
+        });
+        expect(await manager.isMergeInProgress()).toBe(false);
+    });
+
+    it("commits all changes without extra working tree walks", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.writeAndCommit("deleted.md", "deleted\n", "add deleted");
+        repo.write("note.md", "modified\n");
+        repo.write("untracked.md", "untracked\n");
+        repo.remove("deleted.md");
+        const extraWalks =
+            manager instanceof IsomorphicGit
+                ? [
+                      vi.spyOn(manager, "getUnstagedFiles"),
+                      vi.spyOn(manager, "getStagedFiles"),
+                  ]
+                : [];
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+
+        const result = await new GitActions(plugin).commit({
+            fromAuto: false,
+            commitMessage: "commit all",
+            mode: "all",
+        });
+
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "committed", files: 3 },
+        });
+        for (const walk of extraWalks) {
+            expect(walk).not.toHaveBeenCalled();
+        }
+        expect((await manager.status()).all).toEqual([]);
+    });
+
+    it("lists staged files in the commit message", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        await repo.writeAndCommit("deleted.md", "deleted\n", "add deleted");
+        repo.write("note.md", "modified\n");
+        repo.write("added.md", "added\n");
+        repo.write("unstaged.md", "unstaged\n");
+        repo.remove("deleted.md");
+        await manager.stage("note.md", false);
+        await manager.stage("added.md", false);
+        await manager.stage("deleted.md", false);
+        plugin.settings.listChangedFilesInMessageBody = true;
+        const status = vi.spyOn(manager, "status");
+
+        const message = await manager.formatCommitMessage(
+            "{{numFiles}} files: {{files}}"
+        );
+
+        const [summary, body] = message.split("\n\nAffected files:\n");
+        expect(summary).toMatch(/^3 files: /);
+        expect(summary).toContain("A added.md");
+        expect(summary).toContain("D deleted.md");
+        expect(summary).toContain("M note.md");
+        expect(body?.split("\n").sort()).toEqual([
+            "added.md",
+            "deleted.md",
+            "note.md",
+        ]);
+        if (manager instanceof IsomorphicGit) {
+            expect(status).not.toHaveBeenCalled();
+        }
+    });
+
+    it("does not refresh the status between pull and push in commit-and-sync", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("note.md", "modified\n");
+        const events: string[] = [];
+        plugin.settings.pullBeforePush = true;
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.disablePush = false;
+        plugin.updateCachedStatus = vi.fn(() => {
+            events.push("status");
+            return manager.status();
+        });
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        vi.spyOn(manager, "pull").mockImplementation(() => {
+            events.push("pull");
+            return Promise.resolve({ status: "up-to-date" });
+        });
+        vi.spyOn(manager, "canPush").mockResolvedValue(true);
+        vi.spyOn(manager, "push").mockImplementation(() => {
+            events.push("push");
+            return Promise.resolve({ status: "pushed", files: 1 });
+        });
+
+        const result = await new GitActions(plugin).commitAndSync({
+            fromAutoBackup: false,
+            commitMessage: "sync",
+        });
+
+        expect(result).toMatchObject({
+            status: "success",
+            value: { status: "synced" },
+        });
+        expect(events.slice(events.indexOf("pull"))).toEqual(["pull", "push"]);
+    });
+
+    it("applies excluded paths to auto commits only", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("scripts/run.js", "run\n");
+        plugin.settings.autoCommitGlobMode = "exclude";
+        plugin.settings.autoCommitGlobs = "scripts/**\n\n";
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        const actions = new GitActions(plugin);
+        const headBefore = await repo.head();
+
+        const autoResult = await actions.commit({
+            fromAuto: true,
+            commitMessage: "auto",
+            mode: "all",
+        });
+
+        expect(autoResult).toEqual({
+            status: "success",
+            value: { status: "nothing-to-commit", reason: "no-changes" },
+        });
+        expect(await repo.head()).toBe(headBefore);
+
+        const manualResult = await actions.commit({
+            fromAuto: false,
+            commitMessage: "manual",
+            mode: "all",
+        });
+
+        expect(manualResult).toEqual({
+            status: "success",
+            value: { status: "committed", files: 1 },
+        });
+        expect(await repo.show("HEAD:scripts/run.js")).toBe("run");
+    });
+
+    it("filters an untracked folder before the auto commit prompt", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("drafts/new.md", "new\n");
+        plugin.settings.autoCommitGlobMode = "exclude";
+        plugin.settings.autoCommitGlobs = "**/*.md";
+        plugin.settings.customMessageOnAutoBackup = true;
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        const headBefore = await repo.head();
+        const prompt = vi
+            .spyOn(CustomMessageModal.prototype, "openAndGetResult")
+            .mockResolvedValue("unexpected prompt");
+
+        try {
+            const result = await new GitActions(plugin).commit({
+                fromAuto: true,
+                mode: "all",
+            });
+
+            expect(result).toEqual({
+                status: "success",
+                value: {
+                    status: "nothing-to-commit",
+                    reason: "no-changes",
+                },
+            });
+            expect(prompt).not.toHaveBeenCalled();
+            expect(await repo.head()).toBe(headBefore);
+            expect(await repo.statusPorcelain()).toBe("?? drafts/");
+        } finally {
+            prompt.mockRestore();
+        }
+
+        plugin.settings.customMessageOnAutoBackup = false;
+        repo.write("drafts/keep.txt", "keep\n");
+        const nextResult = await new GitActions(plugin).commit({
+            fromAuto: true,
+            commitMessage: "auto",
+            mode: "all",
+        });
+        expect(nextResult).toEqual({
+            status: "success",
+            value: { status: "committed", files: 1 },
+        });
+        expect(await repo.show("HEAD:drafts/keep.txt")).toBe("keep");
+        await expect(repo.show("HEAD:drafts/new.md")).rejects.toThrow();
+    });
+
+    it("uses include globs before deciding whether to prompt for an auto commit", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("other/new.md", "other\n");
+        plugin.settings.autoCommitGlobMode = "include";
+        plugin.settings.autoCommitGlobs = "notes/**\nmissing/**";
+        plugin.settings.customMessageOnAutoBackup = true;
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        const headBefore = await repo.head();
+        const prompt = vi
+            .spyOn(CustomMessageModal.prototype, "openAndGetResult")
+            .mockResolvedValue("unexpected prompt");
+
+        try {
+            const result = await new GitActions(plugin).commit({
+                fromAuto: true,
+                mode: "all",
+            });
+            expect(result).toEqual({
+                status: "success",
+                value: {
+                    status: "nothing-to-commit",
+                    reason: "no-changes",
+                },
+            });
+            expect(prompt).not.toHaveBeenCalled();
+            expect(await repo.head()).toBe(headBefore);
+        } finally {
+            prompt.mockRestore();
+        }
+
+        plugin.settings.customMessageOnAutoBackup = false;
+        repo.write("notes/new.md", "note\n");
+        const result = await new GitActions(plugin).commit({
+            fromAuto: true,
+            mode: "all",
+            commitMessage: "included note",
+        });
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "committed", files: 1 },
+        });
+        expect(await repo.show("HEAD:notes/new.md")).toBe("note");
+        await expect(repo.show("HEAD:other/new.md")).rejects.toThrow();
+    });
+
+    it("uses the staged commit path for an empty auto include list", async () => {
+        context = await backend.create();
+        const { manager, plugin, repo } = context;
+        repo.write("unstaged.md", "unstaged\n");
+        plugin.settings.autoCommitGlobMode = "include";
+        plugin.settings.autoCommitGlobs = "";
+        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        const commit = vi.spyOn(manager, "commit");
+        const commitAll = vi.spyOn(manager, "commitAll");
+        const actions = new GitActions(plugin);
+
+        expect(
+            await actions.commit({
+                fromAuto: true,
+                mode: "all",
+                commitMessage: "staged only",
+            })
+        ).toEqual({
+            status: "success",
+            value: { status: "nothing-to-commit", reason: "nothing-staged" },
+        });
+        repo.write("staged.md", "staged\n");
+        await repo.git.add("staged.md");
+
+        expect(
+            await actions.commit({
+                fromAuto: true,
+                mode: "all",
+                commitMessage: "staged only",
+            })
+        ).toEqual({
+            status: "success",
+            value: { status: "committed", files: 1 },
+        });
+        expect(commit).toHaveBeenCalledTimes(1);
+        expect(commitAll).not.toHaveBeenCalled();
+        expect(await repo.show("HEAD:staged.md")).toBe("staged");
+        await expect(repo.show("HEAD:unstaged.md")).rejects.toThrow();
+    });
+
+    it("counts merge changes when committing all files", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, repo } = context;
+        repo.write("note.md", "resolved\n");
+
+        const committedFiles = await manager.commitAll({
+            message: "resolve merge",
+        });
+
+        expect(committedFiles).toBe(1);
+        expect(await repo.show("HEAD:note.md")).toBe("resolved");
+        expect(await manager.isMergeInProgress()).toBe(false);
+    });
+
+    it("normalizes an unmerged-paths commit failure without displaying it", async () => {
+        context = await backend.create(createRepoWithMergeConflict);
+        const { manager, plugin } = context;
+
+        await expect(
+            manager.commit({ message: "still conflicted" })
+        ).rejects.toBeInstanceOf(GitConflictError);
+
+        expect(plugin.displayError).not.toHaveBeenCalled();
+    });
+});

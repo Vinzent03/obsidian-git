@@ -22,7 +22,6 @@ export class SignsFeature {
     private fileRenameEvent?: EventRef;
     private intervalRefreshEvent?: number;
     private pluginRefreshedEvent?: EventRef;
-    private gutterContextMenuEvent?: EventRef;
     private codeMirrorExtensions: Extension[] = [];
     public changeStatusBar?: ChangesStatusBar;
 
@@ -98,7 +97,7 @@ export class SignsFeature {
     // ========================= REFRESH ==========================
 
     public refresh() {
-        if (this.plg.settings.hunks.showSigns) {
+        if (this.signsProvider) {
             this.plg.app.workspace.iterateAllLeaves(this.handleWorkspaceLeaf);
         }
     }
@@ -146,11 +145,10 @@ export class SignsFeature {
         this.plg.app.workspace.offref(this.workspaceLeafChangeEvent!);
         this.plg.app.vault.offref(this.fileRenameEvent!);
         this.plg.app.workspace.offref(this.pluginRefreshedEvent!);
-        this.plg.app.workspace.offref(this.gutterContextMenuEvent!);
         window.clearInterval(this.intervalRefreshEvent);
     }
 
-    private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
+    private handleWorkspaceLeaf = (leaf: WorkspaceLeaf | null) => {
         if (!this.signsProvider) {
             console.warn("Git: undefined signsProvider. Unexpected situation.");
             return;
@@ -192,7 +190,7 @@ export class SignsFeature {
     }
 
     private createPluginRefreshedEvent(): EventRef {
-        return this.plg.app.workspace.on("obsidian-git:refresh", () => {
+        return this.plg.app.workspace.on("obsidian-git:refreshed", () => {
             this.refresh();
         });
     }

@@ -61,10 +61,8 @@ export class LineAuthoringFeature {
             this.createEventHandlers();
 
             this.activateCodeMirrorExtensions();
-
-            console.log(this.plg.manifest.name + ": Enabled line authoring.");
         } catch (e) {
-            console.warn("Git: Error while loading line authoring feature.", e);
+            this.plg.warn("Error while loading line authoring feature.", e);
             this.deactivateFeature();
         }
     }
@@ -80,8 +78,6 @@ export class LineAuthoringFeature {
 
         this.lineAuthorInfoProvider?.destroy();
         this.lineAuthorInfoProvider = undefined;
-
-        console.log(this.plg.manifest.name + ": Disabled line authoring.");
     }
 
     public isAvailableOnCurrentPlatform(): {
@@ -159,10 +155,10 @@ export class LineAuthoringFeature {
         this.plg.app.vault.offref(this.fileRenameEvent!);
     }
 
-    private handleWorkspaceLeaf = (leaf: WorkspaceLeaf) => {
+    private handleWorkspaceLeaf = (leaf: WorkspaceLeaf | null) => {
         if (!this.lineAuthorInfoProvider) {
-            console.warn(
-                "Git: undefined lineAuthorInfoProvider. Unexpected situation."
+            this.plg.warn(
+                "undefined lineAuthorInfoProvider. Unexpected situation."
             );
             return;
         }
@@ -181,13 +177,13 @@ export class LineAuthoringFeature {
     };
 
     private createFileOpenEvent(): EventRef {
-        return this.plg.app.workspace.on(
-            "file-open",
-            (file: TFile) =>
+        return this.plg.app.workspace.on("file-open", (file) => {
+            if (file) {
                 void this.lineAuthorInfoProvider
                     ?.trackChanged(file)
-                    .catch(console.error)
-        );
+                    .catch(console.error);
+            }
+        });
     }
 
     private createWorkspaceLeafChangeEvent(): EventRef {

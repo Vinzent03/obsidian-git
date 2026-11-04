@@ -4,8 +4,8 @@ import { t } from "src/i18n";
 
 export class CustomMessageModal extends SuggestModal<string> {
     resolve:
-        | ((value: string | PromiseLike<string> | undefined) => void)
-        | null = null;
+        ((value: string | PromiseLike<string> | undefined) => void) | null =
+        null;
     constructor(private readonly plugin: ObsidianGit) {
         super(plugin.app);
         this.setPlaceholder(
@@ -15,7 +15,7 @@ export class CustomMessageModal extends SuggestModal<string> {
         );
     }
 
-    openAndGetResult(): Promise<string> {
+    openAndGetResult(): Promise<string | undefined> {
         return new Promise((resolve) => {
             this.resolve = resolve;
             this.open();

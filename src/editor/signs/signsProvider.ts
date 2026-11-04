@@ -18,12 +18,13 @@ export { previewColor } from "src/editor/lineAuthor/view/gutter/coloring";
 export class SignsProvider {
     constructor(private plugin: ObsidianGit) {}
 
-    public async trackChanged(file: TFile) {
-        return this.trackChangedHelper(file).catch((reason) => {
-            console.warn("Git: Error in trackChanged." + reason);
-            // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-            return Promise.reject(reason);
-        });
+    public async trackChanged(file: TFile): Promise<void> {
+        try {
+            await this.trackChangedHelper(file);
+        } catch (error) {
+            console.warn("Git: Error in trackChanged.", error);
+            throw error;
+        }
     }
 
     private async trackChangedHelper(file: TFile) {

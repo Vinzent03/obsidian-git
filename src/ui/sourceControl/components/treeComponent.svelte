@@ -9,9 +9,14 @@
     import { slide } from "svelte/transition";
     import type GitView from "../sourceControl";
     import FileComponent from "./fileComponent.svelte";
+    import ConflictFileComponent from "./conflictFileComponent.svelte";
     import PulledFileComponent from "./pulledFileComponent.svelte";
     import StagedFileComponent from "./stagedFileComponent.svelte";
-    import { arrayProxyWithNewLength, mayTriggerFileMenu } from "src/utils";
+    import {
+        arrayProxyWithNewLength,
+        getTooltipSide,
+        mayTriggerFileMenu,
+    } from "src/utils";
     import TooManyFilesComponent from "./tooManyFilesComponent.svelte";
     import { onMount } from "svelte";
     interface Props {
@@ -21,6 +26,7 @@
         fileType: FileType;
         topLevel?: boolean;
         closed: Record<string, boolean>;
+        conflictCounts?: Record<string, number>;
     }
 
     let {
@@ -30,40 +36,30 @@
         fileType,
         topLevel = false,
         closed = $bindable(),
+        conflictCounts = {},
     }: Props = $props();
 
     onMount(() => {
         for (const entity of hierarchy.children) {
             if ((entity.children?.length ?? 0) > 100)
-                closed[entity.title] = true;
+                closed[entity.path] = true;
         }
     });
-    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-    let side = $derived(
-        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
-    );
+    let side = $derived(getTooltipSide(view.leaf));
 
     function stage(event: MouseEvent, path: string) {
         event.stopPropagation();
-        plugin.gitManager
-            .stageAll({ dir: path })
-            .catch((e) => plugin.displayError(e))
-            .finally(() => {
-                view.app.workspace.trigger("obsidian-git:refresh");
-            });
+        plugin.promiseQueue.addTask(() => plugin.gitActions.stageAll(path));
     }
     function unstage(event: MouseEvent, path: string) {
         event.stopPropagation();
-        plugin.gitManager
-            .unstageAll({ dir: path })
-            .catch((e) => plugin.displayError(e))
-            .finally(() => {
-                view.app.workspace.trigger("obsidian-git:refresh");
-            });
+        plugin.promiseQueue.addTask(() => plugin.gitActions.unstageAll(path));
     }
     function discard(event: MouseEvent, item: TreeItem) {
         event.stopPropagation();
-        void plugin.discardAll(item.vaultPath);
+        plugin.promiseQueue.addTask(() =>
+            plugin.gitActions.discardAll(item.vaultPath)
+        );
     }
     function fold(event: MouseEvent, item: TreeItem) {
         event.stopPropagation();
@@ -78,19 +74,18 @@
         {#if entity.data}
             <div>
                 {#if fileType == FileType.staged}
-                    <StagedFileComponent
-                        change={entity.data}
-                        manager={plugin.gitManager}
-                        {view}
-                    />
+                    <StagedFileComponent change={entity.data} {view} />
                 {:else if fileType == FileType.changed}
-                    <FileComponent
-                        change={entity.data}
-                        manager={plugin.gitManager}
-                        {view}
-                    />
+                    <FileComponent change={entity.data} {view} />
                 {:else if fileType == FileType.pulled}
                     <PulledFileComponent change={entity.data} {view} />
+                {:else if fileType == FileType.conflicted}
+                    <ConflictFileComponent
+                        path={entity.data.path}
+                        count={conflictCounts[entity.data.path]}
+                        manager={plugin.gitManager}
+                        {view}
+                    />
                 {/if}
             </div>
         {:else}
@@ -165,7 +160,7 @@
                                         /></svg
                                     >
                                 </div>
-                            {:else}
+                            {:else if fileType == FileType.changed}
                                 <div
                                     data-icon="undo"
                                     aria-label={t("Discard")}
@@ -234,6 +229,7 @@
                             {plugin}
                             {view}
                             {fileType}
+                            {conflictCounts}
                             bind:closed
                         />
                     </div>

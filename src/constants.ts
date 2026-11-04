@@ -6,8 +6,6 @@ export const DATE_TIME_FORMAT_SECONDS = `${DATE_FORMAT} HH:mm:ss`;
 
 export const GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH = 40;
 
-export const CONFLICT_OUTPUT_FILE = "conflict-files-obsidian-git.md";
-
 export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
     autoCommitMessage: "vault backup: {{date}}",
@@ -17,7 +15,8 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     autoPushInterval: 0,
     autoPullInterval: 0,
     autoPullOnBoot: false,
-    autoCommitOnlyStaged: false,
+    autoCommitGlobMode: "exclude",
+    autoCommitGlobs: "",
     disablePush: false,
     pullBeforePush: true,
     squashCommitsBeforePush: false,
@@ -28,17 +27,21 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     showStatusBar: true,
     updateSubmodules: false,
     syncMethod: "merge",
+    rebaseAutoStash: "enabled",
     mergeStrategy: "none",
     customMessageOnAutoBackup: false,
     autoBackupAfterFileChange: false,
     treeStructure: false,
+    gitServerPasswordSecret: "",
     refreshSourceControl: Platform.isDesktopApp,
     basePath: "",
     differentIntervalCommitAndPush: false,
     changedFilesInStatusBar: false,
+    limitToVault: false,
     showedMobileNotice: false,
     refreshSourceControlTimer: 7000,
     showBranchStatusBar: true,
+    conflictResolutionMode: "both",
     setLastSaveToLastCommit: false,
     submoduleRecurseCheckout: false,
     gitDir: "",
@@ -46,6 +49,8 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     authorInHistoryView: "hide",
     dateInHistoryView: false,
     diffStyle: "split",
+    diffTimeout: 50,
+    autoStageOnEmptyIndex: true,
     hunks: {
         showSigns: false,
         hunkCommands: false,
@@ -81,6 +86,12 @@ export const HISTORY_VIEW_CONFIG = {
     icon: "history",
 };
 
+export const READ_ONLY_FILE_VIEW_CONFIG = {
+    type: "git-read-only-file-view",
+    name: "File at commit",
+    icon: "file-clock",
+};
+
 export const SPLIT_DIFF_VIEW_CONFIG = {
     type: "split-diff-view",
     name: "Diff view",
@@ -93,32 +104,20 @@ export const DIFF_VIEW_CONFIG = {
 };
 
 export const DEFAULT_WIN_GIT_PATH = "C:\\Program Files\\Git\\cmd\\git.exe";
-export const ASK_PASS_INPUT_FILE = ".git_credentials_input";
 export const ASK_PASS_SCRIPT_FILE = "obsidian_askpass.sh";
 
 export const ASK_PASS_SCRIPT = `#!/bin/sh
 
-PROMPT="$1"
-TEMP_FILE="$OBSIDIAN_GIT_CREDENTIALS_INPUT"
+if ! command -v curl >/dev/null 2>&1; then
+    echo "Obsidian Git authentication requires curl" >&2
+    exit 1
+fi
 
-cleanup() {
-    rm -f "$TEMP_FILE" "$TEMP_FILE.response"
-}
-trap cleanup EXIT
-
-echo "$PROMPT" > "$TEMP_FILE"
-
-while [ ! -e "$TEMP_FILE.response" ]; do
-    if [ ! -e "$TEMP_FILE" ]; then
-        echo "Trigger file got removed: Abort" >&2
-        exit 1
-    fi
-    sleep 0.1
-done
-
-RESPONSE=$(cat "$TEMP_FILE.response")
-
-echo "$RESPONSE"
+printf '%s\\n%s' "$OBSIDIAN_GIT_ASKPASS_TOKEN" "$1" | curl -q \\
+    --silent --show-error --fail --noproxy '*' --proto '=http' \\
+    --max-time 600 --data-binary @- \\
+    --header 'Content-Type: application/octet-stream' \\
+    "http://127.0.0.1:$OBSIDIAN_GIT_ASKPASS_PORT/askpass"
 `;
 
 /**

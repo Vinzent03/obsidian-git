@@ -343,47 +343,47 @@ function actionZh(action: string): string {
 
 function durationZh(duration: string): string {
     const match = duration.match(/^(\d+) minutes?$/);
-    return match ? match[1] + " 分钟" : duration;
+    return match ? match[1]! + " 分钟" : duration;
 }
 
 const zhCNPatterns: DynamicTranslation[] = [
     {
         pattern: /^Auto (commit|commit-and-sync) interval \(minutes\)$/,
-        translate: (match) => "自动" + actionZh(match[1]) + "间隔（分钟）",
+        translate: (match) => "自动" + actionZh(match[1]!) + "间隔（分钟）",
     },
     {
         pattern: /^Auto (commit|commit-and-sync) after stopping file edits$/,
-        translate: (match) => "停止编辑后自动" + actionZh(match[1]),
+        translate: (match) => "停止编辑后自动" + actionZh(match[1]!),
     },
     {
         pattern: /^Auto (commit|commit-and-sync) after latest commit$/,
-        translate: (match) => "上次提交后自动" + actionZh(match[1]),
+        translate: (match) => "上次提交后自动" + actionZh(match[1]!),
     },
     {
         pattern: /^Auto (commit|commit-and-sync) only staged files$/,
         translate: (match) =>
-            "自动" + actionZh(match[1]) + "时仅提交已暂存文件",
+            "自动" + actionZh(match[1]!) + "时仅提交已暂存文件",
     },
     {
         pattern:
             /^Specify custom commit message on auto (commit|commit-and-sync)$/,
         translate: (match) =>
-            "自动" + actionZh(match[1]) + "时手动指定提交信息",
+            "自动" + actionZh(match[1]!) + "时手动指定提交信息",
     },
     {
         pattern: /^Commit message on auto (commit|commit-and-sync)$/,
-        translate: (match) => "自动" + actionZh(match[1]) + "信息",
+        translate: (match) => "自动" + actionZh(match[1]!) + "信息",
     },
     {
         pattern:
             /^Requires the (commit|commit-and-sync) interval not to be 0\.\s+If turned on, do auto \1 every (.+?) after stopping file edits\.\s+This also prevents auto \1 while editing a file\. If turned off, it's independent from the last file edit\.$/,
         translate: (match) =>
             "要求" +
-            actionZh(match[1]) +
+            actionZh(match[1]!) +
             "间隔不能为 0。启用后，停止编辑文件 " +
-            durationZh(match[2]) +
+            durationZh(match[2]!) +
             " 后自动" +
-            actionZh(match[1]) +
+            actionZh(match[1]!) +
             "；编辑文件期间不会执行。关闭后，执行时间不受最后编辑时间影响。",
     },
     {
@@ -391,9 +391,9 @@ const zhCNPatterns: DynamicTranslation[] = [
             /^If turned on, sets last auto (commit|commit-and-sync) timestamp to the latest commit timestamp\. This reduces the frequency of auto \1 when doing manual commits\.$/,
         translate: (match) =>
             "启用后，将上次自动" +
-            actionZh(match[1]) +
+            actionZh(match[1]!) +
             "时间设为最近一次提交时间，从而减少手动提交后重复自动" +
-            actionZh(match[1]) +
+            actionZh(match[1]!) +
             "的频率。",
     },
     {
@@ -401,24 +401,24 @@ const zhCNPatterns: DynamicTranslation[] = [
             /^If turned on, only staged files are committed on (commit|commit-and-sync)\. If turned off, all changed files are committed\.$/,
         translate: (match) =>
             "启用后，" +
-            actionZh(match[1]) +
+            actionZh(match[1]!) +
             "时只提交已暂存文件；关闭后提交所有已更改文件。",
     },
     {
         pattern: /^Set to default: "(.+)"$/,
-        translate: (match) => "恢复默认值：“" + match[1] + "”",
+        translate: (match) => "恢复默认值：“" + match[1]! + "”",
     },
     {
         pattern: /^Specify custom date format\. E\.g\. "(.+)\. See$/,
         translate: (match) =>
-            "指定自定义日期格式，例如“" + match[1] + "”。参见",
+            "指定自定义日期格式，例如“" + match[1]! + "”。参见",
     },
     {
         pattern:
             /^Most of the time you want to push after committing\. Turning this off turns a commit-and-sync action into commit (and pull )?only\. It will still be called commit-and-sync\.$/,
         translate: (match) =>
             "通常应在提交后推送。关闭后，“提交并同步”只会" +
-            (match[1] ? "提交并拉取" : "提交") +
+            (match[1]! ? "提交并拉取" : "提交") +
             "，但命令名称仍显示为“提交并同步”。",
     },
     {
@@ -426,7 +426,7 @@ const zhCNPatterns: DynamicTranslation[] = [
             /^On commit-and-sync, pull commits as well\. Turning this off turns a commit-and-sync action into commit (and push )?only\.$/,
         translate: (match) =>
             "执行“提交并同步”时同时拉取远程提交。关闭后，该操作只会" +
-            (match[1] ? "提交并推送" : "提交") +
+            (match[1]! ? "提交并推送" : "提交") +
             "。",
     },
     {
@@ -446,19 +446,19 @@ const zhCNPatterns: DynamicTranslation[] = [
             /^and for matches \(at least (\d+) characters\) within the same \(or all\) commit\(s\),$/,
         translate: (match) =>
             "；对于同一次（或全部）提交中至少 " +
-            match[1] +
+            match[1]! +
             " 个字符的匹配，显示",
     },
     {
         pattern:
             /^Does your remote repo contain a (.+) directory at the root\?$/,
-        translate: (match) => "远程仓库根目录是否包含 " + match[1] + " 目录？",
+        translate: (match) => "远程仓库根目录是否包含 " + match[1]! + " 目录？",
     },
     {
         pattern:
             /^To avoid conflicts, the local (.+) directory needs to be deleted\.$/,
         translate: (match) =>
-            "为避免冲突，需要删除本地 " + match[1] + " 目录。",
+            "为避免冲突，需要删除本地 " + match[1]! + " 目录。",
     },
     {
         pattern: /^Color for newest commits$/,
@@ -466,22 +466,22 @@ const zhCNPatterns: DynamicTranslation[] = [
     },
     {
         pattern: /^Color for oldest \((.+) or older\) commits$/,
-        translate: (match) => "最早提交（" + match[1] + " 或更早）的颜色",
+        translate: (match) => "最早提交（" + match[1]! + " 或更早）的颜色",
     },
     {
         pattern: /^abcdef Author Name (.+)$/,
-        translate: (match) => "abcdef 作者姓名 " + match[1],
+        translate: (match) => "abcdef 作者姓名 " + match[1]!,
     },
     {
         pattern: /^Currently: (.+)$/,
-        translate: (match) => "当前效果：" + match[1],
+        translate: (match) => "当前效果：" + match[1]!,
     },
     {
         pattern:
             /^The oldest age in the line author coloring\. Everything older will have the same color\.\s+Smallest valid age is "1d"\. Currently: (.+)$/,
         translate: (match) =>
             "行作者着色所使用的最早时间；更早的内容将使用相同颜色。最小有效值为“1d”。当前：" +
-            match[1]
+            match[1]!
                 .replace(/^(\d+(?:\.\d+)?) days$/, "$1 天")
                 .replace("invalid!", "无效"),
     },

@@ -3,66 +3,66 @@ description: File a bug report
 title: "[Bug]: "
 labels: "bug"
 body:
-- type: markdown
-  attributes:
-    value: "**Please make sure you are on the latest version.**"
-- type: textarea
-  id: what-happened
-  attributes:
-    label: Describe the bug
-    placeholder: The following error occurs when running command X when I have X enabled. 
-  validations:
-    required: true
-- type: textarea
-  id: logs
-  attributes:
-    label: Relevant errors (if available) from notifications or console (`CTRL+SHIFT+I`)
-    description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
-    render: shell
-- type: textarea
-  id: reproduce
-  attributes:
-    label: Steps to reproduce
-  validations:
-    required: true
-- type: textarea
-  id: expected
-  attributes:
-    label: Expected Behavior
-    description: A clear and concise description of what you expected to happen.
-- type: textarea
-  id: context
-  attributes:
-    label: Addition context
-    description: Add any other context about the problem here.
-- type: dropdown
-  id: os
-  attributes:
-    label: Operating system
-    description: Which OS are you using?
-    options:
-      - Windows
-      - Linux
-      - macOS
-      - Android
-      - iOS
-  validations:
-    required: true
-- type: dropdown
-  id: installation-method
-  attributes:
-    label: Installation Method
-    description: Only necessary on Linux
-    options:
-      - Flatpak
-      - AppImage
-      - Snap
-      - Other
-  validations:
-    required: false
-- type: input
-  id: version
-  attributes: 
-    label: Plugin version
-  validations:
-    required: true
+    - type: markdown
+      attributes:
+          value: "**Please make sure you are on the latest version.**"
+    - type: textarea
+      id: what-happened
+      attributes:
+          label: Describe the bug
+          placeholder: The following error occurs when running command X when I have X enabled.
+      validations:
+          required: true
+    - type: textarea
+      id: logs
+      attributes:
+          label: Relevant errors (if available) from notifications or console (`CTRL+SHIFT+I`)
+          description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+          render: shell
+    - type: textarea
+      id: reproduce
+      attributes:
+          label: Steps to reproduce
+      validations:
+          required: true
+    - type: textarea
+      id: expected
+      attributes:
+          label: Expected Behavior
+          description: A clear and concise description of what you expected to happen.
+    - type: textarea
+      id: context
+      attributes:
+          label: Addition context
+          description: Add any other context about the problem here.
+    - type: dropdown
+      id: os
+      attributes:
+          label: Operating system
+          description: Which OS are you using?
+          options:
+              - Windows
+              - Linux
+              - macOS
+              - Android
+              - iOS
+      validations:
+          required: true
+    - type: dropdown
+      id: installation-method
+      attributes:
+          label: Installation Method
+          description: Only necessary on Linux
+          options:
+              - Flatpak
+              - AppImage
+              - Snap
+              - Other
+      validations:
+          required: false
+    - type: input
+      id: version
+      attributes:
+          label: Plugin version
+      validations:
+          required: true

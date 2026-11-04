@@ -3,7 +3,7 @@ import type ObsidianGit from "src/main";
 import { t } from "src/i18n";
 
 export class BranchModal extends FuzzySuggestModal<string> {
-    resolve: (
+    resolve!: (
         value: string | undefined | PromiseLike<string | undefined>
     ) => void;
 
@@ -25,7 +25,7 @@ export class BranchModal extends FuzzySuggestModal<string> {
         this.resolve(item);
     }
 
-    openAndGetReslt(): Promise<string> {
+    openAndGetReslt(): Promise<string | undefined> {
         return new Promise((resolve) => {
             this.resolve = resolve;
             this.open();

@@ -7,6 +7,7 @@
         fileOpenableInObsidian,
         getDisplayPath,
         getNewLeaf,
+        getTooltipSide,
         mayTriggerFileMenu,
     } from "src/utils";
     import type HistoryView from "../historyView";
@@ -19,10 +20,7 @@
     let { diff, view }: Props = $props();
     let buttons: HTMLElement[] = $state([]);
 
-    let side = $derived(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-        (view.leaf.getRoot() as any).side == "left" ? "right" : "left"
-    );
+    let side = $derived(getTooltipSide(view.leaf));
 
     $effect(() => {
         for (const b of buttons) if (b) setIcon(b, b.getAttr("data-icon")!);
@@ -57,6 +55,13 @@
             bRef: diff.hash,
         });
     }
+
+    function openAtCommit(event: MouseEvent) {
+        event.stopPropagation();
+        view.plugin.tools
+            .openFileAtCommit(diff.path, diff.hash)
+            .catch((e) => view.plugin.displayError(e));
+    }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -89,6 +94,16 @@
         </div>
         <div class="git-tools">
             <div class="buttons">
+                {#if diff.status !== "D" && !diff.binary && !fileIsBinary(diff.path)}
+                    <div
+                        data-icon="file-clock"
+                        aria-label="Open file at this commit"
+                        bind:this={buttons[1]}
+                        onauxclick={openAtCommit}
+                        onclick={openAtCommit}
+                        class="clickable-icon"
+                    ></div>
+                {/if}
                 {#if fileOpenableInObsidian(diff.vaultPath, view.app)}
                     <div
                         data-icon="go-to-file"

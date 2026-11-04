@@ -1,57 +1,71 @@
 {
     "name": "obsidian-git",
-    "version": "2.38.6",
+    "version": "2.42.0",
     "description": "Integrate Git version control with automatic backup and other advanced features in Obsidian.md",
     "main": "main.js",
     "scripts": {
         "dev": "node esbuild.config.mjs dev",
         "build": "node esbuild.config.mjs production",
-        "release": "standard-version",
-        "lint": "eslint src",
-        "format": "prettier --check src",
+        "release": "commit-and-tag-version",
+        "lint": "eslint src tests vitest.config.ts",
+        "format": "prettier --check src tests vitest.config.ts",
         "tsc": "tsc --noEmit",
         "svelte": "svelte-check",
-        "all": "pnpm run tsc && pnpm run svelte && pnpm run format && pnpm run lint"
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "all": "pnpm run tsc && pnpm run svelte && pnpm run format && pnpm run lint && pnpm run test"
     },
     "keywords": [],
     "author": "Vinzent03",
     "license": "MIT",
     "type": "module",
-    "standard-version": {
-        "t": ""
+    "commit-and-tag-version": {
+        "t": "",
+        "bumpFiles": [
+            "package.json",
+            "manifest.json",
+            {
+                "filename": "versions.json",
+                "updater": "./version-bump.cjs"
+            }
+        ]
     },
     "engines": {
-        "node": ">=18",
-        "pnpm": ">=9"
+        "node": ">=24",
+        "pnpm": ">=11"
     },
     "devDependencies": {
-        "@eslint/js": "^9.39.4",
+        "@eslint/js": "^10.0.1",
         "@types/debug": "^4.1.13",
         "@types/diff3": "^0.0.2",
-        "@types/node": "^22.19.21",
-        "@typescript-eslint/parser": "8.47.0",
-        "esbuild": "^0.28.1",
+        "@types/node": "^26.6.5",
+        "@types/picomatch": "^4.0.3",
+        "@typescript-eslint/parser": "8.71.0",
+        "@vitest/coverage-v8": "^5.0.5",
+        "commit-and-tag-version": "^13.3.0",
+        "esbuild": "^0.28.2",
         "esbuild-svelte": "^0.9.5",
-        "eslint": "^9.39.4",
-        "eslint-plugin-svelte": "^2.46.1",
-        "obsidian": "^1.13.1",
-        "prettier": "3.3.2",
-        "prettier-plugin-svelte": "^3.5.2",
-        "scss": "^0.2.4",
-        "standard-version": "^9.5.0",
-        "svelte-check": "^4.6.0",
-        "svelte-eslint-parser": "^0.43.0",
+        "eslint": "^10.13.0",
+        "eslint-plugin-svelte": "^3.23.1",
+        "obsidian": "^1.14.4",
+        "prettier": "3.9.9",
+        "prettier-plugin-svelte": "^4.1.1",
+        "sass": "^1.105.2",
+        "svelte-check": "^4.7.7",
+        "svelte-eslint-parser": "^1.9.0",
         "svelte-preprocess": "^6.0.5",
         "tslib": "^2.8.1",
-        "typescript": "5.8.3",
-        "typescript-eslint": "^8.61.0"
+        "typescript": "5.9.3",
+        "typescript-eslint": "^8.71.2",
+        "vitest": "^5.0.5"
     },
     "dependencies": {
-        "@codemirror/commands": "^6.10.3",
+        "@codemirror/commands": "^6.11.1",
         "@codemirror/merge": "^6.12.2",
-        "@codemirror/search": "^6.7.0",
-        "@codemirror/state": "^6.6.0",
-        "@codemirror/view": "^6.43.1",
+        "@codemirror/search": "^6.7.2",
+        "@codemirror/state": "^6.7.6",
+        "@codemirror/view": "^6.43.14",
         "buffer": "^6.0.3",
         "codemirror": "^6.0.2",
         "css-color-converter": "^2.0.0",
@@ -59,10 +73,11 @@
         "diff": "^9.0.0",
         "diff2html": "^3.4.56",
         "diff3": "^0.0.4",
-        "isomorphic-git": "1.37.4",
-        "js-sha256": "^0.11.1",
-        "simple-git": "^3.36.0",
-        "svelte": "^5.56.3"
+        "isomorphic-git": "^1.44.3",
+        "js-sha256": "^1.0.0",
+        "picomatch": "^4.0.7",
+        "simple-git": "^4.0.2",
+        "svelte": "^5.57.2"
     },
     "moduleFileExtensions": [
         "js",

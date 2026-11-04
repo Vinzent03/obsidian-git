@@ -1,6 +1,5 @@
 import type { EditorState, Transaction } from "@codemirror/state";
 import { StateEffect, StateField } from "@codemirror/state";
-import type { Hasher } from "js-sha256";
 import { sha256 } from "js-sha256";
 import type { RGB } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
@@ -133,7 +132,7 @@ export const lineAuthorState: StateField<LineAuthoringWithChanges | undefined> =
 
 export function laStateDigest(
     laState: LineAuthoringWithChanges | undefined
-): Hasher {
+): ReturnType<typeof sha256.create> {
     const digest = sha256.create();
     if (!laState) return digest;
 
@@ -165,28 +164,16 @@ export type LineAuthorSettings = {
 };
 
 export type LineAuthorFollowMovement =
-    | "inactive"
-    | "same-commit"
-    | "all-commits";
+    "inactive" | "same-commit" | "all-commits";
 
 export type LineAuthorDisplay =
-    | "hide"
-    | "full"
-    | "first name"
-    | "last name"
-    | "initials";
+    "hide" | "full" | "first name" | "last name" | "initials";
 
 export type LineAuthorDateTimeFormatOptions =
-    | "hide"
-    | "date"
-    | "datetime"
-    | "natural language"
-    | "custom";
+    "hide" | "date" | "datetime" | "natural language" | "custom";
 
 export type LineAuthorTimezoneOption =
-    | "viewer-local"
-    | "author-local"
-    | "utc0000";
+    "viewer-local" | "author-local" | "utc0000";
 
 // ===============================================================
 

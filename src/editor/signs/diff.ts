@@ -1,7 +1,19 @@
 import { Hunks, type Hunk } from "../signs/hunks";
 import { Chunk } from "@codemirror/merge";
 import { ChangeDesc, Text } from "@codemirror/state";
-import { lineFromPos } from "./hunkState";
+
+/**
+ * Given a document and a position, return the corresponding line number in the
+ * file.
+ */
+export function lineFromPos(doc: Text, pos: number): number {
+    const lineData = doc.lineAt(pos);
+    const no_nl_at_eof = !(
+        lineData.text.length == 0 && lineData.number == doc.lines
+    );
+    const fileLine = no_nl_at_eof ? lineData.number : lineData.number - 1;
+    return fileLine;
+}
 
 // function diffMatchPatch(
 //     text1: string,
@@ -137,7 +149,7 @@ export function rawHunksToHunks(
         const hunk = Hunks.createHunk(oldStart, oldLines, newStart, newLines);
         if (rawHunk.oldLines > 0) {
             for (let i = oldStart; i < oldStart + oldLines; i++) {
-                hunk.removed.lines.push(linesA[i - 1]);
+                hunk.removed.lines.push(linesA[i - 1]!);
             }
             if (oldStart + oldLines > linesA.length && linesA.last() != "") {
                 hunk.removed.no_nl_at_eof = true;
@@ -145,7 +157,7 @@ export function rawHunksToHunks(
         }
         if (rawHunk.newLines > 0) {
             for (let i = newStart; i < newStart + newLines; i++) {
-                hunk.added.lines.push(linesB[i - 1]);
+                hunk.added.lines.push(linesB[i - 1]!);
             }
             if (newStart + newLines > linesB.length && linesB.last() != "") {
                 hunk.added.no_nl_at_eof = true;
@@ -208,7 +220,7 @@ function diffViaCMMerge(
             : Chunk.build(aDoc, bDoc, diffConfig);
     const rawHunks: RawHunk[] = [];
     for (let i = 0; i < newChunks.length; i++) {
-        const chunk = newChunks[i];
+        const chunk = newChunks[i]!;
 
         const rawHunk = rawHunkFromChunk(chunk, aDoc, bDoc);
         rawHunks.push(rawHunk);

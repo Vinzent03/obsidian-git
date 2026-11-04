@@ -6,7 +6,7 @@ jobs:
     svelte-check:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: latest
@@ -17,7 +17,7 @@ jobs:
     lint:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: latest
@@ -28,7 +28,7 @@ jobs:
     format:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: latest
@@ -39,7 +39,7 @@ jobs:
     compile:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: latest
@@ -47,10 +47,21 @@ jobs:
               run: pnpm install
             - name: Run tsc
               run: pnpm run tsc --noEmit
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - uses: pnpm/action-setup@v6
+              with:
+                  version: latest
+            - name: Install modules
+              run: pnpm install
+            - name: Run build
+              run: pnpm run test
     build:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: latest

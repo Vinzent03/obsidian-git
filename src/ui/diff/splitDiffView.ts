@@ -1,6 +1,6 @@
 import type { Debouncer, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { debounce, ItemView, Platform, setIcon } from "obsidian";
-import { SPLIT_DIFF_VIEW_CONFIG } from "src/constants";
+import { DEFAULT_SETTINGS, SPLIT_DIFF_VIEW_CONFIG } from "src/constants";
 import { SimpleGit } from "src/gitManager/simpleGit";
 import type ObsidianGit from "src/main";
 import type { DiffViewState } from "src/types";
@@ -19,15 +19,37 @@ import {
 import { GitError } from "simple-git";
 import { Hunks } from "src/editor/signs/hunks";
 import { rawHunkFromChunk, rawHunksToHunks } from "src/editor/signs/diff";
+import { diffContextMenu } from "src/ui/diff/contextMenu";
+
+const readOnlyEditorTheme = EditorView.theme({
+    "& .cm-content": { caretColor: "transparent !important" },
+    "&.cm-focused .cm-cursor, & .cm-dropCursor": {
+        display: "none !important",
+    },
+});
+
+const READ_ONLY_DIFF_TIMEOUT_FACTOR = 10;
+
+export function getSplitDiffTimeout(
+    configuredTimeout: number,
+    editable: boolean
+): number {
+    const timeout =
+        Number.isInteger(configuredTimeout) && configuredTimeout > 0
+            ? configuredTimeout
+            : DEFAULT_SETTINGS.diffTimeout;
+    return editable ? timeout : timeout * READ_ONLY_DIFF_TIMEOUT_FACTOR;
+}
 
 // This class is not extending `FileView', because it needs a `TFile`, which is not possible for dot files like `.gitignore`, which this editor should support as well.`
 export default class SplitDiffView extends ItemView {
     refreshing = false;
-    state: DiffViewState;
+    state!: DiffViewState;
     intervalRef: number;
     mergeView: MergeView | undefined;
-    fileSaveDebouncer: Debouncer<[string], void>;
-    bIsEditable: boolean;
+    fileSaveDebouncer!: Debouncer<[string], void>;
+    bIsEditable!: boolean;
+    private indexUnmerged = false;
 
     /**
      * Prevent to load text from file if the modification event was caused by this instance
@@ -42,7 +64,7 @@ export default class SplitDiffView extends ItemView {
         this.navigation = true;
         this.registerEvent(
             this.app.workspace.on("obsidian-git:status-changed", () => {
-                if (!this.mergeView) {
+                if (!this.mergeView || this.indexUnmerged) {
                     this.createMergeView().catch(console.error);
                 } else {
                     this.updateRefEditors().catch(console.error);
@@ -57,10 +79,7 @@ export default class SplitDiffView extends ItemView {
 
         this.registerEvent(
             this.app.vault.on("modify", (file) => {
-                if (
-                    this.state.bRef == undefined &&
-                    file.path === this.state.bFile
-                ) {
+                if (this.isWorkingTreeBFile(file.path)) {
                     if (this.ignoreNextModification) {
                         this.ignoreNextModification = false;
                     } else {
@@ -71,10 +90,7 @@ export default class SplitDiffView extends ItemView {
         );
         this.registerEvent(
             this.app.vault.on("delete", (file) => {
-                if (
-                    this.state.bRef == undefined &&
-                    file.path === this.state.bFile
-                ) {
+                if (this.isWorkingTreeBFile(file.path)) {
                     // If the file got deleted, we need to recreate the view to make the editor read-only
                     this.createMergeView().catch(console.error);
                 }
@@ -82,10 +98,7 @@ export default class SplitDiffView extends ItemView {
         );
         this.registerEvent(
             this.app.vault.on("create", (file) => {
-                if (
-                    this.state.bRef == undefined &&
-                    file.path === this.state.bFile
-                ) {
+                if (this.isWorkingTreeBFile(file.path)) {
                     // If the file got created, we need to recreate the view to make the editor editable
                     this.createMergeView().catch(console.error);
                 }
@@ -94,9 +107,8 @@ export default class SplitDiffView extends ItemView {
         this.registerEvent(
             this.app.vault.on("rename", (file, oldPath) => {
                 if (
-                    this.state.bRef == undefined &&
-                    (file.path === this.state.bFile ||
-                        oldPath === this.state.bFile)
+                    this.isWorkingTreeBFile(file.path) ||
+                    this.isWorkingTreeBFile(oldPath)
                 ) {
                     // If the file got created, we need to recreate the view to make the editor editable
                     this.createMergeView().catch(console.error);
@@ -119,6 +131,25 @@ export default class SplitDiffView extends ItemView {
             },
             1000,
             false
+        );
+    }
+
+    /**
+     * Whether the given vault path is the working tree file shown on the b
+     * side. `bFile` is relative to the repository, which may differ from the
+     * vault root.
+     */
+    isWorkingTreeBFile(vaultPath: string): boolean {
+        if (
+            this.state?.bFile == undefined ||
+            this.state.bRef != undefined ||
+            !this.plugin.gitManager
+        ) {
+            return false;
+        }
+        return (
+            vaultPath ===
+            this.plugin.gitManager.getRelativeVaultPath(this.state.bFile)
         );
     }
 
@@ -184,6 +215,33 @@ export default class SplitDiffView extends ItemView {
         } catch (error) {
             if (error instanceof GitError) {
                 if (
+                    commitHash === "" &&
+                    error.message.includes(
+                        "is in the index, but not at stage 0"
+                    )
+                ) {
+                    this.indexUnmerged = true;
+                    // An unmerged file has no stage 0 entry. Compare with our
+                    // side, or an empty file if our side deleted it.
+                    try {
+                        return await this.plugin.gitManager.show(
+                            ":2",
+                            file,
+                            false
+                        );
+                    } catch (stageError) {
+                        if (
+                            stageError instanceof GitError &&
+                            stageError.message.includes(
+                                "is in the index, but not at stage 2"
+                            )
+                        ) {
+                            return "";
+                        }
+                        throw stageError;
+                    }
+                }
+                if (
                     error.message.includes("does not exist") ||
                     error.message.includes("unknown revision or path") ||
                     error.message.includes("exists on disk, but not in") ||
@@ -216,22 +274,27 @@ export default class SplitDiffView extends ItemView {
         const bEditor = this.mergeView.b;
 
         this.refreshing = true;
-        const newContent = await this.app.vault.adapter.read(this.state.bFile);
-        if (newContent != bEditor.state.doc.toString()) {
-            const transaction = bEditor.state.update({
-                changes: {
-                    from: 0,
-                    to: bEditor.state.doc.length,
-                    insert: newContent,
-                },
-                // The remote annotation is used to mark that change as external
-                // so the new state is not written back to the file, because it
-                // just came from the file system
-                annotations: [Transaction.remote.of(true)],
-            });
-            bEditor.dispatch(transaction);
+        try {
+            const newContent = await this.app.vault.adapter.read(
+                this.plugin.gitManager.getRelativeVaultPath(this.state.bFile)
+            );
+            if (newContent != bEditor.state.doc.toString()) {
+                const transaction = bEditor.state.update({
+                    changes: {
+                        from: 0,
+                        to: bEditor.state.doc.length,
+                        insert: newContent,
+                    },
+                    // The remote annotation is used to mark that change as external
+                    // so the new state is not written back to the file, because it
+                    // just came from the file system
+                    annotations: [Transaction.remote.of(true)],
+                });
+                bEditor.dispatch(transaction);
+            }
+        } finally {
+            this.refreshing = false;
         }
-        this.refreshing = false;
     }
 
     /**
@@ -244,35 +307,42 @@ export default class SplitDiffView extends ItemView {
         const bEditor = this.mergeView.b;
 
         this.refreshing = true;
+        try {
+            const aText = await this.gitShow(this.state.aRef, this.state.aFile);
 
-        const aText = await this.gitShow(this.state.aRef, this.state.aFile);
+            let bText: string | undefined;
+            if (this.state.bRef != undefined) {
+                bText = await this.gitShow(this.state.bRef, this.state.bFile);
+            }
+            if (this.indexUnmerged) {
+                this.refreshing = false;
+                await this.createMergeView();
+                return;
+            }
+            if (aText != aEditor.state.doc.toString()) {
+                const aTransaction = aEditor.state.update({
+                    changes: {
+                        from: 0,
+                        to: aEditor.state.doc.length,
+                        insert: aText,
+                    },
+                });
+                aEditor.dispatch(aTransaction);
+            }
 
-        let bText: string | undefined;
-        if (this.state.bRef != undefined) {
-            bText = await this.gitShow(this.state.bRef, this.state.bFile);
+            if (bText != undefined && bText != bEditor.state.doc.toString()) {
+                const bTransaction = bEditor.state.update({
+                    changes: {
+                        from: 0,
+                        to: bEditor.state.doc.length,
+                        insert: bText,
+                    },
+                });
+                bEditor.dispatch(bTransaction);
+            }
+        } finally {
+            this.refreshing = false;
         }
-        if (aText != aEditor.state.doc.toString()) {
-            const aTransaction = aEditor.state.update({
-                changes: {
-                    from: 0,
-                    to: aEditor.state.doc.length,
-                    insert: aText,
-                },
-            });
-            aEditor.dispatch(aTransaction);
-        }
-
-        if (bText != undefined && bText != bEditor.state.doc.toString()) {
-            const bTransaction = bEditor.state.update({
-                changes: {
-                    from: 0,
-                    to: bEditor.state.doc.length,
-                    insert: bText,
-                },
-            });
-            bEditor.dispatch(bTransaction);
-        }
-        this.refreshing = false;
     }
 
     renderButtons(container: Element): HTMLElement {
@@ -292,7 +362,7 @@ export default class SplitDiffView extends ItemView {
             const chunks = getChunks(bEditor.state)!;
             const index = contentEl.parentElement?.indexOf(contentEl);
 
-            const chunk = chunks.chunks[index!];
+            const chunk = chunks.chunks[index!]!;
 
             const rawHunk = rawHunkFromChunk(
                 chunk,
@@ -303,7 +373,7 @@ export default class SplitDiffView extends ItemView {
                 this.mergeView!.a.state.doc.toString(),
                 this.mergeView!.b.state.doc.toString(),
                 [rawHunk]
-            )[0];
+            )[0]!;
 
             const patch =
                 Hunks.createPatch(
@@ -369,114 +439,126 @@ export default class SplitDiffView extends ItemView {
             this.plugin.gitManager
         ) {
             this.refreshing = true;
+            try {
+                // cleanup
+                this.mergeView?.destroy();
+                const container = this.containerEl.children[1]!;
+                container.empty();
 
-            // cleanup
-            this.mergeView?.destroy();
-            const container = this.containerEl.children[1];
-            container.empty();
+                // new
 
-            // new
+                this.contentEl.addClass("git-split-diff-view", "git-diff");
+                this.bIsEditable = await this.bShouldBeEditable();
+                this.indexUnmerged = false;
 
-            this.contentEl.addClass("git-split-diff-view", "git-diff");
-            this.bIsEditable = await this.bShouldBeEditable();
-
-            const aText = await this.gitShow(this.state.aRef, this.state.aFile);
-
-            let bText: string;
-            if (this.state.bRef != undefined) {
-                bText = await this.gitShow(this.state.bRef, this.state.bFile);
-            } else {
-                const bVaultPath = this.plugin.gitManager.getRelativeVaultPath(
-                    this.state.bFile
+                const aText = await this.gitShow(
+                    this.state.aRef,
+                    this.state.aFile
                 );
-                if (await this.app.vault.adapter.exists(bVaultPath)) {
-                    bText = await this.app.vault.adapter.read(bVaultPath);
+
+                let bText: string;
+                if (this.state.bRef != undefined) {
+                    bText = await this.gitShow(
+                        this.state.bRef,
+                        this.state.bFile
+                    );
                 } else {
-                    bText = "";
-                }
-            }
-
-            const basicExtensions = [
-                lineNumbers(),
-                highlightSelectionMatches(),
-                drawSelection(),
-                keymap.of([...standardKeymap, indentWithTab]),
-                history(),
-                search(),
-                EditorView.lineWrapping,
-            ];
-
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
-            const myView = this;
-            const autoSavePlugin = ViewPlugin.define((view) => ({
-                update(update) {
-                    if (
-                        update.docChanged &&
-                        !update.transactions.some((tr) =>
-                            tr.annotation(Transaction.remote)
-                        )
-                    ) {
-                        const lhsContent = view.state.doc.toString();
-                        myView.fileSaveDebouncer(lhsContent);
+                    const bVaultPath =
+                        this.plugin.gitManager.getRelativeVaultPath(
+                            this.state.bFile
+                        );
+                    if (await this.app.vault.adapter.exists(bVaultPath)) {
+                        bText = await this.app.vault.adapter.read(bVaultPath);
+                    } else {
+                        bText = "";
                     }
-                },
-            }));
+                }
 
-            const aState = {
-                doc: aText,
-                extensions: [
-                    ...basicExtensions,
-                    EditorView.editable.of(false),
-                    EditorState.readOnly.of(true),
-                ],
-            };
+                const basicExtensions = [
+                    lineNumbers(),
+                    highlightSelectionMatches(),
+                    drawSelection(),
+                    keymap.of([...standardKeymap, indentWithTab]),
+                    history(),
+                    search(),
+                    EditorView.lineWrapping,
+                    diffContextMenu,
+                ];
 
-            const bExtensions = [...basicExtensions];
+                const autoSavePlugin = ViewPlugin.define((view) => ({
+                    update: (update) => {
+                        if (
+                            update.docChanged &&
+                            !update.transactions.some((tr) =>
+                                tr.annotation(Transaction.remote)
+                            )
+                        ) {
+                            const lhsContent = view.state.doc.toString();
+                            this.fileSaveDebouncer(lhsContent);
+                        }
+                    },
+                }));
 
-            // Only make the editor modifiable when viewing the working tree version
-            if (!this.bIsEditable) {
-                bExtensions.push(
-                    EditorView.editable.of(false),
-                    EditorState.readOnly.of(true)
-                );
-            } else {
-                bExtensions.push(autoSavePlugin);
+                const aState = {
+                    doc: aText,
+                    extensions: [
+                        ...basicExtensions,
+                        EditorState.readOnly.of(true),
+                        readOnlyEditorTheme,
+                    ],
+                };
+
+                const bExtensions = [...basicExtensions];
+
+                // Only make the editor modifiable when viewing the working tree version
+                if (!this.bIsEditable) {
+                    bExtensions.push(
+                        EditorState.readOnly.of(true),
+                        readOnlyEditorTheme
+                    );
+                } else {
+                    bExtensions.push(autoSavePlugin);
+                }
+
+                const bState = {
+                    doc: bText,
+                    extensions: bExtensions,
+                };
+
+                container.addClasses([
+                    "cm-s-obsidian",
+                    "mod-cm6",
+                    "markdown-source-view",
+                    "cm-content",
+                ]);
+
+                const showButtons =
+                    this.plugin.gitManager instanceof SimpleGit &&
+                    !this.indexUnmerged &&
+                    (this.state.bRef === undefined || this.state.bRef === "");
+
+                this.mergeView = new MergeView({
+                    b: bState,
+                    a: aState,
+                    collapseUnchanged: {
+                        minSize: 6,
+                        margin: 4,
+                    },
+                    renderRevertControl: showButtons
+                        ? () => this.renderButtons(container)
+                        : undefined,
+                    revertControls: showButtons ? "a-to-b" : undefined,
+                    diffConfig: {
+                        timeout: getSplitDiffTimeout(
+                            this.plugin.settings.diffTimeout,
+                            this.bIsEditable
+                        ),
+                    },
+                    parent: container,
+                });
+            } finally {
+                this.refreshing = false;
             }
-
-            const bState = {
-                doc: bText,
-                extensions: bExtensions,
-            };
-
-            container.addClasses([
-                "cm-s-obsidian",
-                "mod-cm6",
-                "markdown-source-view",
-                "cm-content",
-            ]);
-
-            const showButtons =
-                this.plugin.gitManager instanceof SimpleGit &&
-                (this.state.bRef === undefined || this.state.bRef === "");
-
-            this.mergeView = new MergeView({
-                b: bState,
-                a: aState,
-                collapseUnchanged: {
-                    minSize: 6,
-                    margin: 4,
-                },
-                renderRevertControl: showButtons
-                    ? () => this.renderButtons(container)
-                    : undefined,
-                revertControls: showButtons ? "a-to-b" : undefined,
-                diffConfig: {
-                    scanLimit: this.bIsEditable ? 1000 : 10000, // default is 500
-                },
-                parent: container,
-            });
-
-            this.refreshing = false;
         }
     }
 }

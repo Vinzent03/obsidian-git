@@ -7,7 +7,12 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig(
     {
-        ignores: ["**/node_modules/", "**/main.js", "eslint.config.mjs", "esbuild.config.mjs"],
+        ignores: [
+            "**/node_modules/",
+            "**/main.js",
+            "eslint.config.mjs",
+            "esbuild.config.mjs",
+        ],
     },
     eslint.configs.recommended,
     ...tseslint.configs.recommendedTypeChecked,
@@ -20,6 +25,7 @@ export default defineConfig(
             },
         },
         rules: {
+            "@typescript-eslint/switch-exhaustiveness-check": "error",
             "@typescript-eslint/no-unused-vars": [
                 "error",
                 {
@@ -32,6 +38,12 @@ export default defineConfig(
                     ignoreRestSiblings: true,
                 },
             ],
+        },
+    },
+    {
+        files: ["tests/**/*.ts"],
+        rules: {
+            "@typescript-eslint/unbound-method": "off",
         },
     },
     {
