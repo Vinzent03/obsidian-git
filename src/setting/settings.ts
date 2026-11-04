@@ -1105,18 +1105,22 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         baseLineAuthorInfoSetting.descEl.createEl("a", {
             href: LINE_AUTHOR_FEATURE_WIKI_LINK,
-            text: "Feature guide and quick examples",
+            text: t("Feature guide and quick examples"),
             attr: {
                 target: "_blank",
             },
         });
         baseLineAuthorInfoSetting.descEl.createEl("br");
         baseLineAuthorInfoSetting.descEl.createSpan({
-            text: " The commit hash, author name and authoring date can all be individually toggled.",
+            text:
+                " " +
+                t(
+                    "The commit hash, author name and authoring date can all be individually toggled."
+                ),
         });
         baseLineAuthorInfoSetting.descEl.createEl("br");
         baseLineAuthorInfoSetting.descEl.createSpan({
-            text: "Hide everything, to only show the age-colored sidebar.",
+            text: t("Hide everything, to only show the age-colored sidebar."),
         });
 
         baseLineAuthorInfoSetting.addToggle((toggle) =>
@@ -1133,9 +1137,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 )
                 .addDropdown((dropdown) => {
                     dropdown.addOptions({
-                        inactive: "Do not follow (default)",
-                        "same-commit": "Follow within same commit",
-                        "all-commits": "Follow within all commits (maybe slow)",
+                        inactive: t("Do not follow (default)"),
+                        "same-commit": t("Follow within same commit"),
+                        "all-commits": t(
+                            "Follow within all commits (maybe slow)"
+                        ),
                     });
                     dropdown.setValue(this.settings.lineAuthor.followMovement);
                     dropdown.onChange((value) =>
@@ -1147,22 +1153,28 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
 
             trackMovement.descEl.createSpan({
-                text: "By default (deactivated), each line only shows the newest commit where it was changed.",
+                text: t(
+                    "By default (deactivated), each line only shows the newest commit where it was changed."
+                ),
             });
             trackMovement.descEl.createEl("br");
-            trackMovement.descEl.createSpan({ text: "With " });
-            trackMovement.descEl.createEl("i", { text: "same commit" });
+            trackMovement.descEl.createSpan({ text: t("With") + " " });
+            trackMovement.descEl.createEl("i", { text: t("same commit") });
             trackMovement.descEl.createSpan({
-                text: ", cut-copy-paste-ing of text is followed within the same commit and the original commit of authoring will be shown.",
+                text: t(
+                    ", cut-copy-paste-ing of text is followed within the same commit and the original commit of authoring will be shown."
+                ),
             });
             trackMovement.descEl.createEl("br");
-            trackMovement.descEl.createSpan({ text: "With " });
-            trackMovement.descEl.createEl("i", { text: "all commits" });
+            trackMovement.descEl.createSpan({ text: t("With") + " " });
+            trackMovement.descEl.createEl("i", { text: t("all commits") });
             trackMovement.descEl.createSpan({
-                text: ", cut-copy-paste-ing text inbetween multiple commits will be detected.",
+                text: t(
+                    ", cut-copy-paste-ing text inbetween multiple commits will be detected."
+                ),
             });
             trackMovement.descEl.createEl("br");
-            trackMovement.descEl.createSpan({ text: "It uses " });
+            trackMovement.descEl.createSpan({ text: t("It uses") + " " });
             trackMovement.descEl.createEl("a", {
                 href: "https://git-scm.com/docs/git-blame",
                 text: "git-blame",
@@ -1171,11 +1183,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 },
             });
             trackMovement.descEl.createSpan({
-                text: ` and for matches (at least ${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH} characters) within the same (or all) commit(s), `,
+                text:
+                    " " +
+                    t(
+                        `and for matches (at least ${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH} characters) within the same (or all) commit(s),`
+                    ) +
+                    " ",
             });
-            trackMovement.descEl.createEl("em", { text: "the originating" });
+            trackMovement.descEl.createEl("em", { text: t("the originating") });
             trackMovement.descEl.createSpan({
-                text: " commit's information is shown.",
+                text: " " + t("commit's information is shown."),
             });
 
             new Setting(containerEl)
@@ -1192,11 +1209,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setDesc(t("If and how the author is displayed"))
                 .addDropdown((dropdown) => {
                     const options: Record<LineAuthorDisplay, string> = {
-                        hide: "Hide",
-                        initials: "Initials (default)",
-                        "first name": "First name",
-                        "last name": "Last name",
-                        full: "Full name",
+                        hide: t("Hide"),
+                        initials: t("Initials (default)"),
+                        "first name": t("First name"),
+                        "last name": t("Last name"),
+                        full: t("Full name"),
                     };
                     dropdown.addOptions(options);
                     dropdown.setValue(this.settings.lineAuthor.authorDisplay);
@@ -1221,11 +1238,11 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         LineAuthorDateTimeFormatOptions,
                         string
                     > = {
-                        hide: "Hide",
-                        date: "Date (default)",
-                        datetime: "Date and time",
-                        "natural language": "Natural language",
-                        custom: "Custom",
+                        hide: t("Hide"),
+                        date: t("Date (default)"),
+                        datetime: t("Date and time"),
+                        "natural language": t("Natural language"),
+                        custom: t("Custom"),
                     };
                     dropdown.addOptions(options);
                     dropdown.setValue(
@@ -1276,8 +1293,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 .setName(t("Authoring date display timezone"))
                 .addDropdown((dropdown) => {
                     const options: Record<LineAuthorTimezoneOption, string> = {
-                        "viewer-local": "My local (default)",
-                        "author-local": "Author's local",
+                        "viewer-local": t("My local (default)"),
+                        "author-local": t("Author's local"),
                         utc0000: "UTC+0000/Z",
                     };
                     dropdown.addOptions(options);
@@ -1294,7 +1311,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             timezoneSetting.descEl.empty();
             timezoneSetting.descEl.createSpan({
-                text: "The time-zone in which the authoring date should be shown.\nEither your local time-zone (default),\nthe author's time-zone during commit creation or\n",
+                text: t(
+                    "The time-zone in which the authoring date should be shown.\nEither your local time-zone (default),\nthe author's time-zone during commit creation or\n"
+                ),
             });
             timezoneSetting.descEl.createEl("a", {
                 text: "UTC±00:00",
@@ -1349,19 +1368,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             textColorSetting.descEl.empty();
             textColorSetting.descEl.createSpan({
-                text: "The CSS color of the gutter text.",
+                text: t("The CSS color of the gutter text."),
             });
             textColorSetting.descEl.createEl("br");
             textColorSetting.descEl.createEl("br");
             textColorSetting.descEl.createSpan({
-                text: "It is highly recommended to use ",
+                text: t("It is highly recommended to use") + " ",
             });
             textColorSetting.descEl.createEl("a", {
-                text: "CSS variables",
+                text: t("CSS variables"),
                 href: "https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties",
             });
             textColorSetting.descEl.createSpan({
-                text: " defined by themes (e.g. ",
+                text: " " + t("defined by themes (e.g.") + " ",
             });
             textColorSetting.descEl.createEl("pre", {
                 text: "var(--text-muted)",
@@ -1369,7 +1388,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     style: "display:inline",
                 },
             });
-            textColorSetting.descEl.createSpan({ text: " or " });
+            textColorSetting.descEl.createSpan({ text: " " + t("or") + " " });
             textColorSetting.descEl.createEl("pre", {
                 text: "var(--text-on-accent)",
                 attr: {
@@ -1377,13 +1396,15 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 },
             });
             textColorSetting.descEl.createSpan({
-                text: "), because they automatically adapt to theme changes.",
+                text: t(
+                    "), because they automatically adapt to theme changes."
+                ),
             });
             textColorSetting.descEl.createEl("br");
             textColorSetting.descEl.createEl("br");
-            textColorSetting.descEl.createSpan({ text: "See: " });
+            textColorSetting.descEl.createSpan({ text: t("See:") + " " });
             textColorSetting.descEl.createEl("a", {
-                text: "List of available CSS variables in Obsidian",
+                text: t("List of available CSS variables in Obsidian"),
                 href: "https://github.com/obsidian-community/obsidian-theme-template/blob/main/obsidian.css",
             });
 
@@ -1397,11 +1418,15 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             ignoreWhitespaceSetting.descEl.empty();
             ignoreWhitespaceSetting.descEl.createSpan({
-                text: "Whitespace and newlines are interpreted as part of the document and in changes by default (hence not ignored). This makes the last line being shown as 'changed' when a new subsequent line is added, even if the previously last line's text is the same.",
+                text: t(
+                    "Whitespace and newlines are interpreted as part of the document and in changes by default (hence not ignored). This makes the last line being shown as 'changed' when a new subsequent line is added, even if the previously last line's text is the same."
+                ),
             });
             ignoreWhitespaceSetting.descEl.createEl("br");
             ignoreWhitespaceSetting.descEl.createSpan({
-                text: "If you don't care about purely-whitespace changes (e.g. list nesting / quote indentation changes), then activating this will provide more meaningful change detection.",
+                text: t(
+                    "If you don't care about purely-whitespace changes (e.g. list nesting / quote indentation changes), then activating this will provide more meaningful change detection."
+                ),
             });
         }
     }
@@ -1466,7 +1491,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     ): void {
         descEl.empty();
         descEl.createSpan({
-            text: "Supports 'rgb(r,g,b)', 'hsl(h,s,l)', hex (#) and named colors (e.g. 'black', 'purple'). Color preview: ",
+            text:
+                t(
+                    "Supports 'rgb(r,g,b)', 'hsl(h,s,l)', hex (#) and named colors (e.g. 'black', 'purple'). Color preview:"
+                ) + " ",
         });
 
         const rgbStr = colorIsValid
@@ -1478,7 +1506,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             : "invalid color";
 
         descEl.createDiv({
-            text: text,
+            text: t(text),
             cls: "line-author-settings-preview",
             attr: {
                 style: `background-color: ${rgbStr}; width: 30ch;`,
@@ -1492,16 +1520,16 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     ): void {
         descEl.empty();
         descEl.createEl("a", {
-            text: "Format string",
+            text: t("Format string"),
             href: FORMAT_STRING_REFERENCE_URL,
         });
         descEl.createSpan({
-            text: " to display the authoring date.",
+            text: " " + t("to display the authoring date."),
         });
         descEl.createEl("br");
         const formattedDateTime = moment().format(dateTimeFormatCustomString);
         descEl.createSpan({
-            text: `Currently: ${formattedDateTime}`,
+            text: t(`Currently: ${formattedDateTime}`),
         });
     }
 
@@ -1514,7 +1542,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             duration !== undefined ? `${duration.asDays()} days` : "invalid!";
         descEl.empty();
         descEl.createSpan({
-            text: `The oldest age in the line author coloring. Everything older will have the same color.\nSmallest valid age is "1d". Currently: ${durationString}`,
+            text: t(
+                `The oldest age in the line author coloring. Everything older will have the same color.\nSmallest valid age is "1d". Currently: ${durationString}`
+            ),
         });
     }
 
@@ -1537,7 +1567,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 // Color previews and formatted descriptions depend on live input, so this
 // sub-page keeps its custom rows while the surrounding navigation is declarative.
 class LineAuthorSettingsPage extends SettingPage {
-    title = "Line author information";
+    title = t("Line author information");
 
     constructor(private tab: ObsidianGitSettingsTab) {
         super();
