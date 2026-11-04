@@ -568,7 +568,7 @@ export class IsomorphicGit extends GitManager {
                     // so it can only run when no local work would be lost.
                     await this.ensureCleanPullWorktree(localCommit, true);
                     await this.ensureNoIncomingFileCollisions(
-                        await this.getFileChangesCount(localCommit, theirs)
+                        await this.getFileChanges(localCommit, theirs)
                     );
 
                     // A `Errors.MergeConflictError` is expected here
@@ -587,7 +587,7 @@ export class IsomorphicGit extends GitManager {
                     );
                 }
 
-                const changedFiles = await this.getFileChangesCount(
+                const changedFiles = await this.getFileChanges(
                     localCommit,
                     mergeRes.oid
                 );
@@ -725,12 +725,10 @@ export class IsomorphicGit extends GitManager {
                     this.plugin.log("No tracking branch found. Ignoring push.");
                     return { status: "skipped", reason: "no-upstream" };
                 }
-                const numChangedFiles = (
-                    await this.getFileChangesCount(
-                        currentBranch,
-                        trackingBranch
-                    )
-                ).length;
+                const numChangedFiles = await this.getFileChangesCount(
+                    currentBranch,
+                    trackingBranch
+                );
 
                 const remote = await this.getCurrentRemote();
 
@@ -770,12 +768,12 @@ export class IsomorphicGit extends GitManager {
         const localCommit = await this.resolveRef(currentBranch);
         const upstreamCommit = await this.resolveRef(trackingBranch);
 
-        const changedFiles = await this.getFileChangesCount(
+        const changedFilesCount = await this.getFileChangesCount(
             localCommit,
             upstreamCommit
         );
 
-        return changedFiles.length;
+        return changedFilesCount;
     }
 
     async canPush(): Promise<boolean> {
@@ -1010,13 +1008,11 @@ export class IsomorphicGit extends GitManager {
                 diff: {
                     changed: 0,
                     files: (
-                        await this.walkDifference({
-                            walkers: [
-                                git.TREE({ ref: log.commit.parent.first()! }),
-                                git.TREE({ ref: log.oid }),
-                            ],
-                            cache,
-                        })
+                        await this.getFileChanges(
+                            log.commit.parent.first()!,
+                            log.oid,
+                            cache
+                        )
                     ).map<DiffFile>((item) => {
                         return {
                             path: item.path,
@@ -1167,14 +1163,25 @@ export class IsomorphicGit extends GitManager {
             ).length;
         }
 
-        return (await this.getFileChangesCount(parent, oid)).length;
+        return await this.getFileChangesCount(parent, oid);
     }
 
     async getFileChangesCount(
         commitHash1: string,
-        commitHash2: string
+        commitHash2: string,
+        cache?: object
+    ): Promise<number> {
+        return (await this.getFileChanges(commitHash1, commitHash2, cache))
+            .length;
+    }
+
+    async getFileChanges(
+        commitHash1: string,
+        commitHash2: string,
+        cache?: object
     ): Promise<WalkDifference[]> {
         return this.walkDifference({
+            cache: cache,
             walkers: [
                 git.TREE({ ref: commitHash1 }),
                 git.TREE({ ref: commitHash2 }),

@@ -475,7 +475,7 @@ describe("IsomorphicGit working-tree mutations", () => {
     });
 });
 
-describe("IsomorphicGit.getFileChangesCount", () => {
+describe("IsomorphicGit.getFileChanges", () => {
     it("includes a mode-only change in paths needing checkout", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
         const before = await repo.head();
@@ -484,9 +484,9 @@ describe("IsomorphicGit.getFileChangesCount", () => {
         const after = await repo.head();
         const { manager } = createIsomorphicGitManager(repo.repoPath);
 
-        await expect(
-            manager.getFileChangesCount(before, after)
-        ).resolves.toEqual([{ path: "note.md", type: "M" }]);
+        await expect(manager.getFileChanges(before, after)).resolves.toEqual([
+            { path: "note.md", type: "M" },
+        ]);
     });
 
     it("does not descend into subtrees that are identical in both commits", async () => {
@@ -505,16 +505,16 @@ describe("IsomorphicGit.getFileChangesCount", () => {
         const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
         const readBinary = vi.spyOn(plugin.app.vault.adapter, "readBinary");
 
-        const changes = await manager.getFileChangesCount(first, second);
+        const changes = await manager.getFileChanges(first, second);
 
         expect(changes).toEqual([{ path: "changed/note.md", type: "A" }]);
         const sameTreePath = `objects/${sameTree.slice(0, 2)}/${sameTree.slice(2)}`;
         expect(
             readBinary.mock.calls.some(([p]) => p.endsWith(sameTreePath))
         ).toBe(false);
-        await expect(
-            manager.getFileChangesCount(second, second)
-        ).resolves.toEqual([]);
+        await expect(manager.getFileChanges(second, second)).resolves.toEqual(
+            []
+        );
     });
 });
 
