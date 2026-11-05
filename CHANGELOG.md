@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.43.0](https://github.com/Vinzent03/obsidian-git/compare/2.42.0...2.43.0) (2026-11-05)
+
+### Features
+
+* configure in which editor modes conflict resolution appears ([9f31f69](https://github.com/Vinzent03/obsidian-git/commit/9f31f695f697faac1428719a0c4f35fc613b13e9)), closes [#1228](https://github.com/Vinzent03/obsidian-git/issues/1228)
+
+### Bug Fixes
+
+* display refs changes in history view ([3a56818](https://github.com/Vinzent03/obsidian-git/commit/3a568189940b89c754243e355bc63c6f2ee4e224)), closes [#1229](https://github.com/Vinzent03/obsidian-git/issues/1229)
+* patch diff3 package for undefined variable ([3587186](https://github.com/Vinzent03/obsidian-git/commit/35871869e6a6f3005c0970f6d174b04dcfef4555)), closes [#1177](https://github.com/Vinzent03/obsidian-git/issues/1177)
+
+### Performance Improvements
+
+* avoid duplicate packfile loads in mobile history ([#1221](https://github.com/Vinzent03/obsidian-git/issues/1221)) ([ab5395f](https://github.com/Vinzent03/obsidian-git/commit/ab5395f141f5ad67b2d75512d61c94788d8869e4))
+
 ## [2.42.0](https://github.com/Vinzent03/obsidian-git/compare/2.41.1...2.42.0) (2026-10-18)
 
 ### Features
