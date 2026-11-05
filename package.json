@@ -22,6 +22,21 @@
     "type": "module",
     "commit-and-tag-version": {
         "t": "",
+        "types": [
+            {
+                "type": "feat",
+                "section": "Features"
+            },
+            {
+                "type": "fix",
+                "section": "Bug Fixes"
+            },
+            {
+                "type": "perf",
+                "section": "Performance Improvements",
+                "hidden": false
+            }
+        ],
         "bumpFiles": [
             "package.json",
             "manifest.json",
