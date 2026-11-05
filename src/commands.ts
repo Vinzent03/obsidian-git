@@ -5,13 +5,14 @@ import ObsidianGit from "./main";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import { togglePreviewHunk } from "./editor/signs/tooltip";
+import { t } from "./i18n";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
 
     plugin.addCommand({
         id: "edit-gitignore",
-        name: "Edit .gitignore",
+        name: t("Edit .gitignore"),
         callback: async () => {
             const path = plugin.gitManager.getRelativeVaultPath(".gitignore");
             if (!(await app.vault.adapter.exists(path))) {
@@ -28,7 +29,7 @@ export function addCommmands(plugin: ObsidianGit) {
     });
     plugin.addCommand({
         id: "open-git-view",
-        name: "Open source control view",
+        name: t("Open source control view"),
         callback: async () => {
             const leafs = app.workspace.getLeavesOfType(
                 SOURCE_CONTROL_VIEW_CONFIG.type
@@ -53,7 +54,7 @@ export function addCommmands(plugin: ObsidianGit) {
     });
     plugin.addCommand({
         id: "open-history-view",
-        name: "Open history view",
+        name: t("Open history view"),
         callback: async () => {
             const leafs = app.workspace.getLeavesOfType(
                 HISTORY_VIEW_CONFIG.type
@@ -79,7 +80,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "open-diff-view",
-        name: "Open diff view",
+        name: t("Open diff view"),
         checkCallback: (checking) => {
             const file = app.workspace.getActiveFile();
             if (checking) {
@@ -100,7 +101,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "view-file-on-github",
-        name: "Open file on GitHub",
+        name: t("Open file on GitHub"),
         editorCallback: (editor, { file }) => {
             if (file) return openLineInGitHub(editor, file, plugin.gitManager);
             return undefined;
@@ -109,7 +110,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "view-history-on-github",
-        name: "Open file history on GitHub",
+        name: t("Open file history on GitHub"),
         editorCallback: (_, { file }) => {
             if (file) return openHistoryInGitHub(file, plugin.gitManager);
             return undefined;
@@ -118,7 +119,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "pull",
-        name: "Pull",
+        name: t("Pull"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.pullChangesFromRemote()
@@ -127,14 +128,14 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "fetch",
-        name: "Fetch",
+        name: t("Fetch"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.fetch()),
     });
 
     plugin.addCommand({
         id: "switch-to-remote-branch",
-        name: "Switch to remote branch",
+        name: t("Switch to remote branch"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.switchRemoteBranch()
@@ -143,7 +144,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "add-to-gitignore",
-        name: "Add file to .gitignore",
+        name: t("Add file to .gitignore"),
         checkCallback: (checking) => {
             const file = app.workspace.getActiveFile();
             if (checking) {
@@ -162,7 +163,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "push",
-        name: "Commit-and-sync",
+        name: t("Commit-and-sync"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commitAndSync({ fromAutoBackup: false })
@@ -171,7 +172,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "backup-and-close",
-        name: "Commit-and-sync and then close Obsidian",
+        name: t("Commit-and-sync and then close Obsidian"),
         callback: () =>
             plugin.promiseQueue.addTask(async () => {
                 await plugin.gitActions.commitAndSync({
@@ -183,7 +184,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit-push-specified-message",
-        name: "Commit-and-sync with specific message",
+        name: t("Commit-and-sync with specific message"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commitAndSync({
@@ -195,7 +196,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit",
-        name: "Commit all changes",
+        name: t("Commit all changes"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commit({ fromAuto: false, mode: "all" })
@@ -204,7 +205,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit-specified-message",
-        name: "Commit all changes with specific message",
+        name: t("Commit all changes with specific message"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commit({
@@ -217,7 +218,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit-smart",
-        name: "Commit",
+        name: t("Commit"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commit({
@@ -230,7 +231,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit-staged",
-        name: "Commit staged",
+        name: t("Commit staged"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commit({
@@ -243,7 +244,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit-amend-staged-specified-message",
-        name: "Amend staged",
+        name: t("Amend staged"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commit({
@@ -257,7 +258,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit-smart-specified-message",
-        name: "Commit with specific message",
+        name: t("Commit with specific message"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commit({
@@ -270,7 +271,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "commit-staged-specified-message",
-        name: "Commit staged with specific message",
+        name: t("Commit staged with specific message"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.commit({
@@ -283,14 +284,14 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "push2",
-        name: "Push",
+        name: t("Push"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.push()),
     });
 
     plugin.addCommand({
         id: "stage-current-file",
-        name: "Stage current file",
+        name: t("Stage current file"),
         checkCallback: (checking) => {
             const file = app.workspace.getActiveFile();
             if (checking) {
@@ -306,7 +307,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "unstage-current-file",
-        name: "Unstage current file",
+        name: t("Unstage current file"),
         checkCallback: (checking) => {
             const file = app.workspace.getActiveFile();
             if (checking) {
@@ -322,21 +323,21 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "edit-remotes",
-        name: "Edit remotes",
+        name: t("Edit remotes"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.editRemotes()),
     });
 
     plugin.addCommand({
         id: "remove-remote",
-        name: "Remove remote",
+        name: t("Remove remote"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.removeRemote()),
     });
 
     plugin.addCommand({
         id: "set-upstream-branch",
-        name: "Set upstream branch",
+        name: t("Set upstream branch"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.setUpstreamBranch()
@@ -345,7 +346,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "delete-repo",
-        name: "CAUTION: Delete repository",
+        name: t("CAUTION: Delete repository"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.deleteRepository()
@@ -354,7 +355,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "init-repo",
-        name: "Initialize a new repo",
+        name: t("Initialize a new repo"),
         callback: () =>
             plugin.promiseQueue.addTask(() =>
                 plugin.gitActions.createNewRepo()
@@ -363,64 +364,64 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "clone-repo",
-        name: "Clone an existing remote repo",
+        name: t("Clone an existing remote repo"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.cloneNewRepo()),
     });
 
     plugin.addCommand({
         id: "list-changed-files",
-        name: "List changed files",
+        name: t("List changed files"),
         callback: () => plugin.gitActions.listChangedFiles(),
     });
 
     plugin.addCommand({
         id: "switch-branch",
-        name: "Switch branch",
+        name: t("Switch branch"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.switchBranch()),
     });
 
     plugin.addCommand({
         id: "create-branch",
-        name: "Create new branch",
+        name: t("Create new branch"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.createBranch()),
     });
 
     plugin.addCommand({
         id: "delete-branch",
-        name: "Delete branch",
+        name: t("Delete branch"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.deleteBranch()),
     });
 
     plugin.addCommand({
         id: "discard-all",
-        name: "CAUTION: Discard all changes",
+        name: t("CAUTION: Discard all changes"),
         callback: () =>
             plugin.promiseQueue.addTask(() => plugin.gitActions.discardAll()),
     });
 
     plugin.addCommand({
         id: "pause-automatic-routines",
-        name: "Pause/Resume automatic routines",
+        name: t("Pause/Resume automatic routines"),
         callback: () => {
             const pause = !plugin.localStorage.getPausedAutomatics();
             plugin.localStorage.setPausedAutomatics(pause);
             if (pause) {
                 plugin.automaticsManager.unload();
-                new Notice(`Paused automatic routines.`);
+                new Notice(t("Paused automatic routines."));
             } else {
                 plugin.automaticsManager.reload("commit", "push", "pull");
-                new Notice(`Resumed automatic routines.`);
+                new Notice(t("Resumed automatic routines."));
             }
         },
     });
 
     plugin.addCommand({
         id: "raw-command",
-        name: "Raw command",
+        name: t("Raw command"),
         checkCallback: (checking) => {
             const gitManager = plugin.gitManager;
             if (checking) {
@@ -435,7 +436,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "toggle-line-author-info",
-        name: "Toggle line author information",
+        name: t("Toggle line author information"),
         callback: () =>
             plugin.settingsTab?.configureLineAuthorShowStatus(
                 !plugin.settings.lineAuthor.show
@@ -444,7 +445,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "reset-hunk",
-        name: "Reset hunk",
+        name: t("Reset hunk"),
         editorCheckCallback(checking, _, __) {
             if (checking) {
                 return (
@@ -460,7 +461,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "stage-hunk",
-        name: "Stage hunk",
+        name: t("Stage hunk"),
         editorCheckCallback: (checking, _, __) => {
             if (checking) {
                 return (
@@ -475,7 +476,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "preview-hunk",
-        name: "Preview hunk",
+        name: t("Preview hunk"),
         editorCheckCallback: (checking, _, __) => {
             if (checking) {
                 return (
@@ -491,7 +492,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "next-hunk",
-        name: "Go to next hunk",
+        name: t("Go to next hunk"),
         editorCheckCallback: (checking, _, __) => {
             if (checking) {
                 return (
@@ -506,7 +507,7 @@ export function addCommmands(plugin: ObsidianGit) {
 
     plugin.addCommand({
         id: "prev-hunk",
-        name: "Go to previous hunk",
+        name: t("Go to previous hunk"),
         editorCheckCallback: (checking, _, __) => {
             if (checking) {
                 return (

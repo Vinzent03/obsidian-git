@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "src/i18n";
     import { Menu, Platform, Scope, setIcon } from "obsidian";
     import { SOURCE_CONTROL_VIEW_CONFIG } from "src/constants";
     import type ObsidianGit from "src/main";
@@ -359,7 +360,7 @@
     }
 
     async function performConflictCountUpdate(path?: string): Promise<void> {
-        const targets = path ? [path] : (status?.conflicted ?? []);
+        const targets = path ? [path] : status?.conflicted ?? [];
         const counts = path ? { ...conflictCounts } : {};
         for (const conflict of targets) {
             counts[conflict] = 0;
@@ -458,7 +459,7 @@
                     data-icon="arrow-up-circle"
                     class="clickable-icon nav-action-button"
                     class:is-disabled={commitAndSyncDisabled}
-                    aria-label={commitAndSyncActionDescription}
+                    aria-label={t(commitAndSyncActionDescription)}
                     aria-disabled={commitAndSyncDisabled}
                     bind:this={buttons[0]}
                     onclick={() => commitAndSync()}
@@ -468,7 +469,7 @@
                     data-icon="check"
                     class="clickable-icon nav-action-button"
                     class:is-disabled={commitDisabled}
-                    aria-label={commitActionDescription}
+                    aria-label={t(commitActionDescription)}
                     aria-disabled={commitDisabled}
                     bind:this={buttons[1]}
                     onclick={() => commit()}
@@ -477,7 +478,7 @@
                     id="commit-menu"
                     data-icon="chevron-down"
                     class="clickable-icon nav-action-button"
-                    aria-label="More commit actions"
+                    aria-label={t("More commit actions")}
                     bind:this={buttons[10]}
                     onclick={showCommitMenu}
                 ></div>
@@ -486,7 +487,7 @@
                 id="stage-all"
                 class="clickable-icon nav-action-button"
                 data-icon="plus-circle"
-                aria-label="Stage all"
+                aria-label={t("Stage all")}
                 bind:this={buttons[2]}
                 onclick={stageAll}
             ></div>
@@ -494,7 +495,7 @@
                 id="unstage-all"
                 class="clickable-icon nav-action-button"
                 data-icon="minus-circle"
-                aria-label="Unstage all"
+                aria-label={t("Unstage all")}
                 bind:this={buttons[3]}
                 onclick={unstageAll}
             ></div>
@@ -502,7 +503,7 @@
                 id="push"
                 class="clickable-icon nav-action-button"
                 data-icon="upload"
-                aria-label="Push"
+                aria-label={t("Push")}
                 bind:this={buttons[4]}
                 onclick={push}
             ></div>
@@ -510,14 +511,14 @@
                 id="pull"
                 class="clickable-icon nav-action-button"
                 data-icon="download"
-                aria-label="Pull"
+                aria-label={t("Pull")}
                 bind:this={buttons[5]}
                 onclick={pull}
             ></div>
             <div
                 id="layoutChange"
                 class="clickable-icon nav-action-button"
-                aria-label="Change Layout"
+                aria-label={t("Change Layout")}
                 data-icon={showTree ? "list" : "folder"}
                 bind:this={buttons[6]}
                 onclick={() => {
@@ -532,7 +533,7 @@
                 class="clickable-icon nav-action-button"
                 class:loading
                 data-icon="refresh-cw"
-                aria-label="Refresh"
+                aria-label={t("Refresh")}
                 bind:this={buttons[7]}
                 onclick={triggerRefresh}
             ></div>
@@ -553,13 +554,14 @@
             {rows}
             class="commit-msg-input"
             spellcheck="true"
-            placeholder="Commit Message"
-            bind:value={commitMessage}></textarea>
+            placeholder={t("Commit Message")}
+            bind:value={commitMessage}
+        ></textarea>
         {#if commitMessage}
             <div
                 class="git-commit-msg-clear-button"
                 onclick={() => (commitMessage = "")}
-                aria-label={"Clear"}
+                aria-label={t("Clear")}
             ></div>
         {/if}
     </div>
@@ -660,14 +662,14 @@
                             >
                         </div>
                         <div class="tree-item-inner nav-folder-title-content">
-                            Staged Changes
+                            {t("Staged Changes")}
                         </div>
 
                         <div class="git-tools">
                             <div class="buttons">
                                 <div
                                     data-icon="minus"
-                                    aria-label="Unstage"
+                                    aria-label={t("Unstage")}
                                     bind:this={buttons[8]}
                                     onclick={unstageAll}
                                     class="clickable-icon"
@@ -782,13 +784,13 @@
                         </div>
 
                         <div class="tree-item-inner nav-folder-title-content">
-                            Changes
+                            {t("Changes")}
                         </div>
                         <div class="git-tools">
                             <div class="buttons">
                                 <div
                                     data-icon="undo"
-                                    aria-label="Discard"
+                                    aria-label={t("Discard")}
                                     onclick={discard}
                                     class="clickable-icon"
                                 >
@@ -810,7 +812,7 @@
                                 </div>
                                 <div
                                     data-icon="plus"
-                                    aria-label="Stage"
+                                    aria-label={t("Stage")}
                                     bind:this={buttons[9]}
                                     onclick={stageAll}
                                     class="clickable-icon"
@@ -899,7 +901,7 @@
                             <div
                                 class="tree-item-inner nav-folder-title-content"
                             >
-                                Recently Pulled Files
+                                {t("Recently Pulled Files")}
                             </div>
 
                             <span class="tree-item-flair"

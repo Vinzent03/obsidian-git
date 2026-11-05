@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { Errors } from "isomorphic-git";
 import { normalizePath, Notice, Platform, TFile, moment } from "obsidian";
 import * as fsPromises from "fs/promises";
@@ -152,11 +153,11 @@ export class GitActions {
         switch (result.status) {
             case "deleted":
                 this.plugin.displayMessage(
-                    "Successfully deleted repository. Reloading plugin..."
+                    t("Successfully deleted repository. Reloading plugin...")
                 );
                 return;
             case "not-found":
-                this.plugin.displayMessage("No repository found");
+                this.plugin.displayMessage(t("No repository found"));
                 return;
             case "cancelled":
                 return;
@@ -344,7 +345,9 @@ export class GitActions {
                 const reason = result.reason;
                 switch (reason) {
                     case "too-many-changes":
-                        this.plugin.displayError("Too many changes to display");
+                        this.plugin.displayError(
+                            t("Too many changes to display")
+                        );
                         return;
                 }
             }
@@ -1077,7 +1080,7 @@ export class GitActions {
         const actionResult = await this.runReadyGitAction<CreateBranchResult>(
             async () => {
                 const branch = await new GeneralModal(this.plugin, {
-                    placeholder: "Create new branch",
+                    placeholder: t("Create new branch"),
                 }).openAndGetResult();
                 if (branch === undefined) {
                     return { status: "cancelled" };
@@ -1116,7 +1119,7 @@ export class GitActions {
                 }
                 const branch = await new GeneralModal(this.plugin, {
                     options: branchInfo.branches,
-                    placeholder: "Delete branch",
+                    placeholder: t("Delete branch"),
                     onlySelection: true,
                 }).openAndGetResult();
                 if (branch === undefined) {
@@ -1373,8 +1376,8 @@ export class GitActions {
                 if (!showSuccess || result.target === "file") return;
                 this.plugin.displayMessage(
                     result.target === "all"
-                        ? "Discarded all files."
-                        : "Discarded all changes in tracked files."
+                        ? t("Discarded all files.")
+                        : t("Discarded all changes in tracked files.")
                 );
                 return;
             case "cancelled":
