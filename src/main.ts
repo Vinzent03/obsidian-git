@@ -239,6 +239,15 @@ export default class ObsidianGit extends Plugin {
      * This mustn't depend on the plugin's settings.
      */
     registerStuff(): void {
+        // Catch up on what was missed while offline. A successful pull also
+        // leaves offline mode.
+        this.registerDomEvent(window, "online", () => {
+            if (!this.state.offlineMode) return;
+            this.promiseQueue.addTask(() =>
+                this.gitActions.pullChangesFromRemote()
+            );
+        });
+
         this.registerEvent(
             this.app.workspace.on("obsidian-git:refresh", () => {
                 this.refresh().catch((e) => this.displayError(e));
