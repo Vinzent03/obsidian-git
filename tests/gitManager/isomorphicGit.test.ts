@@ -9,6 +9,7 @@ import {
     createRepoWithOrigin,
 } from "../helpers/gitRepo";
 import { createIsomorphicGitManager } from "../helpers/isomorphicGit";
+import { setTimeout } from "timers/promises";
 
 afterEach(() => {
     vi.restoreAllMocks();
@@ -539,7 +540,7 @@ describe("IsomorphicGit working-tree mutations", () => {
     });
 });
 
-describe("IsomorphicGit.getFileChangesCount", () => {
+describe("IsomorphicGit.getFileChanges", () => {
     it("includes a mode-only change in paths needing checkout", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
         const before = await repo.head();
@@ -548,9 +549,9 @@ describe("IsomorphicGit.getFileChangesCount", () => {
         const after = await repo.head();
         const { manager } = createIsomorphicGitManager(repo.repoPath);
 
-        await expect(
-            manager.getFileChangesCount(before, after)
-        ).resolves.toEqual([{ path: "note.md", type: "M" }]);
+        await expect(manager.getFileChanges(before, after)).resolves.toEqual([
+            { path: "note.md", type: "M" },
+        ]);
     });
 
     it("does not descend into subtrees that are identical in both commits", async () => {
@@ -569,16 +570,16 @@ describe("IsomorphicGit.getFileChangesCount", () => {
         const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
         const readBinary = vi.spyOn(plugin.app.vault.adapter, "readBinary");
 
-        const changes = await manager.getFileChangesCount(first, second);
+        const changes = await manager.getFileChanges(first, second);
 
         expect(changes).toEqual([{ path: "changed/note.md", type: "A" }]);
         const sameTreePath = `objects/${sameTree.slice(0, 2)}/${sameTree.slice(2)}`;
         expect(
             readBinary.mock.calls.some(([p]) => p.endsWith(sameTreePath))
         ).toBe(false);
-        await expect(
-            manager.getFileChangesCount(second, second)
-        ).resolves.toEqual([]);
+        await expect(manager.getFileChanges(second, second)).resolves.toEqual(
+            []
+        );
     });
 });
 
@@ -602,4 +603,51 @@ describe("IsomorphicGit.status", () => {
         await manager.status();
         expect(workTreeReads()).toBe(0);
     });
+});
+
+describe("IsomorphicGit history memory", () => {
+    it("does not load separate packfile caches concurrently for history entries", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        for (let i = 0; i < 4; i++) {
+            await repo.appendAndCommit("note.md", `${i}\n`, `commit ${i}`);
+        }
+        await repo.raw(["gc", "--prune=now"]);
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        const adapter = plugin.app.vault.adapter;
+        const read = adapter.readBinary.bind(adapter);
+        let active = 0;
+        let peak = 0;
+        let packReads = 0;
+        vi.spyOn(adapter, "readBinary").mockImplementation(async (file) => {
+            if (!file.endsWith(".pack")) return read(file);
+            packReads++;
+            active++;
+            peak = Math.max(peak, active);
+            try {
+                const data = await read(file);
+                await setTimeout(5);
+                return data;
+            } finally {
+                active--;
+            }
+        });
+
+        const logs = await manager.log(undefined, false, 4);
+        expect(logs.map((log) => log.message.trim())).toEqual([
+            "commit 3",
+            "commit 2",
+            "commit 1",
+            "commit 0",
+        ]);
+        expect(logs.every((log) => log.diff.files.length === 1)).toBe(true);
+        expect(peak).toBe(1);
+        expect(packReads).toBe(1);
+
+        await repo.appendAndCommit("note.md", "next\n", "next commit");
+        const nextLogs = await manager.log(undefined, false, 1);
+        expect(nextLogs[0]?.message.trim()).toBe("next commit");
+        // The cache belongs to a single request, so it cannot retain a large
+        // packfile indefinitely or return stale history after another commit.
+        expect(packReads).toBe(2);
+    }, 15000);
 });

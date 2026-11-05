@@ -569,7 +569,7 @@ export class IsomorphicGit extends GitManager {
                     // so it can only run when no local work would be lost.
                     await this.ensureCleanPullWorktree(localCommit, true);
                     await this.ensureNoIncomingFileCollisions(
-                        await this.getFileChangesCount(localCommit, theirs)
+                        await this.getFileChanges(localCommit, theirs)
                     );
 
                     // A `Errors.MergeConflictError` is expected here
@@ -588,7 +588,7 @@ export class IsomorphicGit extends GitManager {
                     );
                 }
 
-                const changedFiles = await this.getFileChangesCount(
+                const changedFiles = await this.getFileChanges(
                     localCommit,
                     mergeRes.oid
                 );
@@ -727,12 +727,10 @@ export class IsomorphicGit extends GitManager {
                     this.plugin.log("No tracking branch found. Ignoring push.");
                     return { status: "skipped", reason: "no-upstream" };
                 }
-                const numChangedFiles = (
-                    await this.getFileChangesCount(
-                        currentBranch,
-                        trackingBranch
-                    )
-                ).length;
+                const numChangedFiles = await this.getFileChangesCount(
+                    currentBranch,
+                    trackingBranch
+                );
 
                 const remote = await this.getCurrentRemote();
 
@@ -773,12 +771,12 @@ export class IsomorphicGit extends GitManager {
         const localCommit = await this.resolveRef(currentBranch);
         const upstreamCommit = await this.resolveRef(trackingBranch);
 
-        const changedFiles = await this.getFileChangesCount(
+        const changedFilesCount = await this.getFileChangesCount(
             localCommit,
             upstreamCommit
         );
 
-        return changedFiles.length;
+        return changedFilesCount;
     }
 
     async canPush(): Promise<boolean> {
@@ -996,45 +994,47 @@ export class IsomorphicGit extends GitManager {
         limit?: number,
         ref?: string
     ): Promise<LogEntry[]> {
+        // A packfile is read in full on mobile. Keep one cache for this request,
+        // rather than loading another copy for every commit's tree comparison.
+        const cache = {};
         const logs = await this.wrapFS(
-            git.log({ ...this.getRepo(), depth: limit, ref: ref })
+            git.log({ ...this.getRepo(), depth: limit, ref: ref, cache })
         );
 
-        return Promise.all(
-            logs.map(async (log) => {
-                const completeMessage = log.commit.message.split("\n\n");
+        const entries: LogEntry[] = [];
+        for (const log of logs) {
+            const completeMessage = log.commit.message.split("\n\n");
 
-                return {
-                    message: completeMessage[0] ?? "",
-                    author: {
-                        name: log.commit.author.name,
-                        email: log.commit.author.email,
-                    },
-                    body: completeMessage.slice(1).join("\n\n"),
-                    date: new Date(
-                        log.commit.committer.timestamp
-                    ).toDateString(),
-                    diff: {
-                        changed: 0,
-                        files: (
-                            await this.getFileChangesCount(
-                                log.commit.parent.first()!,
-                                log.oid
-                            )
-                        ).map<DiffFile>((item) => {
-                            return {
-                                path: item.path,
-                                status: item.type,
-                                vaultPath: this.getRelativeVaultPath(item.path),
-                                hash: log.oid,
-                            };
-                        }),
-                    },
-                    hash: log.oid,
-                    refs: [],
-                };
-            })
-        );
+            entries.push({
+                message: completeMessage[0] ?? "",
+                author: {
+                    name: log.commit.author.name,
+                    email: log.commit.author.email,
+                },
+                body: completeMessage.slice(1).join("\n\n"),
+                date: new Date(log.commit.committer.timestamp).toDateString(),
+                diff: {
+                    changed: 0,
+                    files: (
+                        await this.getFileChanges(
+                            log.commit.parent.first()!,
+                            log.oid,
+                            cache
+                        )
+                    ).map<DiffFile>((item) => {
+                        return {
+                            path: item.path,
+                            status: item.type,
+                            vaultPath: this.getRelativeVaultPath(item.path),
+                            hash: log.oid,
+                        };
+                    }),
+                },
+                hash: log.oid,
+                refs: [],
+            });
+        }
+        return entries;
     }
 
     updateBasePath(basePath: string): Promise<void> {
@@ -1172,14 +1172,25 @@ export class IsomorphicGit extends GitManager {
             ).length;
         }
 
-        return (await this.getFileChangesCount(parent, oid)).length;
+        return await this.getFileChangesCount(parent, oid);
     }
 
     async getFileChangesCount(
         commitHash1: string,
-        commitHash2: string
+        commitHash2: string,
+        cache?: object
+    ): Promise<number> {
+        return (await this.getFileChanges(commitHash1, commitHash2, cache))
+            .length;
+    }
+
+    async getFileChanges(
+        commitHash1: string,
+        commitHash2: string,
+        cache?: object
     ): Promise<WalkDifference[]> {
         return this.walkDifference({
+            cache: cache,
             walkers: [
                 git.TREE({ ref: commitHash1 }),
                 git.TREE({ ref: commitHash2 }),
@@ -1190,14 +1201,17 @@ export class IsomorphicGit extends GitManager {
     async walkDifference({
         walkers,
         dir: base,
+        cache,
     }: {
         walkers: Walker[];
         dir?: string;
+        cache?: object;
     }): Promise<WalkDifference[]> {
         return this.wrapFS(
             typedWalk<WalkDifference>({
                 ...this.getRepo(),
                 trees: walkers,
+                cache,
                 map: async (
                     filepath,
                     [A, B]
