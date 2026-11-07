@@ -40,7 +40,7 @@ function trackBinaryReads(
     return () => ({ packReads, peakWorktreeReads });
 }
 
-describe("mobile operation memory", () => {
+describe("IsomorphicGit operation memory", () => {
     it.each([false, true])(
         "unstages packed files with one cache and preserves working edits (supplied status: %s)",
         async (suppliedStatus) => {
