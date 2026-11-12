@@ -16,6 +16,7 @@ aliases:
 -   [[Common issues|Common Issues]]
 -   [[Conflict resolution|Conflict Resolution]]
 -   [[Line Authoring|Line Authoring]]
+-   [[Public API|Public API]]
 
 > [!warning] Obsidian installation on Linux
 > Please don't use Flatpak or Snap to install Obsidian on Linux. Learn more [[Installation#Linux|here]]
