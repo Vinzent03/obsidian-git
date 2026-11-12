@@ -9,6 +9,8 @@ import {
     createRepoWithOrigin,
 } from "../helpers/gitRepo";
 import { createIsomorphicGitManager } from "../helpers/isomorphicGit";
+import type { TestRepo } from "../helpers/gitRepo";
+import { parseConflictBlocks } from "../../src/editor/conflicts/model";
 import { setTimeout } from "timers/promises";
 
 afterEach(() => {
@@ -491,6 +493,64 @@ describe("IsomorphicGit merge state", () => {
         expect(updateCachedStatus).not.toHaveBeenCalled();
         expect(plugin.displayError).not.toHaveBeenCalled();
     });
+
+    // Obsidian saves notes without a final newline by default.
+    async function createRepoWithLastLineConflict(): Promise<TestRepo> {
+        const repo = await createRepoWithOrigin();
+        await repo.writeAndCommit("note.md", "intro\nbase", "base");
+        await repo.git.checkoutLocalBranch("theirs");
+        await repo.writeAndCommit("note.md", "intro\ntheirs", "their change");
+        const theirCommit = await repo.head();
+        await repo.git.checkout("main");
+        await repo.writeAndCommit("note.md", "intro\nours", "our change");
+        await repo.raw(["update-ref", "refs/remotes/origin/main", theirCommit]);
+        return repo;
+    }
+
+    it("writes conflict markers on their own lines without a final newline", async () => {
+        const repo = withCleanup(await createRepoWithLastLineConflict());
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        plugin.settings.mergeStrategy = "none";
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+
+        await expect(manager.pull()).rejects.toBeInstanceOf(GitConflictError);
+
+        const content = await readFile(
+            path.join(repo.repoPath, "note.md"),
+            "utf8"
+        );
+        expect(content).toBe(
+            "intro\n" +
+                "<<<<<<< main\n" +
+                "ours\n" +
+                "=======\n" +
+                "theirs\n" +
+                ">>>>>>> origin/main\n"
+        );
+        // The editor only offers conflict actions for well-formed blocks.
+        expect(parseConflictBlocks(content)).toHaveLength(1);
+    });
+
+    it.each([
+        ["ours", "intro\nours"],
+        ["theirs", "intro\ntheirs"],
+    ] as const)(
+        "resolves a last line conflict with the %s strategy",
+        async (strategy, expected) => {
+            const repo = withCleanup(await createRepoWithLastLineConflict());
+            const { manager, plugin } = createIsomorphicGitManager(
+                repo.repoPath
+            );
+            plugin.settings.mergeStrategy = strategy;
+            vi.spyOn(manager, "fetch").mockResolvedValue();
+
+            await manager.pull();
+
+            await expect(
+                readFile(path.join(repo.repoPath, "note.md"), "utf8")
+            ).resolves.toBe(expected);
+        }
+    );
 });
 
 describe("IsomorphicGit.push", () => {
