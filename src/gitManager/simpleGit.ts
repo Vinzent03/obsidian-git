@@ -1217,14 +1217,14 @@ export class SimpleGit extends GitManager {
                 "branch",
                 "--list",
                 "--no-color",
-                "--format=%(refname)%00%(upstream:short)",
+                "--format=%(refname)%09%(upstream:short)",
             ]),
         ]);
 
         let tracking: string | undefined;
         const branches: string[] = [];
         for (const line of refs.split("\n")) {
-            const [ref, upstream] = line.split("\0");
+            const [ref, upstream] = line.split("\t");
             if (!ref?.startsWith("refs/heads/")) continue;
             const branch = ref.slice("refs/heads/".length);
             branches.push(branch);

@@ -927,6 +927,65 @@ describe("SimpleGit.branchInfo", () => {
         });
     });
 
+    it("parses the upstream from tab-delimited branch output", async () => {
+        const raw = vi.fn((args: string[]) => {
+            if (args[0] === "symbolic-ref") {
+                return Promise.resolve("main\n");
+            }
+            return Promise.resolve(
+                [
+                    "refs/heads/feature\torigin/feature",
+                    "refs/heads/main\torigin/main",
+                    "",
+                ].join("\n")
+            );
+        });
+        const { manager } = withCleanup(
+            await createSimpleGitTestContext({
+                gitClient: { raw } as unknown as SimpleGitClient,
+            })
+        );
+
+        await expect(manager.branchInfo()).resolves.toEqual({
+            current: "main",
+            tracking: "origin/main",
+            branches: ["feature", "main"],
+        });
+        expect(raw).toHaveBeenCalledWith([
+            "branch",
+            "--list",
+            "--no-color",
+            "--format=%(refname)%09%(upstream:short)",
+        ]);
+    });
+
+    it("keeps the branch order from branch.sort", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.raw(["branch", "feature"]);
+        await repo.git.addConfig("branch.sort", "-refname");
+
+        expect((await manager.branchInfo()).branches).toEqual([
+            "main",
+            "feature",
+        ]);
+    });
+
+    it("returns the upstream after setting it for a non-default branch", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.git.checkoutLocalBranch("feature");
+        await repo.raw(["branch", "--set-upstream-to=origin/main", "feature"]);
+
+        expect(await manager.branchInfo()).toEqual({
+            current: "feature",
+            tracking: "origin/main",
+            branches: ["feature", "main"],
+        });
+    });
+
     it("returns no upstream for a branch without one", async () => {
         const { repo, manager } = withCleanup(
             await createSimpleGitTestContext()
