@@ -48,10 +48,12 @@ import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { HunkActions } from "./editor/signs/hunkActions";
 import { coalesce } from "./coalesce";
 import { EditorIntegration } from "./editor/editorIntegration";
+import { FileStatusApi } from "./fileStatusApi";
 import { runGitAction, type GitActionResult } from "./gitAction";
 import { GitActions } from "./gitActions";
 
 export default class ObsidianGit extends Plugin {
+    readonly api = new FileStatusApi(this);
     gitActions = new GitActions(this);
     gitManager!: GitManager;
     automaticsManager = new AutomaticsManager(this);
@@ -118,6 +120,7 @@ export default class ObsidianGit extends Plugin {
             "obsidian-git:status-changed",
             this.cachedStatus
         );
+        this.api.notifyStatusChanged(this.cachedStatus);
         return this.cachedStatus;
     }
 
@@ -154,6 +157,7 @@ export default class ObsidianGit extends Plugin {
         );
 
         if (
+            this.api.isTracking ||
             this.settings.changedFilesInStatusBar ||
             gitViews.some((leaf) => !(leaf.isDeferred ?? false)) ||
             historyViews.some((leaf) => !(leaf.isDeferred ?? false))
@@ -519,6 +523,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     onunload() {
+        this.api.dispose();
         this.unloadPlugin();
     }
 
