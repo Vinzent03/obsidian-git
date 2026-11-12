@@ -19,7 +19,12 @@ import {
 import { GitError } from "simple-git";
 import { Hunks } from "src/editor/signs/hunks";
 import { rawHunkFromChunk, rawHunksToHunks } from "src/editor/signs/diff";
-import { diffContextMenu } from "src/ui/diff/contextMenu";
+import { createDiffContextMenu } from "src/ui/diff/contextMenu";
+import {
+    getOpenableSourcePath,
+    openVaultFileAtLine,
+} from "src/ui/diff/openSourceFile";
+import { hunksFromChunks, sourceLineForDiffSide } from "src/ui/diff/sourceLine";
 
 const readOnlyEditorTheme = EditorView.theme({
     "& .cm-content": { caretColor: "transparent !important" },
@@ -50,6 +55,7 @@ export default class SplitDiffView extends ItemView {
     fileSaveDebouncer!: Debouncer<[string], void>;
     bIsEditable!: boolean;
     private indexUnmerged = false;
+    private lastFocusedSide: "a" | "b" = "b";
 
     /**
      * Prevent to load text from file if the modification event was caused by this instance
@@ -151,6 +157,86 @@ export default class SplitDiffView extends ItemView {
             vaultPath ===
             this.plugin.gitManager.getRelativeVaultPath(this.state.bFile)
         );
+    }
+
+    getSourceVaultPath(): string | undefined {
+        if (this.state?.bFile == undefined || !this.plugin.gitManager) {
+            return undefined;
+        }
+        return getOpenableSourcePath(
+            this.app,
+            this.plugin.gitManager.getRelativeVaultPath(this.state.bFile)
+        );
+    }
+
+    canOpenSourceFileAtCurrentLine(): boolean {
+        return (
+            this.mergeView != undefined &&
+            this.getSourceVaultPath() != undefined
+        );
+    }
+
+    getActiveDiffEditor(): { side: "a" | "b"; editor: EditorView } | undefined {
+        if (!this.mergeView) return undefined;
+        if (this.mergeView.b.hasFocus) {
+            return { side: "b", editor: this.mergeView.b };
+        }
+        if (this.mergeView.a.hasFocus) {
+            return { side: "a", editor: this.mergeView.a };
+        }
+        return this.lastFocusedSide === "a"
+            ? { side: "a", editor: this.mergeView.a }
+            : { side: "b", editor: this.mergeView.b };
+    }
+
+    mapLineToSourceLine(side: "a" | "b", line: number): number {
+        if (!this.mergeView) return line;
+        const { a, b } = this.mergeView;
+        const chunks = getChunks(b.state)?.chunks ?? [];
+        const hunks = hunksFromChunks(chunks, a.state.doc, b.state.doc);
+        return sourceLineForDiffSide(side, line, hunks, b.state.doc.lines);
+    }
+
+    private sideExtensions(side: "a" | "b") {
+        return [
+            createDiffContextMenu({
+                canOpenSourceFile: () => this.getSourceVaultPath() != undefined,
+                openSourceFileAtLine: (line) => {
+                    this.lastFocusedSide = side;
+                    void this.openSourceFileAtLine(side, line);
+                },
+            }),
+            EditorView.domEventHandlers({
+                focusin: () => {
+                    this.lastFocusedSide = side;
+                },
+            }),
+        ];
+    }
+
+    async openSourceFileAtLine(side: "a" | "b", line: number): Promise<void> {
+        const vaultPath = this.getSourceVaultPath();
+        if (!vaultPath) return;
+
+        try {
+            await openVaultFileAtLine(
+                this.app,
+                vaultPath,
+                this.mapLineToSourceLine(side, line)
+            );
+        } catch (error) {
+            this.plugin.displayError(error);
+        }
+    }
+
+    async openSourceFileAtCurrentLine(): Promise<void> {
+        const active = this.getActiveDiffEditor();
+        if (!active) return;
+
+        const line = active.editor.state.doc.lineAt(
+            active.editor.state.selection.main.head
+        ).number;
+        await this.openSourceFileAtLine(active.side, line);
     }
 
     getViewType(): string {
@@ -482,7 +568,6 @@ export default class SplitDiffView extends ItemView {
                     history(),
                     search(),
                     EditorView.lineWrapping,
-                    diffContextMenu,
                 ];
 
                 const autoSavePlugin = ViewPlugin.define((view) => ({
@@ -503,12 +588,16 @@ export default class SplitDiffView extends ItemView {
                     doc: aText,
                     extensions: [
                         ...basicExtensions,
+                        ...this.sideExtensions("a"),
                         EditorState.readOnly.of(true),
                         readOnlyEditorTheme,
                     ],
                 };
 
-                const bExtensions = [...basicExtensions];
+                const bExtensions = [
+                    ...basicExtensions,
+                    ...this.sideExtensions("b"),
+                ];
 
                 // Only make the editor modifiable when viewing the working tree version
                 if (!this.bIsEditable) {
