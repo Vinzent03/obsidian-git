@@ -44,6 +44,11 @@ export class MyAdapter {
     indexmtime: number | undefined;
     /** Native stat of the unmodified index, kept until `clearIndex`. */
     private indexStat: Stat | undefined;
+    /**
+     * Native listings of git directories (e.g. `objects/pack`), kept until
+     * the git directory is written to or the operation ends.
+     */
+    private gitListings = new Map<string, Promise<string[]>>();
     lastBasePath: string | undefined;
 
     constructor(
@@ -85,6 +90,9 @@ export class MyAdapter {
                 return this.adapter.read(path);
             }
         } else {
+            if (await this.isMissingLooseObject(path)) {
+                throw new FileNotFoundError(path);
+            }
             if (this.isIndexPath(path)) {
                 if (this.plugin.settings.basePath != this.lastBasePath) {
                     this.clearIndex();
@@ -106,7 +114,11 @@ export class MyAdapter {
     async writeFile(path: string, data: string | BinaryData) {
         this.maybeLog("Write: " + path);
         path = normalizePath(path);
-
+        return this.invalidatingGitListings(path, () =>
+            this.writeFileUncached(path, data)
+        );
+    }
+    private async writeFileUncached(path: string, data: string | BinaryData) {
         if (typeof data === "string") {
             const file = this.vault.getAbstractFileByPath(path);
             if (file instanceof TFile) {
@@ -140,6 +152,10 @@ export class MyAdapter {
         path = normalizePath(path);
         this.maybeLog("ReadDir: " + path);
         if (path === ".") path = "/";
+        if (this.isGitPath(path)) return this.listGitDir(path);
+        return this.listNative(path);
+    }
+    private async listNative(path: string) {
         const res = await this.adapter.list(path);
         const all = [...res.files, ...res.folders];
         let formattedAll;
@@ -155,7 +171,11 @@ export class MyAdapter {
     async mkdir(path: string) {
         path = normalizePath(path);
         if (path === "." || path === "/") return;
-
+        return this.invalidatingGitListings(path, () =>
+            this.mkdirUncached(path)
+        );
+    }
+    private async mkdirUncached(path: string) {
         if (!this.isHiddenPath(path)) {
             const file = this.vault.getFolderByPath(path);
             if (file) return;
@@ -169,6 +189,11 @@ export class MyAdapter {
     async rmdir(path: string, opts?: RmdirOptions) {
         path = normalizePath(path);
         this.maybeLog("Rmdir: " + path + JSON.stringify(opts));
+        return this.invalidatingGitListings(path, () =>
+            this.rmdirUncached(path, opts)
+        );
+    }
+    private async rmdirUncached(path: string, opts?: RmdirOptions) {
         if (!this.isHiddenPath(path)) {
             const file = this.vault.getAbstractFileByPath(path);
             if (file instanceof TFolder) {
@@ -243,6 +268,19 @@ export class MyAdapter {
                 isDirectory: () => false,
                 isSymbolicLink: () => false,
             };
+        } else if (file instanceof TFolder) {
+            // isomorphic-git only needs the type of a folder, so avoid a
+            // native call for each folder of the working tree.
+            return {
+                ...STABLE_STATS,
+                ctimeMs: 0,
+                mtimeMs: 0,
+                size: 0,
+                type: "directory",
+                isFile: () => false,
+                isDirectory: () => true,
+                isSymbolicLink: () => false,
+            };
         } else {
             const stat = await this.adapter.stat(path);
             if (stat) {
@@ -264,6 +302,11 @@ export class MyAdapter {
     }
     async unlink(path: string) {
         path = normalizePath(path);
+        return this.invalidatingGitListings(path, () =>
+            this.unlinkUncached(path)
+        );
+    }
+    private async unlinkUncached(path: string) {
         if (!this.isHiddenPath(path)) {
             const file = this.vault.getAbstractFileByPath(path);
             if (file instanceof TFile) {
@@ -288,6 +331,7 @@ export class MyAdapter {
     }
 
     async saveAndClear(): Promise<void> {
+        this.gitListings.clear();
         if (this.index !== undefined) {
             await this.adapter.writeBinary(this.getIndexPath(), this.index, {
                 ctime: this.indexctime,
@@ -318,6 +362,76 @@ export class MyAdapter {
         return path === this.getIndexPath();
     }
 
+    private getGitDirPath(): string {
+        return normalizePath(
+            this.plugin.gitManager.getRelativeVaultPath(this.gitDir)
+        );
+    }
+
+    private isGitPath(path: string): boolean {
+        const gitDirPath = this.getGitDirPath();
+        return path === gitDirPath || path.startsWith(gitDirPath + "/");
+    }
+
+    /**
+     * Lists a git directory natively once and reuses the result. isomorphic-git
+     * lists `objects/pack` for every object it reads.
+     */
+    private listGitDir(path: string): Promise<string[]> {
+        const cached = this.gitListings.get(path);
+        if (cached) return cached;
+        const listing = this.listNative(path);
+        this.gitListings.set(path, listing);
+        // Don't keep failures, so the next caller tries again.
+        listing.catch(() => {
+            if (this.gitListings.get(path) === listing) {
+                this.gitListings.delete(path);
+            }
+        });
+        return listing;
+    }
+
+    /** Runs a write and drops git listings it may have made stale. */
+    private async invalidatingGitListings<T>(
+        path: string,
+        write: () => Promise<T>
+    ): Promise<T> {
+        if (!this.isGitPath(path)) return write();
+        this.gitListings.clear();
+        try {
+            return await write();
+        } finally {
+            // Listings started during the write may predate it.
+            this.gitListings.clear();
+        }
+    }
+
+    /**
+     * Whether `path` is a loose object that does not exist, judged from the
+     * listings of `objects` and its fan-out folder. isomorphic-git tries to
+     * read every object as loose before looking into packfiles.
+     */
+    private async isMissingLooseObject(path: string): Promise<boolean> {
+        const objectsDir = this.getGitDirPath() + "/objects";
+        if (!path.startsWith(objectsDir + "/")) return false;
+        const match = /^([0-9a-f]{2})\/([0-9a-f]{38})$/.exec(
+            path.substring(objectsDir.length + 1)
+        );
+        if (!match) return false;
+        const [, fanOut = "", name = ""] = match;
+        try {
+            const folders = await this.listGitDir(objectsDir);
+            if (!folders.some((entry) => baseName(entry) === fanOut)) {
+                return true;
+            }
+            const objects = await this.listGitDir(`${objectsDir}/${fanOut}`);
+            return !objects.some((entry) => baseName(entry) === name);
+        } catch {
+            // Fall back to reading the object if a listing fails.
+            return false;
+        }
+    }
+
     private isHiddenPath(path: string): boolean {
         // Faster check for the common case of the .git directory itself
         if (path.startsWith(this.gitDir)) {
@@ -333,6 +447,10 @@ export class MyAdapter {
     private maybeLog(_: string) {
         // console.log(text);
     }
+}
+
+function baseName(path: string): string {
+    return path.substring(path.lastIndexOf("/") + 1);
 }
 
 function toArrayBuffer(data: BinaryData): ArrayBuffer {

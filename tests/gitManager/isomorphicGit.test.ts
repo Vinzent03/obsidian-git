@@ -1,3 +1,4 @@
+import { statSync } from "fs";
 import { mkdir, readFile, stat } from "fs/promises";
 import path from "path";
 import git from "isomorphic-git";
@@ -9,6 +10,9 @@ import {
     createRepoWithOrigin,
 } from "../helpers/gitRepo";
 import { createIsomorphicGitManager } from "../helpers/isomorphicGit";
+import type { FakePlugin } from "../helpers/createFakePlugin";
+import type { TestRepo } from "../helpers/gitRepo";
+import { TFolder } from "obsidian";
 import { setTimeout } from "timers/promises";
 
 afterEach(() => {
@@ -637,6 +641,115 @@ describe("IsomorphicGit.status", () => {
         expect(staged.staged.map((file) => file.path)).toEqual([
             "folder0/note.md",
         ]);
+    });
+});
+
+describe("IsomorphicGit native calls", () => {
+    // A base path keeps paths free of a leading slash, as in Obsidian.
+    function createManager(repo: TestRepo) {
+        const basePath = path.relative(repo.dir, repo.repoPath);
+        const context = createIsomorphicGitManager(repo.repoPath, {
+            vaultPath: repo.dir,
+            basePath,
+        });
+        return { ...context, basePath };
+    }
+
+    // Mimics Obsidian's vault cache, which knows the non-hidden folders.
+    function useVaultFolders(plugin: FakePlugin, root: string): void {
+        plugin.app.vault.getAbstractFileByPath = (vaultPath: string) => {
+            if (vaultPath.split("/").some((part) => part.startsWith("."))) {
+                return null;
+            }
+            try {
+                // The adapter only checks the type of a cached folder.
+                return statSync(path.join(root, vaultPath)).isDirectory()
+                    ? new TFolder()
+                    : null;
+            } catch {
+                return null;
+            }
+        };
+    }
+
+    it("serves working tree folder stats from the vault cache", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await mkdir(path.join(repo.repoPath, "a/b"), { recursive: true });
+        await repo.writeAndCommit("a/b/note.md", "x\n", "nested");
+        repo.write("a/b/note.md", "changed\n");
+        repo.write("a/new.md", "new\n");
+        const { manager, plugin, basePath } = createManager(repo);
+        const expected = await manager.status();
+
+        useVaultFolders(plugin, repo.dir);
+        const adapterStat = vi.spyOn(plugin.app.vault.adapter, "stat");
+        const actual = await manager.status();
+
+        expect(actual).toEqual(expected);
+        const folderStats = adapterStat.mock.calls.filter(([vaultPath]) =>
+            [basePath, `${basePath}/a`, `${basePath}/a/b`].includes(vaultPath)
+        );
+        expect(folderStats).toEqual([]);
+    });
+
+    it("lists git directories once per operation", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        for (let i = 0; i < 5; i++) {
+            await mkdir(path.join(repo.repoPath, `folder${i}`));
+            await repo.appendAndCommit(`folder${i}/note.md`, "x\n", `c${i}`);
+        }
+        await repo.raw(["gc", "--prune=now"]);
+        // Loose objects next to the packfile.
+        await repo.appendAndCommit("folder1/note.md", "loose\n", "loose");
+        repo.write("folder2/note.md", "changed\n");
+        const { manager, plugin, basePath } = createManager(repo);
+        const list = vi.spyOn(plugin.app.vault.adapter, "list");
+
+        const status = await manager.status();
+
+        expect(status.changed.map((file) => file.path)).toEqual([
+            "folder2/note.md",
+        ]);
+        const packListings = list.mock.calls.filter(
+            ([vaultPath]) => vaultPath === `${basePath}/.git/objects/pack`
+        );
+        expect(packListings).toHaveLength(1);
+    });
+
+    it("does not report a loose object as missing after writing it", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.raw(["gc", "--prune=now"]);
+        const { manager, basePath } = createManager(repo);
+        const fs = manager.getRepo().fs.promises;
+        const objects = `${basePath}/.git/objects`;
+        const objectPath = `${objects}/ab/${"c".repeat(38)}`;
+
+        // Remembers that the fan-out folder does not exist yet.
+        await expect(fs.readFile(objectPath)).rejects.toThrow();
+        await fs.mkdir(`${objects}/ab`);
+        await fs.writeFile(objectPath, new Uint8Array([1, 2, 3]));
+
+        const content = await fs.readFile(objectPath);
+        expect(new Uint8Array(content as ArrayBuffer)).toEqual(
+            new Uint8Array([1, 2, 3])
+        );
+    });
+
+    it("commits with loose objects next to a packfile", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.raw(["gc", "--prune=now"]);
+        repo.write("note.md", "committed by isomorphic-git\n");
+        const { manager } = createManager(repo);
+
+        // Writes new loose objects and fan-out folders, then reads them back.
+        await expect(
+            manager.commitAll({ message: "mobile commit" })
+        ).resolves.toBe(1);
+
+        expect(await repo.raw(["log", "-1", "--format=%s"])).toBe(
+            "mobile commit"
+        );
+        expect((await manager.status()).all).toEqual([]);
     });
 });
 
