@@ -550,10 +550,7 @@ export class IsomorphicGit extends GitManager {
                     message: mergeState.message,
                     // Keep HEAD at the old commit until checkout succeeds.
                     noUpdateBranch: true,
-                    mergeDriver:
-                        this.plugin.settings.mergeStrategy !== "none"
-                            ? this.mergeDriver.bind(this)
-                            : undefined,
+                    mergeDriver: this.mergeDriver.bind(this),
                 };
                 let mergeRes;
                 try {
@@ -644,7 +641,12 @@ export class IsomorphicGit extends GitManager {
         });
     }
 
-    private mergeDriver({ contents }: MergeDriverParams): {
+    /**
+     * Resolves conflicts per the merge strategy or writes conflict markers.
+     * Unlike isomorphic-git's default driver, markers always start on their
+     * own line, even when a conflicting side lacks a final newline.
+     */
+    private mergeDriver({ branches, contents }: MergeDriverParams): {
         cleanMerge: boolean;
         mergedText: string;
     } {
@@ -657,19 +659,30 @@ export class IsomorphicGit extends GitManager {
         const base = baseContent.match(LINEBREAKS) ?? [];
         const theirs = theirContent.match(LINEBREAKS) ?? [];
         const result = diff3Merge(ours, base, theirs);
+        const strategy = this.plugin.settings.mergeStrategy;
         let mergedText = "";
+        let cleanMerge = true;
         for (const item of result) {
             if (item.ok) {
                 mergedText += item.ok.join("");
             }
             if (item.conflict) {
-                mergedText +=
-                    this.plugin.settings.mergeStrategy === "ours"
-                        ? item.conflict.a.join("")
-                        : item.conflict.b.join("");
+                if (strategy === "ours") {
+                    mergedText += item.conflict.a.join("");
+                } else if (strategy === "theirs") {
+                    mergedText += item.conflict.b.join("");
+                } else {
+                    cleanMerge = false;
+                    mergedText +=
+                        `<<<<<<< ${branches[1]}\n` +
+                        endWithNewline(item.conflict.a.join("")) +
+                        "=======\n" +
+                        endWithNewline(item.conflict.b.join("")) +
+                        `>>>>>>> ${branches[2]}\n`;
+                }
             }
         }
-        return { cleanMerge: true, mergedText };
+        return { cleanMerge, mergedText };
     }
 
     private async ensureCleanPullWorktree(
@@ -1603,6 +1616,11 @@ async function typedWalk<T>(options: TypedWalkOptions<T>): Promise<T[]> {
         throw new TypeError("isomorphic-git walk returned a non-array result");
     }
     return result as T[];
+}
+
+/** Appends a newline so a following conflict marker starts its own line. */
+function endWithNewline(text: string): string {
+    return text === "" || text.endsWith("\n") ? text : text + "\n";
 }
 
 function arrayBufferToAsyncIterator(
