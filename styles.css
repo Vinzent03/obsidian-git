@@ -362,6 +362,9 @@ which itself is adapted from the diff2html library with the following original l
         font-size: var(--font-text-size);
         line-height: var(--line-height-normal);
     }
+    .d2h-diff-table tr.is-selected > td {
+        background-color: var(--background-modifier-hover);
+    }
     .d2h-file-side-diff {
         display: inline-block;
         margin-bottom: -8px;

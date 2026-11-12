@@ -5,6 +5,8 @@ import ObsidianGit from "./main";
 import { openHistoryInGitHub, openLineInGitHub } from "./openInGitHub";
 import { IgnoreModal } from "./ui/modals/ignoreModal";
 import { togglePreviewHunk } from "./editor/signs/tooltip";
+import DiffView from "./ui/diff/diffView";
+import SplitDiffView from "./ui/diff/splitDiffView";
 
 export function addCommmands(plugin: ObsidianGit) {
     const app = plugin.app;
@@ -95,6 +97,22 @@ export function addCommmands(plugin: ObsidianGit) {
                 });
                 return true;
             }
+        },
+    });
+
+    plugin.addCommand({
+        id: "open-source-file-at-current-line",
+        name: "Open source file at current line",
+        checkCallback: (checking) => {
+            const view = app.workspace.activeLeaf?.view;
+            if (!(view instanceof DiffView || view instanceof SplitDiffView)) {
+                return false;
+            }
+
+            const available = view.canOpenSourceFileAtCurrentLine();
+            if (checking) return available;
+            if (available) void view.openSourceFileAtCurrentLine();
+            return available;
         },
     });
 
