@@ -10,6 +10,26 @@ import { getNewLeaf, splitRemoteBranch } from "./utils";
 import { GeneralModal } from "./ui/modals/generalModal";
 import type { DiffViewState, ReadOnlyFileViewState } from "./types";
 
+function isPathInsideVault(vaultPath: string): boolean {
+    const normalized = vaultPath.replace(/\\/g, "/");
+    if (normalized === "") return false;
+    if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
+        return false;
+    }
+
+    let depth = 0;
+    for (const segment of normalized.split("/")) {
+        if (segment === "" || segment === ".") continue;
+        if (segment === "..") {
+            depth--;
+            if (depth < 0) return false;
+        } else {
+            depth++;
+        }
+    }
+    return true;
+}
+
 export default class Tools {
     constructor(private readonly plugin: ObsidianGit) {}
 
@@ -31,6 +51,8 @@ export default class Tools {
 
             const gitManager = this.plugin.gitManager;
             for (const f of files) {
+                if (!isPathInsideVault(f.vaultPath)) continue;
+
                 const file = this.plugin.app.vault.getAbstractFileByPath(
                     f.vaultPath
                 );
