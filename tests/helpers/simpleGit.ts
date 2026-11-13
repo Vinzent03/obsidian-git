@@ -50,6 +50,7 @@ function configurePlugin(
                 configDir: string;
                 adapter: {
                     getBasePath(): string;
+                    getFullPath(filePath: string): string;
                     exists(filePath: string): Promise<boolean>;
                 };
             };
@@ -58,6 +59,7 @@ function configurePlugin(
         configDir: ".obsidian",
         adapter: {
             getBasePath: () => vaultPath,
+            getFullPath: (filePath) => path.join(vaultPath, filePath),
             exists: (filePath: string) =>
                 Promise.resolve(
                     existsSync(

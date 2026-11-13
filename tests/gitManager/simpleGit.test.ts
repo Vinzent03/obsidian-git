@@ -1213,3 +1213,49 @@ describe("SimpleGit.show", () => {
         expect(content).toBe("HIDDEN\n");
     });
 });
+
+describe("SimpleGit.showStagedFile", () => {
+    it("reads staged content from a regular file", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        repo.write("note.md", "changed\n");
+        await repo.git.add("note.md");
+
+        await expect(manager.showStagedFile("note.md")).resolves.toBe(
+            "changed\n"
+        );
+    });
+
+    it("reads staged content from a submodule file", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        const submodule = withCleanup(await createRepoWithOrigin());
+
+        await simpleGit({
+            baseDir: repo.repoPath,
+            unsafe: { allowUnsafeProtocolOverride: true },
+        }).raw([
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            submodule.repoPath,
+            "sub",
+        ]);
+        await repo.git.commit("add submodule");
+
+        writeFileSync(
+            path.join(repo.repoPath, "sub", "note.md"),
+            "sub changed\n"
+        );
+        await repo.git
+            .cwd({ path: path.join(repo.repoPath, "sub"), root: false })
+            .add("note.md");
+
+        await expect(manager.showStagedFile("sub/note.md")).resolves.toBe(
+            "sub changed\n"
+        );
+    });
+});
