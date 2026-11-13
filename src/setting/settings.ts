@@ -177,6 +177,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             await this.plugin.refresh();
         } else if (storedKey === "refreshSourceControlTimer") {
             this.plugin.setRefreshDebouncer();
+        } else if (storedKey === "showAutoCommitCountdown") {
+            this.plugin.refreshAutoCommitCountdownBar();
         }
         // Obsidian refreshes predicates for controls after the write.
     }
@@ -661,6 +663,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         "showStatusBar",
                         "Restart Obsidian for this change to take effect."
                     ),
+                    {
+                        ...this.toggle(
+                            "Show auto-commit countdown in the status bar",
+                            "showAutoCommitCountdown",
+                            "Shows the time until the next scheduled auto commit. Available when the auto commit interval is greater than 0 and auto commit after file edits is disabled."
+                        ),
+                        visible: () => this.settings.showStatusBar,
+                    },
                     this.toggle(
                         "File menu integration",
                         "showFileMenu",
