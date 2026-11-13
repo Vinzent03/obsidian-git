@@ -47,6 +47,17 @@
     margin-right: auto;
 }
 
+.obsidian-git-commit-message-hint {
+    margin-top: 0;
+    color: var(--text-muted);
+}
+
+.obsidian-git-commit-message-input {
+    width: 100%;
+    min-height: 8em;
+    resize: vertical;
+}
+
 .obsidian-git-disabled {
     opacity: 0.5;
 }
