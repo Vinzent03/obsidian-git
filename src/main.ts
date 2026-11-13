@@ -45,6 +45,7 @@ import ReadOnlyFileView from "./ui/readOnlyFileView";
 import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
+import { AutoCommitCountdownBar } from "./ui/statusBar/autoCommitCountdown";
 import { HunkActions } from "./editor/signs/hunkActions";
 import { coalesce } from "./coalesce";
 import { EditorIntegration } from "./editor/editorIntegration";
@@ -62,6 +63,7 @@ export default class ObsidianGit extends Plugin {
     settingsTab?: ObsidianGitSettingsTab;
     statusBar?: StatusBar;
     branchBar?: BranchStatusBar;
+    autoCommitCountdownBar?: AutoCommitCountdownBar;
     state: PluginState = {
         operation: GitOperation.idle,
         offlineMode: false,
@@ -503,6 +505,8 @@ export default class ObsidianGit extends Plugin {
 
         this.editorIntegration.onUnloadPlugin();
         this.automaticsManager.unload();
+        this.autoCommitCountdownBar?.remove();
+        this.autoCommitCountdownBar = undefined;
         this.branchBar?.remove();
         this.statusBar?.remove();
         this.statusBar = undefined;
@@ -541,6 +545,21 @@ export default class ObsidianGit extends Plugin {
         return Platform.isDesktopApp;
     }
 
+    refreshAutoCommitCountdownBar(): void {
+        const enabled =
+            this.settings.showStatusBar &&
+            this.settings.showAutoCommitCountdown;
+        if (enabled && !this.autoCommitCountdownBar && this.statusBar) {
+            this.autoCommitCountdownBar = new AutoCommitCountdownBar(
+                this.addStatusBarItem(),
+                this
+            );
+        } else if (!enabled) {
+            this.autoCommitCountdownBar?.remove();
+            this.autoCommitCountdownBar = undefined;
+        }
+    }
+
     async init({ fromReload = false }): Promise<void> {
         if (this.localStorage.getPluginDisabled()) {
             // This is already guarded in `onload`, but we also guard here to
@@ -557,6 +576,7 @@ export default class ObsidianGit extends Plugin {
                 window.setInterval(() => this.statusBar?.display(), 1000)
             );
         }
+        this.refreshAutoCommitCountdownBar();
 
         try {
             if (this.useSimpleGit) {
