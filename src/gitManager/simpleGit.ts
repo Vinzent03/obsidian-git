@@ -1316,6 +1316,19 @@ export class SimpleGit extends GitManager {
         return this.git.show(["--textconv", commitHash + ":" + path]);
     }
 
+    async showStagedFile(file: string): Promise<string> {
+        const path = this.getRelativeRepoPath(file);
+        const inSubmodule = await this.getSubmoduleOfFile(path);
+
+        if (inSubmodule) {
+            return this.git
+                .cwd({ path: inSubmodule.submodule, root: false })
+                .show(["--textconv", ":" + inSubmodule.relativeFilepath]);
+        }
+
+        return this.git.show(["--textconv", ":" + path]);
+    }
+
     private async getLocalBranchUpstream(
         localBranchName: string
     ): Promise<string | undefined> {

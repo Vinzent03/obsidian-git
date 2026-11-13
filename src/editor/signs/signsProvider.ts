@@ -53,7 +53,7 @@ export class SignsProvider {
         //     );
 
         const compareText = await gitManager
-            .show("", filepath)
+            .showStagedFile(filepath)
             .catch(() => undefined);
         // const compareTextHead = await gitManager
         //     .show(headRevision, filepath)
