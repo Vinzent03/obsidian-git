@@ -5,7 +5,7 @@ import { normalizePath, Notice, Platform } from "obsidian";
 import * as path from "path";
 import { resolve, sep } from "path";
 import type * as simple from "simple-git";
-import { simpleGit, GitError, CleanOptions } from "simple-git";
+import { simpleGit, GitError, GitPluginError, CleanOptions } from "simple-git";
 import {
     ASK_PASS_SCRIPT,
     ASK_PASS_SCRIPT_FILE,
@@ -40,6 +40,8 @@ export class SimpleGit extends GitManager {
     absoluteRepoPath!: string;
     private askpassServer: AskpassServer | undefined;
     private unloaded = false;
+    private gitEnvironment: NodeJS.ProcessEnv | undefined;
+    private gitAllowEnvironment: readonly string[] = [];
     useDefaultWindowsGitPath: boolean = false;
     constructor(plugin: ObsidianGit) {
         super(plugin);
@@ -93,51 +95,17 @@ export class SimpleGit extends GitManager {
                 envs[key] = value;
             }
 
-            this.git = simpleGit({
-                baseDir: basePath,
-                binary:
-                    this.plugin.localStorage.getGitPath() ||
-                    (this.useDefaultWindowsGitPath
-                        ? DEFAULT_WIN_GIT_PATH
-                        : undefined),
-                config: ["core.quotepath=off"],
-                // Preserve the inherited and user-configured environment
-                allowEnvironment: [
-                    ...Object.keys(envs),
-                    "GIT_ASKPASS",
-                    "SSH_ASKPASS",
-                    "SSH_ASKPASS_REQUIRE",
-                    "OBSIDIAN_GIT_ASKPASS_PORT",
-                    "OBSIDIAN_GIT_ASKPASS_TOKEN",
-                    "OBSIDIAN_GIT",
-                ],
-                progress: (progress) => {
-                    this.plugin.statusBar?.displayProgress(
-                        this.toGitProgress(progress)
-                    );
-                },
-                unsafe: {
-                    allowAbbreviatedOptions: true,
-                    allowUnsafeCustomBinary: true,
-                    allowUnsafeEditor: true,
-                    allowUnsafeAskPass: true,
-                    allowUnsafeConfigEnvCount: true,
-                    allowUnsafeConfigPaths: true,
-                    allowUnsafeCredentialHelper: true,
-                    allowUnsafeGitProxy: true,
-                    allowUnsafeGpgProgram: true,
-                    allowUnsafeHooksPath: true,
-                    allowUnsafeMergeDriver: true,
-                    allowUnsafeSshCommand: true,
-                    allowUnsafePager: true,
-                    allowUnsafeDiffTextConv: true,
-                    allowUnsafeCommandBinaries: true,
-                    allowUnsafeExec: true,
-                    allowUnsafeInclude: true,
-                    allowUnsafeSubmodule: true,
-                    allowUnsafeUrlRewrite: true,
-                },
-            });
+            const allowEnvironment = [
+                ...Object.keys(envs),
+                "GIT_ASKPASS",
+                "SSH_ASKPASS",
+                "SSH_ASKPASS_REQUIRE",
+                "OBSIDIAN_GIT_ASKPASS_PORT",
+                "OBSIDIAN_GIT_ASKPASS_TOKEN",
+                "OBSIDIAN_GIT",
+            ];
+            this.gitAllowEnvironment = allowEnvironment;
+            this.git = this.createGitInstance(basePath, allowEnvironment);
 
             const SIMPLE_GIT_NAMESPACE = "simple-git";
             const NAMESPACE_SEPARATOR = ",";
@@ -198,7 +166,66 @@ export class SimpleGit extends GitManager {
             envs["OBSIDIAN_GIT"] = "1";
 
             this.git = this.git.env(envs);
+            this.gitEnvironment = envs;
         }
+    }
+
+    private createGitInstance(
+        baseDir: string,
+        allowEnvironment: readonly string[],
+        timeout?: number
+    ): simple.SimpleGit {
+        return simpleGit({
+            baseDir,
+            binary:
+                this.plugin.localStorage.getGitPath() ||
+                (this.useDefaultWindowsGitPath
+                    ? DEFAULT_WIN_GIT_PATH
+                    : undefined),
+            config: ["core.quotepath=off"],
+            // Preserve the inherited and user-configured environment
+            allowEnvironment,
+            progress: (progress) => {
+                this.plugin.statusBar?.displayProgress(
+                    this.toGitProgress(progress)
+                );
+            },
+            unsafe: {
+                allowAbbreviatedOptions: true,
+                allowUnsafeCustomBinary: true,
+                allowUnsafeEditor: true,
+                allowUnsafeAskPass: true,
+                allowUnsafeConfigEnvCount: true,
+                allowUnsafeConfigPaths: true,
+                allowUnsafeCredentialHelper: true,
+                allowUnsafeGitProxy: true,
+                allowUnsafeGpgProgram: true,
+                allowUnsafeHooksPath: true,
+                allowUnsafeMergeDriver: true,
+                allowUnsafeSshCommand: true,
+                allowUnsafePager: true,
+                allowUnsafeDiffTextConv: true,
+                allowUnsafeCommandBinaries: true,
+                allowUnsafeExec: true,
+                allowUnsafeInclude: true,
+                allowUnsafeSubmodule: true,
+                allowUnsafeUrlRewrite: true,
+            },
+            ...(timeout == undefined ? {} : { timeout: { block: timeout } }),
+        });
+    }
+
+    private createGitWithTimeout(timeout: number): simple.SimpleGit {
+        if (!this.absoluteRepoPath || !this.gitEnvironment) {
+            return this.git;
+        }
+        const git = this.createGitInstance(
+            this.absoluteRepoPath,
+            this.gitAllowEnvironment,
+            timeout
+        );
+        git.env(this.gitEnvironment);
+        return git;
     }
 
     private toGitProgress(
@@ -838,6 +865,13 @@ export class SimpleGit extends GitManager {
     async pull(): Promise<PullResult> {
         return this.withGitOperation(GitOperation.pull, async () => {
             try {
+                const timeoutMs =
+                    (this.plugin.settings.pullTimeout ?? 0) * 1000;
+                const networkGit =
+                    timeoutMs > 0
+                        ? this.createGitWithTimeout(timeoutMs)
+                        : this.git;
+
                 if (this.plugin.settings.updateSubmodules) {
                     const args = [
                         "update",
@@ -849,7 +883,7 @@ export class SimpleGit extends GitManager {
                     if (vaultPath != undefined) {
                         args.push("--", vaultPath);
                     }
-                    await this.git.subModule(args);
+                    await networkGit.subModule(args);
                 }
 
                 const branchInfo = await this.branchInfo();
@@ -869,7 +903,7 @@ export class SimpleGit extends GitManager {
                     return { status: "skipped", reason: "no-upstream" };
                 }
 
-                await this.git.fetch();
+                await networkGit.fetch();
                 this.app.workspace.trigger("obsidian-git:refs-changed");
                 const upstreamCommit = await this.git.revparse([
                     branchInfo.tracking,
@@ -958,6 +992,7 @@ export class SimpleGit extends GitManager {
                     return { status: "up-to-date" };
                 }
             } catch (e) {
+                this.convertPullTimeoutError(e);
                 this.convertErrors(e);
             }
         });
@@ -1671,6 +1706,15 @@ export class SimpleGit extends GitManager {
             this.useDefaultWindowsGitPath = false;
         }
         return true;
+    }
+
+    private convertPullTimeoutError(error: unknown): void {
+        if (error instanceof GitPluginError && error.plugin === "timeout") {
+            const seconds = this.plugin.settings.pullTimeout ?? 0;
+            throw new Error(
+                `Pull timed out after ${seconds} second${seconds === 1 ? "" : "s"} without Git output. The pull was aborted; other Git commands remain available. Check that the remote is reachable and that your SSH agent is running and unlocked.`
+            );
+        }
     }
 
     private convertErrors(error: unknown): never {
