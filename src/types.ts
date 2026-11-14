@@ -26,6 +26,11 @@ export interface ObsidianGitSettings {
     autoPushInterval: number;
     autoPullInterval: number;
     autoPullOnBoot: boolean;
+    /**
+     * Seconds without Git output before a pull is aborted. `0` disables the
+     * timeout. Desktop only.
+     */
+    pullTimeout: number;
     /** How repository-relative globs select files for automatic staging. */
     autoCommitGlobMode: AutoCommitGlobMode;
     /** Repository-relative Git globs, one per line. Manual commits are unaffected. */

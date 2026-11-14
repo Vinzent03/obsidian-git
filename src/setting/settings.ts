@@ -463,6 +463,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 "autoPullOnBoot",
                                 "Automatically pull commits when Obsidian starts."
                             ),
+                            {
+                                name: "Pull timeout (seconds)",
+                                desc: "Abort a pull when Git produces no output for this many seconds, for example while waiting for an unavailable SSH agent. Set to 0 to disable.",
+                                visible: desktop,
+                                control: {
+                                    type: "number",
+                                    key: "pullTimeout",
+                                    min: 0,
+                                    step: 1,
+                                    validate: validateInteger,
+                                },
+                            },
                         ],
                     },
                     {

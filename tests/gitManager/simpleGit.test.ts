@@ -53,6 +53,18 @@ function addStatusBar(plugin: FakePlugin) {
     return statusBar;
 }
 
+async function cleanupWithRetry(cleanup: () => void): Promise<void> {
+    for (let attempt = 0; ; attempt++) {
+        try {
+            cleanup();
+            return;
+        } catch (error) {
+            if (attempt >= 20) throw error;
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+    }
+}
+
 async function addVaultDirectory(
     repo: Awaited<ReturnType<typeof createRepoWithOrigin>>
 ) {
@@ -494,6 +506,81 @@ describe("SimpleGit.pull", () => {
             "obsidian-git:head-change"
         );
     });
+
+    it("pulls successfully when a timeout is configured", async () => {
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await createRemoteCommit(repo);
+        plugin.settings.syncMethod = "merge";
+        plugin.settings.mergeStrategy = "none";
+        plugin.settings.pullTimeout = 1;
+        const fetch = vi.spyOn(manager.git, "fetch");
+
+        const changes = await manager.pull();
+
+        expect(changes).toMatchObject({
+            status: "updated",
+            files: [{ path: "remote.md" }],
+        });
+        expect(fetch).not.toHaveBeenCalled();
+        expect(plugin.setPluginState.mock.calls).toEqual([
+            [{ operation: GitOperation.pull }],
+            [{ operation: GitOperation.idle }],
+        ]);
+    }, 30000);
+
+    it("aborts a silent pull with a readable error and restores state", async () => {
+        const context = await createSimpleGitTestContext();
+        try {
+            const { repo, plugin, manager } = context;
+            const fakeSsh = path.join(repo.dir, "fake-ssh.mjs");
+            writeFileSync(
+                fakeSsh,
+                [
+                    'import { tmpdir } from "node:os";',
+                    "process.chdir(tmpdir());",
+                    "process.stdin.resume();",
+                    'process.stdin.on("close", () => process.exit(0));',
+                    'process.stdin.on("end", () => process.exit(0));',
+                    "setTimeout(() => process.exit(0), 5000);",
+                ].join("\n")
+            );
+            await repo.raw([
+                "remote",
+                "set-url",
+                "origin",
+                "ssh://example.invalid/repo",
+            ]);
+            plugin.localStorage.getEnvVars = () => [
+                "SSH_ASKPASS=obsidian-git-test-askpass",
+                `GIT_SSH_COMMAND="${process.execPath}" "${fakeSsh}"`,
+            ];
+            plugin.settings.syncMethod = "merge";
+            plugin.settings.mergeStrategy = "none";
+            plugin.settings.pullTimeout = 1;
+            const statusBar = addStatusBar(plugin);
+            await manager.setGitInstance();
+
+            await expect(manager.pull()).rejects.toThrow(
+                "Pull timed out after 1 second without Git output."
+            );
+
+            expect(plugin.setPluginState.mock.calls).toEqual([
+                [{ operation: GitOperation.pull }],
+                [{ operation: GitOperation.idle }],
+            ]);
+            expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
+
+            expect((await manager.status()).changed).toEqual([]);
+            await repo.raw(["remote", "set-url", "origin", repo.remotePath]);
+            await expect(manager.pull()).resolves.toEqual({
+                status: "up-to-date",
+            });
+        } finally {
+            await cleanupWithRetry(() => context.cleanup());
+        }
+    }, 30000);
 
     it("reports vault and outside-vault changes separately", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
