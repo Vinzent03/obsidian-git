@@ -3,6 +3,15 @@ import * as obsidian from "obsidian";
 type Translation = readonly [english: string, chinese: string];
 
 const translations: Record<string, string> = {
+    "No changes": "无更改",
+    "No changes to commit": "无更改可提交",
+    "Nothing staged. Stage changes first or use Commit all changes.":
+        "没有已暂存内容。请先暂存更改，或使用“提交所有更改”。",
+    "Did not commit automatically because a merge is in progress. Commit it manually.":
+        "正在合并，因此未自动提交。请手动提交。",
+    "Pushed to remote": "已推送到远程",
+    "No commits to push": "没有可推送的提交",
+    "Pull: Everything is up-to-date": "拉取：已是最新状态",
     "Git is not ready": "Git 尚未就绪",
     "When the repository is ready, automatic routines, commit, sync, and editor settings become available. Check the repository paths and Git configuration under Advanced.":
         "仓库就绪后，自动运行、提交、同步和编辑器设置将可用。请在“高级”中检查仓库路径和 Git 配置。",
@@ -43,7 +52,8 @@ const translations: Record<string, string> = {
     "Preview commit message": "预览提交信息",
     Preview: "预览",
     Sync: "同步",
-    "Pull, merge, and commit-and-sync behavior.": "拉取、合并及提交并同步行为。",
+    "Pull, merge, and commit-and-sync behavior.":
+        "拉取、合并及提交并同步行为。",
     Pull: "拉取",
     "Commit-and-sync": "提交并同步",
     "Push on commit-and-sync": "提交并同步时推送",
@@ -80,7 +90,8 @@ const translations: Record<string, string> = {
     "Source control view": "源代码管理视图",
     "Automatically refresh source control view on file changes":
         "文件更改时自动刷新源代码管理视图",
-    "Disable on slower machines if this causes lag.": "若在较慢设备上导致卡顿，请禁用。",
+    "Disable on slower machines if this causes lag.":
+        "若在较慢设备上导致卡顿，请禁用。",
     "Source control view refresh interval": "源代码管理视图刷新间隔",
     "Milliseconds to wait after a file change before refreshing. Minimum 500.":
         "文件更改后等待多少毫秒再刷新。最小值为 500。",
@@ -112,7 +123,8 @@ const translations: Record<string, string> = {
     "Also notify when a commit or push finds no changes.":
         "提交或推送未发现更改时也通知。",
     "Show status bar": "显示状态栏",
-    "Restart Obsidian for this change to take effect.": "重启 Obsidian 后生效。",
+    "Restart Obsidian for this change to take effect.":
+        "重启 Obsidian 后生效。",
     "File menu integration": "文件菜单集成",
     "Add Stage, Unstage, and Add to .gitignore actions to the file menu.":
         "在文件菜单中添加暂存、取消暂存和添加到 .gitignore 操作。",
@@ -158,7 +170,8 @@ const translations: Record<string, string> = {
     "Repository folder within the vault": "库内仓库文件夹",
     "Choose the folder containing the Git repository. Leave empty when the repository is at the root.":
         "选择包含 Git 仓库的文件夹。仓库位于根目录时留空。",
-    "Custom Git directory path (instead of .git)": "自定义 Git 目录路径（代替 .git）",
+    "Custom Git directory path (instead of .git)":
+        "自定义 Git 目录路径（代替 .git）",
     "Resolved from the custom base path or vault root. Restart Obsidian to apply. Use backslashes on Windows.":
         "从自定义基础路径或库根目录解析。重启 Obsidian 后生效。Windows 上使用反斜杠。",
     "Disable on this device": "在此设备上禁用",
@@ -170,7 +183,8 @@ const translations: Record<string, string> = {
     Support: "支持",
     Donate: "捐赠",
     "Support continued development of the plugin.": "支持插件的持续开发。",
-    "Show commit authoring information next to each line": "在每行旁显示提交作者信息",
+    "Show commit authoring information next to each line":
+        "在每行旁显示提交作者信息",
     "Only available on desktop currently.": "目前仅在桌面端可用。",
     "Follow movement and copies across files and commits":
         "跟踪跨文件和提交的移动与复制",
@@ -313,13 +327,15 @@ const translations: Record<string, string> = {
     "Authentication failed. Please try with different credentials":
         "身份验证失败。请尝试其他凭据。",
     "ObsidianGit: Base path does not exist": "ObsidianGit：基础路径不存在",
-    "No upstream branch is set. Please select one.": "未设置上游分支。请选择一个。",
+    "No upstream branch is set. Please select one.":
+        "未设置上游分支。请选择一个。",
     "Enter remote URL": "输入远程 URL",
     "Enter directory for clone. It needs to be empty or not existent.":
         "输入克隆目录。目录必须为空或不存在。",
     "Specify depth of clone. Leave empty for full clone.":
         "指定克隆深度。留空以进行完整克隆。",
-    "This branch isn't merged into HEAD. Force delete?": "此分支尚未合并到 HEAD。强制删除？",
+    "This branch isn't merged into HEAD. Force delete?":
+        "此分支尚未合并到 HEAD。强制删除？",
     "Select a remote": "选择远程",
     "Do you really want to delete the repository (.git directory)? This action cannot be undone.":
         "确定要删除仓库（.git 目录）吗？此操作无法撤销。",
@@ -328,9 +344,7 @@ const translations: Record<string, string> = {
 export function normalizeLanguage(language?: string): "en" | "zh" {
     if (!language) return "en";
     const normalized = language.replace("_", "-").toLowerCase();
-    return normalized === "zh" || normalized.startsWith("zh-")
-        ? "zh"
-        : "en";
+    return normalized === "zh" || normalized.startsWith("zh-") ? "zh" : "en";
 }
 
 export function currentLanguage(): "en" | "zh" {
@@ -358,8 +372,7 @@ export function translateDynamic(
 ): string {
     const template = t(english, chinese);
     return Object.entries(values).reduce(
-        (text, [key, value]) =>
-            text.split(`{{${key}}}`).join(String(value)),
+        (text, [key, value]) => text.split(`{{${key}}}`).join(String(value)),
         template
     );
 }
@@ -382,10 +395,9 @@ function translateLeaf(item: SettingDefinition): SettingDefinition {
             control: {
                 ...item.control,
                 options: Object.fromEntries(
-                    Object.entries(item.control.options!).map(([key, label]) => [
-                        key,
-                        t(label),
-                    ])
+                    Object.entries(item.control.options!).map(
+                        ([key, label]) => [key, t(label)]
+                    )
                 ),
             },
         } as SettingDefinition;

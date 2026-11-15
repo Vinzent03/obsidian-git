@@ -78,7 +78,10 @@
             {:else if count !== undefined}
                 <div
                     class="type conflict"
-                    aria-label={t("{count} conflict(s) left")}
+                    aria-label={t("{{count}} conflict(s) left").replace(
+                        "{{count}}",
+                        String(count)
+                    )}
                 >
                     {count}
                 </div>

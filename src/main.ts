@@ -629,7 +629,9 @@ export default class ObsidianGit extends Plugin {
                     }
 
                     if (pausedAutomatics) {
-                        new Notice(t("Automatic routines are currently paused."));
+                        new Notice(
+                            t("Automatic routines are currently paused.")
+                        );
                     }
 
                     break;
@@ -769,7 +771,8 @@ export default class ObsidianGit extends Plugin {
         if (!this.settings.disablePopups) {
             if (
                 !this.settings.disablePopupsForNoChanges ||
-                !message.startsWith("No changes")
+                (!message.startsWith("No changes") &&
+                    !message.startsWith(t("No changes")))
             ) {
                 new Notice(message, 5 * 1000);
             }

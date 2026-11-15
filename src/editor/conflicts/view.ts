@@ -1,4 +1,4 @@
-import { t } from "src/i18n";
+import { t, translateDynamic } from "src/i18n";
 import {
     Facet,
     StateField,
@@ -120,7 +120,13 @@ function renderConflictSummary(root: HTMLElement, view: EditorView): void {
     const blocks = view.state.field(conflictBlocksField, false) ?? [];
     root.createSpan({
         cls: "git-conflict-panel-label",
-        text: t("{{count}} conflict(s) in file").replace("{{count}}", String(blocks.length)),
+        text: translateDynamic(
+            blocks.length === 1
+                ? "{{count}} conflict in file"
+                : "{{count}} conflicts in file",
+            "文件中有 {{count}} 个冲突",
+            { count: blocks.length }
+        ),
     });
     const labels: Partial<Record<ConflictChoice, string>> = {
         ours: t("Keep all ours"),
