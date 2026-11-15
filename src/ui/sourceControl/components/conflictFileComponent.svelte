@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "src/i18n";
     import { setIcon, TFile } from "obsidian";
     import type { GitManager } from "src/gitManager/gitManager";
     import { getDisplayPath, getNewLeaf, getTooltipSide } from "src/utils";
@@ -62,7 +63,7 @@
         <div class="git-tools">
             <div class="buttons">
                 <div
-                    aria-label="Mark resolved"
+                    aria-label={t("Mark resolved")}
                     bind:this={button}
                     onclick={resolve}
                     class="clickable-icon"
@@ -71,13 +72,13 @@
             {#if count === 0}
                 <div
                     class="type resolved"
-                    aria-label="No conflicts left"
+                    aria-label={t("No conflicts left")}
                     bind:this={resolvedIcon}
                 ></div>
             {:else if count !== undefined}
                 <div
                     class="type conflict"
-                    aria-label="{count} conflict(s) left"
+                    aria-label={t("{count} conflict(s) left")}
                 >
                     {count}
                 </div>

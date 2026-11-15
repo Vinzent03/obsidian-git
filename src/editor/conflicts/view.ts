@@ -1,3 +1,4 @@
+import { t } from "src/i18n";
 import {
     Facet,
     StateField,
@@ -101,12 +102,12 @@ class ConflictButtonsWidget extends WidgetType {
             cls: "git-conflict-actions-group git-conflict-actions-widget",
         });
         const labels: Partial<Record<ConflictChoice, string>> = {
-            ours: "Keep ours",
-            theirs: "Keep theirs",
-            both: "Keep both",
+            ours: t("Keep ours"),
+            theirs: t("Keep theirs"),
+            both: t("Keep both"),
         };
         if (this.block.base !== undefined) {
-            labels.base = "Keep base";
+            labels.base = t("Keep base");
         }
         addButtons(root, labels, (choice) =>
             resolveConflict(view, this.block, choice)
@@ -119,15 +120,15 @@ function renderConflictSummary(root: HTMLElement, view: EditorView): void {
     const blocks = view.state.field(conflictBlocksField, false) ?? [];
     root.createSpan({
         cls: "git-conflict-panel-label",
-        text: `${blocks.length} conflict${blocks.length === 1 ? "" : "s"} in file`,
+        text: t("{{count}} conflict(s) in file").replace("{{count}}", String(blocks.length)),
     });
     const labels: Partial<Record<ConflictChoice, string>> = {
-        ours: "Keep all ours",
-        theirs: "Keep all theirs",
-        both: "Keep both",
+        ours: t("Keep all ours"),
+        theirs: t("Keep all theirs"),
+        both: t("Keep both"),
     };
     if (blocks.every((block) => block.base !== undefined)) {
-        labels.base = "Keep all base";
+        labels.base = t("Keep all base");
     }
     addButtons(
         root.createDiv({ cls: "git-conflict-actions-group" }),

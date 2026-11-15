@@ -1,3 +1,4 @@
+import { t } from "src/i18n";
 import { htmlToMarkdown, Menu } from "obsidian";
 
 import type { EditorState } from "@codemirror/state";
@@ -49,7 +50,7 @@ export const diffContextMenu = EditorView.domEventHandlers({
         const menu = Menu.forEvent(event);
         menu.addItem((item) =>
             item
-                .setTitle("Cut")
+                .setTitle(t("Cut"))
                 .setIcon("scissors")
                 .setDisabled(!canEdit || selectedText.length === 0)
                 .onClick(async () => {
@@ -59,14 +60,14 @@ export const diffContextMenu = EditorView.domEventHandlers({
         );
         menu.addItem((item) =>
             item
-                .setTitle("Copy")
+                .setTitle(t("Copy"))
                 .setIcon("copy")
                 .setDisabled(selectedText.length === 0)
                 .onClick(() => navigator.clipboard.writeText(selectedText))
         );
         menu.addItem((item) =>
             item
-                .setTitle("Paste")
+                .setTitle(t("Paste"))
                 .setIcon("clipboard-paste")
                 .setDisabled(!canEdit)
                 .onClick(async () =>
@@ -75,7 +76,7 @@ export const diffContextMenu = EditorView.domEventHandlers({
         );
         menu.addItem((item) =>
             item
-                .setTitle("Paste as plain text")
+                .setTitle(t("Paste as plain text"))
                 .setIcon("clipboard-type")
                 .setDisabled(!canEdit)
                 .onClick(async () =>
@@ -84,7 +85,7 @@ export const diffContextMenu = EditorView.domEventHandlers({
         );
         menu.addItem((item) =>
             item
-                .setTitle("Select all")
+                .setTitle(t("Select all"))
                 .setIcon("scan")
                 .onClick(() =>
                     view.dispatch({

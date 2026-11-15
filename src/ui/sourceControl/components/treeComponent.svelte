@@ -1,5 +1,6 @@
 <!-- tslint:disable ts(2345)  -->
 <script lang="ts">
+    import { t } from "src/i18n";
     import TreeComponent from "./treeComponent.svelte";
 
     import type ObsidianGit from "src/main";
@@ -136,7 +137,7 @@
                             {#if fileType == FileType.staged}
                                 <div
                                     data-icon="minus"
-                                    aria-label="Unstage"
+                                    aria-label={t("Unstage")}
                                     onclick={(event) =>
                                         unstage(event, entity.path)}
                                     class="clickable-icon"
@@ -162,7 +163,7 @@
                             {:else if fileType == FileType.changed}
                                 <div
                                     data-icon="undo"
-                                    aria-label="Discard"
+                                    aria-label={t("Discard")}
                                     onclick={(event) => discard(event, entity)}
                                     class="clickable-icon"
                                 >
@@ -184,7 +185,7 @@
                                 </div>
                                 <div
                                     data-icon="plus"
-                                    aria-label="Stage"
+                                    aria-label={t("Stage")}
                                     onclick={(event) =>
                                         stage(event, entity.path)}
                                     class="clickable-icon"

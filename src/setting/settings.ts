@@ -33,6 +33,7 @@ import type ObsidianGit from "src/main";
 import type { ObsidianGitSettings } from "src/types";
 import type HistoryView from "src/ui/history/historyView";
 import { convertToRgb, rgbToString } from "src/utils";
+import { t, translateSettingDefinitions } from "src/i18n";
 
 const FORMAT_STRING_REFERENCE_URL =
     "https://momentjs.com/docs/#/parsing/string-format/";
@@ -186,7 +187,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         const desktop = () => this.plugin.gitManager instanceof SimpleGit;
         const mobile = () => this.plugin.gitManager instanceof IsomorphicGit;
         const automatic = this.commitOrSync;
-        return [
+        return translateSettingDefinitions([
             {
                 name: "Git is not ready",
                 desc: "When the repository is ready, automatic routines, commit, sync, and editor settings become available. Check the repository paths and Git configuration under Advanced.",
@@ -393,7 +394,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         render: (setting) => {
                             setting.addButton((button) =>
                                 button
-                                    .setButtonText("Preview")
+                                    .setButtonText(t("Preview"))
                                     .onClick(async () => {
                                         const preview =
                                             await this.plugin.gitManager.formatCommitMessage(
@@ -833,7 +834,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         render: (setting) => {
                             setting.addButton((button) =>
                                 button
-                                    .setButtonText("Reload")
+                                    .setButtonText(t("Reload"))
                                     .setCta()
                                     .onClick(async () =>
                                         this.plugin.reloadGitManager()
@@ -906,7 +907,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 render: (setting) => {
                                     setting.addButton((button) =>
                                         button
-                                            .setButtonText("Copy")
+                                            .setButtonText(t("Copy"))
                                             .onClick(async () => {
                                                 await window.navigator.clipboard.writeText(
                                                     JSON.stringify(
@@ -972,7 +973,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     },
                 ],
             },
-        ];
+        ]);
     }
 
     public configureLineAuthorShowStatus(show: boolean) {
@@ -1022,7 +1023,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             !this.plugin.editorIntegration.lineAuthoringFeature.isAvailableOnCurrentPlatform()
         ) {
             baseLineAuthorInfoSetting
-                .setDesc("Only available on desktop currently.")
+                .setDesc(t("Only available on desktop currently."))
                 .setDisabled(true);
         }
 
@@ -1051,7 +1052,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         if (this.settings.lineAuthor.show) {
             const trackMovement = new Setting(containerEl)
-                .setName("Follow movement and copies across files and commits")
+                .setName(t("Follow movement and copies across files and commits"))
                 .addDropdown((dropdown) => {
                     dropdown.addOptions({
                         inactive: "Do not follow (default)",
@@ -1100,7 +1101,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             });
 
             new Setting(containerEl)
-                .setName("Show commit hash")
+                .setName(t("Show commit hash"))
                 .addToggle((tgl) => {
                     tgl.setValue(this.settings.lineAuthor.showCommitHash);
                     tgl.onChange((value: boolean) =>
@@ -1109,8 +1110,8 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
 
             new Setting(containerEl)
-                .setName("Author name display")
-                .setDesc("If and how the author is displayed")
+                .setName(t("Author name display"))
+                .setDesc(t("If and how the author is displayed"))
                 .addDropdown((dropdown) => {
                     const options: Record<LineAuthorDisplay, string> = {
                         hide: "Hide",
@@ -1131,7 +1132,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
 
             new Setting(containerEl)
-                .setName("Authoring date display")
+                .setName(t("Authoring date display"))
                 .setDesc(
                     "If and how the date and time of authoring the line is displayed"
                 )
@@ -1166,7 +1167,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
                 dateTimeFormatCustomStringSetting
-                    .setName("Custom authoring date format")
+                    .setName(t("Custom authoring date format"))
                     .addText((cb) => {
                         cb.setValue(
                             this.settings.lineAuthor.dateTimeFormatCustomString
@@ -1192,7 +1193,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             }
 
             const timezoneSetting = new Setting(containerEl)
-                .setName("Authoring date display timezone")
+                .setName(t("Authoring date display timezone"))
                 .addDropdown((dropdown) => {
                     const options: Record<LineAuthorTimezoneOption, string> = {
                         "viewer-local": "My local (default)",
@@ -1256,7 +1257,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             this.createColorSetting("oldest", containerEl);
 
             const textColorSetting = new Setting(containerEl)
-                .setName("Text color")
+                .setName(t("Text color"))
                 .addText((field) => {
                     field.setValue(this.settings.lineAuthor.textColorCss);
                     field.onChange(async (value) => {
@@ -1307,7 +1308,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             });
 
             const ignoreWhitespaceSetting = new Setting(containerEl)
-                .setName("Ignore whitespace and newlines in changes")
+                .setName(t("Ignore whitespace and newlines in changes"))
                 .addToggle((tgl) => {
                     tgl.setValue(this.settings.lineAuthor.ignoreWhitespace);
                     tgl.onChange((value) =>
@@ -1329,7 +1330,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         which: "oldest" | "newest",
         containerEl: HTMLElement
     ) {
-        const setting = new Setting(containerEl).setName("").addText((text) => {
+        const setting = new Setting(containerEl).setName(t("")).addText((text) => {
             const color = pickColor(which, this.settings.lineAuthor);
             const defaultColor = pickColor(which, DEFAULT_SETTINGS.lineAuthor);
             text.setPlaceholder(rgbToString(defaultColor));

@@ -1,3 +1,4 @@
+import { t } from "src/i18n";
 import { FuzzySuggestModal } from "obsidian";
 import type ObsidianGit from "src/main";
 
@@ -11,7 +12,7 @@ export class BranchModal extends FuzzySuggestModal<string> {
         private readonly branches: string[]
     ) {
         super(plugin.app);
-        this.setPlaceholder("Select branch to checkout");
+        this.setPlaceholder(t("Select branch to checkout"));
     }
 
     getItems(): string[] {

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "src/i18n";
     interface Props {
         files: unknown[];
     }
@@ -13,10 +14,10 @@
         <div class="tree-item nav-file">
             <div
                 class="tree-item-self nav-file-title"
-                aria-label={"And " + (files.length - 500) + " more files"}
+                aria-label={t("And {{count}} more files").replace("{{count}}", String(files.length - 500))}
             >
                 <div class="tree-item-inner nav-file-title-content">
-                    {"And " + (files.length - 500) + " more files"}
+                    {t("And {{count}} more files").replace("{{count}}", String(files.length - 500))}
                 </div>
             </div>
         </div>
