@@ -52,7 +52,7 @@ const AUTOMATIC_RELOADS: Record<string, ("commit" | "push" | "pull")[]> = {
     autoPullInterval: ["pull"],
 };
 const validateInteger = (value: number): string | undefined =>
-    Number.isInteger(value) ? undefined : "Enter a whole number.";
+    Number.isInteger(value) ? undefined : t("Enter a whole number.");
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     lineAuthorColorSettings: Map<"oldest" | "newest", Setting> = new Map();
@@ -105,7 +105,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 if (!edited) text.setValue(local ?? "");
                 if (manager instanceof SimpleGit) {
                     const global = await manager.getConfig(key, "global");
-                    if (global) text.setPlaceholder(`Global: ${global}`);
+                    if (global)
+                        text.setPlaceholder(
+                            translateDynamic(
+                                "Global: {{value}}",
+                                "全局：{{value}}",
+                                { value: global }
+                            )
+                        );
                 }
             })().catch((error) => this.plugin.displayError(error));
 
@@ -324,7 +331,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     button
                                         .setIcon("reset")
                                         .setTooltip(
-                                            `Set to default: "${DEFAULT_SETTINGS.commitMessage}"`
+                                            translateDynamic(
+                                                'Set to default: "{{value}}"',
+                                                "重置为默认值：“{{value}}”",
+                                                {
+                                                    value: DEFAULT_SETTINGS.commitMessage,
+                                                }
+                                            )
                                         )
                                         .onClick(() => {
                                             text.setValue(
@@ -359,15 +372,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     })
                             );
                             setting.descEl.createSpan({
-                                text: `Example: ${DATE_TIME_FORMAT_SECONDS}. See `,
+                                text: translateDynamic(
+                                    "Example: {{example}}. See ",
+                                    "示例：{{example}}。参见 ",
+                                    { example: DATE_TIME_FORMAT_SECONDS }
+                                ),
                             });
                             setting.descEl.createEl("a", {
-                                text: "Moment.js documentation",
+                                text: t("Moment.js documentation"),
                                 href: FORMAT_STRING_REFERENCE_URL,
                                 attr: { target: "_blank" },
                             });
                             setting.descEl.createSpan({
-                                text: " for more formats.",
+                                text: t(" for more formats."),
                             });
                         },
                     },
@@ -852,9 +869,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             validate: (path) => {
                                 if (path === "") return undefined;
                                 else if (path == "/")
-                                    return "Leave empty when the repository is at the root.";
+                                    return t(
+                                        "Leave empty when the repository is at the root."
+                                    );
                                 else if (!this.app.vault.getFolderByPath(path))
-                                    return "Choose an existing folder in this vault.";
+                                    return t(
+                                        "Choose an existing folder in this vault."
+                                    );
                                 return undefined;
                             },
                         },
@@ -891,7 +912,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                                     )
                                                 );
                                         new Notice(
-                                            "Obsidian must be restarted for the change to take effect."
+                                            t(
+                                                "Obsidian must be restarted for the change to take effect."
+                                            )
                                         );
                                     })
                             );
@@ -924,7 +947,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                                     )
                                                 );
                                                 new Notice(
-                                                    "Debug information copied to clipboard. May contain sensitive information!"
+                                                    t(
+                                                        "Debug information copied to clipboard. May contain sensitive information!"
+                                                    )
                                                 );
                                             })
                                     );
@@ -1400,26 +1425,20 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         which: "oldest" | "newest",
         containerEl: HTMLElement
     ) {
-        const setting = new Setting(containerEl)
-            .setName(t(""))
-            .addText((text) => {
-                const color = pickColor(which, this.settings.lineAuthor);
-                const defaultColor = pickColor(
-                    which,
-                    DEFAULT_SETTINGS.lineAuthor
-                );
-                text.setPlaceholder(rgbToString(defaultColor));
-                text.setValue(rgbToString(color));
-                text.onChange(async (colorNew) => {
-                    const rgb = convertToRgb(colorNew);
-                    if (rgb !== undefined) {
-                        const key =
-                            which === "newest" ? "colorNew" : "colorOld";
-                        await this.lineAuthorSettingHandler(key, rgb);
-                    }
-                    this.refreshColorSettingsDesc(which, rgb);
-                });
+        const setting = new Setting(containerEl).setName("").addText((text) => {
+            const color = pickColor(which, this.settings.lineAuthor);
+            const defaultColor = pickColor(which, DEFAULT_SETTINGS.lineAuthor);
+            text.setPlaceholder(rgbToString(defaultColor));
+            text.setValue(rgbToString(color));
+            text.onChange(async (colorNew) => {
+                const rgb = convertToRgb(colorNew);
+                if (rgb !== undefined) {
+                    const key = which === "newest" ? "colorNew" : "colorOld";
+                    await this.lineAuthorSettingHandler(key, rgb);
+                }
+                this.refreshColorSettingsDesc(which, rgb);
             });
+        });
         this.lineAuthorColorSettings.set(which, setting);
 
         this.refreshColorSettingsName(which);

@@ -14,21 +14,29 @@ export class MergeConflictModal extends Modal {
         titleEl.setText(t("Merge in progress"));
         contentEl.addClass("obsidian-git-merge-help");
         contentEl.createEl("p", {
-            text: t("Git is combining the version in your vault with changes from another version. The merge must be committed before Obsidian Git can push or resume automatic commits."),
+            text: t(
+                "Git is combining the version in your vault with changes from another version. The merge must be committed before Obsidian Git can push or resume automatic commits."
+            ),
         });
 
         if (conflicts.length > 0) {
             contentEl.createEl("h3", { text: t("Resolve the conflicts") });
             contentEl.createEl("p", {
-                text: t("Git could not combine some parts automatically. Open each conflicted file and review every highlighted conflict block."),
+                text: t(
+                    "Git could not combine some parts automatically. Open each conflicted file and review every highlighted conflict block."
+                ),
             });
 
             const steps = contentEl.createEl("ol");
             steps.createEl("li", {
-                text: t("Choose “Keep ours” for your local text, “Keep theirs” for the incoming text, “Keep both”, or edit the block manually."),
+                text: t(
+                    "Choose “Keep ours” for your local text, “Keep theirs” for the incoming text, “Keep both”, or edit the block manually."
+                ),
             });
             steps.createEl("li", {
-                text: t("When the file's conflict count reaches zero, select the plus icon next to it to mark it as resolved."),
+                text: t(
+                    "When the file's conflict count reaches zero, select the plus icon next to it to mark it as resolved."
+                ),
             });
             steps.createEl("li", {
                 text: t("Repeat this for every file in the Conflicts section."),
@@ -41,13 +49,17 @@ export class MergeConflictModal extends Modal {
                 text: t("All conflicts have been marked as resolved."),
             });
             resolved.createDiv({
-                text: t("The merge is still active until you commit the staged changes."),
+                text: t(
+                    "The merge is still active until you commit the staged changes."
+                ),
             });
         }
 
         contentEl.createEl("h3", { text: t("Finish the merge") });
         contentEl.createEl("p", {
-            text: t("After the Conflicts section is empty, enter a commit message and commit the staged changes. This finishes the merge. You can then push normally."),
+            text: t(
+                "After the Conflicts section is empty, enter a commit message and commit the staged changes. This finishes the merge. You can then push normally."
+            ),
         });
 
         const buttons = contentEl.createDiv({ cls: "modal-button-container" });

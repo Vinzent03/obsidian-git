@@ -124,14 +124,16 @@ export class GitActions {
                     return { status: "not-found" };
                 }
 
+                const noOption = t("NO");
+                const yesOption = t("YES");
                 const shouldDelete =
                     (await new GeneralModal(this.plugin, {
-                        options: ["NO", "YES"],
+                        options: [noOption, yesOption],
                         placeholder: t(
                             "Do you really want to delete the repository (.git directory)? This action cannot be undone."
                         ),
                         onlySelection: true,
-                    }).openAndGetResult()) === "YES";
+                    }).openAndGetResult()) === yesOption;
                 if (!shouldDelete) {
                     return { status: "cancelled" };
                 }
@@ -154,11 +156,11 @@ export class GitActions {
         switch (result.status) {
             case "deleted":
                 this.plugin.displayMessage(
-                    "Successfully deleted repository. Reloading plugin..."
+                    t("Successfully deleted repository. Reloading plugin...")
                 );
                 return;
             case "not-found":
-                this.plugin.displayMessage("No repository found");
+                this.plugin.displayMessage(t("No repository found"));
                 return;
             case "cancelled":
                 return;
@@ -184,7 +186,7 @@ export class GitActions {
             return { status: "cancelled", reason: "no-url" };
         }
 
-        const confirmOption = "Vault Root";
+        const confirmOption = t("Vault Root");
         let dir = await new GeneralModal(this.plugin, {
             options:
                 this.plugin.gitManager instanceof IsomorphicGit
@@ -208,8 +210,10 @@ export class GitActions {
         }
 
         if (dir === ".") {
+            const noOption = t("NO");
+            const yesOption = t("YES");
             const containsConflictDir = await new GeneralModal(this.plugin, {
-                options: ["NO", "YES"],
+                options: [noOption, yesOption],
                 placeholder: translateDynamic(
                     "Does your remote repo contain a {{directory}} directory at the root?",
                     "远程仓库根目录是否包含 {{directory}} 目录？",
@@ -219,12 +223,14 @@ export class GitActions {
             }).openAndGetResult();
             if (containsConflictDir === undefined) {
                 return { status: "cancelled", reason: "safety-declined" };
-            } else if (containsConflictDir === "YES") {
-                const deleteConfirmation =
-                    "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
+            } else if (containsConflictDir === yesOption) {
+                const abortOption = t("Abort clone");
+                const deleteConfirmation = t(
+                    "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS"
+                );
                 const shouldDelete =
                     (await new GeneralModal(this.plugin, {
-                        options: ["Abort clone", deleteConfirmation],
+                        options: [abortOption, deleteConfirmation],
                         placeholder: translateDynamic(
                             "To avoid conflicts, the local {{directory}} directory needs to be deleted.",
                             "为避免冲突，需要删除本地 {{directory}} 目录。",

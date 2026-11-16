@@ -14,10 +14,16 @@
         <div class="tree-item nav-file">
             <div
                 class="tree-item-self nav-file-title"
-                aria-label={t("And {{count}} more files").replace("{{count}}", String(files.length - 500))}
+                aria-label={t("And {{count}} more files").replace(
+                    "{{count}}",
+                    String(files.length - 500)
+                )}
             >
                 <div class="tree-item-inner nav-file-title-content">
-                    {t("And {{count}} more files").replace("{{count}}", String(files.length - 500))}
+                    {t("And {{count}} more files").replace(
+                        "{{count}}",
+                        String(files.length - 500)
+                    )}
                 </div>
             </div>
         </div>

@@ -594,7 +594,8 @@
                         >
                     </div>
                     <div class="tree-item-inner nav-folder-title-content">
-                        {t("Conflicts")}</div>
+                        {t("Conflicts")}
+                    </div>
                     <div class="git-tools">
                         <div class="files-count">
                             {status.conflicted.length}
@@ -660,7 +661,8 @@
                             >
                         </div>
                         <div class="tree-item-inner nav-folder-title-content">
-                            {t("Staged Changes")}</div>
+                            {t("Staged Changes")}
+                        </div>
 
                         <div class="git-tools">
                             <div class="buttons">
@@ -727,7 +729,8 @@
                             <div
                                 class="tree-item-inner nav-folder-title-content"
                             >
-                                {t("Staged outside vault")}</div>
+                                {t("Staged outside vault")}
+                            </div>
                             <div class="git-tools">
                                 <div class="files-count">
                                     {status.stagedOutsideVault}
@@ -742,7 +745,8 @@
                             <div
                                 class="tree-item-inner nav-folder-title-content"
                             >
-                                {t("Conflicts outside vault")}</div>
+                                {t("Conflicts outside vault")}
+                            </div>
                             <div class="git-tools">
                                 <div class="files-count">
                                     {status.conflictedOutsideVault}
@@ -779,7 +783,8 @@
                         </div>
 
                         <div class="tree-item-inner nav-folder-title-content">
-                            {t("Changes")}</div>
+                            {t("Changes")}
+                        </div>
                         <div class="git-tools">
                             <div class="buttons">
                                 <div
@@ -895,7 +900,8 @@
                             <div
                                 class="tree-item-inner nav-folder-title-content"
                             >
-                                {t("Recently Pulled Files")}</div>
+                                {t("Recently Pulled Files")}
+                            </div>
 
                             <span class="tree-item-flair"
                                 >{lastPulledFiles.length}</span

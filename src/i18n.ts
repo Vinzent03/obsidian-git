@@ -1,7 +1,5 @@
 import * as obsidian from "obsidian";
 
-type Translation = readonly [english: string, chinese: string];
-
 const translations: Record<string, string> = {
     "No changes": "无更改",
     "No changes to commit": "无更改可提交",
@@ -339,6 +337,74 @@ const translations: Record<string, string> = {
     "Select a remote": "选择远程",
     "Do you really want to delete the repository (.git directory)? This action cannot be undone.":
         "确定要删除仓库（.git 目录）吗？此操作无法撤销。",
+    Reload: "重新加载",
+    YES: "是",
+    NO: "否",
+    "Vault Root": "库根目录",
+    "Abort clone": "中止克隆",
+    "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS": "删除所有本地配置和插件",
+    "Successfully deleted repository. Reloading plugin...":
+        "已成功删除仓库。正在重新加载插件...",
+    "No repository found": "未找到仓库",
+    "Auto commit interval (minutes)": "自动提交间隔（分钟）",
+    "Auto commit-and-sync interval (minutes)": "自动提交并同步间隔（分钟）",
+    "Commit changes every X minutes. Set to 0 to disable.":
+        "每 X 分钟提交一次更改。设为 0 可禁用。",
+    "Commit and sync changes every X minutes. Set to 0 to disable.":
+        "每 X 分钟提交并同步一次更改。设为 0 可禁用。",
+    "Auto commit after stopping file edits": "停止编辑文件后自动提交",
+    "Auto commit-and-sync after stopping file edits":
+        "停止编辑文件后自动提交并同步",
+    "Requires the commit interval not to be 0. Waits for file edits to stop before the next auto commit.":
+        "要求自动提交间隔不为 0。等待停止编辑文件后再执行下次自动提交。",
+    "Requires the commit-and-sync interval not to be 0. Waits for file edits to stop before the next auto commit-and-sync.":
+        "要求自动提交并同步间隔不为 0。等待停止编辑文件后再执行下次自动提交并同步。",
+    "Start the automatic commit timer from the latest commit":
+        "从最近一次提交开始自动提交计时",
+    "Start the automatic commit-and-sync timer from the latest commit":
+        "从最近一次提交开始自动提交并同步计时",
+    "Sets the last auto commit timestamp to the latest commit timestamp, reducing the frequency after manual commits.":
+        "将上次自动提交时间戳设为最近一次提交的时间戳，从而减少手动提交后的自动触发频率。",
+    "Sets the last auto commit-and-sync timestamp to the latest commit timestamp, reducing the frequency after manual commits.":
+        "将上次自动提交并同步时间戳设为最近一次提交的时间戳，从而减少手动提交后的自动触发频率。",
+    "Auto commit glob mode": "自动提交通配符模式",
+    "Auto commit-and-sync glob mode": "自动提交并同步通配符模式",
+    "Globs for auto commit": "自动提交的通配符",
+    "Globs for auto commit-and-sync": "自动提交并同步的通配符",
+    "Specify custom commit message on auto commit":
+        "自动提交时指定自定义提交信息",
+    "Specify custom commit message on auto commit-and-sync":
+        "自动提交并同步时指定自定义提交信息",
+    "Commit message on auto commit": "自动提交时的提交信息",
+    "Commit message on auto commit-and-sync": "自动提交并同步时的提交信息",
+    "Stage all changes when nothing is staged": "未暂存任何内容时暂存所有更改",
+    "When using Commit with nothing staged, stage and commit all changes. Commit all changes and Commit-and-sync are unaffected.":
+        "在没有已暂存内容时执行“提交”，会自动暂存并提交所有更改。“提交所有更改”和“提交并同步”不受影响。",
+    "Pull on startup": "启动时拉取",
+    "Automatically pull commits when Obsidian starts.":
+        "启动 Obsidian 时自动拉取提交。",
+    "Pull on commit-and-sync": "提交并同步时拉取",
+    "Pull commits as part of commit-and-sync.":
+        "将拉取提交作为提交并同步流程的一部分。",
+    "Limit status, staging, unstaging, discarding, and submodule updates to the vault where possible. Configured auto commit globs take precedence for automatic staging. Repository history and remote actions remain repository-wide.":
+        "尽可能将状态查看、暂存、取消暂存、丢弃更改和子模块更新限制在库内。配置的自动提交通配符在自动暂存时优先于此限制。仓库历史和远程操作仍作用于整个仓库。",
+    "Enter a whole number.": "请输入整数。",
+    "Global: {{value}}": "全局：{{value}}",
+    'Set to default: "{{value}}"': "重置为默认值：“{{value}}”",
+    "Example: {{example}}. See ": "示例：{{example}}。参见 ",
+    "Moment.js documentation": "Moment.js 文档",
+    " for more formats.": " 查看更多格式。",
+    "Leave empty when the repository is at the root.":
+        "仓库位于根目录时请留空。",
+    "Choose an existing folder in this vault.": "请选择此库中的现有文件夹。",
+    "Obsidian must be restarted for the change to take effect.":
+        "必须重启 Obsidian 后更改才能生效。",
+    "Debug information copied to clipboard. May contain sensitive information!":
+        "调试信息已复制到剪贴板。其中可能包含敏感信息！",
+    "Open the developer console with CMD (⌘) + OPTION (⌥) + I.":
+        "按 CMD (⌘) + OPTION (⌥) + I 打开开发者控制台。",
+    "Open the developer console with CTRL + SHIFT + I.":
+        "按 CTRL + SHIFT + I 打开开发者控制台。",
 };
 
 export function normalizeLanguage(language?: string): "en" | "zh" {
@@ -389,20 +455,25 @@ function translateLeaf(item: SettingDefinition): SettingDefinition {
         name: t(item.name),
         desc: typeof item.desc === "string" ? t(item.desc) : item.desc,
     };
-    if ("control" in item && item.control?.type === "dropdown") {
+    if (
+        "control" in item &&
+        item.control?.type === "dropdown" &&
+        item.control.options
+    ) {
         return {
             ...translated,
             control: {
                 ...item.control,
                 options: Object.fromEntries(
-                    Object.entries(item.control.options!).map(
-                        ([key, label]) => [key, t(label)]
-                    )
+                    Object.entries(item.control.options).map(([key, label]) => [
+                        key,
+                        t(label),
+                    ])
                 ),
             },
         } as SettingDefinition;
     }
-    return translated as SettingDefinition;
+    return translated;
 }
 
 function translateGroupItem(item: SettingGroupItem): SettingGroupItem {
@@ -414,7 +485,7 @@ function translateGroupItem(item: SettingGroupItem): SettingGroupItem {
             items: item.items?.map(translateDefinitionItem),
         };
     }
-    return translateLeaf(item as SettingDefinition);
+    return translateLeaf(item);
 }
 
 /** Translate display-only fields while retaining Obsidian's definition shape. */
