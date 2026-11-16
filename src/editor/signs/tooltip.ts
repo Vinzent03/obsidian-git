@@ -1,3 +1,4 @@
+import { t } from "src/i18n";
 import { EditorState, StateEffect, StateField } from "@codemirror/state";
 import {
     EditorView,
@@ -143,9 +144,9 @@ function createTooltip(
         return btn;
     };
 
-    const closeBtn = makeButton("x", "Close hunk");
-    const stageBtn = makeButton("plus", "Stage hunk");
-    const resetBtn = makeButton("undo", "Reset hunk");
+    const closeBtn = makeButton("x", t("Close hunk"));
+    const stageBtn = makeButton("plus", t("Stage hunk"));
+    const resetBtn = makeButton("undo", t("Reset hunk"));
 
     toolbar.appendChild(closeBtn);
     toolbar.appendChild(stageBtn);

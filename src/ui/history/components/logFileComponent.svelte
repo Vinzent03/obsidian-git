@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "src/i18n";
     import { setIcon, TFile } from "obsidian";
     import type { DiffFile } from "src/types";
     import {
@@ -96,7 +97,7 @@
                 {#if diff.status !== "D" && !diff.binary && !fileIsBinary(diff.path)}
                     <div
                         data-icon="file-clock"
-                        aria-label="Open file at this commit"
+                        aria-label={t("Open file at this commit")}
                         bind:this={buttons[1]}
                         onauxclick={openAtCommit}
                         onclick={openAtCommit}
@@ -106,7 +107,7 @@
                 {#if fileOpenableInObsidian(diff.vaultPath, view.app)}
                     <div
                         data-icon="go-to-file"
-                        aria-label="Open File"
+                        aria-label={t("Open File")}
                         bind:this={buttons[0]}
                         onauxclick={open}
                         onclick={open}

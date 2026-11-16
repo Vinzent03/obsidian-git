@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { createPatch } from "diff";
 import type {
     AuthCallback,
@@ -96,15 +97,18 @@ export class IsomorphicGit extends GitManager {
             },
             onAuthFailure: async () => {
                 new Notice(
-                    "Authentication failed. Please try with different credentials"
+                    t(
+                        "Authentication failed. Please try with different credentials"
+                    )
                 );
                 const username = await new GeneralModal(this.plugin, {
-                    placeholder: "Specify your username",
+                    placeholder: t("Specify your username"),
                 }).openAndGetResult();
                 if (username) {
                     const password = await new GeneralModal(this.plugin, {
-                        placeholder:
-                            "Specify your password/personal access token",
+                        placeholder: t(
+                            "Specify your password/personal access token"
+                        ),
                         obscure: true,
                     }).openAndGetResult();
                     if (password) {

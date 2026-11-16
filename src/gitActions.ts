@@ -1,3 +1,4 @@
+import { t, translateDynamic } from "./i18n";
 import { Errors } from "isomorphic-git";
 import { normalizePath, Notice, Platform, TFile, moment } from "obsidian";
 import * as fsPromises from "fs/promises";
@@ -123,13 +124,16 @@ export class GitActions {
                     return { status: "not-found" };
                 }
 
+                const noOption = t("NO");
+                const yesOption = t("YES");
                 const shouldDelete =
                     (await new GeneralModal(this.plugin, {
-                        options: ["NO", "YES"],
-                        placeholder:
-                            "Do you really want to delete the repository (.git directory)? This action cannot be undone.",
+                        options: [noOption, yesOption],
+                        placeholder: t(
+                            "Do you really want to delete the repository (.git directory)? This action cannot be undone."
+                        ),
                         onlySelection: true,
-                    }).openAndGetResult()) === "YES";
+                    }).openAndGetResult()) === yesOption;
                 if (!shouldDelete) {
                     return { status: "cancelled" };
                 }
@@ -152,11 +156,11 @@ export class GitActions {
         switch (result.status) {
             case "deleted":
                 this.plugin.displayMessage(
-                    "Successfully deleted repository. Reloading plugin..."
+                    t("Successfully deleted repository. Reloading plugin...")
                 );
                 return;
             case "not-found":
-                this.plugin.displayMessage("No repository found");
+                this.plugin.displayMessage(t("No repository found"));
                 return;
             case "cancelled":
                 return;
@@ -176,20 +180,21 @@ export class GitActions {
 
     private async performCloneNewRepo(): Promise<CloneRepositoryResult> {
         const url = await new GeneralModal(this.plugin, {
-            placeholder: "Enter remote URL",
+            placeholder: t("Enter remote URL"),
         }).openAndGetResult();
         if (!url) {
             return { status: "cancelled", reason: "no-url" };
         }
 
-        const confirmOption = "Vault Root";
+        const confirmOption = t("Vault Root");
         let dir = await new GeneralModal(this.plugin, {
             options:
                 this.plugin.gitManager instanceof IsomorphicGit
                     ? [confirmOption]
                     : [],
-            placeholder:
-                "Enter directory for clone. It needs to be empty or not existent.",
+            placeholder: t(
+                "Enter directory for clone. It needs to be empty or not existent."
+            ),
             allowEmpty: this.plugin.gitManager instanceof IsomorphicGit,
         }).openAndGetResult();
         if (dir === undefined) {
@@ -205,20 +210,32 @@ export class GitActions {
         }
 
         if (dir === ".") {
+            const noOption = t("NO");
+            const yesOption = t("YES");
             const containsConflictDir = await new GeneralModal(this.plugin, {
-                options: ["NO", "YES"],
-                placeholder: `Does your remote repo contain a ${this.plugin.app.vault.configDir} directory at the root?`,
+                options: [noOption, yesOption],
+                placeholder: translateDynamic(
+                    "Does your remote repo contain a {{directory}} directory at the root?",
+                    "远程仓库根目录是否包含 {{directory}} 目录？",
+                    { directory: this.plugin.app.vault.configDir }
+                ),
                 onlySelection: true,
             }).openAndGetResult();
             if (containsConflictDir === undefined) {
                 return { status: "cancelled", reason: "safety-declined" };
-            } else if (containsConflictDir === "YES") {
-                const deleteConfirmation =
-                    "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS";
+            } else if (containsConflictDir === yesOption) {
+                const abortOption = t("Abort clone");
+                const deleteConfirmation = t(
+                    "DELETE ALL YOUR LOCAL CONFIG AND PLUGINS"
+                );
                 const shouldDelete =
                     (await new GeneralModal(this.plugin, {
-                        options: ["Abort clone", deleteConfirmation],
-                        placeholder: `To avoid conflicts, the local ${this.plugin.app.vault.configDir} directory needs to be deleted.`,
+                        options: [abortOption, deleteConfirmation],
+                        placeholder: translateDynamic(
+                            "To avoid conflicts, the local {{directory}} directory needs to be deleted.",
+                            "为避免冲突，需要删除本地 {{directory}} 目录。",
+                            { directory: this.plugin.app.vault.configDir }
+                        ),
                         onlySelection: true,
                     }).openAndGetResult()) === deleteConfirmation;
                 if (!shouldDelete) {
@@ -232,7 +249,9 @@ export class GitActions {
         }
 
         const depth = await new GeneralModal(this.plugin, {
-            placeholder: "Specify depth of clone. Leave empty for full clone.",
+            placeholder: t(
+                "Specify depth of clone. Leave empty for full clone."
+            ),
             allowEmpty: true,
         }).openAndGetResult();
         if (depth === undefined) {
@@ -371,18 +390,29 @@ export class GitActions {
                 const totalFiles = result.files.length + result.outsideVault;
                 const outsideMessage =
                     result.outsideVault > 0
-                        ? ` (${result.files.length} in the vault, ${result.outsideVault} outside)`
+                        ? translateDynamic(
+                              " ({{inside}} in the vault, {{outside}} outside)",
+                              "（库内 {{inside}} 个，库外 {{outside}} 个）",
+                              {
+                                  inside: result.files.length,
+                                  outside: result.outsideVault,
+                              }
+                          )
                         : "";
                 this.plugin.displayMessage(
-                    `Pulled ${totalFiles} ${
-                        totalFiles == 1 ? "file" : "files"
-                    } from remote${outsideMessage}`
+                    translateDynamic(
+                        totalFiles == 1
+                            ? "Pulled {{count}} file from remote{{outside}}"
+                            : "Pulled {{count}} files from remote{{outside}}",
+                        "已从远程拉取 {{count}} 个文件{{outside}}",
+                        { count: totalFiles, outside: outsideMessage }
+                    )
                 );
                 this.plugin.lastPulledFiles = result.files;
                 return;
             }
             case "up-to-date":
-                this.plugin.displayMessage("Pull: Everything is up-to-date");
+                this.plugin.displayMessage(t("Pull: Everything is up-to-date"));
                 return;
             case "skipped": {
                 const reason = result.reason;
@@ -729,9 +759,13 @@ export class GitActions {
         switch (result.status) {
             case "committed":
                 this.plugin.displayMessage(
-                    `Committed ${result.files} ${
-                        result.files == 1 ? "file" : "files"
-                    }`
+                    translateDynamic(
+                        result.files == 1
+                            ? "Committed {{count}} file"
+                            : "Committed {{count}} files",
+                        "已提交 {{count}} 个文件",
+                        { count: result.files }
+                    )
                 );
                 return;
             case "nothing-to-commit": {
@@ -739,11 +773,13 @@ export class GitActions {
                 switch (reason) {
                     case "nothing-staged":
                         this.plugin.displayMessage(
-                            "Nothing staged. Stage changes first or use Commit all changes."
+                            t(
+                                "Nothing staged. Stage changes first or use Commit all changes."
+                            )
                         );
                         return;
                     case "no-changes":
-                        this.plugin.displayMessage("No changes to commit");
+                        this.plugin.displayMessage(t("No changes to commit"));
                         return;
                 }
                 return;
@@ -753,7 +789,9 @@ export class GitActions {
                 switch (reason) {
                     case "merge-in-progress":
                         this.plugin.displayError(
-                            "Did not commit automatically because a merge is in progress. Commit it manually."
+                            t(
+                                "Did not commit automatically because a merge is in progress. Commit it manually."
+                            )
                         );
                         return;
                     case "not-ready":
@@ -816,17 +854,21 @@ export class GitActions {
         switch (result.status) {
             case "pushed":
                 if (result.files === null) {
-                    this.plugin.displayMessage("Pushed to remote");
+                    this.plugin.displayMessage(t("Pushed to remote"));
                 } else {
                     this.plugin.displayMessage(
-                        `Pushed ${result.files} ${
-                            result.files == 1 ? "file" : "files"
-                        } to remote`
+                        translateDynamic(
+                            result.files == 1
+                                ? "Pushed {{count}} file to remote"
+                                : "Pushed {{count}} files to remote",
+                            "已向远程推送 {{count}} 个文件",
+                            { count: result.files }
+                        )
                     );
                 }
                 return;
             case "up-to-date":
-                this.plugin.displayMessage("No commits to push");
+                this.plugin.displayMessage(t("No commits to push"));
                 return;
             case "blocked": {
                 const reason = result.reason;
@@ -1116,7 +1158,7 @@ export class GitActions {
                 }
                 const branch = await new GeneralModal(this.plugin, {
                     options: branchInfo.branches,
-                    placeholder: "Delete branch",
+                    placeholder: t("Delete branch"),
                     onlySelection: true,
                 }).openAndGetResult();
                 if (branch === undefined) {
@@ -1129,8 +1171,9 @@ export class GitActions {
                 if (!merged) {
                     const forceAnswer = await new GeneralModal(this.plugin, {
                         options: ["YES", "NO"],
-                        placeholder:
-                            "This branch isn't merged into HEAD. Force delete?",
+                        placeholder: t(
+                            "This branch isn't merged into HEAD. Force delete?"
+                        ),
                         onlySelection: true,
                     }).openAndGetResult();
                     if (forceAnswer !== "YES") {
@@ -1409,7 +1452,7 @@ export class GitActions {
         const oldUrl = await this.plugin.gitManager.getRemoteUrl(remoteName);
         const remoteURL = await new GeneralModal(this.plugin, {
             initialValue: oldUrl,
-            placeholder: "Enter remote URL",
+            placeholder: t("Enter remote URL"),
         }).openAndGetResult();
         if (!remoteURL) {
             return { status: "cancelled" };

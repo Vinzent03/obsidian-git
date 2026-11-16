@@ -1,3 +1,4 @@
+import { t } from "src/i18n";
 import { moment, SuggestModal } from "obsidian";
 import type ObsidianGit from "src/main";
 
@@ -8,7 +9,9 @@ export class CustomMessageModal extends SuggestModal<string> {
     constructor(private readonly plugin: ObsidianGit) {
         super(plugin.app);
         this.setPlaceholder(
-            "Type your message and select optional the version with the added date."
+            t(
+                "Type your message and select optional the version with the added date."
+            )
         );
     }
 

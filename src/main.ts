@@ -50,6 +50,7 @@ import { coalesce } from "./coalesce";
 import { EditorIntegration } from "./editor/editorIntegration";
 import { runGitAction, type GitActionResult } from "./gitAction";
 import { GitActions } from "./gitActions";
+import { t } from "src/i18n";
 
 export default class ObsidianGit extends Plugin {
     gitActions = new GitActions(this);
@@ -313,7 +314,7 @@ export default class ObsidianGit extends Plugin {
         });
         this.addRibbonIcon(
             "git-pull-request",
-            "Open Git source control",
+            t("Open Git source control"),
             async () => {
                 const leafs = this.app.workspace.getLeavesOfType(
                     SOURCE_CONTROL_VIEW_CONFIG.type
@@ -376,7 +377,7 @@ export default class ObsidianGit extends Plugin {
 
         if (source == "file-explorer-context-menu") {
             menu.addItem((item) => {
-                item.setTitle(`Git: Stage`)
+                item.setTitle(t("Git: Stage"))
                     .setIcon("plus-circle")
                     .setSection("action")
                     .onClick((_) => {
@@ -395,7 +396,7 @@ export default class ObsidianGit extends Plugin {
                     });
             });
             menu.addItem((item) => {
-                item.setTitle(`Git: Unstage`)
+                item.setTitle(t("Git: Unstage"))
                     .setIcon("minus-circle")
                     .setSection("action")
                     .onClick((_) => {
@@ -414,7 +415,7 @@ export default class ObsidianGit extends Plugin {
                     });
             });
             menu.addItem((item) => {
-                item.setTitle(`Git: Add to .gitignore`)
+                item.setTitle(t("Git: Add to .gitignore"))
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
@@ -430,7 +431,7 @@ export default class ObsidianGit extends Plugin {
 
         if (source == "git-source-control") {
             menu.addItem((item) => {
-                item.setTitle(`Git: Add to .gitignore`)
+                item.setTitle(t("Git: Add to .gitignore"))
                     .setIcon("file-x")
                     .setSection("action")
                     .onClick((_) => {
@@ -448,7 +449,7 @@ export default class ObsidianGit extends Plugin {
                 gitManager instanceof FileSystemAdapter
             ) {
                 menu.addItem((item) => {
-                    item.setTitle("Open in default app")
+                    item.setTitle(t("Open in default app"))
                         .setIcon("arrow-up-right")
                         .setSection("action")
                         .onClick((_) => {
@@ -456,7 +457,7 @@ export default class ObsidianGit extends Plugin {
                         });
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Show in system explorer")
+                    item.setTitle(t("Show in system explorer"))
                         .setIcon("arrow-up-right")
                         .setSection("action")
                         .onClick((_) => {
@@ -628,7 +629,9 @@ export default class ObsidianGit extends Plugin {
                     }
 
                     if (pausedAutomatics) {
-                        new Notice("Automatic routines are currently paused.");
+                        new Notice(
+                            t("Automatic routines are currently paused.")
+                        );
                     }
 
                     break;
@@ -768,7 +771,8 @@ export default class ObsidianGit extends Plugin {
         if (!this.settings.disablePopups) {
             if (
                 !this.settings.disablePopupsForNoChanges ||
-                !message.startsWith("No changes")
+                (!message.startsWith("No changes") &&
+                    !message.startsWith(t("No changes")))
             ) {
                 new Notice(message, 5 * 1000);
             }
@@ -779,7 +783,7 @@ export default class ObsidianGit extends Plugin {
 
     displayError(data: unknown, timeout: number = 10 * 1000): void {
         if (data instanceof Errors.UserCanceledError) {
-            new Notice("Aborted");
+            new Notice(t("Aborted"));
             return;
         }
         let error: Error;

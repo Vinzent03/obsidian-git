@@ -1,3 +1,4 @@
+import { t } from "src/i18n";
 import { html } from "diff2html";
 import type { EventRef, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { ItemView, Platform } from "obsidian";
@@ -129,7 +130,7 @@ export default class DiffView extends ItemView {
                     });
                     div.createEl("br");
                     div.createSpan({
-                        text: "File not found: " + this.state.bFile,
+                        text: t("File not found: ") + this.state.bFile,
                     });
                 }
             } finally {

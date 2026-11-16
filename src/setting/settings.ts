@@ -33,6 +33,7 @@ import type ObsidianGit from "src/main";
 import type { ObsidianGitSettings } from "src/types";
 import type HistoryView from "src/ui/history/historyView";
 import { convertToRgb, rgbToString } from "src/utils";
+import { t, translateDynamic, translateSettingDefinitions } from "src/i18n";
 
 const FORMAT_STRING_REFERENCE_URL =
     "https://momentjs.com/docs/#/parsing/string-format/";
@@ -51,7 +52,7 @@ const AUTOMATIC_RELOADS: Record<string, ("commit" | "push" | "pull")[]> = {
     autoPullInterval: ["pull"],
 };
 const validateInteger = (value: number): string | undefined =>
-    Number.isInteger(value) ? undefined : "Enter a whole number.";
+    Number.isInteger(value) ? undefined : t("Enter a whole number.");
 
 export class ObsidianGitSettingsTab extends PluginSettingTab {
     lineAuthorColorSettings: Map<"oldest" | "newest", Setting> = new Map();
@@ -104,7 +105,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 if (!edited) text.setValue(local ?? "");
                 if (manager instanceof SimpleGit) {
                     const global = await manager.getConfig(key, "global");
-                    if (global) text.setPlaceholder(`Global: ${global}`);
+                    if (global)
+                        text.setPlaceholder(
+                            translateDynamic(
+                                "Global: {{value}}",
+                                "全局：{{value}}",
+                                { value: global }
+                            )
+                        );
                 }
             })().catch((error) => this.plugin.displayError(error));
 
@@ -186,7 +194,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         const desktop = () => this.plugin.gitManager instanceof SimpleGit;
         const mobile = () => this.plugin.gitManager instanceof IsomorphicGit;
         const automatic = this.commitOrSync;
-        return [
+        return translateSettingDefinitions([
             {
                 name: "Git is not ready",
                 desc: "When the repository is ready, automatic routines, commit, sync, and editor settings become available. Check the repository paths and Git configuration under Advanced.",
@@ -323,7 +331,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     button
                                         .setIcon("reset")
                                         .setTooltip(
-                                            `Set to default: "${DEFAULT_SETTINGS.commitMessage}"`
+                                            translateDynamic(
+                                                'Set to default: "{{value}}"',
+                                                "重置为默认值：“{{value}}”",
+                                                {
+                                                    value: DEFAULT_SETTINGS.commitMessage,
+                                                }
+                                            )
                                         )
                                         .onClick(() => {
                                             text.setValue(
@@ -358,15 +372,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                     })
                             );
                             setting.descEl.createSpan({
-                                text: `Example: ${DATE_TIME_FORMAT_SECONDS}. See `,
+                                text: translateDynamic(
+                                    "Example: {{example}}. See ",
+                                    "示例：{{example}}。参见 ",
+                                    { example: DATE_TIME_FORMAT_SECONDS }
+                                ),
                             });
                             setting.descEl.createEl("a", {
-                                text: "Moment.js documentation",
+                                text: t("Moment.js documentation"),
                                 href: FORMAT_STRING_REFERENCE_URL,
                                 attr: { target: "_blank" },
                             });
                             setting.descEl.createSpan({
-                                text: " for more formats.",
+                                text: t(" for more formats."),
                             });
                         },
                     },
@@ -393,7 +411,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         render: (setting) => {
                             setting.addButton((button) =>
                                 button
-                                    .setButtonText("Preview")
+                                    .setButtonText(t("Preview"))
                                     .onClick(async () => {
                                         const preview =
                                             await this.plugin.gitManager.formatCommitMessage(
@@ -833,7 +851,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         render: (setting) => {
                             setting.addButton((button) =>
                                 button
-                                    .setButtonText("Reload")
+                                    .setButtonText(t("Reload"))
                                     .setCta()
                                     .onClick(async () =>
                                         this.plugin.reloadGitManager()
@@ -851,9 +869,13 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                             validate: (path) => {
                                 if (path === "") return undefined;
                                 else if (path == "/")
-                                    return "Leave empty when the repository is at the root.";
+                                    return t(
+                                        "Leave empty when the repository is at the root."
+                                    );
                                 else if (!this.app.vault.getFolderByPath(path))
-                                    return "Choose an existing folder in this vault.";
+                                    return t(
+                                        "Choose an existing folder in this vault."
+                                    );
                                 return undefined;
                             },
                         },
@@ -890,7 +912,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                                     )
                                                 );
                                         new Notice(
-                                            "Obsidian must be restarted for the change to take effect."
+                                            t(
+                                                "Obsidian must be restarted for the change to take effect."
+                                            )
                                         );
                                     })
                             );
@@ -906,7 +930,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                 render: (setting) => {
                                     setting.addButton((button) =>
                                         button
-                                            .setButtonText("Copy")
+                                            .setButtonText(t("Copy"))
                                             .onClick(async () => {
                                                 await window.navigator.clipboard.writeText(
                                                     JSON.stringify(
@@ -923,7 +947,9 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                                                     )
                                                 );
                                                 new Notice(
-                                                    "Debug information copied to clipboard. May contain sensitive information!"
+                                                    t(
+                                                        "Debug information copied to clipboard. May contain sensitive information!"
+                                                    )
                                                 );
                                             })
                                     );
@@ -972,7 +998,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     },
                 ],
             },
-        ];
+        ]);
     }
 
     public configureLineAuthorShowStatus(show: boolean) {
@@ -1015,31 +1041,40 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         containerEl.empty();
         this.lineAuthorColorSettings.clear();
         const baseLineAuthorInfoSetting = new Setting(containerEl).setName(
-            "Show commit authoring information next to each line"
+            t(
+                "Show commit authoring information next to each line",
+                "在每行旁显示提交作者信息"
+            )
         );
 
         if (
             !this.plugin.editorIntegration.lineAuthoringFeature.isAvailableOnCurrentPlatform()
         ) {
             baseLineAuthorInfoSetting
-                .setDesc("Only available on desktop currently.")
+                .setDesc(t("Only available on desktop currently."))
                 .setDisabled(true);
         }
 
         baseLineAuthorInfoSetting.descEl.createEl("a", {
             href: LINE_AUTHOR_FEATURE_WIKI_LINK,
-            text: "Feature guide and quick examples",
+            text: t("Feature guide and quick examples", "功能指南与简短示例"),
             attr: {
                 target: "_blank",
             },
         });
         baseLineAuthorInfoSetting.descEl.createEl("br");
         baseLineAuthorInfoSetting.descEl.createSpan({
-            text: " The commit hash, author name and authoring date can all be individually toggled.",
+            text: t(
+                " The commit hash, author name and authoring date can all be individually toggled.",
+                " 提交哈希、作者名称和作者日期均可单独切换显示。"
+            ),
         });
         baseLineAuthorInfoSetting.descEl.createEl("br");
         baseLineAuthorInfoSetting.descEl.createSpan({
-            text: "Hide everything, to only show the age-colored sidebar.",
+            text: t(
+                "Hide everything, to only show the age-colored sidebar.",
+                "隐藏所有信息时，仅显示按时间着色的侧栏。"
+            ),
         });
 
         baseLineAuthorInfoSetting.addToggle((toggle) =>
@@ -1051,12 +1086,23 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 
         if (this.settings.lineAuthor.show) {
             const trackMovement = new Setting(containerEl)
-                .setName("Follow movement and copies across files and commits")
+                .setName(
+                    t("Follow movement and copies across files and commits")
+                )
                 .addDropdown((dropdown) => {
                     dropdown.addOptions({
-                        inactive: "Do not follow (default)",
-                        "same-commit": "Follow within same commit",
-                        "all-commits": "Follow within all commits (maybe slow)",
+                        inactive: t(
+                            "Do not follow (default)",
+                            "不跟踪（默认）"
+                        ),
+                        "same-commit": t(
+                            "Follow within same commit",
+                            "在同一提交内跟踪"
+                        ),
+                        "all-commits": t(
+                            "Follow within all commits (maybe slow)",
+                            "在所有提交内跟踪（可能较慢）"
+                        ),
                     });
                     dropdown.setValue(this.settings.lineAuthor.followMovement);
                     dropdown.onChange((value) =>
@@ -1068,22 +1114,37 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
 
             trackMovement.descEl.createSpan({
-                text: "By default (deactivated), each line only shows the newest commit where it was changed.",
+                text: t(
+                    "By default (deactivated), each line only shows the newest commit where it was changed.",
+                    "默认（未启用）时，每行仅显示最后一次修改该行的提交。"
+                ),
             });
             trackMovement.descEl.createEl("br");
-            trackMovement.descEl.createSpan({ text: "With " });
-            trackMovement.descEl.createEl("i", { text: "same commit" });
+            trackMovement.descEl.createSpan({ text: t("With ", "选择") });
+            trackMovement.descEl.createEl("i", {
+                text: t("same commit", "同一提交"),
+            });
             trackMovement.descEl.createSpan({
-                text: ", cut-copy-paste-ing of text is followed within the same commit and the original commit of authoring will be shown.",
+                text: t(
+                    ", cut-copy-paste-ing of text is followed within the same commit and the original commit of authoring will be shown.",
+                    "时，会跟踪同一提交中的文本剪切、复制和粘贴，并显示最初编写文本的提交。"
+                ),
             });
             trackMovement.descEl.createEl("br");
-            trackMovement.descEl.createSpan({ text: "With " });
-            trackMovement.descEl.createEl("i", { text: "all commits" });
+            trackMovement.descEl.createSpan({ text: t("With ", "选择") });
+            trackMovement.descEl.createEl("i", {
+                text: t("all commits", "所有提交"),
+            });
             trackMovement.descEl.createSpan({
-                text: ", cut-copy-paste-ing text inbetween multiple commits will be detected.",
+                text: t(
+                    ", cut-copy-paste-ing text inbetween multiple commits will be detected.",
+                    "时，会检测跨多个提交的文本剪切、复制和粘贴。"
+                ),
             });
             trackMovement.descEl.createEl("br");
-            trackMovement.descEl.createSpan({ text: "It uses " });
+            trackMovement.descEl.createSpan({
+                text: t("It uses ", "此功能使用 "),
+            });
             trackMovement.descEl.createEl("a", {
                 href: "https://git-scm.com/docs/git-blame",
                 text: "git-blame",
@@ -1092,15 +1153,23 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 },
             });
             trackMovement.descEl.createSpan({
-                text: ` and for matches (at least ${GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH} characters) within the same (or all) commit(s), `,
+                text: translateDynamic(
+                    " and for matches (at least {{length}} characters) within the same (or all) commit(s), ",
+                    "；对于同一提交（或所有提交）中的匹配文本（至少 {{length}} 个字符），会显示",
+                    {
+                        length: GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH,
+                    }
+                ),
             });
-            trackMovement.descEl.createEl("em", { text: "the originating" });
+            trackMovement.descEl.createEl("em", {
+                text: t("the originating", "最初编写文本的"),
+            });
             trackMovement.descEl.createSpan({
-                text: " commit's information is shown.",
+                text: t(" commit's information is shown.", "提交的信息。"),
             });
 
             new Setting(containerEl)
-                .setName("Show commit hash")
+                .setName(t("Show commit hash"))
                 .addToggle((tgl) => {
                     tgl.setValue(this.settings.lineAuthor.showCommitHash);
                     tgl.onChange((value: boolean) =>
@@ -1109,15 +1178,15 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
 
             new Setting(containerEl)
-                .setName("Author name display")
-                .setDesc("If and how the author is displayed")
+                .setName(t("Author name display"))
+                .setDesc(t("If and how the author is displayed"))
                 .addDropdown((dropdown) => {
                     const options: Record<LineAuthorDisplay, string> = {
-                        hide: "Hide",
-                        initials: "Initials (default)",
-                        "first name": "First name",
-                        "last name": "Last name",
-                        full: "Full name",
+                        hide: t("Hide", "隐藏"),
+                        initials: t("Initials (default)", "首字母（默认）"),
+                        "first name": t("First name", "名"),
+                        "last name": t("Last name", "姓"),
+                        full: t("Full name", "全名"),
                     };
                     dropdown.addOptions(options);
                     dropdown.setValue(this.settings.lineAuthor.authorDisplay);
@@ -1131,20 +1200,23 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
 
             new Setting(containerEl)
-                .setName("Authoring date display")
+                .setName(t("Authoring date display"))
                 .setDesc(
-                    "If and how the date and time of authoring the line is displayed"
+                    t(
+                        "If and how the date and time of authoring the line is displayed",
+                        "行作者日期和时间是否以及如何显示"
+                    )
                 )
                 .addDropdown((dropdown) => {
                     const options: Record<
                         LineAuthorDateTimeFormatOptions,
                         string
                     > = {
-                        hide: "Hide",
-                        date: "Date (default)",
-                        datetime: "Date and time",
-                        "natural language": "Natural language",
-                        custom: "Custom",
+                        hide: t("Hide", "隐藏"),
+                        date: t("Date (default)", "日期（默认）"),
+                        datetime: t("Date and time", "日期和时间"),
+                        "natural language": t("Natural language", "自然语言"),
+                        custom: t("Custom", "自定义"),
                     };
                     dropdown.addOptions(options);
                     dropdown.setValue(
@@ -1166,7 +1238,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 );
 
                 dateTimeFormatCustomStringSetting
-                    .setName("Custom authoring date format")
+                    .setName(t("Custom authoring date format"))
                     .addText((cb) => {
                         cb.setValue(
                             this.settings.lineAuthor.dateTimeFormatCustomString
@@ -1192,11 +1264,14 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             }
 
             const timezoneSetting = new Setting(containerEl)
-                .setName("Authoring date display timezone")
+                .setName(t("Authoring date display timezone"))
                 .addDropdown((dropdown) => {
                     const options: Record<LineAuthorTimezoneOption, string> = {
-                        "viewer-local": "My local (default)",
-                        "author-local": "Author's local",
+                        "viewer-local": t(
+                            "My local (default)",
+                            "我的本地时区（默认）"
+                        ),
+                        "author-local": t("Author's local", "作者的本地时区"),
                         utc0000: "UTC+0000/Z",
                     };
                     dropdown.addOptions(options);
@@ -1213,18 +1288,21 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             timezoneSetting.descEl.empty();
             timezoneSetting.descEl.createSpan({
-                text: "The time-zone in which the authoring date should be shown.\nEither your local time-zone (default),\nthe author's time-zone during commit creation or\n",
+                text: t(
+                    "The time-zone in which the authoring date should be shown.\nEither your local time-zone (default),\nthe author's time-zone during commit creation or\n",
+                    "显示作者日期所用的时区。\n可选择你的本地时区（默认）、\n作者创建提交时的时区，或\n"
+                ),
             });
             timezoneSetting.descEl.createEl("a", {
                 text: "UTC±00:00",
                 href: "https://en.wikipedia.org/wiki/UTC%C2%B100:00",
             });
             timezoneSetting.descEl.createSpan({
-                text: ".",
+                text: t(".", "。"),
             });
 
             const oldestAgeSetting = new Setting(containerEl).setName(
-                "Oldest age in coloring"
+                t("Oldest age in coloring", "着色中的最旧时间")
             );
 
             this.setOldestAgeDescription(
@@ -1256,7 +1334,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             this.createColorSetting("oldest", containerEl);
 
             const textColorSetting = new Setting(containerEl)
-                .setName("Text color")
+                .setName(t("Text color"))
                 .addText((field) => {
                     field.setValue(this.settings.lineAuthor.textColorCss);
                     field.onChange(async (value) => {
@@ -1268,19 +1346,25 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             textColorSetting.descEl.empty();
             textColorSetting.descEl.createSpan({
-                text: "The CSS color of the gutter text.",
+                text: t(
+                    "The CSS color of the gutter text.",
+                    "行旁文本的 CSS 颜色。"
+                ),
             });
             textColorSetting.descEl.createEl("br");
             textColorSetting.descEl.createEl("br");
             textColorSetting.descEl.createSpan({
-                text: "It is highly recommended to use ",
+                text: t(
+                    "It is highly recommended to use ",
+                    "强烈建议使用主题定义的"
+                ),
             });
             textColorSetting.descEl.createEl("a", {
-                text: "CSS variables",
+                text: t("CSS variables", "CSS 变量"),
                 href: "https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties",
             });
             textColorSetting.descEl.createSpan({
-                text: " defined by themes (e.g. ",
+                text: t(" defined by themes (e.g. ", "（例如 "),
             });
             textColorSetting.descEl.createEl("pre", {
                 text: "var(--text-muted)",
@@ -1288,7 +1372,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                     style: "display:inline",
                 },
             });
-            textColorSetting.descEl.createSpan({ text: " or " });
+            textColorSetting.descEl.createSpan({ text: t(" or ", " 或 ") });
             textColorSetting.descEl.createEl("pre", {
                 text: "var(--text-on-accent)",
                 attr: {
@@ -1296,18 +1380,24 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 },
             });
             textColorSetting.descEl.createSpan({
-                text: "), because they automatically adapt to theme changes.",
+                text: t(
+                    "), because they automatically adapt to theme changes.",
+                    "），因为它们会自动适应主题变化。"
+                ),
             });
             textColorSetting.descEl.createEl("br");
             textColorSetting.descEl.createEl("br");
-            textColorSetting.descEl.createSpan({ text: "See: " });
+            textColorSetting.descEl.createSpan({ text: t("See: ", "参见：") });
             textColorSetting.descEl.createEl("a", {
-                text: "List of available CSS variables in Obsidian",
+                text: t(
+                    "List of available CSS variables in Obsidian",
+                    "Obsidian 可用 CSS 变量列表"
+                ),
                 href: "https://github.com/obsidian-community/obsidian-theme-template/blob/main/obsidian.css",
             });
 
             const ignoreWhitespaceSetting = new Setting(containerEl)
-                .setName("Ignore whitespace and newlines in changes")
+                .setName(t("Ignore whitespace and newlines in changes"))
                 .addToggle((tgl) => {
                     tgl.setValue(this.settings.lineAuthor.ignoreWhitespace);
                     tgl.onChange((value) =>
@@ -1316,11 +1406,17 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                 });
             ignoreWhitespaceSetting.descEl.empty();
             ignoreWhitespaceSetting.descEl.createSpan({
-                text: "Whitespace and newlines are interpreted as part of the document and in changes by default (hence not ignored). This makes the last line being shown as 'changed' when a new subsequent line is added, even if the previously last line's text is the same.",
+                text: t(
+                    "Whitespace and newlines are interpreted as part of the document and in changes by default (hence not ignored). This makes the last line being shown as 'changed' when a new subsequent line is added, even if the previously last line's text is the same.",
+                    "默认情况下，空白和换行符均被视为文档及更改的一部分（不会忽略）。因此，在末尾添加新行时，即使原来最后一行的文本未变，该行也会显示为“已更改”。"
+                ),
             });
             ignoreWhitespaceSetting.descEl.createEl("br");
             ignoreWhitespaceSetting.descEl.createSpan({
-                text: "If you don't care about purely-whitespace changes (e.g. list nesting / quote indentation changes), then activating this will provide more meaningful change detection.",
+                text: t(
+                    "If you don't care about purely-whitespace changes (e.g. list nesting / quote indentation changes), then activating this will provide more meaningful change detection.",
+                    "如果你不关心纯空白更改（例如列表嵌套或引用缩进的变化），启用此项可使更改检测更有意义。"
+                ),
             });
         }
     }
@@ -1357,9 +1453,19 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
         if (settingsDom) {
             const whichDescriber =
                 which === "oldest"
-                    ? `oldest (${this.settings.lineAuthor.coloringMaxAge} or older)`
-                    : "newest";
-            settingsDom.nameEl.setText(`Color for ${whichDescriber} commits`);
+                    ? translateDynamic(
+                          "oldest ({{age}} or older)",
+                          "最旧（{{age}} 或更早的）",
+                          { age: this.settings.lineAuthor.coloringMaxAge }
+                      )
+                    : t("newest", "最新");
+            settingsDom.nameEl.setText(
+                translateDynamic(
+                    "Color for {{which}} commits",
+                    "{{which}}提交的颜色",
+                    { which: whichDescriber }
+                )
+            );
         }
     }
 
@@ -1383,7 +1489,10 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     ): void {
         descEl.empty();
         descEl.createSpan({
-            text: "Supports 'rgb(r,g,b)', 'hsl(h,s,l)', hex (#) and named colors (e.g. 'black', 'purple'). Color preview: ",
+            text: t(
+                "Supports 'rgb(r,g,b)', 'hsl(h,s,l)', hex (#) and named colors (e.g. 'black', 'purple'). Color preview: ",
+                "支持 'rgb(r,g,b)'、'hsl(h,s,l)'、十六进制 (#) 和颜色名称（如 'black'、'purple'）。颜色预览："
+            ),
         });
 
         const rgbStr = colorIsValid
@@ -1391,8 +1500,12 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             : `rgba(127,127,127,0.3)`;
         const today = moment.unix(moment.now() / 1000).format("YYYY-MM-DD");
         const text = colorIsValid
-            ? `abcdef Author Name ${today}`
-            : "invalid color";
+            ? translateDynamic(
+                  "abcdef Author Name {{date}}",
+                  "abcdef 作者名称 {{date}}",
+                  { date: today }
+              )
+            : t("invalid color", "无效颜色");
 
         descEl.createDiv({
             text: text,
@@ -1409,16 +1522,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     ): void {
         descEl.empty();
         descEl.createEl("a", {
-            text: "Format string",
+            text: t("Format string", "格式字符串"),
             href: FORMAT_STRING_REFERENCE_URL,
         });
         descEl.createSpan({
-            text: " to display the authoring date.",
+            text: t(" to display the authoring date.", "用于显示作者日期。"),
         });
         descEl.createEl("br");
         const formattedDateTime = moment().format(dateTimeFormatCustomString);
         descEl.createSpan({
-            text: `Currently: ${formattedDateTime}`,
+            text: translateDynamic("Currently: {{date}}", "当前：{{date}}", {
+                date: formattedDateTime,
+            }),
         });
     }
 
@@ -1428,10 +1543,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     ): void {
         const duration = parseColoringMaxAgeDuration(coloringMaxAge);
         const durationString =
-            duration !== undefined ? `${duration.asDays()} days` : "invalid!";
+            duration !== undefined
+                ? translateDynamic("{{days}} days", "{{days}} 天", {
+                      days: duration.asDays(),
+                  })
+                : t("invalid!", "无效！");
         descEl.empty();
         descEl.createSpan({
-            text: `The oldest age in the line author coloring. Everything older will have the same color.\nSmallest valid age is "1d". Currently: ${durationString}`,
+            text: translateDynamic(
+                'The oldest age in the line author coloring. Everything older will have the same color.\nSmallest valid age is "1d". Currently: {{duration}}',
+                '行作者着色的最旧时间。更早的提交均使用相同颜色。\n最小有效时间为 "1d"。当前：{{duration}}',
+                { duration: durationString }
+            ),
         });
     }
 
@@ -1454,7 +1577,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
 // Color previews and formatted descriptions depend on live input, so this
 // sub-page keeps its custom rows while the surrounding navigation is declarative.
 class LineAuthorSettingsPage extends SettingPage {
-    title = "Line author information";
+    title = t("Line author information");
 
     constructor(private tab: ObsidianGitSettingsTab) {
         super();

@@ -1,3 +1,4 @@
+import { t } from "src/i18n";
 import type { Editor, MarkdownView, Menu } from "obsidian";
 import { DEFAULT_SETTINGS } from "src/constants";
 import type { LineAuthorSettings } from "src/editor/lineAuthor/model";
@@ -41,7 +42,7 @@ export function handleContextMenu(
 function addCopyHashMenuItem(commit: CtxMenuCommitInfo, menu: Menu) {
     menu.addItem((item) =>
         item
-            .setTitle("Copy commit hash")
+            .setTitle(t("Copy commit hash"))
             .setIcon("copy")
             .setSection("obs-git-line-author-copy")
             .onClick((_e) => navigator.clipboard.writeText(commit.hash))
