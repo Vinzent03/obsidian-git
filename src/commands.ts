@@ -14,14 +14,14 @@ export function addCommmands(plugin: ObsidianGit) {
         name: "Edit .gitignore",
         callback: async () => {
             const path = plugin.gitManager.getRelativeVaultPath(".gitignore");
-            if (!(await app.vault.adapter.exists(path))) {
-                await app.vault.adapter.write(path, "");
+            if (!(await plugin.fileSystem.exists(path))) {
+                await plugin.fileSystem.write(path, "");
             }
-            const content = await app.vault.adapter.read(path);
+            const content = await plugin.fileSystem.read(path);
             const modal = new IgnoreModal(app, content);
             const res = await modal.openAndGetReslt();
             if (res !== undefined) {
-                await app.vault.adapter.write(path, res);
+                await plugin.fileSystem.write(path, res);
                 await plugin.refresh();
             }
         },

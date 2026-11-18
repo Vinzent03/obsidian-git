@@ -133,6 +133,7 @@ function createView(state: Partial<DiffViewState>) {
         mergeView: { a: editorWithText("a"), b: editorWithText("content") },
         app: { vault: { adapter: { read } } },
         plugin: {
+            fileSystem: { read },
             gitManager: {
                 getRelativeVaultPath: (path: string) => `repo/${path}`,
             },
@@ -142,6 +143,23 @@ function createView(state: Partial<DiffViewState>) {
 }
 
 describe("SplitDiffView", () => {
+    it("reads and enables editing a working tree file outside the vault", async () => {
+        const { plugin } = withCleanup(
+            await createSimpleGitTestContext({
+                getVaultOptions: (repo) => {
+                    repo.write("obsidian/vault/vault.md", "vault\n");
+                    return {
+                        vaultPath: path.join(repo.repoPath, "obsidian/vault"),
+                    };
+                },
+            })
+        );
+        const { view } = createView({ bRef: undefined });
+        Object.assign(view, { plugin });
+        await expect(view.bShouldBeEditable()).resolves.toBe(true);
+        await view.updateModifiableEditor();
+        expect(view.mergeView!.b.dispatch).toHaveBeenCalled();
+    });
     it("matches the working tree file by its vault path", () => {
         const { view } = createView({ bRef: undefined });
 

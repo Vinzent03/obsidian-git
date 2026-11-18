@@ -1,4 +1,4 @@
-import { Platform, TFile } from "obsidian";
+import { Platform } from "obsidian";
 import {
     DIFF_VIEW_CONFIG,
     READ_ONLY_FILE_VIEW_CONFIG,
@@ -31,24 +31,8 @@ export default class Tools {
 
             const gitManager = this.plugin.gitManager;
             for (const f of files) {
-                const file = this.plugin.app.vault.getAbstractFileByPath(
-                    f.vaultPath
-                );
-                let over100mb = false;
-
-                if (file instanceof TFile) {
-                    // Prefer the cached file size if available
-                    if (file.stat.size >= 100000000) {
-                        over100mb = true;
-                    }
-                } else {
-                    const statRes = await this.plugin.app.vault.adapter.stat(
-                        f.vaultPath
-                    );
-                    if (statRes && statRes.size >= 100000000) {
-                        over100mb = true;
-                    }
-                }
+                const stat = await this.plugin.fileSystem.stat(f.vaultPath);
+                const over100mb = stat !== null && stat.size >= 100000000;
                 if (over100mb) {
                     let isFileTrackedByLfs = false;
                     if (gitManager instanceof SimpleGit) {

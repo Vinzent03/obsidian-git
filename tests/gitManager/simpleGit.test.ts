@@ -23,6 +23,7 @@ function createManager(
     (
         plugin.app as unknown as {
             vault: {
+                getAbstractFileByPath(): null;
                 adapter: {
                     getBasePath(): string;
                     exists(filePath: string): Promise<boolean>;
@@ -30,6 +31,7 @@ function createManager(
             };
         }
     ).vault = {
+        getAbstractFileByPath: () => null,
         adapter: {
             getBasePath: () => vaultPath,
             exists: (filePath: string) =>
@@ -126,6 +128,96 @@ async function createPullConflict(repo: {
     await remoteGit.commit("remote conflict");
     await remoteGit.push(["--quiet"]);
 }
+
+describe("SimpleGit.setGitInstance", () => {
+    it("accepts a custom base path above the vault (#1241)", async () => {
+        const { manager, repo } = withCleanup(
+            await createSimpleGitTestContext({
+                getVaultOptions: (repo) => {
+                    repo.write("obsidian/vault/note.md", "vault\n");
+                    return {
+                        vaultPath: path.join(repo.repoPath, "obsidian/vault"),
+                        basePath: "../..",
+                    };
+                },
+            })
+        );
+
+        expect(manager.absoluteRepoPath).toBe(repo.repoPath);
+        expect(await manager.git.revparse("--show-toplevel")).toBe(
+            repo.repoPath
+        );
+    });
+});
+
+describe("SimpleGit filesystem paths in a nested vault", () => {
+    async function createContext() {
+        return withCleanup(
+            await createSimpleGitTestContext({
+                getVaultOptions: (repo) => {
+                    repo.write("obsidian/vault/note.md", "vault\n");
+                    mkdirSync(
+                        path.join(
+                            repo.repoPath,
+                            "obsidian/vault/.obsidian/plugins/obsidian-git"
+                        ),
+                        { recursive: true }
+                    );
+                    return {
+                        vaultPath: path.join(repo.repoPath, "obsidian/vault"),
+                    };
+                },
+            })
+        );
+    }
+
+    it("applies a patch stored inside the vault to the repository index", async () => {
+        const { repo, manager, plugin } = await createContext();
+        repo.write("note.md", "changed\n");
+        const patch = await repo.git.diff(["--", "note.md"]);
+        await manager.applyPatch(patch);
+        expect(await repo.show(":note.md")).toBe("changed");
+        expect(
+            await plugin.fileSystem.exists(
+                ".obsidian/plugins/obsidian-git/patch"
+            )
+        ).toBe(false);
+    });
+
+    it("removes the temporary patch after Git rejects it", async () => {
+        const { manager, plugin } = await createContext();
+        await expect(manager.applyPatch("invalid patch")).rejects.toThrow();
+        expect(
+            await plugin.fileSystem.exists(
+                ".obsidian/plugins/obsidian-git/patch"
+            )
+        ).toBe(false);
+    });
+
+    it("finds a submodule outside the vault using repository-relative paths", async () => {
+        const { repo, manager } = await createContext();
+        await simpleGit({
+            baseDir: repo.repoPath,
+            unsafe: { allowUnsafeProtocolOverride: true },
+        }).raw([
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            repo.remotePath,
+            "submodules/example",
+        ]);
+        await expect(
+            manager.getSubmoduleOfFile("submodules/example/note.md")
+        ).resolves.toEqual({
+            submodule: path.join(repo.repoPath, "submodules/example"),
+            relativeFilepath: "note.md",
+        });
+        await expect(
+            manager.isTracked("submodules/example/note.md")
+        ).resolves.toBe(true);
+    });
+});
 
 describe("SimpleGit.commit", () => {
     it("returns the change count and triggers a head-change event", async () => {

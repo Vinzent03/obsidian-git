@@ -100,9 +100,9 @@ export default class DiffView extends ItemView {
                             `+++ ${this.state.bFile}`,
                             "",
                         ].join("\n");
-                    } else if (await this.app.vault.adapter.exists(vaultPath)) {
+                    } else if (await this.plugin.fileSystem.exists(vaultPath)) {
                         const content =
-                            await this.app.vault.adapter.read(vaultPath);
+                            await this.plugin.fileSystem.read(vaultPath);
                         const header = `--- /dev/null
 +++ ${this.state.bFile}
 @@ -0,0 +1,${content.split("\n").length} @@`;

@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import type ObsidianGit from "../../src/main";
 import { GitOperation } from "../../src/types";
+import { RepoFileSystem } from "../../src/repoFileSystem";
 
 export type FakePlugin = ObsidianGit & {
     app: {
@@ -15,7 +16,7 @@ export type FakePlugin = ObsidianGit & {
 };
 
 export function createFakePlugin(): FakePlugin {
-    return {
+    const plugin = {
         app: {
             workspace: {
                 trigger: vi.fn(),
@@ -33,4 +34,6 @@ export function createFakePlugin(): FakePlugin {
         warn: vi.fn(),
         displayError: vi.fn(),
     } as unknown as FakePlugin;
+    plugin.fileSystem = new RepoFileSystem(plugin.app);
+    return plugin;
 }

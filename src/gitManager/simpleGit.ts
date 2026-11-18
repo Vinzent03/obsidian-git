@@ -1,7 +1,7 @@
 import debug from "debug";
 import * as fsPromises from "fs/promises";
 import type { FileSystemAdapter } from "obsidian";
-import { normalizePath, Notice, Platform } from "obsidian";
+import { Notice, Platform } from "obsidian";
 import * as path from "path";
 import { resolve, sep } from "path";
 import type * as simple from "simple-git";
@@ -55,17 +55,17 @@ export class SimpleGit extends GitManager {
             const adapter = this.app.vault.adapter as FileSystemAdapter;
             const vaultBasePath = adapter.getBasePath();
             let basePath = vaultBasePath;
-            // Because the basePath setting is a relative path, a leading `/` must
-            // be appended before concatenating with the path.
             if (this.plugin.settings.basePath) {
-                const exists = await adapter.exists(
-                    normalizePath(this.plugin.settings.basePath)
+                const customBasePath = path.join(
+                    vaultBasePath,
+                    this.plugin.settings.basePath
                 );
-                if (exists) {
-                    basePath = path.join(
-                        vaultBasePath,
+                if (
+                    await this.plugin.fileSystem.exists(
                         this.plugin.settings.basePath
-                    );
+                    )
+                ) {
+                    basePath = customBasePath;
                 } else if (!ignoreError) {
                     new Notice("ObsidianGit: Base path does not exist");
                 }
@@ -792,13 +792,16 @@ export class SimpleGit extends GitManager {
 
     async applyPatch(patch: string): Promise<void> {
         const patchPath = path.join(this.relPluginConfigPath, "patch");
-        await this.app.vault.adapter.write(patchPath, patch);
-        await this.git.applyPatch(patchPath, {
-            "--cached": null,
-            "--unidiff-zero": null,
-            "--whitespace": "nowarn",
-        });
-        await this.app.vault.adapter.remove(patchPath);
+        await this.plugin.fileSystem.write(patchPath, patch);
+        try {
+            await this.git.applyPatch(this.getRelativeRepoPath(patchPath), {
+                "--cached": null,
+                "--unidiff-zero": null,
+                "--whitespace": "nowarn",
+            });
+        } finally {
+            await this.plugin.fileSystem.remove(patchPath);
+        }
     }
 
     async getUntrackedPaths(opts: { path?: string }): Promise<string[]> {
@@ -1581,8 +1584,8 @@ export class SimpleGit extends GitManager {
         // Documentation: https://git-scm.com/docs/git-rev-parse
 
         if (
-            !(await this.app.vault.adapter.exists(
-                path.dirname(repositoryRelativeFile)
+            !(await this.plugin.fileSystem.exists(
+                this.getRelativeVaultPath(path.dirname(repositoryRelativeFile))
             ))
         ) {
             return undefined;
@@ -1617,9 +1620,9 @@ export class SimpleGit extends GitManager {
             return undefined; // not in submodule
         }
 
-        const fsAdapter = this.app.vault.adapter as FileSystemAdapter;
-        const absolutePath = fsAdapter.getFullPath(
-            path.normalize(repositoryRelativeFile)
+        const absolutePath = path.join(
+            this.absoluteRepoPath,
+            repositoryRelativeFile
         );
         const newRelativePath = path.relative(submoduleRoot, absolutePath);
 

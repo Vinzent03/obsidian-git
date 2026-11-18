@@ -124,6 +124,20 @@ The factory also accepts `configurePlugin`, `plugin`, `fixture`, and
 needs a mocked SimpleGit client; otherwise the production `setGitInstance()`
 path is used.
 
+The native Git harness uses `createFileSystemAdapter()` from
+`tests/helpers/fileSystemAdapter.ts` for `getBasePath`, `exists`, and `stat`.
+It reads real filesystem metadata and rejects paths outside the vault, modeling
+the adapter restriction reported in issue #1241. The isomorphic-git harness has
+its own filesystem adapter.
+
+Plugin filesystem access goes through `plugin.fileSystem` (`RepoFileSystem` in
+`src/repoFileSystem.ts`). Paths are vault-relative, including parent paths into
+the surrounding repository on desktop. It prefers cached Vault APIs, otherwise
+uses native filesystem access on desktop and the vault adapter on mobile.
+`tests/repoFileSystem.test.ts` covers routing, creation, deletion, binary data,
+and missing-file/error behavior. The isomorphic-git `MyAdapter` remains its
+specialized filesystem bridge with index caching.
+
 Keep native Git integration details in `simpleGit.test.ts` and
 isomorphic-git filesystem, transport, and merge-metadata details in
 `isomorphicGit.test.ts`.
