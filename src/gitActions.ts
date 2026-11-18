@@ -112,9 +112,8 @@ export class GitActions {
         const actionResult = await runGitAction<DeleteRepositoryResult>(
             this.plugin,
             async () => {
-                const repositoryPath = this.plugin.settings.basePath
-                    ? `${this.plugin.settings.basePath}/.git`
-                    : ".git";
+                const repositoryPath =
+                    this.plugin.gitManager.getRelativeVaultPath(".git");
                 if (!(await this.plugin.fileSystem.exists(repositoryPath))) {
                     return { status: "not-found" };
                 }
