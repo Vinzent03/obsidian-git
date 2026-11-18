@@ -43,6 +43,11 @@ export class IsomorphicGit extends GitManager {
     private static readonly MERGE_MESSAGE = "MERGE_MSG";
     private static readonly MERGE_MODE = "MERGE_MODE";
     private static readonly ORIGINAL_HEAD = "ORIG_HEAD";
+    // Materialize one file at a time so attachment buffers don't overlap on mobile.
+    private static readonly CHECKOUT_OPTIONS = {
+        nonBlocking: true,
+        batchSize: 1,
+    } as const;
     private readonly FILE = 0;
     private readonly HEAD = 1;
     private readonly WORKDIR = 2;
@@ -326,7 +331,11 @@ export class IsomorphicGit extends GitManager {
         }
         if (await this.app.vault.adapter.exists(vaultPath)) {
             await this.wrapFS(
-                git.add({ ...this.getRepo(), filepath: gitPath })
+                git.add({
+                    ...this.getRepo(),
+                    filepath: gitPath,
+                    parallel: false,
+                })
             );
         } else {
             await this.wrapFS(
@@ -375,6 +384,7 @@ export class IsomorphicGit extends GitManager {
                         : git.add({
                               ...this.getRepo(),
                               filepath: file.path,
+                              parallel: false,
                           })
                 )
             )
@@ -398,19 +408,22 @@ export class IsomorphicGit extends GitManager {
         dir?: string;
         status?: Status;
     }): Promise<void> {
+        const repo = { ...this.getRepo(), cache: {} };
         let staged: string[];
         if (status) {
             staged = status.staged.map((file) => file.path);
         } else {
-            const res = await this.getStagedFiles(dir ?? ".");
+            const res = await this.getStagedFiles(dir ?? ".", repo.cache);
             staged = res.map(({ path }) => path);
         }
         await this.wrapFS(
-            Promise.all(
-                staged.map((file) =>
-                    git.resetIndex({ ...this.getRepo(), filepath: file })
-                )
-            )
+            (async () => {
+                // Each reset resolves HEAD and hashes the working file before
+                // taking the index lock. Share the pack cache and bound both.
+                for (const filepath of staged) {
+                    await git.resetIndex({ ...repo, filepath });
+                }
+            })()
         );
     }
 
@@ -418,6 +431,7 @@ export class IsomorphicGit extends GitManager {
         await this.wrapFS(
             git.checkout({
                 ...this.getRepo(),
+                ...IsomorphicGit.CHECKOUT_OPTIONS,
                 filepaths: [filepath],
                 force: true,
             })
@@ -454,6 +468,7 @@ export class IsomorphicGit extends GitManager {
         await this.wrapFS(
             git.checkout({
                 ...this.getRepo(),
+                ...IsomorphicGit.CHECKOUT_OPTIONS,
                 filepaths: files,
                 force: true,
             })
@@ -605,6 +620,7 @@ export class IsomorphicGit extends GitManager {
                     await this.wrapFS(
                         git.checkout({
                             ...this.getRepo(),
+                            ...IsomorphicGit.CHECKOUT_OPTIONS,
                             ref: mergeRes.oid,
                             noUpdateHead: true,
                             force: !!mergeRes.mergeCommit,
@@ -844,6 +860,7 @@ export class IsomorphicGit extends GitManager {
             await this.wrapFS(
                 git.checkout({
                     ...this.getRepo(),
+                    ...IsomorphicGit.CHECKOUT_OPTIONS,
                     ref: branch,
                     force: !!remote,
                     remote,
@@ -879,6 +896,7 @@ export class IsomorphicGit extends GitManager {
             await this.wrapFS(
                 git.clone({
                     ...this.getRepo(),
+                    ...IsomorphicGit.CHECKOUT_OPTIONS,
                     dir: dir,
                     url: url,
                     depth: depth,
@@ -1301,11 +1319,13 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getStagedFiles(
-        dir = "."
+        dir = ".",
+        cache?: object
     ): Promise<(WalkDifference & { vaultPath: string })[]> {
         const res = await this.walkDifference({
             walkers: [git.TREE({ ref: "HEAD" }), git.STAGE()],
             dir,
+            cache,
         });
         return res.map((file) => {
             return {
@@ -1433,12 +1453,15 @@ export class IsomorphicGit extends GitManager {
         hash?: string
     ): Promise<string> {
         const vaultPath = this.getRelativeVaultPath(filePath);
+        // A diff can read staged content, a commit, and both historical blobs.
+        // Keep their packfile buffers in one cache scoped to this request.
+        const repo = { ...this.getRepo(), cache: {} };
 
         const map: TypedWalkerMap<Uint8Array> = async (file, [A]) => {
             if (filePath == file) {
                 const oid = await A!.oid();
                 const contents = await git.readBlob({
-                    ...this.getRepo(),
+                    ...repo,
                     oid: oid,
                 });
                 return contents.blob;
@@ -1447,7 +1470,7 @@ export class IsomorphicGit extends GitManager {
         };
         if (hash) {
             const commitContent = await readBlob({
-                ...this.getRepo(),
+                ...repo,
                 filepath: filePath,
                 oid: hash,
             })
@@ -1458,7 +1481,7 @@ export class IsomorphicGit extends GitManager {
                     throw err;
                 });
             const commit = await git.readCommit({
-                ...this.getRepo(),
+                ...repo,
                 oid: hash,
             });
 
@@ -1466,7 +1489,7 @@ export class IsomorphicGit extends GitManager {
             let previousContent: string | undefined;
             if (parentOid) {
                 previousContent = await readBlob({
-                    ...this.getRepo(),
+                    ...repo,
                     filepath: filePath,
                     oid: parentOid,
                 })
@@ -1488,7 +1511,7 @@ export class IsomorphicGit extends GitManager {
 
         const stagedBlob = (
             await typedWalk<Uint8Array>({
-                ...this.getRepo(),
+                ...repo,
                 trees: [git.STAGE()],
                 map,
             })
@@ -1499,7 +1522,7 @@ export class IsomorphicGit extends GitManager {
             const headContent = await this.resolveRef("HEAD")
                 .then((oid) =>
                     readBlob({
-                        ...this.getRepo(),
+                        ...repo,
                         filepath: filePath,
                         oid: oid,
                     })
