@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import {
     simpleGit,
+    GitPluginError,
     type SimpleGit as SimpleGitClient,
     type SimpleGitProgressEvent,
 } from "simple-git";
@@ -147,6 +148,109 @@ describe("SimpleGit.setGitInstance", () => {
         expect(await manager.git.revparse("--show-toplevel")).toBe(
             repo.repoPath
         );
+    });
+});
+
+describe("SimpleGit inactivity timeout", () => {
+    async function createContext(timeout: number, script: string[]) {
+        const context = withCleanup(await createSimpleGitTestContext());
+        const { repo, plugin, manager } = context;
+        const fakeSsh = path.join(repo.dir, "fake-ssh.mjs");
+        writeFileSync(
+            fakeSsh,
+            [
+                'import { tmpdir } from "node:os";',
+                "process.chdir(tmpdir());",
+                // Exit if Git closes the transport after being interrupted.
+                "process.stdin.resume();",
+                'process.stdin.on("end", () => process.exit(0));',
+                'process.stdin.on("close", () => process.exit(0));',
+                ...script,
+            ].join("\n")
+        );
+        await repo.raw([
+            "remote",
+            "set-url",
+            "origin",
+            "ssh://example.invalid/repo",
+        ]);
+        plugin.localStorage.getEnvVars = () => [
+            "SSH_ASKPASS=obsidian-git-test-askpass",
+            "GIT_SSH_VARIANT=ssh",
+            `GIT_SSH_COMMAND="${process.execPath}" "${fakeSsh}"`,
+        ];
+        plugin.settings.gitTimeout = timeout;
+        await manager.setGitInstance();
+        return context;
+    }
+
+    it.each(["pull", "fetch", "push"] as const)(
+        "aborts a silent %s and allows the same client to continue",
+        async (operation) => {
+            const { repo, plugin, manager } = await createContext(1, [
+                "setTimeout(() => process.exit(0), 5000);",
+            ]);
+            const statusBar = addStatusBar(plugin);
+            const client = manager.git;
+
+            const result = manager[operation]();
+            await expect(result).rejects.toMatchObject({
+                plugin: "timeout",
+            });
+            await expect(result).rejects.toThrow(
+                "Git command timed out after 1 second without output."
+            );
+
+            expect(plugin.setPluginState.mock.calls).toEqual([
+                [{ operation: GitOperation[operation] }],
+                [{ operation: GitOperation.idle }],
+            ]);
+            expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
+            expect(manager.git).toBe(client);
+            expect((await manager.status()).changed).toEqual([]);
+            await repo.raw(["remote", "set-url", "origin", repo.remotePath]);
+            await expect(manager.fetch()).resolves.toBeUndefined();
+        },
+        15000
+    );
+
+    it("keeps a command alive while stderr output resets the timer", async () => {
+        const { manager } = await createContext(1, [
+            'const progress = setInterval(() => process.stderr.write("progress\\n"), 200);',
+            "setTimeout(() => {",
+            "    clearInterval(progress);",
+            '    process.stderr.write("transport finished\\n");',
+            "    process.exitCode = 1;",
+            "    process.stdin.destroy();",
+            "}, 1600);",
+        ]);
+
+        // The deliberately invalid transport fails normally after running for
+        // longer than the timeout; it must reach the final output first.
+        await expect(manager.fetch()).rejects.toThrow("transport finished");
+    }, 15000);
+
+    it("disables the timeout when set to zero", async () => {
+        const { manager } = await createContext(0, [
+            "setTimeout(() => {",
+            '    process.stderr.write("transport finished\\n");',
+            "    process.exitCode = 1;",
+            "    process.stdin.destroy();",
+            "}, 1600);",
+        ]);
+
+        await expect(manager.fetch()).rejects.toThrow("transport finished");
+        await expect(manager.git.revparse("HEAD")).resolves.toMatch(
+            /^[a-f0-9]+$/
+        );
+    }, 15000);
+
+    it("preserves ordinary Git errors", async () => {
+        const { manager } = withCleanup(await createSimpleGitTestContext());
+
+        const result = manager.git.revparse("refs/heads/missing");
+        await expect(result).rejects.not.toBeInstanceOf(GitPluginError);
+        await expect(result).rejects.toThrow("unknown revision");
     });
 });
 

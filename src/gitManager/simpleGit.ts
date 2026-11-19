@@ -5,7 +5,7 @@ import { Notice, Platform } from "obsidian";
 import * as path from "path";
 import { resolve, sep } from "path";
 import type * as simple from "simple-git";
-import { simpleGit, GitError, CleanOptions } from "simple-git";
+import { simpleGit, GitError, GitPluginError, CleanOptions } from "simple-git";
 import {
     ASK_PASS_SCRIPT,
     ASK_PASS_SCRIPT_FILE,
@@ -93,6 +93,7 @@ export class SimpleGit extends GitManager {
                 envs[key] = value;
             }
 
+            const timeoutSeconds = this.plugin.settings.gitTimeout;
             this.git = simpleGit({
                 baseDir: basePath,
                 binary:
@@ -101,6 +102,17 @@ export class SimpleGit extends GitManager {
                         ? DEFAULT_WIN_GIT_PATH
                         : undefined),
                 config: ["core.quotepath=off"],
+                // Both output streams reset the timer, including progress updates.
+                timeout: { block: timeoutSeconds * 1000 },
+                errors: (error) => {
+                    if (
+                        error instanceof GitPluginError &&
+                        error.plugin === "timeout"
+                    ) {
+                        error.message = `Git command timed out after ${timeoutSeconds} second${timeoutSeconds === 1 ? "" : "s"} without output. Check for pending authentication, a locked SSH agent, or an unreachable remote. Increase or disable the Git inactivity timeout in settings if needed.`;
+                    }
+                    return error;
+                },
                 // Preserve the inherited and user-configured environment
                 allowEnvironment: [
                     ...Object.keys(envs),
@@ -1680,9 +1692,9 @@ export class SimpleGit extends GitManager {
         if (error instanceof GitError) {
             const message = String(error.message);
             const networkFailure =
-                message.contains("Could not resolve host") ||
-                message.contains("Unable to resolve host") ||
-                message.contains("Unable to open connection") ||
+                message.includes("Could not resolve host") ||
+                message.includes("Unable to resolve host") ||
+                message.includes("Unable to open connection") ||
                 message.match(
                     /ssh: connect to host .*? port .*?: Operation timed out/
                 ) != null ||
