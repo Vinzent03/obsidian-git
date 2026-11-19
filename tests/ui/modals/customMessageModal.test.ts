@@ -41,11 +41,19 @@ function findButton(content: FakeElement, text: string): FakeElement {
 }
 
 function enterKey(
-    options: Partial<Pick<KeyboardEvent, "shiftKey" | "isComposing">> = {}
+    options: Partial<
+        Pick<
+            KeyboardEvent,
+            "ctrlKey" | "metaKey" | "shiftKey" | "altKey" | "isComposing"
+        >
+    > = {}
 ) {
     return {
         key: "Enter",
+        ctrlKey: false,
+        metaKey: false,
         shiftKey: false,
+        altKey: false,
         isComposing: false,
         ...options,
         preventDefault: vi.fn(),
@@ -69,6 +77,7 @@ async function isPending(promise: Promise<unknown>): Promise<boolean> {
 
 beforeEach(() => {
     platform.isMobile = false;
+    platform.isMacOS = false;
 });
 
 describe("buildCommitMessage", () => {
@@ -97,8 +106,15 @@ describe("buildCommitMessage", () => {
 });
 
 describe("shouldSubmitOnEnter", () => {
-    it("submits on Enter without Shift on desktop", () => {
-        expect(shouldSubmitOnEnter(enterKey(), false)).toBe(true);
+    it.each([{ ctrlKey: true }, { metaKey: true }])(
+        "submits on modified Enter on desktop: %j",
+        (modifiers) => {
+            expect(shouldSubmitOnEnter(enterKey(modifiers), false)).toBe(true);
+        }
+    );
+
+    it("does not submit on plain Enter", () => {
+        expect(shouldSubmitOnEnter(enterKey(), false)).toBe(false);
     });
 
     it("does not submit on Shift+Enter", () => {
@@ -107,46 +123,79 @@ describe("shouldSubmitOnEnter", () => {
         );
     });
 
-    it("does not submit while the input method is composing", () => {
-        expect(
-            shouldSubmitOnEnter(enterKey({ isComposing: true }), false)
-        ).toBe(false);
-    });
+    it.each([{ shiftKey: true }, { altKey: true }, { isComposing: true }])(
+        "does not submit with extra modifiers or while composing: %j",
+        (modifiers) => {
+            expect(
+                shouldSubmitOnEnter(
+                    enterKey({ ctrlKey: true, ...modifiers }),
+                    false
+                )
+            ).toBe(false);
+        }
+    );
 
     it("does not submit on Enter on mobile", () => {
         expect(shouldSubmitOnEnter(enterKey(), true)).toBe(false);
+        expect(shouldSubmitOnEnter(enterKey({ ctrlKey: true }), true)).toBe(
+            false
+        );
+        expect(shouldSubmitOnEnter(enterKey({ metaKey: true }), true)).toBe(
+            false
+        );
     });
 });
 
 describe("CustomMessageModal", () => {
-    it("returns a multiline message when Enter is pressed on desktop", async () => {
-        const { result, textarea } = openModal();
-        const message = "Subject\n\nBody line one\nBody line two";
-        textarea.value = message;
-        const event = enterKey();
+    it.each([
+        { isMacOS: false, shortcut: "Ctrl ↵" },
+        { isMacOS: true, shortcut: "⌘ ↵" },
+    ])("shows $shortcut on the Commit button", ({ isMacOS, shortcut }) => {
+        platform.isMacOS = isMacOS;
+        const { content, modal } = openModal();
 
-        textarea.dispatch("keydown", event);
-
-        expect(event.preventDefault).toHaveBeenCalledOnce();
-        await expect(result).resolves.toBe(message);
-    });
-
-    it("keeps the modal open for Shift+Enter", async () => {
-        const { modal, result, textarea } = openModal();
-        textarea.value = "Subject";
-        const event = enterKey({ shiftKey: true });
-
-        textarea.dispatch("keydown", event);
-
-        expect(event.preventDefault).not.toHaveBeenCalled();
-        await expect(isPending(result)).resolves.toBe(true);
+        expect(findButton(content, "Commit").find("kbd")?.textContent).toBe(
+            shortcut
+        );
+        expect(content.find("p")).toBeUndefined();
         modal.close();
-        await expect(result).resolves.toBeUndefined();
     });
+
+    it.each([{ ctrlKey: true }, { metaKey: true }])(
+        "returns a multiline message on Ctrl/Cmd+Enter: %j",
+        async (modifiers) => {
+            const { result, textarea } = openModal();
+            const message = "Subject\n\nBody line one\nBody line two";
+            textarea.value = message;
+            const event = enterKey(modifiers);
+
+            textarea.dispatch("keydown", event);
+
+            expect(event.preventDefault).toHaveBeenCalledOnce();
+            await expect(result).resolves.toBe(message);
+        }
+    );
+
+    it.each([{}, { shiftKey: true }])(
+        "keeps Enter as a newline: %j",
+        async (modifiers) => {
+            const { modal, result, textarea } = openModal();
+            textarea.value = "Subject";
+            const event = enterKey(modifiers);
+
+            textarea.dispatch("keydown", event);
+
+            expect(event.preventDefault).not.toHaveBeenCalled();
+            await expect(isPending(result)).resolves.toBe(true);
+            modal.close();
+            await expect(result).resolves.toBeUndefined();
+        }
+    );
 
     it("keeps Enter as a newline on mobile and commits with the button", async () => {
         platform.isMobile = true;
         const { content, result, textarea } = openModal();
+        expect(findButton(content, "Commit").find("kbd")).toBeUndefined();
         const message = "Subject\n\nBody";
         textarea.value = message;
         const event = enterKey();
@@ -162,7 +211,7 @@ describe("CustomMessageModal", () => {
     it("does not submit while an input method is composing", async () => {
         const { modal, result, textarea } = openModal();
         textarea.value = "Subject";
-        const event = enterKey({ isComposing: true });
+        const event = enterKey({ ctrlKey: true, isComposing: true });
 
         textarea.dispatch("keydown", event);
 

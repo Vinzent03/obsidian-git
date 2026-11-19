@@ -15,13 +15,18 @@ export function buildCommitMessage(
 }
 
 export function shouldSubmitOnEnter(
-    event: Pick<KeyboardEvent, "key" | "shiftKey" | "isComposing">,
+    event: Pick<
+        KeyboardEvent,
+        "key" | "ctrlKey" | "metaKey" | "shiftKey" | "altKey" | "isComposing"
+    >,
     isMobile: boolean
 ): boolean {
     return (
         !isMobile &&
         event.key === "Enter" &&
+        (event.ctrlKey || event.metaKey) &&
         !event.shiftKey &&
+        !event.altKey &&
         !event.isComposing
     );
 }
@@ -47,13 +52,6 @@ export class CustomMessageModal extends Modal {
         const { contentEl, titleEl } = this;
         titleEl.setText("Commit message");
 
-        contentEl.createEl("p", {
-            text: Platform.isMobile
-                ? "Enter inserts a new line. Use Commit to finish."
-                : "Enter commits. Shift+Enter inserts a new line.",
-            cls: "obsidian-git-commit-message-hint",
-        });
-
         this.textarea = contentEl.createEl("textarea", {
             cls: "obsidian-git-commit-message-input",
             attr: {
@@ -71,9 +69,25 @@ export class CustomMessageModal extends Modal {
         this.textarea.focus();
 
         const buttons = contentEl.createDiv({ cls: "modal-button-container" });
-        buttons
-            .createEl("button", { cls: "mod-cta", text: "Commit" })
-            .addEventListener("click", () => this.submit("none"));
+        const commit = buttons.createEl("button", {
+            cls: "mod-cta",
+            text: "Commit",
+            attr: Platform.isMobile
+                ? {}
+                : {
+                      "aria-keyshortcuts": Platform.isMacOS
+                          ? "Meta+Enter"
+                          : "Control+Enter",
+                  },
+        });
+        if (!Platform.isMobile) {
+            commit.createEl("kbd", {
+                text: Platform.isMacOS ? "⌘ ↵" : "Ctrl ↵",
+                cls: "obsidian-git-commit-message-shortcut",
+                attr: { "aria-hidden": "true" },
+            });
+        }
+        commit.addEventListener("click", () => this.submit("none"));
         const prefix = buttons.createEl("button", {
             text: "Prefix date",
             attr: { "aria-label": "Commit with the date prefixed" },

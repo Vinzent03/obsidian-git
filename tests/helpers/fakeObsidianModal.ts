@@ -83,4 +83,4 @@ export class FakeModal {
     }
 }
 
-export const platform = { isMobile: false };
+export const platform = { isMobile: false, isMacOS: false };

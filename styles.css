@@ -47,9 +47,17 @@
     margin-right: auto;
 }
 
-.obsidian-git-commit-message-hint {
-    margin-top: 0;
-    color: var(--text-muted);
+.obsidian-git-commit-message-shortcut {
+    margin-inline-start: 0.5em;
+    padding: 0 0.3em;
+    border: 1px solid currentColor;
+    border-radius: var(--radius-s);
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.85em;
+    opacity: 0.75;
 }
 
 .obsidian-git-commit-message-input {
