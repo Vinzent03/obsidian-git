@@ -22,4 +22,32 @@ describe("PromiseQueue", () => {
         );
         expect(nextTask).toHaveBeenCalledOnce();
     });
+
+    it("resolves whenIdle immediately when nothing is queued", async () => {
+        await expect(new PromiseQueue().whenIdle()).resolves.toBeUndefined();
+    });
+
+    it("resolves whenIdle after the running and the waiting tasks", async () => {
+        const queue = new PromiseQueue();
+        const order: string[] = [];
+        let finishFirst!: () => void;
+        queue.addTask(
+            () =>
+                new Promise<void>((resolve) => {
+                    finishFirst = resolve;
+                })
+        );
+        queue.addTask(() => {
+            order.push("second");
+            return Promise.resolve();
+        });
+
+        const idle = queue.whenIdle().then(() => order.push("idle"));
+        await Promise.resolve();
+        expect(order).toEqual([]);
+
+        finishFirst();
+        await idle;
+        expect(order).toEqual(["second", "idle"]);
+    });
 });

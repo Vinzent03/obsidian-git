@@ -46,7 +46,7 @@ import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { HunkActions } from "./editor/signs/hunkActions";
-import { coalesce } from "./coalesce";
+import { afterIdle, coalesce } from "./coalesce";
 import { EditorIntegration } from "./editor/editorIntegration";
 import { runGitAction, type GitActionResult } from "./gitAction";
 import { GitActions } from "./gitActions";
@@ -138,11 +138,17 @@ export default class ObsidianGit extends Plugin {
     }
 
     /**
-     * Refreshes the cached status and notifies listeners. Calls made while a
-     * refresh is running are coalesced into a single follow-up refresh, so
-     * bursts of triggers don't start overlapping `git status` runs.
+     * Refreshes the cached status and notifies listeners. The refresh waits
+     * until no queued Git action runs, so it doesn't compete with them for the
+     * file system or show intermediate states. Calls made while it waits join
+     * it, and calls made while a refresh is running are coalesced into a
+     * single follow-up refresh, so bursts of triggers don't start overlapping
+     * `git status` runs.
      */
-    refresh = coalesce(() => this.refreshNow());
+    refresh = afterIdle(
+        () => this.promiseQueue.whenIdle(),
+        coalesce(() => this.refreshNow())
+    );
 
     private async refreshNow(): Promise<void> {
         if (!this.gitReady) return;

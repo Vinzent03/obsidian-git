@@ -4,6 +4,7 @@ export class PromiseQueue {
         onFinished: (res: unknown) => void;
     }[] = [];
     private currentTask: Promise<unknown> | null = null;
+    private idleWaiters: (() => void)[] = [];
 
     /**
      * Add a task to the queue.
@@ -26,11 +27,25 @@ export class PromiseQueue {
         this.kickstart();
     }
 
+    /**
+     * Resolves once no task is running or waiting. Awaiting it inside a task
+     * never resolves, since that task keeps the queue busy.
+     */
+    whenIdle(): Promise<void> {
+        if (this.currentTask === null && this.tasks.length === 0) {
+            return Promise.resolve();
+        }
+        return new Promise((resolve) => this.idleWaiters.push(resolve));
+    }
+
     private kickstart(): void {
         if (this.currentTask !== null) {
             return;
         }
         if (this.tasks.length === 0) {
+            const waiters = this.idleWaiters;
+            this.idleWaiters = [];
+            waiters.forEach((resolve) => resolve());
             return;
         }
         const item = this.tasks.shift()!;
