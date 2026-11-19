@@ -1,4 +1,4 @@
-import type { DataAdapter, Vault } from "obsidian";
+import type { DataAdapter, Stat, Vault } from "obsidian";
 import { normalizePath, TFile, TFolder } from "obsidian";
 import type ObsidianGit from "../main";
 
@@ -42,6 +42,8 @@ export class MyAdapter {
     index: ArrayBuffer | undefined;
     indexctime: number | undefined;
     indexmtime: number | undefined;
+    /** Native stat of the unmodified index, kept until `clearIndex`. */
+    private indexStat: Stat | undefined;
     lastBasePath: string | undefined;
 
     constructor(
@@ -204,10 +206,14 @@ export class MyAdapter {
                     mtimeMs: this.indexmtime,
                 };
             } else {
-                const stat = await this.adapter.stat(path);
+                // isomorphic-git stats the index once per file while walking
+                // the working tree. Native calls are slow on mobile, so reuse
+                // the stat until the index is written or cleared.
+                const stat = this.indexStat ?? (await this.adapter.stat(path));
                 if (stat == undefined) {
                     throw new FileNotFoundError(path);
                 }
+                this.indexStat = stat;
                 this.indexctime = stat.ctime;
                 this.indexmtime = stat.mtime;
                 return {
@@ -293,6 +299,7 @@ export class MyAdapter {
 
     clearIndex() {
         this.index = undefined;
+        this.indexStat = undefined;
         this.indexctime = undefined;
         this.indexmtime = undefined;
     }

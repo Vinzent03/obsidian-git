@@ -603,6 +603,41 @@ describe("IsomorphicGit.status", () => {
         await manager.status();
         expect(workTreeReads()).toBe(0);
     });
+
+    it("stats the index natively once per status instead of once per file", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        for (let i = 0; i < 5; i++) {
+            await mkdir(path.join(repo.repoPath, `folder${i}`));
+            await repo.appendAndCommit(`folder${i}/note.md`, "x\n", `c${i}`);
+        }
+        // A base path keeps paths free of a leading slash, as in Obsidian.
+        const basePath = path.relative(repo.dir, repo.repoPath);
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath, {
+            vaultPath: repo.dir,
+            basePath,
+        });
+        const adapterStat = vi.spyOn(plugin.app.vault.adapter, "stat");
+        const indexStats = () =>
+            adapterStat.mock.calls.filter(
+                ([vaultPath]) => vaultPath === `${basePath}/.git/index`
+            ).length;
+
+        // The first status refreshes the index stats written by native git.
+        await manager.status();
+        adapterStat.mockClear();
+        const clean = await manager.status();
+        expect(clean.all).toEqual([]);
+        // One for the working tree walk and one for the conflict check.
+        expect(indexStats()).toBe(2);
+
+        // A changed index must not be hidden by the cached stat.
+        await repo.appendAndCommit("folder0/note.md", "y\n", "c5");
+        await repo.raw(["reset", "--soft", "HEAD~1"]);
+        const staged = await manager.status();
+        expect(staged.staged.map((file) => file.path)).toEqual([
+            "folder0/note.md",
+        ]);
+    });
 });
 
 describe("IsomorphicGit history memory", () => {
