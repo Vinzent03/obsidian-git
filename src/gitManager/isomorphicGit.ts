@@ -807,9 +807,9 @@ export class IsomorphicGit extends GitManager {
     }
 
     async branchInfo(): Promise<BranchInfo & { remote: string }> {
-        const current = await git.currentBranch(this.getRepo());
+        const current = await this.wrapFS(git.currentBranch(this.getRepo()));
 
-        const branches = await git.listBranches(this.getRepo());
+        const branches = await this.wrapFS(git.listBranches(this.getRepo()));
 
         const remote =
             (current && (await this.getConfig(`branch.${current}.remote`))) ??
@@ -832,7 +832,8 @@ export class IsomorphicGit extends GitManager {
     }
 
     async getCurrentRemote(): Promise<string> {
-        const current = (await git.currentBranch(this.getRepo())) || "";
+        const current =
+            (await this.wrapFS(git.currentBranch(this.getRepo()))) || "";
 
         const remote =
             (await this.getConfig(`branch.${current}.remote`)) ?? "origin";
@@ -1446,30 +1447,36 @@ export class IsomorphicGit extends GitManager {
             return undefined;
         };
         if (hash) {
-            const commitContent = await readBlob({
-                ...this.getRepo(),
-                filepath: filePath,
-                oid: hash,
-            })
+            const commitContent = await this.wrapFS(
+                readBlob({
+                    ...this.getRepo(),
+                    filepath: filePath,
+                    oid: hash,
+                })
+            )
                 .then((headBlob) => new TextDecoder().decode(headBlob.blob))
                 .catch((err) => {
                     if (err instanceof git.Errors.NotFoundError)
                         return undefined;
                     throw err;
                 });
-            const commit = await git.readCommit({
-                ...this.getRepo(),
-                oid: hash,
-            });
+            const commit = await this.wrapFS(
+                git.readCommit({
+                    ...this.getRepo(),
+                    oid: hash,
+                })
+            );
 
             const parentOid = commit.commit.parent.first();
             let previousContent: string | undefined;
             if (parentOid) {
-                previousContent = await readBlob({
-                    ...this.getRepo(),
-                    filepath: filePath,
-                    oid: parentOid,
-                })
+                previousContent = await this.wrapFS(
+                    readBlob({
+                        ...this.getRepo(),
+                        filepath: filePath,
+                        oid: parentOid,
+                    })
+                )
                     .then((headBlob) => new TextDecoder().decode(headBlob.blob))
                     .catch((err) => {
                         if (err instanceof git.Errors.NotFoundError)
@@ -1487,22 +1494,26 @@ export class IsomorphicGit extends GitManager {
         }
 
         const stagedBlob = (
-            await typedWalk<Uint8Array>({
-                ...this.getRepo(),
-                trees: [git.STAGE()],
-                map,
-            })
+            await this.wrapFS(
+                typedWalk<Uint8Array>({
+                    ...this.getRepo(),
+                    trees: [git.STAGE()],
+                    map,
+                })
+            )
         ).first();
         const stagedContent = new TextDecoder().decode(stagedBlob);
 
         if (stagedChanges) {
             const headContent = await this.resolveRef("HEAD")
                 .then((oid) =>
-                    readBlob({
-                        ...this.getRepo(),
-                        filepath: filePath,
-                        oid: oid,
-                    })
+                    this.wrapFS(
+                        readBlob({
+                            ...this.getRepo(),
+                            filepath: filePath,
+                            oid: oid,
+                        })
+                    )
                 )
                 .then((headBlob) => new TextDecoder().decode(headBlob.blob))
                 .catch((err) => {
@@ -1536,18 +1547,20 @@ export class IsomorphicGit extends GitManager {
         relativeToVault = true
     ): Promise<string> {
         const filepath = this.getRelativeRepoPath(file, relativeToVault);
-        const { blob } = await readBlob({
-            ...this.getRepo(),
-            oid: commitHash,
-            filepath,
-        });
+        const { blob } = await this.wrapFS(
+            readBlob({
+                ...this.getRepo(),
+                oid: commitHash,
+                filepath,
+            })
+        );
         return new TextDecoder().decode(blob);
     }
 
     async getLastCommitTime(): Promise<Date | undefined> {
         const repo = this.getRepo();
         const oid = await this.resolveRef("HEAD");
-        const commit = await git.readCommit({ ...repo, oid: oid });
+        const commit = await this.wrapFS(git.readCommit({ ...repo, oid: oid }));
         const date = commit.commit.committer.timestamp;
         return new Date(date * 1000);
     }
