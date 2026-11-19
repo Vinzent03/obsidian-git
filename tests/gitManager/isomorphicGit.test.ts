@@ -493,6 +493,20 @@ describe("IsomorphicGit merge state", () => {
     });
 });
 
+describe("IsomorphicGit.getUnpushedCommits", () => {
+    it("returns 0 without comparing trees when the branch matches its upstream", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        const getFileChangesCount = vi.spyOn(manager, "getFileChangesCount");
+
+        expect(await manager.getUnpushedCommits()).toBe(0);
+        expect(getFileChangesCount).not.toHaveBeenCalled();
+
+        await repo.appendAndCommit("note.md", "local\n", "local commit");
+        expect(await manager.getUnpushedCommits()).toBe(1);
+    });
+});
+
 describe("IsomorphicGit.push", () => {
     it("returns explicit pushed and up-to-date results", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
