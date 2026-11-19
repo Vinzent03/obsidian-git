@@ -26,6 +26,54 @@ type RmdirOptions = {
 // Missing stats become NaN in isomorphic-git, so the index stat cache never hits.
 const STABLE_STATS = { uid: 0, gid: 0, ino: 0, dev: 0 };
 
+/** Upper bound for cached loose objects; they are zlib-compressed and mostly small. */
+const MAX_OBJECT_CACHE_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Least recently used cache for the raw content of loose git objects, keyed
+ * by path. An object file is named by the hash of its content, so a cached
+ * entry can never become stale.
+ */
+class ObjectCache {
+    private entries = new Map<string, ArrayBuffer>();
+    private bytes = 0;
+
+    constructor(private readonly maxBytes: number) {}
+
+    get(path: string): ArrayBuffer | undefined {
+        const data = this.entries.get(path);
+        if (data === undefined) return undefined;
+        // Re-insert to mark the entry as recently used.
+        this.entries.delete(path);
+        this.entries.set(path, data);
+        return data.slice(0);
+    }
+
+    set(path: string, data: ArrayBuffer): void {
+        if (data.byteLength > this.maxBytes) return;
+        this.delete(path);
+        this.entries.set(path, data.slice(0));
+        this.bytes += data.byteLength;
+        for (const [oldest, oldData] of this.entries) {
+            if (this.bytes <= this.maxBytes) break;
+            this.entries.delete(oldest);
+            this.bytes -= oldData.byteLength;
+        }
+    }
+
+    delete(path: string): void {
+        const data = this.entries.get(path);
+        if (data === undefined) return;
+        this.entries.delete(path);
+        this.bytes -= data.byteLength;
+    }
+
+    clear(): void {
+        this.entries.clear();
+        this.bytes = 0;
+    }
+}
+
 class FileNotFoundError extends Error {
     readonly code = "ENOENT";
 
@@ -49,6 +97,12 @@ export class MyAdapter {
      * the git directory is written to or the operation ends.
      */
     private gitListings = new Map<string, Promise<string[]>>();
+    /**
+     * Loose objects read or written before. isomorphic-git reads the same
+     * tree objects many times per operation (e.g. three full tree walks per
+     * push) and again in every status, and native reads are slow on mobile.
+     */
+    private readonly objectCache = new ObjectCache(MAX_OBJECT_CACHE_BYTES);
     lastBasePath: string | undefined;
 
     constructor(
@@ -90,16 +144,27 @@ export class MyAdapter {
                 return this.adapter.read(path);
             }
         } else {
+            const isLooseObject = this.isLooseObjectPath(path);
+            if (isLooseObject) {
+                const cached = this.objectCache.get(path);
+                if (cached !== undefined) return cached;
+            }
             if (await this.isMissingLooseObject(path)) {
                 throw new FileNotFoundError(path);
             }
             if (this.isIndexPath(path)) {
                 if (this.plugin.settings.basePath != this.lastBasePath) {
                     this.clearIndex();
+                    this.objectCache.clear();
                     this.lastBasePath = this.plugin.settings.basePath;
                     return this.adapter.readBinary(path);
                 }
                 return this.index ?? this.adapter.readBinary(path);
+            }
+            if (isLooseObject) {
+                const data = await this.adapter.readBinary(path);
+                this.objectCache.set(path, data);
+                return data;
             }
             const file = this.vault.getAbstractFileByPath(path);
             if (file instanceof TFile) {
@@ -136,6 +201,9 @@ export class MyAdapter {
                 this.indexctime ??= now;
                 this.indexmtime = now;
                 // this.adapter.writeBinary(path, data);
+            } else if (this.isLooseObjectPath(path)) {
+                await this.adapter.writeBinary(path, binaryData);
+                this.objectCache.set(path, binaryData);
             } else {
                 const file = this.vault.getAbstractFileByPath(path);
                 if (file instanceof TFile) {
@@ -302,6 +370,7 @@ export class MyAdapter {
     }
     async unlink(path: string) {
         path = normalizePath(path);
+        this.objectCache.delete(path);
         return this.invalidatingGitListings(path, () =>
             this.unlinkUncached(path)
         );
@@ -430,6 +499,20 @@ export class MyAdapter {
             // Fall back to reading the object if a listing fails.
             return false;
         }
+    }
+
+    /** True for a loose object file such as `.git/objects/ab/cdef…`. */
+    private isLooseObjectPath(path: string): boolean {
+        const objectsDir = this.plugin.gitManager
+            .getRelativeVaultPath(`${this.gitDir}/objects/`)
+            .replace(/^\/+/, "");
+        const relative = path.replace(/^\/+/, "");
+        return (
+            relative.startsWith(objectsDir) &&
+            /^[0-9a-f]{2}\/[0-9a-f]{38}$/.test(
+                relative.slice(objectsDir.length)
+            )
+        );
     }
 
     private isHiddenPath(path: string): boolean {

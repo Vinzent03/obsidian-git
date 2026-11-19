@@ -753,6 +753,52 @@ describe("IsomorphicGit native calls", () => {
     });
 });
 
+describe("IsomorphicGit object cache", () => {
+    const LOOSE_OBJECT = /objects\/[0-9a-f]{2}\/[0-9a-f]{38}$/;
+
+    it("reads each loose object natively only once across operations", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await mkdir(path.join(repo.repoPath, "folder"));
+        await repo.writeAndCommit("folder/note.md", "x\n", "nested");
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        const readBinary = vi.spyOn(plugin.app.vault.adapter, "readBinary");
+        const looseReads = () =>
+            readBinary.mock.calls.filter(([vaultPath]) =>
+                LOOSE_OBJECT.test(vaultPath)
+            ).length;
+
+        const first = await manager.status();
+        expect(looseReads()).toBeGreaterThan(0);
+
+        readBinary.mockClear();
+        const second = await manager.status();
+        expect(looseReads()).toBe(0);
+        expect(second).toEqual(first);
+    });
+
+    it("serves loose objects written by a commit without reading them back", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        await manager.status();
+        repo.write("note.md", "changed\n");
+        await manager.stageAll({});
+        await manager.commit({ message: "local change" });
+        const readBinary = vi.spyOn(plugin.app.vault.adapter, "readBinary");
+
+        const changes = await manager.getFileChanges(
+            await repo.raw(["rev-parse", "HEAD~1"]),
+            await repo.head()
+        );
+
+        expect(changes.map((file) => file.path)).toEqual(["note.md"]);
+        expect(
+            readBinary.mock.calls.filter(([vaultPath]) =>
+                LOOSE_OBJECT.test(vaultPath)
+            )
+        ).toEqual([]);
+    });
+});
+
 describe("IsomorphicGit history memory", () => {
     it("does not load separate packfile caches concurrently for history entries", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
