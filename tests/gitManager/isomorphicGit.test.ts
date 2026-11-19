@@ -751,6 +751,63 @@ describe("IsomorphicGit native calls", () => {
         );
         expect((await manager.status()).all).toEqual([]);
     });
+
+    it.each([
+        "show",
+        "failed show",
+        "historical diff",
+        "working diff",
+        "staged diff",
+        "last commit time",
+    ])("clears directory listings after %s", async (operation) => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.raw(["gc", "--prune=now"]);
+        const { manager } = createManager(repo);
+        const head = await repo.head();
+
+        switch (operation) {
+            case "show":
+                await manager.show(head, "note.md", false);
+                break;
+            case "failed show":
+                await expect(
+                    manager.show(head, "missing.md", false)
+                ).rejects.toBeInstanceOf(git.Errors.NotFoundError);
+                break;
+            case "historical diff":
+                await manager.getDiffString("note.md", false, head);
+                break;
+            case "working diff":
+                await manager.getDiffString("note.md");
+                break;
+            case "staged diff":
+                await manager.getDiffString("note.md", true);
+                break;
+            case "last commit time":
+                await manager.getLastCommitTime();
+                break;
+        }
+
+        // An external Git client adds loose objects after the read finishes.
+        await repo.writeAndCommit("note.md", "external change\n", "external");
+
+        expect((await manager.status()).all).toEqual([]);
+    });
+
+    it("refreshes branch listings while HEAD is detached", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.raw(["checkout", "--detach"]);
+        const { manager } = createManager(repo);
+        expect((await manager.branchInfo()).branches).not.toContain("external");
+
+        await repo.raw(["branch", "external"]);
+
+        expect(
+            (await manager.branchInfo()).branches.map((branch) =>
+                branch.replace(/^\/+/, "")
+            )
+        ).toContain("external");
+    });
 });
 
 describe("IsomorphicGit object cache", () => {
