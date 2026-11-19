@@ -568,13 +568,21 @@ export class IsomorphicGit extends GitManager {
                     // Conflict materialization writes the whole tentative tree,
                     // so it can only run when no local work would be lost.
                     await this.ensureCleanPullWorktree(localCommit, true);
-                    await this.ensureNoIncomingFileCollisions(
-                        await this.getFileChanges(localCommit, theirs)
+                    const incoming = await this.getFileChanges(
+                        localCommit,
+                        theirs
                     );
+                    await this.ensureNoIncomingFileCollisions(incoming);
 
                     // A `Errors.MergeConflictError` is expected here
                     await this.wrapFS(
-                        git.merge({ ...mergeOptions, abortOnConflict: false })
+                        git.merge({
+                            ...mergeOptions,
+                            fs: this.fsWritingOnly(
+                                incoming.map((file) => file.path)
+                            ),
+                            abortOnConflict: false,
+                        })
                     );
                     // eslint-disable-next-line preserve-caught-error -- Error.cause is unavailable with the project's ES2021 target.
                     throw new Error("Merge conflict was not reproduced.");
@@ -670,6 +678,36 @@ export class IsomorphicGit extends GitManager {
             }
         }
         return { cleanMerge: true, mergedText };
+    }
+
+    /**
+     * Returns the fs with writes to worktree files outside `filepaths` skipped.
+     *
+     * Conflict materialization rewrites every tracked file. On mobile, each
+     * write is a slow native call and changes the file's stat, so the next
+     * status rehashes the whole vault. Files that are equal on both sides keep
+     * their content in the merge result, so skipping them is safe once the
+     * worktree is known to be clean.
+     */
+    private fsWritingOnly(filepaths: string[]): {
+        promises: MyAdapter["promises"];
+    } {
+        const toKey = (path: string) => normalizePath(path).replace(/^\/+/, "");
+        const allowed = new Set(
+            filepaths.map((path) => toKey(this.getRelativeVaultPath(path)))
+        );
+        const gitDir = `${toKey(this.getGitDirPath())}/`;
+        const promises = this.fs.promises;
+        return {
+            promises: {
+                ...promises,
+                writeFile: async (path, data) => {
+                    const key = toKey(path);
+                    if (!key.startsWith(gitDir) && !allowed.has(key)) return;
+                    return promises.writeFile(path, data);
+                },
+            },
+        };
     }
 
     private async ensureCleanPullWorktree(
