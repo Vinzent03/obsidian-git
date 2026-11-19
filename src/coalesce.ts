@@ -25,3 +25,21 @@ export function coalesce(task: () => Promise<void>): () => Promise<void> {
     };
     return run;
 }
+
+/**
+ * Wraps a task so that it only starts once `whenIdle` resolves. Calls made
+ * while it waits join the waiting call instead of starting another run.
+ */
+export function afterIdle(
+    whenIdle: () => Promise<void>,
+    task: () => Promise<void>
+): () => Promise<void> {
+    let waiting: Promise<void> | undefined;
+    return () => {
+        waiting ??= whenIdle().then(() => {
+            waiting = undefined;
+            return task();
+        });
+        return waiting;
+    };
+}
