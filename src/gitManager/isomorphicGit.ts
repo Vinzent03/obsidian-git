@@ -1080,6 +1080,16 @@ export class IsomorphicGit extends GitManager {
         );
     }
 
+    async isRebaseInProgress(): Promise<boolean> {
+        // isomorphic-git cannot rebase, so only another Git client can leave
+        // this state behind.
+        const adapter = this.app.vault.adapter;
+        return (
+            (await adapter.exists(this.getMergeStatePath("rebase-merge"))) ||
+            (await adapter.exists(this.getMergeStatePath("rebase-apply")))
+        );
+    }
+
     private async getMergeHeads(): Promise<string[]> {
         const path = this.getMergeStatePath(IsomorphicGit.MERGE_HEAD);
         if (!(await this.app.vault.adapter.exists(path))) {

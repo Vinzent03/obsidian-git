@@ -374,7 +374,8 @@ export type CommitResult =
       }
     | {
           status: "skipped";
-          reason: "merge-in-progress" | "files-too-large";
+          reason:
+              "merge-in-progress" | "rebase-in-progress" | "files-too-large";
       }
     | NotReadyResult;
 
