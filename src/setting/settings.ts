@@ -768,6 +768,18 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
                         "Limit status, staging, unstaging, discarding, and submodule updates to the vault where possible. Configured auto commit globs take precedence for automatic staging. Repository history and remote actions remain repository-wide."
                     ),
                     {
+                        name: "Git inactivity timeout (seconds)",
+                        desc: "Abort Git commands after this many seconds without output. Progress output resets the timer. Set to 0 to disable. Restart Obsidian to apply.",
+                        visible: desktop,
+                        control: {
+                            type: "number",
+                            key: "gitTimeout",
+                            min: 0,
+                            step: 1,
+                            validate: validateInteger,
+                        },
+                    },
+                    {
                         name: "Custom Git binary path",
                         desc: "Path to the Git executable for a custom installation.",
                         visible: desktop,

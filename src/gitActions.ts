@@ -78,7 +78,7 @@ export class GitActions {
                 isFolder,
                 gitRelativePath,
             });
-            await this.plugin.app.vault.adapter.append(
+            await this.plugin.fileSystem.append(
                 this.plugin.gitManager.getRelativeVaultPath(".gitignore"),
                 "\n" + gitignoreRule
             );
@@ -112,14 +112,9 @@ export class GitActions {
         const actionResult = await runGitAction<DeleteRepositoryResult>(
             this.plugin,
             async () => {
-                const repositoryPath = this.plugin.settings.basePath
-                    ? `${this.plugin.settings.basePath}/.git`
-                    : ".git";
-                if (
-                    !(await this.plugin.app.vault.adapter.exists(
-                        repositoryPath
-                    ))
-                ) {
+                const repositoryPath =
+                    this.plugin.gitManager.getRelativeVaultPath(".git");
+                if (!(await this.plugin.fileSystem.exists(repositoryPath))) {
                     return { status: "not-found" };
                 }
 
@@ -134,7 +129,7 @@ export class GitActions {
                     return { status: "cancelled" };
                 }
 
-                await this.plugin.app.vault.adapter.rmdir(repositoryPath, true);
+                await this.plugin.fileSystem.rmdir(repositoryPath, true);
                 return { status: "deleted" };
             }
         );
@@ -224,7 +219,7 @@ export class GitActions {
                 if (!shouldDelete) {
                     return { status: "cancelled", reason: "safety-declined" };
                 }
-                await this.plugin.app.vault.adapter.rmdir(
+                await this.plugin.fileSystem.rmdir(
                     this.plugin.app.vault.configDir,
                     true
                 );
@@ -1270,16 +1265,7 @@ export class GitActions {
                 }
 
                 if (selection === "delete") {
-                    const tFile = this.plugin.app.vault.getAbstractFileByPath(
-                        file.vaultPath
-                    );
-                    if (tFile) {
-                        await this.plugin.app.fileManager.trashFile(tFile);
-                    } else {
-                        await this.plugin.app.vault.adapter.remove(
-                            file.vaultPath
-                        );
-                    }
+                    await this.plugin.fileSystem.trash(file.vaultPath);
                 } else {
                     await this.plugin.gitManager.discard(file.path);
                 }
@@ -1332,23 +1318,7 @@ export class GitActions {
                     for (const file of untrackedPaths) {
                         const vaultPath =
                             this.plugin.gitManager.getRelativeVaultPath(file);
-                        const tFile =
-                            this.plugin.app.vault.getAbstractFileByPath(
-                                vaultPath
-                            );
-
-                        if (tFile) {
-                            await this.plugin.app.fileManager.trashFile(tFile);
-                        } else if (file.endsWith("/")) {
-                            await this.plugin.app.vault.adapter.rmdir(
-                                vaultPath,
-                                true
-                            );
-                        } else {
-                            await this.plugin.app.vault.adapter.remove(
-                                vaultPath
-                            );
-                        }
+                        await this.plugin.fileSystem.trash(vaultPath);
                     }
                 }
                 this.plugin.app.workspace.trigger("obsidian-git:refresh");

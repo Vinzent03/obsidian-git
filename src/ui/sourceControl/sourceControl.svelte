@@ -364,7 +364,7 @@
         for (const conflict of targets) {
             counts[conflict] = 0;
             try {
-                const content = await view.app.vault.adapter.read(
+                const content = await plugin.fileSystem.read(
                     plugin.gitManager.getRelativeVaultPath(conflict)
                 );
                 counts[conflict] = countConflictSections(content);

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import {
     simpleGit,
+    GitPluginError,
     type SimpleGit as SimpleGitClient,
     type SimpleGitProgressEvent,
 } from "simple-git";
@@ -23,6 +24,7 @@ function createManager(
     (
         plugin.app as unknown as {
             vault: {
+                getAbstractFileByPath(): null;
                 adapter: {
                     getBasePath(): string;
                     exists(filePath: string): Promise<boolean>;
@@ -30,6 +32,7 @@ function createManager(
             };
         }
     ).vault = {
+        getAbstractFileByPath: () => null,
         adapter: {
             getBasePath: () => vaultPath,
             exists: (filePath: string) =>
@@ -126,6 +129,199 @@ async function createPullConflict(repo: {
     await remoteGit.commit("remote conflict");
     await remoteGit.push(["--quiet"]);
 }
+
+describe("SimpleGit.setGitInstance", () => {
+    it("accepts a custom base path above the vault (#1241)", async () => {
+        const { manager, repo } = withCleanup(
+            await createSimpleGitTestContext({
+                getVaultOptions: (repo) => {
+                    repo.write("obsidian/vault/note.md", "vault\n");
+                    return {
+                        vaultPath: path.join(repo.repoPath, "obsidian/vault"),
+                        basePath: "../..",
+                    };
+                },
+            })
+        );
+
+        expect(manager.absoluteRepoPath).toBe(repo.repoPath);
+        expect(await manager.git.revparse("--show-toplevel")).toBe(
+            repo.repoPath
+        );
+    });
+});
+
+describe("SimpleGit inactivity timeout", () => {
+    async function createContext(timeout: number, script: string[]) {
+        const context = withCleanup(await createSimpleGitTestContext());
+        const { repo, plugin, manager } = context;
+        const fakeSsh = path.join(repo.dir, "fake-ssh.mjs");
+        writeFileSync(
+            fakeSsh,
+            [
+                'import { tmpdir } from "node:os";',
+                "process.chdir(tmpdir());",
+                // Exit if Git closes the transport after being interrupted.
+                "process.stdin.resume();",
+                'process.stdin.on("end", () => process.exit(0));',
+                'process.stdin.on("close", () => process.exit(0));',
+                ...script,
+            ].join("\n")
+        );
+        await repo.raw([
+            "remote",
+            "set-url",
+            "origin",
+            "ssh://example.invalid/repo",
+        ]);
+        plugin.localStorage.getEnvVars = () => [
+            "SSH_ASKPASS=obsidian-git-test-askpass",
+            "GIT_SSH_VARIANT=ssh",
+            `GIT_SSH_COMMAND="${process.execPath}" "${fakeSsh}"`,
+        ];
+        plugin.settings.gitTimeout = timeout;
+        await manager.setGitInstance();
+        return context;
+    }
+
+    it.each(["pull", "fetch", "push"] as const)(
+        "aborts a silent %s and allows the same client to continue",
+        async (operation) => {
+            const { repo, plugin, manager } = await createContext(1, [
+                "setTimeout(() => process.exit(0), 5000);",
+            ]);
+            const statusBar = addStatusBar(plugin);
+            const client = manager.git;
+
+            const result = manager[operation]();
+            await expect(result).rejects.toMatchObject({
+                plugin: "timeout",
+            });
+            await expect(result).rejects.toThrow(
+                "Git command timed out after 1 second without output."
+            );
+
+            expect(plugin.setPluginState.mock.calls).toEqual([
+                [{ operation: GitOperation[operation] }],
+                [{ operation: GitOperation.idle }],
+            ]);
+            expect(statusBar.clearProgress).toHaveBeenCalledWith(false);
+            expect(manager.git).toBe(client);
+            expect((await manager.status()).changed).toEqual([]);
+            await repo.raw(["remote", "set-url", "origin", repo.remotePath]);
+            await expect(manager.fetch()).resolves.toBeUndefined();
+        },
+        15000
+    );
+
+    it("keeps a command alive while stderr output resets the timer", async () => {
+        const { manager } = await createContext(1, [
+            'const progress = setInterval(() => process.stderr.write("progress\\n"), 200);',
+            "setTimeout(() => {",
+            "    clearInterval(progress);",
+            '    process.stderr.write("transport finished\\n");',
+            "    process.exitCode = 1;",
+            "    process.stdin.destroy();",
+            "}, 1600);",
+        ]);
+
+        // The deliberately invalid transport fails normally after running for
+        // longer than the timeout; it must reach the final output first.
+        await expect(manager.fetch()).rejects.toThrow("transport finished");
+    }, 15000);
+
+    it("disables the timeout when set to zero", async () => {
+        const { manager } = await createContext(0, [
+            "setTimeout(() => {",
+            '    process.stderr.write("transport finished\\n");',
+            "    process.exitCode = 1;",
+            "    process.stdin.destroy();",
+            "}, 1600);",
+        ]);
+
+        await expect(manager.fetch()).rejects.toThrow("transport finished");
+        await expect(manager.git.revparse("HEAD")).resolves.toMatch(
+            /^[a-f0-9]+$/
+        );
+    }, 15000);
+
+    it("preserves ordinary Git errors", async () => {
+        const { manager } = withCleanup(await createSimpleGitTestContext());
+
+        const result = manager.git.revparse("refs/heads/missing");
+        await expect(result).rejects.not.toBeInstanceOf(GitPluginError);
+        await expect(result).rejects.toThrow("unknown revision");
+    });
+});
+
+describe("SimpleGit filesystem paths in a nested vault", () => {
+    async function createContext() {
+        return withCleanup(
+            await createSimpleGitTestContext({
+                getVaultOptions: (repo) => {
+                    repo.write("obsidian/vault/note.md", "vault\n");
+                    mkdirSync(
+                        path.join(
+                            repo.repoPath,
+                            "obsidian/vault/.obsidian/plugins/obsidian-git"
+                        ),
+                        { recursive: true }
+                    );
+                    return {
+                        vaultPath: path.join(repo.repoPath, "obsidian/vault"),
+                    };
+                },
+            })
+        );
+    }
+
+    it("applies a patch stored inside the vault to the repository index", async () => {
+        const { repo, manager, plugin } = await createContext();
+        repo.write("note.md", "changed\n");
+        const patch = await repo.git.diff(["--", "note.md"]);
+        await manager.applyPatch(patch);
+        expect(await repo.show(":note.md")).toBe("changed");
+        expect(
+            await plugin.fileSystem.exists(
+                ".obsidian/plugins/obsidian-git/patch"
+            )
+        ).toBe(false);
+    });
+
+    it("removes the temporary patch after Git rejects it", async () => {
+        const { manager, plugin } = await createContext();
+        await expect(manager.applyPatch("invalid patch")).rejects.toThrow();
+        expect(
+            await plugin.fileSystem.exists(
+                ".obsidian/plugins/obsidian-git/patch"
+            )
+        ).toBe(false);
+    });
+
+    it("finds a submodule outside the vault using repository-relative paths", async () => {
+        const { repo, manager } = await createContext();
+        await simpleGit({
+            baseDir: repo.repoPath,
+            unsafe: { allowUnsafeProtocolOverride: true },
+        }).raw([
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            repo.remotePath,
+            "submodules/example",
+        ]);
+        await expect(
+            manager.getSubmoduleOfFile("submodules/example/note.md")
+        ).resolves.toEqual({
+            submodule: path.join(repo.repoPath, "submodules/example"),
+            relativeFilepath: "note.md",
+        });
+        await expect(
+            manager.isTracked("submodules/example/note.md")
+        ).resolves.toBe(true);
+    });
+});
 
 describe("SimpleGit.commit", () => {
     it("returns the change count and triggers a head-change event", async () => {
@@ -922,6 +1118,65 @@ describe("SimpleGit.branchInfo", () => {
 
         expect(await manager.branchInfo()).toEqual({
             current: "main",
+            tracking: "origin/main",
+            branches: ["feature", "main"],
+        });
+    });
+
+    it("parses the upstream from tab-delimited branch output", async () => {
+        const raw = vi.fn((args: string[]) => {
+            if (args[0] === "symbolic-ref") {
+                return Promise.resolve("main\n");
+            }
+            return Promise.resolve(
+                [
+                    "refs/heads/feature\torigin/feature",
+                    "refs/heads/main\torigin/main",
+                    "",
+                ].join("\n")
+            );
+        });
+        const { manager } = withCleanup(
+            await createSimpleGitTestContext({
+                gitClient: { raw } as unknown as SimpleGitClient,
+            })
+        );
+
+        await expect(manager.branchInfo()).resolves.toEqual({
+            current: "main",
+            tracking: "origin/main",
+            branches: ["feature", "main"],
+        });
+        expect(raw).toHaveBeenCalledWith([
+            "branch",
+            "--list",
+            "--no-color",
+            "--format=%(refname)%09%(upstream:short)",
+        ]);
+    });
+
+    it("keeps the branch order from branch.sort", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.raw(["branch", "feature"]);
+        await repo.git.addConfig("branch.sort", "-refname");
+
+        expect((await manager.branchInfo()).branches).toEqual([
+            "main",
+            "feature",
+        ]);
+    });
+
+    it("returns the upstream after setting it for a non-default branch", async () => {
+        const { repo, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await repo.git.checkoutLocalBranch("feature");
+        await repo.raw(["branch", "--set-upstream-to=origin/main", "feature"]);
+
+        expect(await manager.branchInfo()).toEqual({
+            current: "feature",
             tracking: "origin/main",
             branches: ["feature", "main"],
         });

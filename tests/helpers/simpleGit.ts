@@ -1,9 +1,8 @@
-import { existsSync } from "fs";
-import path from "path";
 import type { SimpleGit as SimpleGitClient } from "simple-git";
 import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { createFakePlugin, type FakePlugin } from "./createFakePlugin";
 import { createRepoWithOrigin, type TestRepo } from "./gitRepo";
+import { createFileSystemAdapter } from "./fileSystemAdapter";
 
 export type GitFixture = () => Promise<TestRepo>;
 
@@ -47,6 +46,7 @@ function configurePlugin(
     (
         plugin.app as unknown as {
             vault: {
+                getAbstractFileByPath(): null;
                 configDir: string;
                 adapter: {
                     getBasePath(): string;
@@ -55,18 +55,9 @@ function configurePlugin(
             };
         }
     ).vault = {
+        getAbstractFileByPath: () => null,
         configDir: ".obsidian",
-        adapter: {
-            getBasePath: () => vaultPath,
-            exists: (filePath: string) =>
-                Promise.resolve(
-                    existsSync(
-                        path.isAbsolute(filePath)
-                            ? filePath
-                            : path.join(vaultPath, filePath)
-                    )
-                ),
-        },
+        adapter: createFileSystemAdapter(vaultPath),
     };
 }
 

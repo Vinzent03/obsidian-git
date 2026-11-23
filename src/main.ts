@@ -50,8 +50,10 @@ import { coalesce } from "./coalesce";
 import { EditorIntegration } from "./editor/editorIntegration";
 import { runGitAction, type GitActionResult } from "./gitAction";
 import { GitActions } from "./gitActions";
+import { RepoFileSystem } from "./repoFileSystem";
 
 export default class ObsidianGit extends Plugin {
+    fileSystem = new RepoFileSystem(this.app);
     gitActions = new GitActions(this);
     gitManager!: GitManager;
     automaticsManager = new AutomaticsManager(this);
