@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.44.0](https://github.com/Vinzent03/obsidian-git/compare/2.43.0...2.44.0) (2026-11-23)
+
+### Features
+
+* allow multiline commit messages in the custom message modal ([#1239](https://github.com/Vinzent03/obsidian-git/issues/1239)) ([d68c581](https://github.com/Vinzent03/obsidian-git/commit/d68c58198ffe32b2e5fb90c88c561c3aa065dac4))
+
+### Bug Fixes
+
+* **desktop:** set timeout for git operations ([94a1193](https://github.com/Vinzent03/obsidian-git/commit/94a1193e17de08acf24f7f5f983721c460308583)), closes [#840](https://github.com/Vinzent03/obsidian-git/issues/840)
+* **git:** read branch upstream with a tab separator ([#1232](https://github.com/Vinzent03/obsidian-git/issues/1232)) ([48c8d7c](https://github.com/Vinzent03/obsidian-git/commit/48c8d7cb4d4a4a4e824a5d5900c865b2bbfaec27)), closes [#1231](https://github.com/Vinzent03/obsidian-git/issues/1231)
+* prevent usage of obsidian file adapter outside vault ([9f8670c](https://github.com/Vinzent03/obsidian-git/commit/9f8670cf5740cceefcd48c2099abcaf1d03d65a0)), closes [#1242](https://github.com/Vinzent03/obsidian-git/issues/1242)
+* resolve detected repository root when deleting repository ([017d6f4](https://github.com/Vinzent03/obsidian-git/commit/017d6f41b3b14791400b3d1c538f417149c52142))
+* skip automatic commits while a rebase is in progress ([#1251](https://github.com/Vinzent03/obsidian-git/issues/1251)) ([3fd6852](https://github.com/Vinzent03/obsidian-git/commit/3fd6852f67c46f2ce8354c5d5b1197f7452f71da))
+
+### Performance Improvements
+
+* **mobile:** reduce native fs calls ([#1247](https://github.com/Vinzent03/obsidian-git/issues/1247)) ([c11fe1f](https://github.com/Vinzent03/obsidian-git/commit/c11fe1ff7b58a1ee49fbd6176d20dd3cc74cd95e))
+* reuse native index stat during isomorphic-git operations ([#1237](https://github.com/Vinzent03/obsidian-git/issues/1237)) ([def8df5](https://github.com/Vinzent03/obsidian-git/commit/def8df5061e8f6748e82bea9d92629679a8d9a09))
+
 ## [2.43.0](https://github.com/Vinzent03/obsidian-git/compare/2.42.0...2.43.0) (2026-11-05)
 
 ### Features
