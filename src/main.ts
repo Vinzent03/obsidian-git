@@ -43,6 +43,7 @@ import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
 import ReadOnlyFileView from "./ui/readOnlyFileView";
 import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
+import { RebaseConflictModal } from "./ui/modals/rebaseConflictModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { HunkActions } from "./editor/signs/hunkActions";
@@ -699,6 +700,10 @@ export default class ObsidianGit extends Plugin {
 
     openMergeConflictHelp(): void {
         new MergeConflictModal(this).open();
+    }
+
+    openRebaseConflictHelp(): void {
+        new RebaseConflictModal(this).open();
     }
 
     onActiveLeafChange(leaf: WorkspaceLeaf | null): void {

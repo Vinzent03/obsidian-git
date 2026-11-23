@@ -85,11 +85,11 @@ export class StatusBar {
             });
             this.conflictEl.setAttribute("data-tooltip-position", "top");
             this.conflictEl.setAttribute("role", "button");
-            this.conflictEl.onclick = () => this.plugin.openMergeConflictHelp();
+            this.conflictEl.onclick = () => this.openConflictHelp();
             this.conflictEl.onkeydown = (event) => {
                 if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    this.plugin.openMergeConflictHelp();
+                    this.openConflictHelp();
                 }
             };
 
@@ -107,10 +107,15 @@ export class StatusBar {
             });
         }
 
-        if (this.plugin.state.mergeInProgress) {
-            setIcon(this.conflictEl, "git-merge");
-            this.conflictEl.ariaLabel =
-                "Merge in progress. Select for help resolving and finishing the merge.";
+        const { mergeInProgress, rebaseInProgress } = this.plugin.state;
+        if (mergeInProgress || rebaseInProgress) {
+            setIcon(
+                this.conflictEl,
+                rebaseInProgress ? "git-branch" : "git-merge"
+            );
+            this.conflictEl.ariaLabel = rebaseInProgress
+                ? "Rebase in progress. Select for help continuing or aborting in a terminal."
+                : "Merge in progress. Select for help resolving and finishing the merge.";
             this.conflictEl.tabIndex = 0;
             this.conflictEl.addClass(this.base + "conflict");
         } else {
@@ -136,7 +141,7 @@ export class StatusBar {
             setIcon(this.iconEl, this.getProgressIcon());
             this.displayProgressText();
             this.statusBarEl.addClass(this.base + "progress");
-            this.addMergeHelpToTooltip();
+            this.addConflictHelpToTooltip();
             return;
         }
 
@@ -187,18 +192,26 @@ export class StatusBar {
                 this.statusBarEl.addClass(this.base + "failed-init");
                 break;
         }
-        this.addMergeHelpToTooltip();
+        this.addConflictHelpToTooltip();
     }
 
-    private addMergeHelpToTooltip(): void {
-        if (!this.plugin.state.mergeInProgress) return;
+    private openConflictHelp(): void {
+        if (this.plugin.state.rebaseInProgress) {
+            this.plugin.openRebaseConflictHelp();
+        } else {
+            this.plugin.openMergeConflictHelp();
+        }
+    }
 
-        const mergeHelp =
-            "Merge in progress. Select the merge icon for help resolving and finishing it.";
+    private addConflictHelpToTooltip(): void {
+        const { mergeInProgress, rebaseInProgress } = this.plugin.state;
+        if (!mergeInProgress && !rebaseInProgress) return;
+
+        const help = rebaseInProgress
+            ? "Rebase in progress. Select the branch icon for help continuing or aborting in a terminal."
+            : "Merge in progress. Select the merge icon for help resolving and finishing it.";
         const current = this.statusBarEl.ariaLabel;
-        this.statusBarEl.ariaLabel = current
-            ? `${mergeHelp}\n${current}`
-            : mergeHelp;
+        this.statusBarEl.ariaLabel = current ? `${help}\n${current}` : help;
     }
 
     private displayProgressText(): void {

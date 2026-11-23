@@ -13,7 +13,7 @@ export class MergeConflictModal extends Modal {
         titleEl.setText("Merge in progress");
         contentEl.addClass("obsidian-git-merge-help");
         contentEl.createEl("p", {
-            text: "Git is combining the version in your vault with changes from another version. The merge must be committed before Obsidian Git can push or resume automatic commits.",
+            text: "Git is combining the version in your vault with changes from another version. The merge must be committed before the plugin can push or resume automatic commits.",
         });
 
         if (conflicts.length > 0) {
