@@ -28,6 +28,37 @@ function escapeGlobParentheses(glob: string): string {
     );
 }
 
+/**
+ * Git for Windows treats every backslash in a pathspec as a directory
+ * separator, so a backslash escape such as `\(` fails with "Invalid path".
+ * Rewrite escapes outside bracket expressions as single-character bracket
+ * expressions, which Git matches the same way on every platform.
+ */
+export function windowsGitGlob(glob: string): string {
+    let result = "";
+    let inBracket = false;
+    for (let i = 0; i < glob.length; i++) {
+        const char = glob[i]!;
+        if (inBracket) {
+            result += char;
+            if (char === "]") inBracket = false;
+        } else if (char === "\\" && i + 1 < glob.length) {
+            result += `[${glob[++i]}]`;
+        } else {
+            result += char;
+            if (char === "[") {
+                inBracket = true;
+                // A leading "!" or "]" belongs to the bracket expression.
+                if (glob[i + 1] === "!" || glob[i + 1] === "^") {
+                    result += glob[++i];
+                }
+                if (glob[i + 1] === "]") result += glob[++i];
+            }
+        }
+    }
+    return result;
+}
+
 /** Match Git's ordinary glob syntax for the mobile backend. */
 export function createAutoCommitGlobMatcher(
     globs: string[]

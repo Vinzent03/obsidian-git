@@ -17,6 +17,7 @@ import type {
     AutoCommitGlobSelection,
     AutoCommitSelectedFiles,
 } from "../autoCommitGlobs";
+import { windowsGitGlob } from "../autoCommitGlobs";
 import type ObsidianGit from "../main";
 import type {
     Blame,
@@ -448,6 +449,11 @@ export class SimpleGit extends GitManager {
         };
     }
 
+    private globPathspec(glob: string, exclude = false): string {
+        const magic = exclude ? ":(exclude,glob)" : ":(glob)";
+        return magic + (Platform.isWin ? windowsGitGlob(glob) : glob);
+    }
+
     async selectAutoCommitFiles(
         status: Status,
         selection: AutoCommitGlobSelection
@@ -490,7 +496,7 @@ export class SimpleGit extends GitManager {
         if (selection.mode === "exclude") {
             const files = await selectedStatus([
                 ".",
-                ...selection.globs.map((glob) => `:(exclude,glob)${glob}`),
+                ...selection.globs.map((glob) => this.globPathspec(glob, true)),
             ]);
             return { files, selection };
         }
@@ -500,7 +506,7 @@ export class SimpleGit extends GitManager {
         const files = new Map<string, FileStatusResult>();
         const activeGlobs: string[] = [];
         for (const glob of selection.globs) {
-            const matches = await selectedStatus([`:(glob)${glob}`]);
+            const matches = await selectedStatus([this.globPathspec(glob)]);
             if (matches.length === 0) continue;
             activeGlobs.push(glob);
             for (const file of matches) files.set(file.path, file);
@@ -734,7 +740,9 @@ export class SimpleGit extends GitManager {
                     await this.git.add([
                         "-A",
                         "--",
-                        ...selection.globs.map((glob) => `:(glob)${glob}`),
+                        ...selection.globs.map((glob) =>
+                            this.globPathspec(glob)
+                        ),
                     ]);
                 }
             } else if (selection?.globs.length) {
@@ -742,7 +750,9 @@ export class SimpleGit extends GitManager {
                     "-A",
                     "--",
                     ".",
-                    ...selection.globs.map((glob) => `:(exclude,glob)${glob}`),
+                    ...selection.globs.map((glob) =>
+                        this.globPathspec(glob, true)
+                    ),
                 ]);
             } else {
                 const vaultPath = this.getVaultPathspec();
@@ -1654,7 +1664,13 @@ export class SimpleGit extends GitManager {
             this.absoluteRepoPath,
             repositoryRelativeFile
         );
-        const newRelativePath = path.relative(submoduleRoot, absolutePath);
+        // Use forward slashes, as for other repository-relative paths. On
+        // Windows path.relative returns backslashes, which break e.g. the
+        // GitHub URL built from this path.
+        const newRelativePath = path
+            .relative(submoduleRoot, absolutePath)
+            .split(path.sep)
+            .join("/");
 
         return { submodule: submoduleRoot, relativeFilepath: newRelativePath };
     }
