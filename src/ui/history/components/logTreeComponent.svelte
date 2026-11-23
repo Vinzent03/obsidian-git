@@ -70,8 +70,9 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             class="svg-icon right-triangle"
-                            ><path d="M3 8L12 17L21 8" /></svg
                         >
+                            <path d="M3 8L12 17L21 8" />
+                        </svg>
                     </div>
                     <div class="tree-item-inner nav-folder-title-content">
                         {entity.title}

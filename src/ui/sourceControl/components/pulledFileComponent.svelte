@@ -66,9 +66,9 @@
             {getDisplayPath(change.vaultPath)}
         </div>
         <div class="git-tools">
-            <span class="type" data-type={change.workingDir}
-                >{change.workingDir}</span
-            >
+            <span class="type" data-type={change.workingDir}>
+                {change.workingDir}
+            </span>
         </div>
     </div>
 </main>

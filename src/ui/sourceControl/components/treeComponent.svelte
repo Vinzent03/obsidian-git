@@ -125,8 +125,9 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             class="svg-icon right-triangle"
-                            ><path d="M3 8L12 17L21 8" /></svg
                         >
+                            <path d="M3 8L12 17L21 8" />
+                        </svg>
                     </div>
                     <div class="tree-item-inner nav-folder-title-content">
                         {entity.title}
@@ -151,13 +152,9 @@
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
                                         class="svg-icon lucide-minus"
-                                        ><line
-                                            x1="4"
-                                            y1="9"
-                                            x2="14"
-                                            y2="9"
-                                        /></svg
                                     >
+                                        <line x1="4" y1="9" x2="14" y2="9" />
+                                    </svg>
                                 </div>
                             {:else if fileType == FileType.changed}
                                 <div
@@ -177,10 +174,11 @@
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
                                         class="svg-icon lucide-undo"
-                                        ><path d="M3 7v6h6" /><path
-                                            d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"
-                                        /></svg
                                     >
+                                        <path d="M3 7v6h6" /><path
+                                            d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"
+                                        />
+                                    </svg>
                                 </div>
                                 <div
                                     data-icon="plus"
@@ -199,18 +197,14 @@
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
                                         class="svg-icon lucide-plus"
-                                        ><line
+                                    >
+                                        <line
                                             x1="9"
                                             y1="4"
                                             x2="9"
                                             y2="14"
-                                        /><line
-                                            x1="4"
-                                            y1="9"
-                                            x2="14"
-                                            y2="9"
-                                        /></svg
-                                    >
+                                        /><line x1="4" y1="9" x2="14" y2="9" />
+                                    </svg>
                                 </div>
                             {/if}
                             <div style="width:11px"></div>
