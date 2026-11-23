@@ -30,6 +30,7 @@
     let repositoryMissing = $state(false);
     let setupInProgress = $state(false);
     let mergeInProgress = $state(false);
+    let rebaseInProgress = $state(false);
     let status: Status | undefined = $state();
     let lastPulledFiles: FileStatusResult[] = $state([]);
     let commitMessage = $derived(plugin.settings.commitMessage);
@@ -284,6 +285,7 @@
 
         status = plugin.cachedStatus;
         mergeInProgress = plugin.state.mergeInProgress;
+        rebaseInProgress = plugin.state.rebaseInProgress;
         loading = false;
         if (
             plugin.lastPulledFiles &&
@@ -536,7 +538,16 @@
                 bind:this={buttons[7]}
                 onclick={triggerRefresh}
             ></div>
-            {#if mergeInProgress}
+            {#if rebaseInProgress}
+                <div
+                    id="rebase-status"
+                    class="clickable-icon nav-action-button rebase-status"
+                    data-icon="git-branch"
+                    aria-label="Rebase in progress — select for help continuing or aborting in a terminal"
+                    bind:this={buttons[12]}
+                    onclick={() => plugin.openRebaseConflictHelp()}
+                ></div>
+            {:else if mergeInProgress}
                 <div
                     id="merge-status"
                     class="clickable-icon nav-action-button merge-status"
@@ -993,7 +1004,8 @@
         }
     }
 
-    .merge-status {
+    .merge-status,
+    .rebase-status {
         color: var(--text-warning);
     }
 

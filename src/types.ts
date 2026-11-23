@@ -374,7 +374,8 @@ export type CommitResult =
       }
     | {
           status: "skipped";
-          reason: "merge-in-progress" | "files-too-large";
+          reason:
+              "merge-in-progress" | "rebase-in-progress" | "files-too-large";
       }
     | NotReadyResult;
 
@@ -396,6 +397,7 @@ export type CommitAndSyncResult =
 export interface PluginState {
     offlineMode: boolean;
     mergeInProgress: boolean;
+    rebaseInProgress: boolean;
     operation: GitOperation;
 }
 

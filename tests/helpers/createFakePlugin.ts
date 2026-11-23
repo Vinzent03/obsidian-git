@@ -27,6 +27,7 @@ export function createFakePlugin(): FakePlugin {
         state: {
             offlineMode: false,
             mergeInProgress: false,
+            rebaseInProgress: false,
             operation: GitOperation.idle,
         },
         setPluginState: vi.fn(),

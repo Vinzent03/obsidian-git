@@ -7,7 +7,10 @@ import {
     gitManagerBackends,
     type GitManagerTestHarness,
 } from "../helpers/gitManagerHarness";
-import { createRepoWithMergeConflict } from "../helpers/gitRepo";
+import {
+    createRepoWithMergeConflict,
+    createRepoWithRebaseConflict,
+} from "../helpers/gitRepo";
 
 function statusByPath(
     files: FileStatusResult[]
@@ -668,6 +671,54 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
             value: { status: "committed", files: 0 },
         });
         expect(await manager.isMergeInProgress()).toBe(false);
+    });
+
+    it("detects a rebase that stopped on a conflict", async () => {
+        context = await backend.create(createRepoWithRebaseConflict);
+        const { manager, repo } = context;
+
+        expect((await manager.status()).conflicted).toEqual(["note.md"]);
+        expect(await manager.isMergeInProgress()).toBe(false);
+        expect(await manager.isRebaseInProgress()).toBe(true);
+
+        await repo.raw(["rebase", "--abort"]);
+
+        expect(await manager.isRebaseInProgress()).toBe(false);
+    });
+
+    it("skips automatic commits while a rebase is in progress", async () => {
+        context = await backend.create(createRepoWithRebaseConflict);
+        const { manager, plugin, repo } = context;
+        repo.write("other.md", "unrelated\n");
+        plugin.settings.autoCommitGlobMode = "exclude";
+        plugin.settings.autoCommitGlobs = "";
+        plugin.updateCachedStatus = vi.fn(async () => {
+            const status = await manager.status();
+            plugin.state.rebaseInProgress = await manager.isRebaseInProgress();
+            return status;
+        });
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        const headBefore = await repo.head();
+
+        const result = await new GitActions(plugin).commit({
+            fromAuto: true,
+            commitMessage: "auto",
+            mode: "all",
+        });
+
+        expect(result).toEqual({
+            status: "success",
+            value: { status: "skipped", reason: "rebase-in-progress" },
+        });
+        expect(plugin.displayError).toHaveBeenCalledWith(
+            expect.stringContaining("rebase is in progress")
+        );
+        expect(await repo.head()).toBe(headBefore);
+        expect(await repo.statusPorcelain()).toBe("UU note.md\n?? other.md");
     });
 
     it("commits all changes without extra working tree walks", async () => {

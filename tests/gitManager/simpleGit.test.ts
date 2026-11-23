@@ -784,6 +784,57 @@ describe("SimpleGit.pull", () => {
         });
     });
 
+    it("does not commit conflict markers in the automatic run after a rebase stopped", async () => {
+        const { repo, plugin, manager } = withCleanup(
+            await createSimpleGitTestContext()
+        );
+        await createPullConflict(repo);
+        plugin.settings.syncMethod = "rebase";
+        plugin.settings.rebaseAutoStash = "enabled";
+        plugin.settings.mergeStrategy = "none";
+        plugin.settings.pullBeforePush = true;
+        plugin.settings.autoCommitGlobMode = "exclude";
+        plugin.settings.autoCommitGlobs = "";
+        plugin.settings.autoCommitMessage = "vault backup";
+        plugin.updateCachedStatus = vi.fn(async () => {
+            const status = await manager.status();
+            plugin.state.mergeInProgress = await manager.isMergeInProgress();
+            plugin.state.rebaseInProgress = await manager.isRebaseInProgress();
+            return status;
+        });
+        plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
+        plugin.tools = {
+            hasTooBigFiles: vi.fn().mockResolvedValue(false),
+        } as unknown as typeof plugin.tools;
+        plugin.displayMessage = vi.fn();
+        plugin.handleConflict = vi.fn();
+        const actions = new GitActions(plugin);
+
+        // The first run pulls with a rebase, which stops on the conflict.
+        expect(await actions.commitAndSync({ fromAutoBackup: true })).toEqual({
+            status: "failed",
+        });
+        expect(plugin.handleConflict).toHaveBeenCalledWith(["note.md"]);
+        expect(await manager.isRebaseInProgress()).toBe(true);
+        const headBefore = await repo.head();
+
+        // Another file changes before the next run.
+        repo.write("other.md", "unrelated\n");
+        const result = await actions.commitAndSync({ fromAutoBackup: true });
+
+        expect(result).toEqual({
+            status: "success",
+            value: {
+                status: "skipped",
+                reason: "commit-skipped",
+                commit: { status: "skipped", reason: "rebase-in-progress" },
+            },
+        });
+        expect(await repo.head()).toBe(headBefore);
+        expect(await repo.show("HEAD:note.md")).not.toContain("<<<<<<<");
+        expect(await repo.statusPorcelain()).toBe("UU note.md\n?? other.md");
+    });
+
     it("autostashes local changes when rebasing with autostash enabled", async () => {
         const { repo, plugin, manager } = withCleanup(
             await createSimpleGitTestContext()

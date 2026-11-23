@@ -168,3 +168,20 @@ export async function createRepoWithMergeConflict(): Promise<TestRepo> {
     repo.cleanup();
     throw new Error("Expected the test repository merge to conflict");
 }
+
+export async function createRepoWithRebaseConflict(): Promise<TestRepo> {
+    const repo = await createRepoWithOrigin();
+    await repo.git.checkoutLocalBranch("other");
+    await repo.writeAndCommit("note.md", "other\n", "other change");
+    await repo.git.checkout("main");
+    await repo.writeAndCommit("note.md", "ours\n", "our change");
+
+    try {
+        await repo.git.rebase(["other"]);
+    } catch {
+        return repo;
+    }
+
+    repo.cleanup();
+    throw new Error("Expected the test repository rebase to conflict");
+}

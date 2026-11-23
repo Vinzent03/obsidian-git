@@ -21,7 +21,7 @@ Before resolving anything, make sure changes from your other devices have been c
 
 ## If you use a different pull strategy
 
-The steps above describe a merge, the default pull strategy. If you selected **Rebase** on desktop, resolve and stage each conflict, then continue the rebase in a terminal or Git client with `git rebase --continue`. Repeat if Git stops at another conflict. Do not make a normal merge commit to continue a rebase. Rebase is not supported on mobile.
+The steps above describe a merge, the default pull strategy. If you selected **Rebase** on desktop, resolve and stage each conflict, then continue the rebase in a terminal or Git client with `git rebase --continue`. Repeat if Git stops at another conflict. Do not make a normal merge commit to continue a rebase. Automatic commits are skipped until the rebase is finished or aborted, so that conflict markers are not committed. Rebase is not supported on mobile.
 
 If you use **Other sync service (update HEAD only)**, the plugin does not merge file contents on pull. Reconcile differences through that sync service before relying on Git's status. Choosing **Our changes** or **Their changes** under **Merge strategy on conflicts** can automatically favor one side's text; check the resulting notes because the other side's conflicting text may be omitted.
 

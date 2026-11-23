@@ -47,6 +47,12 @@ export abstract class GitManager {
 
     abstract isMergeInProgress(): Promise<boolean>;
 
+    /**
+     * Whether a rebase has stopped before finishing, for example because of a
+     * conflict. HEAD is detached until the rebase is continued or aborted.
+     */
+    abstract isRebaseInProgress(): Promise<boolean>;
+
     abstract commitAll(_: {
         message: string;
         status?: Status;

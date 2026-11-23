@@ -43,6 +43,7 @@ import SplitDiffView from "./ui/diff/splitDiffView";
 import HistoryView from "./ui/history/historyView";
 import ReadOnlyFileView from "./ui/readOnlyFileView";
 import { MergeConflictModal } from "./ui/modals/mergeConflictModal";
+import { RebaseConflictModal } from "./ui/modals/rebaseConflictModal";
 import GitView from "./ui/sourceControl/sourceControl";
 import { BranchStatusBar } from "./ui/statusBar/branchStatusBar";
 import { HunkActions } from "./editor/signs/hunkActions";
@@ -68,6 +69,7 @@ export default class ObsidianGit extends Plugin {
         operation: GitOperation.idle,
         offlineMode: false,
         mergeInProgress: false,
+        rebaseInProgress: false,
     };
     lastPulledFiles!: FileStatusResult[];
     gitReady = false;
@@ -111,8 +113,10 @@ export default class ObsidianGit extends Plugin {
         this.app.workspace.trigger("obsidian-git:loading-status");
         this.cachedStatus = await this.gitManager.status();
         const newMergeInProgress = await this.gitManager.isMergeInProgress();
+        const newRebaseInProgress = await this.gitManager.isRebaseInProgress();
         this.setPluginState({
             mergeInProgress: newMergeInProgress,
+            rebaseInProgress: newRebaseInProgress,
         });
         await this.branchBar?.display();
 
@@ -696,6 +700,10 @@ export default class ObsidianGit extends Plugin {
 
     openMergeConflictHelp(): void {
         new MergeConflictModal(this).open();
+    }
+
+    openRebaseConflictHelp(): void {
+        new RebaseConflictModal(this).open();
     }
 
     onActiveLeafChange(leaf: WorkspaceLeaf | null): void {

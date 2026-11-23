@@ -542,6 +542,12 @@ export class GitActions {
             return { status: "skipped", reason: "merge-in-progress" };
         }
 
+        // A stopped rebase leaves no MERGE_HEAD. Staging and committing now
+        // would record conflict markers on the detached HEAD of the rebase.
+        if (fromAuto && this.plugin.state.rebaseInProgress) {
+            return { status: "skipped", reason: "rebase-in-progress" };
+        }
+
         if (resolvedMode === "nothing" && mergeInProgress && mode === "smart") {
             resolvedMode = "staged";
         }
@@ -749,6 +755,11 @@ export class GitActions {
                     case "merge-in-progress":
                         this.plugin.displayError(
                             "Did not commit automatically because a merge is in progress. Commit it manually."
+                        );
+                        return;
+                    case "rebase-in-progress":
+                        this.plugin.displayError(
+                            "Did not commit automatically because a rebase is in progress. Finish it with `git rebase --continue` or cancel it with `git rebase --abort`."
                         );
                         return;
                     case "not-ready":

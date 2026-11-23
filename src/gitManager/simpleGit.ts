@@ -512,13 +512,31 @@ export class SimpleGit extends GitManager {
     }
 
     async isMergeInProgress(): Promise<boolean> {
-        const mergeHead = await this.git.revparse(["--git-path", "MERGE_HEAD"]);
-        const mergeHeadPath = path.resolve(
+        return this.gitPathExists("MERGE_HEAD");
+    }
+
+    async isRebaseInProgress(): Promise<boolean> {
+        // Git keeps the state of an unfinished rebase in one of these
+        // directories, depending on the rebase backend. `git am` uses
+        // rebase-apply as well.
+        return (
+            (await this.gitPathExists("rebase-merge")) ||
+            (await this.gitPathExists("rebase-apply"))
+        );
+    }
+
+    /**
+     * Checks for a file or directory inside the Git directory. Git resolves
+     * the location, so worktrees, submodules and a custom Git directory work.
+     */
+    private async gitPathExists(gitPath: string): Promise<boolean> {
+        const resolved = await this.git.revparse(["--git-path", gitPath]);
+        const absolutePath = path.resolve(
             this.absoluteRepoPath,
-            mergeHead.trim()
+            resolved.trim()
         );
         try {
-            await fsPromises.access(mergeHeadPath);
+            await fsPromises.access(absolutePath);
             return true;
         } catch (error) {
             if (
