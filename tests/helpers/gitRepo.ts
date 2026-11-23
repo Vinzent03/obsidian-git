@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
-import { simpleGit, type SimpleGit } from "simple-git";
+import { simpleGit, type SimpleGit, type SimpleGitOptions } from "simple-git";
 
 export type TestRepo = {
     dir: string;
@@ -31,12 +31,37 @@ export type TestRepo = {
     cleanup(): void;
 };
 
+/**
+ * simple-git removes ambient GIT_CONFIG_* variables unless they are allowed,
+ * which would undo the config isolation set up in tests/setup.ts.
+ */
+export function testSimpleGit(
+    options: string | Partial<SimpleGitOptions> = {}
+): SimpleGit {
+    const base = typeof options === "string" ? { baseDir: options } : options;
+    return simpleGit({
+        ...base,
+        allowEnvironment: [
+            ...(base.allowEnvironment ?? []),
+            "GIT_CONFIG_NOSYSTEM",
+            "GIT_CONFIG_GLOBAL",
+        ],
+    });
+}
+
 export function createTempDirectory(prefix = "obsidian-git-test-"): string {
     return mkdtempSync(path.join(tmpdir(), prefix));
 }
 
 export function cleanupTempDirectory(dir: string): void {
-    rmSync(dir, { recursive: true, force: true });
+    // On Windows a just-killed Git process or its transport child can briefly
+    // keep files open, which fails the removal with EPERM or EBUSY.
+    rmSync(dir, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 100,
+    });
 }
 
 async function gitRaw(git: SimpleGit, args: string[]): Promise<string> {
@@ -114,15 +139,15 @@ export async function createRepoWithOrigin(): Promise<TestRepo> {
     const remotePath = path.join(dir, "remote.git");
     const repoPath = path.join(dir, "worktree");
 
-    await simpleGit(dir).raw([
+    await testSimpleGit(dir).raw([
         "init",
         "--bare",
         "--initial-branch=main",
         remotePath,
     ]);
-    await simpleGit(dir).raw(["init", "--initial-branch=main", repoPath]);
+    await testSimpleGit(dir).raw(["init", "--initial-branch=main", repoPath]);
 
-    const git = simpleGit({
+    const git = testSimpleGit({
         baseDir: repoPath,
         config: ["core.quotepath=off"],
         unsafe: { allowUnsafeConfigPaths: true },
@@ -141,9 +166,9 @@ export async function createEmptyRepo(): Promise<TestRepo> {
     const remotePath = path.join(dir, "remote.git");
     const repoPath = path.join(dir, "worktree");
 
-    await simpleGit(dir).raw(["init", "--initial-branch=main", repoPath]);
+    await testSimpleGit(dir).raw(["init", "--initial-branch=main", repoPath]);
 
-    const git = simpleGit({
+    const git = testSimpleGit({
         baseDir: repoPath,
         config: ["core.quotepath=off"],
         unsafe: { allowUnsafeConfigPaths: true },

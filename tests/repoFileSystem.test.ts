@@ -188,9 +188,19 @@ describe("RepoFileSystem", () => {
         const { fileSystem, vaultPath } = createContext();
         await expect(fileSystem.stat("missing.md")).resolves.toBeNull();
         writeFileSync(path.join(vaultPath, "file.md"), "text");
-        await expect(fileSystem.stat("file.md/child")).rejects.toMatchObject({
-            code: "ENOTDIR",
-        });
+        if (process.platform === "win32") {
+            // Windows reports ENOENT for a path below a file, so use an
+            // invalid path to get a different error.
+            await expect(fileSystem.stat("bad\0name")).rejects.toMatchObject({
+                code: "ERR_INVALID_ARG_VALUE",
+            });
+        } else {
+            await expect(
+                fileSystem.stat("file.md/child")
+            ).rejects.toMatchObject({
+                code: "ENOTDIR",
+            });
+        }
         await expect(fileSystem.read("missing.md")).rejects.toMatchObject({
             code: "ENOENT",
         });

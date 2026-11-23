@@ -1,5 +1,5 @@
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawn } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ASK_PASS_SCRIPT, ASK_PASS_SCRIPT_FILE } from "../../src/constants";
@@ -37,11 +37,31 @@ function send(port: number, token: string, prompt: string): Promise<Response> {
     });
 }
 
+/**
+ * Git runs the askpass script with its own shell. Git for Windows does not
+ * put that shell on PATH, so locate it relative to Git's exec path.
+ */
+function findShell(): string {
+    if (process.platform !== "win32") return "sh";
+    const execPath = execFileSync("git", ["--exec-path"], {
+        encoding: "utf8",
+    }).trim();
+    // <root>/mingw64/libexec/git-core -> <root>
+    const root = path.resolve(execPath, "..", "..", "..");
+    for (const candidate of ["usr/bin/sh.exe", "bin/sh.exe"]) {
+        const shell = path.join(root, candidate);
+        if (existsSync(shell)) return shell;
+    }
+    return "sh";
+}
+
+const shell = findShell();
+
 function runScript(port: number, token: string, prompt: string) {
     return new Promise<{ code: number | null; stdout: string }>(
         (resolve, reject) => {
             const child = spawn(
-                "sh",
+                shell,
                 ["-c", ASK_PASS_SCRIPT, "askpass", prompt],
                 {
                     env: {

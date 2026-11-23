@@ -15,6 +15,10 @@ export default defineConfig({
         environment: "node",
         include: ["tests/**/*.test.ts"],
         setupFiles: ["tests/setup.ts"],
+        // Spawning Git processes is much slower on Windows, so the default
+        // 5s timeout is too short for tests that run many Git commands.
+        testTimeout: process.platform === "win32" ? 30_000 : undefined,
+        hookTimeout: process.platform === "win32" ? 30_000 : undefined,
         coverage: {
             provider: "v8",
             reporter: ["text", "html"],

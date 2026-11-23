@@ -1,3 +1,19 @@
+import { writeFileSync } from "fs";
+import { tmpdir } from "os";
+import path from "path";
+
+// Isolate the temporary test repositories from the machine's system and
+// global Git config. Otherwise settings such as Git for Windows' default
+// `core.autocrlf=true` leak into the fixtures and change their behavior.
+// Both the fixtures and the plugin's simple-git instance inherit process.env.
+const emptyGlobalGitConfig = path.join(
+    tmpdir(),
+    "obsidian-git-test-empty-gitconfig"
+);
+writeFileSync(emptyGlobalGitConfig, "");
+process.env.GIT_CONFIG_NOSYSTEM = "1";
+process.env.GIT_CONFIG_GLOBAL = emptyGlobalGitConfig;
+
 const fallbackDocument = {
     body: {
         style: {
