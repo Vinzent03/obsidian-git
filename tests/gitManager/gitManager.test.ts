@@ -692,7 +692,11 @@ describe.each(gitManagerBackends)("$name GitManager contract", (backend) => {
         repo.write("other.md", "unrelated\n");
         plugin.settings.autoCommitGlobMode = "exclude";
         plugin.settings.autoCommitGlobs = "";
-        plugin.updateCachedStatus = vi.fn(() => manager.status());
+        plugin.updateCachedStatus = vi.fn(async () => {
+            const status = await manager.status();
+            plugin.state.rebaseInProgress = await manager.isRebaseInProgress();
+            return status;
+        });
         plugin.isAllInitialized = vi.fn().mockResolvedValue(true);
         plugin.tools = {
             hasTooBigFiles: vi.fn().mockResolvedValue(false),

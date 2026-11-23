@@ -68,6 +68,7 @@ export default class ObsidianGit extends Plugin {
         operation: GitOperation.idle,
         offlineMode: false,
         mergeInProgress: false,
+        rebaseInProgress: false,
     };
     lastPulledFiles!: FileStatusResult[];
     gitReady = false;
@@ -111,8 +112,10 @@ export default class ObsidianGit extends Plugin {
         this.app.workspace.trigger("obsidian-git:loading-status");
         this.cachedStatus = await this.gitManager.status();
         const newMergeInProgress = await this.gitManager.isMergeInProgress();
+        const newRebaseInProgress = await this.gitManager.isRebaseInProgress();
         this.setPluginState({
             mergeInProgress: newMergeInProgress,
+            rebaseInProgress: newRebaseInProgress,
         });
         await this.branchBar?.display();
 

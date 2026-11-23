@@ -397,6 +397,7 @@ export type CommitAndSyncResult =
 export interface PluginState {
     offlineMode: boolean;
     mergeInProgress: boolean;
+    rebaseInProgress: boolean;
     operation: GitOperation;
 }
 

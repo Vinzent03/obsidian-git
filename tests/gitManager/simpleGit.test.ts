@@ -799,6 +799,7 @@ describe("SimpleGit.pull", () => {
         plugin.updateCachedStatus = vi.fn(async () => {
             const status = await manager.status();
             plugin.state.mergeInProgress = await manager.isMergeInProgress();
+            plugin.state.rebaseInProgress = await manager.isRebaseInProgress();
             return status;
         });
         plugin.isAllInitialized = vi.fn().mockResolvedValue(true);

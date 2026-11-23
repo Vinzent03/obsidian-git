@@ -544,7 +544,7 @@ export class GitActions {
 
         // A stopped rebase leaves no MERGE_HEAD. Staging and committing now
         // would record conflict markers on the detached HEAD of the rebase.
-        if (fromAuto && (await this.plugin.gitManager.isRebaseInProgress())) {
+        if (fromAuto && this.plugin.state.rebaseInProgress) {
             return { status: "skipped", reason: "rebase-in-progress" };
         }
 
