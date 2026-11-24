@@ -25,6 +25,8 @@ Tests use Vitest in a Node environment.
 Configuration lives in `vitest.config.ts`:
 
 - `tests/**/*.test.ts` files are included.
+- `tests/globalSetup.ts` runs once and hides the machine's system and global
+  Git config from all Git processes started by tests.
 - `tests/setup.ts` runs before tests.
 - `obsidian` imports are mapped to `tests/stubs/obsidian.ts`.
 - `src` imports are mapped to the project `src` directory.

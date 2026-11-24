@@ -185,26 +185,27 @@ describe("RepoFileSystem", () => {
     });
 
     it("returns null for missing desktop files and propagates other filesystem errors", async () => {
-        const { fileSystem, vaultPath } = createContext();
+        const { fileSystem } = createContext();
         await expect(fileSystem.stat("missing.md")).resolves.toBeNull();
-        writeFileSync(path.join(vaultPath, "file.md"), "text");
-        if (process.platform === "win32") {
-            // Windows reports ENOENT for a path below a file, so use an
-            // invalid path to get a different error.
-            await expect(fileSystem.stat("bad\0name")).rejects.toMatchObject({
-                code: "ERR_INVALID_ARG_VALUE",
-            });
-        } else {
-            await expect(
-                fileSystem.stat("file.md/child")
-            ).rejects.toMatchObject({
-                code: "ENOTDIR",
-            });
-        }
+        await expect(fileSystem.stat("bad\0name")).rejects.toMatchObject({
+            code: "ERR_INVALID_ARG_VALUE",
+        });
         await expect(fileSystem.read("missing.md")).rejects.toMatchObject({
             code: "ENOENT",
         });
     });
+
+    // Windows reports ENOENT for a path below a file.
+    it.skipIf(process.platform === "win32")(
+        "propagates ENOTDIR for a path below a desktop file",
+        async () => {
+            const { fileSystem, vaultPath } = createContext();
+            writeFileSync(path.join(vaultPath, "file.md"), "text");
+            await expect(
+                fileSystem.stat("file.md/child")
+            ).rejects.toMatchObject({ code: "ENOTDIR" });
+        }
+    );
 
     it("leaves mobile path validation to the adapter after Obsidian normalization", async () => {
         Platform.isDesktopApp = false;

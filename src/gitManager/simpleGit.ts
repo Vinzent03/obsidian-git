@@ -17,7 +17,7 @@ import type {
     AutoCommitGlobSelection,
     AutoCommitSelectedFiles,
 } from "../autoCommitGlobs";
-import { windowsGitGlob } from "../autoCommitGlobs";
+import { replaceGlobEscapes } from "../autoCommitGlobs";
 import type ObsidianGit from "../main";
 import type {
     Blame,
@@ -449,9 +449,14 @@ export class SimpleGit extends GitManager {
         };
     }
 
-    private globPathspec(glob: string, exclude = false): string {
-        const magic = exclude ? ":(exclude,glob)" : ":(glob)";
-        return magic + (Platform.isWin ? windowsGitGlob(glob) : glob);
+    // Escapes are replaced on every platform: Git for Windows rejects them, and
+    // the rewritten glob matches the same paths.
+    private globPathspec(glob: string): string {
+        return `:(glob)${replaceGlobEscapes(glob)}`;
+    }
+
+    private excludeGlobPathspec(glob: string): string {
+        return `:(exclude,glob)${replaceGlobEscapes(glob)}`;
     }
 
     async selectAutoCommitFiles(
@@ -496,7 +501,9 @@ export class SimpleGit extends GitManager {
         if (selection.mode === "exclude") {
             const files = await selectedStatus([
                 ".",
-                ...selection.globs.map((glob) => this.globPathspec(glob, true)),
+                ...selection.globs.map((glob) =>
+                    this.excludeGlobPathspec(glob)
+                ),
             ]);
             return { files, selection };
         }
@@ -751,7 +758,7 @@ export class SimpleGit extends GitManager {
                     "--",
                     ".",
                     ...selection.globs.map((glob) =>
-                        this.globPathspec(glob, true)
+                        this.excludeGlobPathspec(glob)
                     ),
                 ]);
             } else {
