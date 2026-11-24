@@ -88,8 +88,11 @@ export class SimpleGit extends GitManager {
                 envs["GIT_WORK_TREE"] = basePath;
             }
             for (const envVar of envVars) {
-                const [key, value] = envVar.split("=");
-                if (key === undefined) continue;
+                const separator = envVar.indexOf("=");
+                if (separator <= 0) continue;
+
+                const key = envVar.slice(0, separator);
+                const value = envVar.slice(separator + 1);
                 envs[key] = value;
             }
 
