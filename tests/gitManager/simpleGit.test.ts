@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import {
-    simpleGit,
     GitPluginError,
     type SimpleGit as SimpleGitClient,
     type SimpleGitProgressEvent,
@@ -12,7 +11,11 @@ import { GitOperation, type GitProgress } from "../../src/types";
 import { SimpleGit } from "../../src/gitManager/simpleGit";
 import { withCleanup } from "../helpers/cleanup";
 import { createFakePlugin, type FakePlugin } from "../helpers/createFakePlugin";
-import { createEmptyRepo, createRepoWithOrigin } from "../helpers/gitRepo";
+import {
+    createEmptyRepo,
+    createRepoWithOrigin,
+    testSimpleGit,
+} from "../helpers/gitRepo";
 import { createSimpleGitTestContext } from "../helpers/simpleGit";
 
 function createManager(
@@ -79,13 +82,13 @@ async function createRemoteCommit(
     files: Record<string, string> = { "remote.md": "remote\n" }
 ): Promise<void> {
     const remoteWorktreePath = path.join(repo.dir, "remote-worktree");
-    await simpleGit(repo.dir).raw([
+    await testSimpleGit(repo.dir).raw([
         "clone",
         repo.remotePath,
         remoteWorktreePath,
     ]);
 
-    const remoteGit = simpleGit({
+    const remoteGit = testSimpleGit({
         baseDir: remoteWorktreePath,
         config: ["core.quotepath=off"],
     });
@@ -111,12 +114,12 @@ async function createPullConflict(repo: {
     ): Promise<void>;
 }): Promise<void> {
     const remoteWorktreePath = path.join(repo.dir, "conflict-worktree");
-    await simpleGit(repo.dir).raw([
+    await testSimpleGit(repo.dir).raw([
         "clone",
         repo.remotePath,
         remoteWorktreePath,
     ]);
-    const remoteGit = simpleGit({
+    const remoteGit = testSimpleGit({
         baseDir: remoteWorktreePath,
         config: ["core.quotepath=off"],
     });
@@ -145,9 +148,10 @@ describe("SimpleGit.setGitInstance", () => {
         );
 
         expect(manager.absoluteRepoPath).toBe(repo.repoPath);
-        expect(await manager.git.revparse("--show-toplevel")).toBe(
-            repo.repoPath
-        );
+        // Git prints forward slashes on Windows, so compare resolved paths.
+        expect(
+            path.resolve(await manager.git.revparse("--show-toplevel"))
+        ).toBe(path.resolve(repo.repoPath));
     });
 });
 
@@ -300,7 +304,7 @@ describe("SimpleGit filesystem paths in a nested vault", () => {
 
     it("finds a submodule outside the vault using repository-relative paths", async () => {
         const { repo, manager } = await createContext();
-        await simpleGit({
+        await testSimpleGit({
             baseDir: repo.repoPath,
             unsafe: { allowUnsafeProtocolOverride: true },
         }).raw([
@@ -311,12 +315,19 @@ describe("SimpleGit filesystem paths in a nested vault", () => {
             repo.remotePath,
             "submodules/example",
         ]);
+        const submodule = await manager.getSubmoduleOfFile(
+            "submodules/example/note.md"
+        );
+        // Git prints the submodule root with forward slashes on Windows.
+        expect(path.resolve(submodule!.submodule)).toBe(
+            path.join(repo.repoPath, "submodules/example")
+        );
+        expect(submodule?.relativeFilepath).toBe("note.md");
+
+        repo.write("submodules/example/sub/nested.md", "nested\n");
         await expect(
-            manager.getSubmoduleOfFile("submodules/example/note.md")
-        ).resolves.toEqual({
-            submodule: path.join(repo.repoPath, "submodules/example"),
-            relativeFilepath: "note.md",
-        });
+            manager.getSubmoduleOfFile("submodules/example/sub/nested.md")
+        ).resolves.toMatchObject({ relativeFilepath: "sub/nested.md" });
         await expect(
             manager.isTracked("submodules/example/note.md")
         ).resolves.toBe(true);

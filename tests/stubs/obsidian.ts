@@ -34,8 +34,8 @@ export const Platform = {
     isDesktopApp: true,
     isMobile: false,
     isMobileApp: false,
-    isMacOS: false,
-    isWin: false,
+    isMacOS: process.platform === "darwin",
+    isWin: process.platform === "win32",
     isIosApp: false,
 };
 
