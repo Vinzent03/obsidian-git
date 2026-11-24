@@ -856,6 +856,20 @@ describe("IsomorphicGit object cache", () => {
     });
 });
 
+describe("IsomorphicGit history dates", () => {
+    it("keeps the commit time from second-based timestamps", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        const { manager } = createIsomorphicGitManager(repo.repoPath);
+        const epochSeconds = Number(
+            await repo.raw(["log", "-1", "--format=%ct"])
+        );
+
+        const logs = await manager.log(undefined, false, 1);
+
+        expect(Date.parse(logs[0]!.date)).toBe(epochSeconds * 1000);
+    });
+});
+
 describe("IsomorphicGit history memory", () => {
     it("does not load separate packfile caches concurrently for history entries", async () => {
         const repo = withCleanup(await createRepoWithOrigin());
