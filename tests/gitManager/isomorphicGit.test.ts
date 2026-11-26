@@ -495,6 +495,50 @@ describe("IsomorphicGit merge state", () => {
         expect(updateCachedStatus).not.toHaveBeenCalled();
         expect(plugin.displayError).not.toHaveBeenCalled();
     });
+
+    it("writes only files that differ between both sides when materializing a conflict", async () => {
+        const repo = withCleanup(await createRepoWithOrigin());
+        await repo.writeAndCommit("unrelated.md", "base\n", "unrelated file");
+        await repo.git.checkoutLocalBranch("theirs");
+        await repo.writeAndCommit("note.md", "theirs\n", "their change");
+        await repo.writeAndCommit("added.md", "added\n", "their addition");
+        const theirCommit = await repo.head();
+        await repo.git.checkout("main");
+        await repo.writeAndCommit("note.md", "ours\n", "our change");
+        await repo.raw(["update-ref", "refs/remotes/origin/main", theirCommit]);
+
+        const { manager, plugin } = createIsomorphicGitManager(repo.repoPath);
+        vi.spyOn(manager, "fetch").mockResolvedValue();
+        const written: string[] = [];
+        const vault = plugin.app.vault as unknown as {
+            create: (path: string, data: string) => Promise<void>;
+            createBinary: (path: string, data: ArrayBuffer) => Promise<void>;
+        };
+        const { create, createBinary } = vault;
+        vault.create = (path, data) => {
+            written.push(path);
+            return create(path, data);
+        };
+        vault.createBinary = (path, data) => {
+            written.push(path);
+            return createBinary(path, data);
+        };
+
+        await expect(manager.pull()).rejects.toBeInstanceOf(GitConflictError);
+
+        const worktreeWrites = written
+            .map((file) => file.replace(/^\/+/, ""))
+            .filter((file) => !file.startsWith(".git/"))
+            .sort();
+        expect(worktreeWrites).toEqual(["added.md", "note.md"]);
+        await expect(
+            readFile(path.join(repo.repoPath, "note.md"), "utf8")
+        ).resolves.toMatch(/=======\ntheirs\n/);
+        await expect(
+            readFile(path.join(repo.repoPath, "added.md"), "utf8")
+        ).resolves.toBe("added\n");
+        expect((await manager.status()).conflicted).toEqual(["note.md"]);
+    });
 });
 
 describe("IsomorphicGit.push", () => {
