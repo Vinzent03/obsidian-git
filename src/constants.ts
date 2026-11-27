@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     disablePopupsForNoChanges: false,
     listChangedFilesInMessageBody: false,
     showStatusBar: true,
+    showAutoCommitCountdown: false,
     updateSubmodules: false,
     syncMethod: "merge",
     rebaseAutoStash: "enabled",

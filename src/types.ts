@@ -60,6 +60,7 @@ export interface ObsidianGitSettings {
     disablePopupsForNoChanges: boolean;
     listChangedFilesInMessageBody: boolean;
     showStatusBar: boolean;
+    showAutoCommitCountdown: boolean;
     updateSubmodules: boolean;
     submoduleRecurseCheckout: boolean;
     /**

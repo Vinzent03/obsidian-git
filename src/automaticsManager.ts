@@ -5,6 +5,7 @@ export default class AutomaticsManager {
     private timeoutIDCommitAndSync?: number;
     private timeoutIDPush?: number;
     private timeoutIDPull?: number;
+    private nextAutoCommitAt?: number;
 
     constructor(private readonly plugin: ObsidianGit) {}
 
@@ -129,9 +130,11 @@ export default class AutomaticsManager {
 
     private startAutoCommitAndSync(minutes?: number) {
         if (this.isAutomaticsDisabled) {
+            this.nextAutoCommitAt = undefined;
             return;
         }
         if (this.plugin.settings.autoBackupAfterFileChange) {
+            this.nextAutoCommitAt = undefined;
             if (minutes === 0) {
                 this.doAutoCommitAndSync();
             } else {
@@ -151,11 +154,23 @@ export default class AutomaticsManager {
                 (minutes ?? this.plugin.settings.autoSaveInterval) * 60000;
             // max timeout in js
             if (time > 2147483647) time = 2147483647;
-            this.timeoutIDCommitAndSync = window.setTimeout(
-                () => this.doAutoCommitAndSync(),
-                time
-            );
+            this.nextAutoCommitAt = Date.now() + time;
+            this.timeoutIDCommitAndSync = window.setTimeout(() => {
+                this.nextAutoCommitAt = undefined;
+                this.doAutoCommitAndSync();
+            }, time);
         }
+    }
+
+    /**
+     * Milliseconds until the next interval-based auto commit, or `undefined`
+     * when no auto commit is scheduled.
+     */
+    getAutoCommitCountdownMilliseconds(now = Date.now()): number | undefined {
+        if (this.nextAutoCommitAt === undefined) {
+            return undefined;
+        }
+        return Math.max(0, this.nextAutoCommitAt - now);
     }
 
     // This is used for both auto commit-and-sync and commit only
@@ -247,6 +262,7 @@ export default class AutomaticsManager {
     }
 
     private clearAutoCommitAndSync(): boolean {
+        this.nextAutoCommitAt = undefined;
         let wasActive = false;
         if (this.timeoutIDCommitAndSync) {
             window.clearTimeout(this.timeoutIDCommitAndSync);
