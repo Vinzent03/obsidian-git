@@ -770,6 +770,10 @@ export class IsomorphicGit extends GitManager {
 
         const localCommit = await this.resolveRef(currentBranch);
         const upstreamCommit = await this.resolveRef(trackingBranch);
+        // Common after a push or pull; spares the walk over both trees.
+        if (localCommit === upstreamCommit) {
+            return 0;
+        }
 
         const changedFilesCount = await this.getFileChangesCount(
             localCommit,
